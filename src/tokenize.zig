@@ -70,6 +70,8 @@ const Tokenizer = struct {
             '^',
             '=',
             '!',
+            '|',
+            '&',
             => {
                 return try self.punctuator();
             },
@@ -244,6 +246,30 @@ const Tokenizer = struct {
                     }
                     break :blk .@".";
                 },
+                '+' => {
+                    if (str.len > 1) {
+                        if (str[1] == '+') {
+                            len += 1;
+                            break :blk .@"++";
+                        } else if (str[1] == '=') {
+                            len += 1;
+                            break :blk .@"+=";
+                        }
+                    }
+                    break :blk .@"+";
+                },
+                '-' => {
+                    if (str.len > 1) {
+                        if (str[1] == '-') {
+                            len += 1;
+                            break :blk .@"--";
+                        } else if (str[1] == '=') {
+                            len += 1;
+                            break :blk .@"-=";
+                        }
+                    }
+                    break :blk .@"-";
+                },
 
                 '{' => break :blk .@"{",
                 '}' => break :blk .@"}",
@@ -252,8 +278,62 @@ const Tokenizer = struct {
                 '[' => break :blk .@"]",
                 ':' => break :blk .@":",
                 ';' => break :blk .@";",
-                '^' => break :blk .@"^",
-                '*' => break :blk .@"*",
+                '^' => {
+                    if (str.len > 1 and str[1] == '=') {
+                        len += 1;
+                        break :blk .@"^=";
+                    }
+
+                    break :blk .@"^";
+                },
+                '|' => {
+                    if (str.len > 1) {
+                        if (str[1] == '|') {
+                            len += 1;
+                            if (str.len > 2 and str[2] == '=') {
+                                len += 1;
+                                break :blk .@"||=";
+                            }
+                            break :blk .@"||";
+                        } else if (str[1] == '=') {
+                            len += 1;
+                            break :blk .@"|=";
+                        }
+                    }
+                    break :blk .@"|";
+                },
+                '&' => {
+                    if (str.len > 1) {
+                        if (str[1] == '&') {
+                            len += 1;
+                            if (str.len > 2 and str[2] == '=') {
+                                len += 1;
+                                break :blk .@"&&=";
+                            }
+                            break :blk .@"&&";
+                        } else if (str[1] == '=') {
+                            len += 1;
+                            break :blk .@"&=";
+                        }
+                    }
+                    break :blk .@"&";
+                },
+                '*' => {
+                    if (str.len > 1) {
+                        if (str[1] == '*') {
+                            len += 1;
+                            if (str.len > 2 and str[2] == '=') {
+                                len += 1;
+                                break :blk .@"**=";
+                            }
+                            break :blk .@"**";
+                        } else if (str[1] == '=') {
+                            len += 1;
+                            break :blk .@"*=";
+                        }
+                    }
+                    break :blk .@"*";
+                },
                 '!' => {
                     if (str.len > 1 and str[1] == '=') {
                         len += 1;
@@ -504,6 +584,14 @@ test "identifier" {
         .{ "!", .@"!" },
         .{ "!=", .@"!=" },
         .{ "!==", .@"!==" },
+        .{ "|", .@"|" },
+        .{ "||", .@"||" },
+        .{ "&", .@"&" },
+        .{ "&&", .@"&&" },
+        .{ "++", .@"++" },
+        .{ "--", .@"--" },
+        .{ "-", .@"-" },
+        .{ "+", .@"+" },
     };
 
     for (identifiers) |case| {

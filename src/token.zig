@@ -69,6 +69,7 @@ pub const Token = struct {
         @"||=",
         @"/=",
         @"??=",
+        @"**=",
         @"=>",
 
         kw_true,
