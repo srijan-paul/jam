@@ -1,60 +1,17 @@
 const std = @import("std");
 const offset = @import("offsets.zig");
 const unicode_id = @import("unicode-id");
+const Token = @import("token.zig").Token;
 
 const types = @import("types.zig");
 const Coordinate = types.Coordinate;
 const Range = types.Range;
 
-// TODO: UTF-8 support in tokens.
-const Token = struct {
-    /// Index into the token array.
-    /// Open ended enum for type safety.
-    const Index = enum(u32) { _ };
-
-    const Tag = enum(u32) {
-        identifier,
-        number_literal,
-        big_int_literal,
-        string_literal,
-
-        eof,
-    };
-
-    tag: Tag,
-    /// Byte index into the source string
-    start: u32,
-    /// Size of the token's text in bytes
-    len: u32,
-
-    /// Return the token's text as a byte slice.
-    pub fn toByteSlice(self: Token, source: []const u8) []const u8 {
-        return source[self.start .. self.start + self.len];
-    }
-
-    /// (line, column) position for the start of this token.
-    pub fn startCoord(self: Token, source: []const u8) Coordinate {
-        return offset.byteIndexToCoordinate(source, self.start);
-    }
-
-    /// (line, column) position for the end of this token.
-    pub fn endCoord(self: Token, source: []const u8) Range {
-        return offset.byteIndexToCoordinate(source, self.start + self.len);
-    }
-
-    /// (line, column) range for the end of this token.
-    pub fn toRange(self: Token, source: []const u8) Range {
-        return Range{
-            .start = self.startCoord(source),
-            .end = self.endCoord(source),
-        };
-    }
-};
-
 const TokenizeError = error{
     UnexpectedEof,
     InvalidUtf8,
     UnexpectedByte,
+    InvalidNumericLiteral,
 };
 
 const Tokenizer = struct {
@@ -76,7 +33,7 @@ const Tokenizer = struct {
 
     /// Return the next token.
     fn next(self: *Self) TokenizeError!Token {
-        const byte = self.peekByte() catch {
+        const byte = self.peekByte() orelse {
             return Token{
                 .tag = Token.Tag.eof,
                 .start = self.index,
@@ -93,6 +50,7 @@ const Tokenizer = struct {
                 self.skipNewlines();
                 return self.next();
             },
+            '0'...'9', '.' => return self.numericLiteral(),
             else => {
                 return try self.identifier() orelse
                     TokenizeError.UnexpectedByte;
@@ -223,12 +181,69 @@ const Tokenizer = struct {
         };
     }
 
-    fn remaining(self: *const Self) []const u8 {
-        return self.source[self.index..];
+    fn matchDecimalIntegerLiteral(str: []const u8) ?u32 {
+        if (str[0] == '0') return 1;
+
+        var i: u32 = 0;
+        // first character must be a non-zero digit.
+        if (str[i] < '1' and str[i] > '9') return null;
+        i += 1; // eat first char
+
+        if (i < str.len and str[i] == '_')
+            i += 1; // eat '_' after first char
+
+        while (i < str.len and std.ascii.isDigit(str[i])) : (i += 1) {
+            if (i + 1 < str.len and str[i + 1] == '_')
+                i += 1;
+        }
+
+        return i;
     }
 
-    fn isIdentifierChar(b: u8) bool {
-        return std.ascii.isAlphanumeric(b) or b == '_';
+    fn matchDecimalPart(str: []const u8) ?u32 {
+        if (str[0] != '.') return null;
+
+        var i: u32 = 1;
+        while (i < str.len and std.ascii.isDigit(str[i])) : (i += 1) {}
+        return i;
+    }
+
+    fn numericLiteral(self: *Self) !Token {
+        const start = self.index;
+        const str = self.source[start..];
+
+        const len: u32 = blk: {
+            if (str[0] == '.') {
+                break :blk matchDecimalPart(str) orelse
+                    return TokenizeError.InvalidNumericLiteral;
+            }
+
+            var decimal_len = matchDecimalIntegerLiteral(str) orelse
+                return TokenizeError.InvalidNumericLiteral;
+            if (decimal_len < str.len) {
+                decimal_len += matchDecimalPart(str[decimal_len..]) orelse 0;
+            }
+            break :blk decimal_len;
+        };
+
+        self.index += len;
+
+        // number must not be immediately followed by identifier
+        if (self.peekByte()) |ch| {
+            if (canCodepointStartId(ch)) {
+                return TokenizeError.InvalidNumericLiteral;
+            }
+        }
+
+        return Token{
+            .tag = .numeric_literal,
+            .start = start,
+            .len = len,
+        };
+    }
+
+    fn remaining(self: *const Self) []const u8 {
+        return self.source[self.index..];
     }
 
     fn eof(self: *Tokenizer) bool {
@@ -237,13 +252,14 @@ const Tokenizer = struct {
 
     /// Return the next u8 from the source string
     fn nextByte(self: *Self) TokenizeError!u8 {
-        const byte = try self.peekByte();
+        const byte = self.peekByte() orelse
+            return TokenizeError.UnexpectedEof;
         self.index += 1;
         return byte;
     }
 
-    fn peekByte(self: *Self) TokenizeError!u8 {
-        if (self.eof()) return TokenizeError.UnexpectedEof;
+    fn peekByte(self: *Self) ?u8 {
+        if (self.eof()) return null;
         return self.source[self.index];
     }
 
@@ -257,14 +273,14 @@ const Tokenizer = struct {
 
 const t = std.testing;
 
-fn testIdentifier(src: []const u8) !void {
+fn testToken(src: []const u8, tag: Token.Tag) !void {
     // first, test that token followed by EOF
     {
         var tokenizer = try Tokenizer.init(src);
         const token = try tokenizer.next();
 
         try std.testing.expectEqualDeep(Token{
-            .tag = .identifier,
+            .tag = tag,
             .start = 0,
             .len = @intCast(src.len),
         }, token);
@@ -283,7 +299,7 @@ fn testIdentifier(src: []const u8) !void {
         const token = try tokenizer.next();
 
         try std.testing.expectEqualDeep(Token{
-            .tag = .identifier,
+            .tag = tag,
             .start = 2,
             .len = @intCast(src.len),
         }, token);
@@ -291,20 +307,31 @@ fn testIdentifier(src: []const u8) !void {
 }
 
 test "identifier" {
-    const valid = [_][]const u8{
-        "$one",
-        "$two$",
-        "$123",
-        "fooobar",
-        "ಠ_ಠ",
-        "\\u{105}bc",
-        "\\u{105}\\u{5f}",
-        "\\u{105}\\u005f",
+    const identifiers = [_]struct { []const u8, Token.Tag }{
+        .{ "$one", .identifier },
+        .{ "$two$", .identifier },
+        .{ "$123", .identifier },
+        .{ "fooobar", .identifier },
+        .{ "ಠ_ಠ", .identifier },
+        .{ "\\u{105}bc", .identifier },
+        .{ "\\u{105}\\u{5f}", .identifier },
+        .{ "\\u{105}\\u005f", .identifier },
+        .{ "0", .numeric_literal },
+        .{ "120", .numeric_literal },
+        .{ "1_000_000", .numeric_literal },
+        .{ "1_00_0_000", .numeric_literal },
+        .{ "123", .numeric_literal },
+        .{ "1.5", .numeric_literal },
+        .{ "1.523", .numeric_literal },
+        .{ "1_000_000.523", .numeric_literal },
+        .{ ".1", .numeric_literal },
+        .{ ".33", .numeric_literal },
     };
 
-    for (valid) |id| {
-        testIdentifier(id) catch |err| {
-            std.debug.print("failed to parse {s} as an identifier\n", .{id});
+    for (identifiers) |case| {
+        const text, const tag = case;
+        testToken(text, tag) catch |err| {
+            std.debug.print("failed to parse {s} as {s}\n", .{ text, @tagName(tag) });
             return err;
         };
     }
