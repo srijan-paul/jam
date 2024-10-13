@@ -12,6 +12,7 @@ const TokenizeError = error{
     InvalidUtf8,
     UnexpectedByte,
     InvalidNumericLiteral,
+    BadPunctuator,
 };
 
 const Tokenizer = struct {
@@ -50,12 +51,59 @@ const Tokenizer = struct {
                 self.skipNewlines();
                 return self.next();
             },
-            '0'...'9', '.' => return self.numericLiteral(),
+            '}',
+            '{',
+            '[',
+            ']',
+            '(',
+            ')',
+            ',',
+            ';',
+            ':',
+            '>',
+            '<',
+            '-',
+            '+',
+            '*',
+            '/',
+            '%',
+            '^',
+            '=',
+            '!',
+            => {
+                return try self.punctuator();
+            },
+            '0'...'9' => return self.numericLiteral(),
+            '.' => {
+                if (self.numericLiteral()) |tok| {
+                    return tok;
+                } else |_| {
+                    return self.dot();
+                }
+            },
             else => {
                 return try self.identifier() orelse
                     TokenizeError.UnexpectedByte;
             },
         }
+    }
+
+    fn dot(self: *Self) Token {
+        const start = self.index;
+
+        var len: u32 = 1;
+        var tag: Token.Tag = .@".";
+        if (std.mem.startsWith(u8, self.source[self.index..], "...")) {
+            len = 3;
+            tag = .@"...";
+        }
+
+        self.index += len;
+        return Token{
+            .tag = tag,
+            .start = start,
+            .len = len,
+        };
     }
 
     // Skip all newlines and update the current line number.
@@ -181,6 +229,118 @@ const Tokenizer = struct {
         };
     }
 
+    fn punctuator(self: *Self) !Token {
+        const start = self.index;
+        const str = self.source[start..];
+
+        var len: u32 = 0;
+        const tag: Token.Tag = blk: {
+            len = 1;
+            switch (str[0]) {
+                '.' => {
+                    if (str.len <= 3 and str[1] == '.' and str[2] == '.') {
+                        len += 2;
+                        break :blk .@"...";
+                    }
+                    break :blk .@".";
+                },
+
+                '{' => break :blk .@"{",
+                '}' => break :blk .@"}",
+                '(' => break :blk .@"(",
+                ')' => break :blk .@")",
+                '[' => break :blk .@"]",
+                ':' => break :blk .@":",
+                ';' => break :blk .@";",
+                '^' => break :blk .@"^",
+                '*' => break :blk .@"*",
+                '!' => {
+                    if (str.len > 1 and str[1] == '=') {
+                        len += 1;
+                        if (str.len > 2 and str[2] == '=') {
+                            len += 1;
+                            break :blk .@"!==";
+                        }
+
+                        break :blk .@"!=";
+                    }
+                    break :blk .@"!";
+                },
+                '=' => {
+                    if (str.len > 1 and str[1] == '=') {
+                        len += 1;
+                        if (str.len > 2 and str[2] == '=') {
+                            len += 1;
+                            break :blk .@"===";
+                        }
+                        break :blk .@"==";
+                    }
+                    break :blk .@"=";
+                },
+
+                '<' => {
+                    if (str.len <= 1) break :blk .@"<";
+
+                    if (str[1] == '<') {
+                        if (str.len > 2 and str[2] == '=') {
+                            len += 2;
+                            break :blk .@"<<=";
+                        }
+                        len += 1;
+                        break :blk .@"<<";
+                    }
+
+                    if (str[1] == '=') {
+                        len += 1;
+                        break :blk .@"<=";
+                    }
+
+                    break :blk .@"<";
+                },
+
+                '>' => {
+                    if (str.len > 1) {
+                        switch (str[1]) {
+                            '=' => {
+                                len += 1;
+                                break :blk .@">=";
+                            },
+                            '>' => {
+                                len += 1;
+                                if (str.len > 2) {
+                                    if (str[2] == '=') {
+                                        len += 1;
+                                        break :blk .@">>=";
+                                    } else if (str[2] == '>') {
+                                        len += 1;
+                                        if (str.len > 3 and str[3] == '=') {
+                                            len += 1;
+                                            break :blk .@">>>=";
+                                        }
+                                        break :blk .@">>>";
+                                    }
+                                }
+
+                                break :blk .@">>";
+                            },
+                            else => break :blk .@">",
+                        }
+                    }
+
+                    break :blk .@">";
+                },
+
+                else => return TokenizeError.BadPunctuator,
+            }
+        };
+
+        return Token{
+            .start = start,
+            .len = len,
+            .tag = tag,
+        };
+    }
+
     /// https://tc39.es/ecma262/#prod-DecimalIntegerLiteral
     fn matchDecimalIntegerLiteral(str: []const u8) ?u32 {
         if (str[0] == '0') return 1;
@@ -207,6 +367,7 @@ const Tokenizer = struct {
 
         var i: u32 = 1;
         while (i < str.len and std.ascii.isDigit(str[i])) : (i += 1) {}
+        if (i == 1) return null;
         return i;
     }
 
@@ -329,6 +490,20 @@ test "identifier" {
         .{ "1_000_000.523", .numeric_literal },
         .{ ".1", .numeric_literal },
         .{ ".33", .numeric_literal },
+        .{ "<<", .@"<<" },
+        .{ "<", .@"<" },
+        .{ ">>", .@">>" },
+        .{ ">", .@">" },
+        .{ ">>=", .@">>=" },
+        .{ ">>>", .@">>>" },
+        .{ ".", .@"." },
+        .{ "...", .@"..." },
+        .{ "=", .@"=" },
+        .{ "==", .@"==" },
+        .{ "===", .@"===" },
+        .{ "!", .@"!" },
+        .{ "!=", .@"!=" },
+        .{ "!==", .@"!==" },
     };
 
     for (identifiers) |case| {

@@ -12,6 +12,7 @@ pub const Token = struct {
         identifier,
         numeric_literal,
         string_literal,
+
         @"{",
         @"}",
         @"(",
@@ -69,9 +70,11 @@ pub const Token = struct {
         @"/=",
         @"??=",
         @"=>",
-        true,
-        false,
-        null,
+
+        kw_true,
+        kw_false,
+        kw_null,
+
         eof,
     };
 
