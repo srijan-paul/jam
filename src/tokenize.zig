@@ -181,6 +181,7 @@ const Tokenizer = struct {
         };
     }
 
+    /// https://tc39.es/ecma262/#prod-DecimalIntegerLiteral
     fn matchDecimalIntegerLiteral(str: []const u8) ?u32 {
         if (str[0] == '0') return 1;
 
@@ -200,6 +201,7 @@ const Tokenizer = struct {
         return i;
     }
 
+    /// https://tc39.es/ecma262/#prod-DecimalLiteral
     fn matchDecimalPart(str: []const u8) ?u32 {
         if (str[0] != '.') return null;
 
@@ -208,6 +210,7 @@ const Tokenizer = struct {
         return i;
     }
 
+    /// https://tc39.es/ecma262/#prod-NumericLiteral
     fn numericLiteral(self: *Self) !Token {
         const start = self.index;
         const str = self.source[start..];
