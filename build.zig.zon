@@ -1,0 +1,19 @@
+.{
+    .name = "jsickle",
+    .version = "0.0.0",
+    .minimum_zig_version = "0.13.0",
+
+    .dependencies = .{
+        .unicode_id = .{
+            .url = "https://codeberg.org/injuly/unicode-id/archive/10e8dfae849b3e550529de663f71ae8e49e5bde8.tar.gz",
+            .hash = "1220d21683f2d62b7488ca640c79cd3004cef4b7a369c8193882aec78ddb196410de",
+        },
+    },
+
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+        "README.md",
+    },
+}
