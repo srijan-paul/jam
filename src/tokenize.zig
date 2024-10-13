@@ -27,6 +27,10 @@ const Tokenizer = struct {
     col: u32 = 0,
 
     pub fn init(source: []const u8) !Self {
+        if (!std.unicode.utf8ValidateSlice(source)) {
+            return TokenizeError.InvalidUtf8;
+        }
+
         return Self{
             .source = source,
         };
