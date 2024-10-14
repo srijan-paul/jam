@@ -9,7 +9,10 @@ pub const Token = struct {
     pub const Index = enum(u32) { _ };
 
     pub const Tag = enum(u32) {
+        comment,
+
         identifier,
+        private_identifier,
         numeric_literal,
         string_literal,
 
@@ -39,7 +42,6 @@ pub const Token = struct {
         @"/",
         @"%",
         @"**",
-        @"//",
         @"++",
         @"--",
         @"<<",
@@ -58,7 +60,6 @@ pub const Token = struct {
         @"+=",
         @"-=",
         @"*=",
-        @"//=",
         @"%=",
         @"=",
         @"<<=",

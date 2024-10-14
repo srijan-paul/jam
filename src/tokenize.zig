@@ -13,9 +13,11 @@ const TokenizeError = error{
     UnexpectedByte,
     InvalidNumericLiteral,
     BadPunctuator,
+    BadEscapeSequence,
+    NonTerminatedString,
 };
 
-const Tokenizer = struct {
+pub const Tokenizer = struct {
     const Self = @This();
     /// Source string to tokenize.
     source: []const u8,
@@ -37,7 +39,7 @@ const Tokenizer = struct {
     }
 
     /// Return the next token.
-    fn next(self: *Self) TokenizeError!Token {
+    pub fn next(self: *Self) TokenizeError!Token {
         const byte = self.peekByte() orelse {
             return Token{
                 .tag = Token.Tag.eof,
@@ -55,6 +57,12 @@ const Tokenizer = struct {
                 self.skipNewlines();
                 return self.next();
             },
+            '/' => {
+                if (try self.comment()) |tok| {
+                    return tok;
+                }
+                return try self.punctuator();
+            },
             '}',
             '{',
             '[',
@@ -69,7 +77,6 @@ const Tokenizer = struct {
             '-',
             '+',
             '*',
-            '/',
             '%',
             '^',
             '=',
@@ -77,9 +84,9 @@ const Tokenizer = struct {
             '|',
             '&',
             '?',
-            => {
-                return try self.punctuator();
-            },
+            => return try self.punctuator(),
+            '"', '\'' => return try self.stringLiteral(),
+            '#' => unreachable,
             '0'...'9' => return self.numericLiteral(),
             '.' => {
                 if (self.numericLiteral()) |tok| {
@@ -95,6 +102,7 @@ const Tokenizer = struct {
         }
     }
 
+    /// tokenize a "." or a "..." token, assuming self.index is at '.'
     fn dot(self: *Self) Token {
         const start = self.index;
 
@@ -131,6 +139,89 @@ const Tokenizer = struct {
                 break;
             }
         }
+    }
+
+    fn isNewline(ch: u21) bool {
+        return ch == '\n' or ch == '\r' or ch == '\u{2028}' or ch == '\u{2029}';
+    }
+
+    fn comment(self: *Self) TokenizeError!?Token {
+        const start = self.index;
+        const str = self.source[start..];
+        if (str.len < 2) return null;
+
+        var iter = std.unicode.Utf8Iterator{ .bytes = str, .i = 2 };
+        if (std.mem.startsWith(u8, str, "//")) {
+            // https://262.ecma-international.org/15.0/index.html#prod-SingleLineComment
+            while (iter.nextCodepoint()) |ch| {
+                if (isNewline(ch)) break;
+            }
+        } else if (std.mem.startsWith(u8, str, "/*")) {
+            // https://262.ecma-international.org/15.0/index.html#prod-MultiLineComment
+            std.debug.panic("Not implemented!\n", .{});
+        } else {
+            return null;
+        }
+
+        return .{
+            .start = start,
+            .len = @intCast(iter.i),
+            .tag = .comment,
+        };
+    }
+
+    fn parseEscape(str: []const u8) ?usize {
+        if (str.len < 2 or str[0] != '\\') return null;
+        switch (str[1]) {
+            'x' => {
+                // \xXX
+                if (str.len >= 4 and std.ascii.isHex(str[2]) and std.ascii.isHex(str[3]))
+                    return 4
+                else
+                    return null;
+            },
+            'u' => {
+                // \uXXXX or \u{X} - \u{XXXXXX}
+                const parsed = parseUnicodeEscape(str) orelse return null;
+                return parsed.len;
+            },
+            else => return 2,
+        }
+    }
+
+    fn stringLiteral(self: *Self) TokenizeError!Token {
+        const start = self.index;
+        const str = self.source[start..];
+
+        const quote_char: u21 = if (str[0] == '\'') '\'' else '"';
+
+        var iter = std.unicode.Utf8Iterator{ .bytes = str, .i = 1 };
+        var found_end_quote = false;
+        while (iter.i < str.len) {
+            if (str[iter.i] == '\\') {
+                iter.i += parseEscape(str[iter.i..]) orelse
+                    return TokenizeError.BadEscapeSequence;
+                continue;
+            }
+
+            const codepoint = iter.nextCodepoint() orelse
+                unreachable;
+            if (codepoint == quote_char) {
+                found_end_quote = true;
+                break;
+            }
+        }
+
+        if (!found_end_quote) {
+            return TokenizeError.NonTerminatedString;
+        }
+
+        const len: u32 = @intCast(iter.i);
+        return .{
+            .tag = .string_literal,
+            .start = start,
+            .len = len,
+        };
     }
 
     /// Parse a unicode escape sequence and return the codepoint along with the
@@ -357,18 +448,9 @@ const Tokenizer = struct {
                     break :blk .@"*";
                 },
                 '/' => {
-                    if (str.len > 1) {
-                        if (str[1] == '/') {
-                            len += 1;
-                            if (str.len > 2 and str[2] == '=') {
-                                len += 1;
-                                break :blk .@"//=";
-                            }
-                            break :blk .@"//";
-                        } else if (str[1] == '=') {
-                            len += 1;
-                            break :blk .@"/=";
-                        }
+                    if (str.len > 1 and str[1] == '=') {
+                        len += 1;
+                        break :blk .@"/=";
                     }
                     break :blk .@"/";
                 },
@@ -527,7 +609,7 @@ const Tokenizer = struct {
 
         // number must not be immediately followed by identifier
         if (self.peekByte()) |ch| {
-            if (canCodepointStartId(ch)) {
+            if (canCodepointStartId(ch) or ch == '.' or std.ascii.isDigit(ch)) {
                 return TokenizeError.InvalidNumericLiteral;
             }
         }
@@ -585,6 +667,8 @@ fn testToken(src: []const u8, tag: Token.Tag) !void {
 
     // then, that token wrapped by whitespace
     {
+        if (tag == .comment) return;
+
         const source = try std.mem.concat(
             t.allocator,
             u8,
@@ -603,8 +687,14 @@ fn testToken(src: []const u8, tag: Token.Tag) !void {
     }
 }
 
-test "identifier" {
-    const identifiers = [_]struct { []const u8, Token.Tag }{
+fn testTokenError(str: []const u8, err: anyerror) !void {
+    var tokenizer = try Tokenizer.init(str);
+    const token_or_err = tokenizer.next();
+    try t.expectError(err, token_or_err);
+}
+
+test Tokenizer {
+    const test_cases = [_]struct { []const u8, Token.Tag }{
         .{ "$one", .identifier },
         .{ "$two$", .identifier },
         .{ "$123", .identifier },
@@ -649,19 +739,49 @@ test "identifier" {
         .{ "%", .@"%" },
         .{ "%=", .@"%=" },
         .{ "/", .@"/" },
-        .{ "//", .@"//" },
         .{ "/=", .@"/=" },
-        .{ "//=", .@"//=" },
         .{ "??=", .@"??=" },
         .{ "?", .@"?" },
         .{ "??", .@"??" },
         .{ ",", .@"," },
+        .{ "'hello, world!'", .string_literal },
+        .{ "'\\u{95}world!'", .string_literal },
+        .{ "'\\u{95}world\\{105}'", .string_literal },
+        .{ "'\\xFFworld\\{105}'", .string_literal },
+        .{ "\"\\xFFworld\\{105}\"", .string_literal },
+        .{ "// test comment", .comment },
+        .{ "//", .comment },
     };
 
-    for (identifiers) |case| {
+    for (test_cases) |case| {
         const text, const tag = case;
         testToken(text, tag) catch |err| {
             std.debug.print("failed to parse {s} as {s}\n", .{ text, @tagName(tag) });
+            return err;
+        };
+    }
+
+    // test that tokenizer can handle empty input
+    {
+        var tokenizer = try Tokenizer.init("");
+        try std.testing.expectEqualDeep(Token{
+            .tag = .eof,
+            .start = 0,
+            .len = 0,
+        }, try tokenizer.next());
+    }
+
+    const bad_cases = [_]struct { []const u8, anyerror }{
+        .{ "'hello", TokenizeError.NonTerminatedString },
+        .{ "1.5.5", TokenizeError.InvalidNumericLiteral },
+        .{ "1.5aaaA", TokenizeError.InvalidNumericLiteral },
+        .{ "1.5_1", TokenizeError.InvalidNumericLiteral },
+    };
+
+    for (bad_cases) |case| {
+        const text, const expected_err = case;
+        testTokenError(text, expected_err) catch |err| {
+            std.debug.print("tokenizing {s} did not raise {any}\n", .{ text, err });
             return err;
         };
     }

@@ -73,5 +73,6 @@ pub fn build(b: *std.Build) !void {
     for (deps.items) |dep| {
         lib_unit_tests.root_module.addImport(dep.name, dep.module);
         lib.root_module.addImport(dep.name, dep.module);
+        exe.root_module.addImport(dep.name, dep.module);
     }
 }
