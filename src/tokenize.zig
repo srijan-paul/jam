@@ -17,6 +17,42 @@ const TokenizeError = error{
     NonTerminatedString,
 };
 
+// zig fmt: off
+const all_keywords = [_][]const u8{
+  "await", "break",  "case",  "catch",
+  "class", "const",  "continue", "debugger",
+  "default",  "delete", "do", "else", "enum",
+  "export", "extends", "false", "finally",
+  "for", "function", "if", "import", "in",
+  "instanceof", "new", "null", "return",
+  "super", "switch", "this", "throw", "true",
+  "try", "typeof", "var", "void", "while",
+  "with", "yield"
+};
+// zig fmt: on
+
+const all_kw_tags: [all_keywords.len]Token.Tag = makeKwTagArray();
+fn makeKwTagArray() [all_keywords.len]Token.Tag {
+    @setEvalBranchQuota(10_000);
+
+    var tags: [all_keywords.len]Token.Tag = undefined;
+    const enum_tags = std.meta.tags(Token.Tag);
+    for (0.., all_keywords) |i, kw| {
+        for (enum_tags) |tag| {
+            const tagname = @tagName(tag);
+            if (tagname.len < 3) continue;
+            if (std.mem.eql(u8, tagname[3..], kw)) {
+                tags[i] = tag;
+                break;
+            }
+        }
+    }
+
+    return tags;
+}
+
+// zig fmt: on
+
 pub const Tokenizer = struct {
     const Self = @This();
     /// Source string to tokenize.
@@ -95,6 +131,7 @@ pub const Tokenizer = struct {
                     return self.dot();
                 }
             },
+
             else => {
                 return try self.identifier() orelse
                     TokenizeError.UnexpectedByte;
@@ -318,6 +355,17 @@ pub const Tokenizer = struct {
 
             break :blk it.i;
         };
+
+        const id_str = str[0..len];
+        for (0.., all_keywords) |i, kw| {
+            if (std.mem.eql(u8, id_str, kw)) {
+                return Token{
+                    .start = start,
+                    .len = @intCast(len),
+                    .tag = all_kw_tags[i],
+                };
+            }
+        }
 
         self.index += @intCast(len);
         return Token{
@@ -751,6 +799,10 @@ test Tokenizer {
         .{ "\"\\xFFworld\\{105}\"", .string_literal },
         .{ "// test comment", .comment },
         .{ "//", .comment },
+        .{ "// else", .comment },
+        .{ "else", .kw_else },
+        .{ "\\u0065lse", .identifier },
+        .{ "elsey", .identifier },
     };
 
     for (test_cases) |case| {
