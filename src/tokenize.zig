@@ -76,6 +76,7 @@ const Tokenizer = struct {
             '!',
             '|',
             '&',
+            '?',
             => {
                 return try self.punctuator();
             },
@@ -242,6 +243,8 @@ const Tokenizer = struct {
         var len: u32 = 0;
         const tag: Token.Tag = blk: {
             len = 1;
+            // huge switch case.
+            // this is basically a hand-written trie.
             switch (str[0]) {
                 '.' => {
                     if (str.len <= 3 and str[1] == '.' and str[2] == '.') {
@@ -282,6 +285,21 @@ const Tokenizer = struct {
                 '[' => break :blk .@"]",
                 ':' => break :blk .@":",
                 ';' => break :blk .@";",
+                '~' => break :blk .@"~",
+                ',' => break :blk .@",",
+
+                '?' => {
+                    if (str.len > 1 and str[1] == '?') {
+                        len += 1;
+                        if (str.len > 2 and str[2] == '=') {
+                            len += 1;
+                            break :blk .@"??=";
+                        }
+                        break :blk .@"??";
+                    }
+                    break :blk .@"?";
+                },
+
                 '^' => {
                     if (str.len > 1 and str[1] == '=') {
                         len += 1;
@@ -338,6 +356,31 @@ const Tokenizer = struct {
                     }
                     break :blk .@"*";
                 },
+                '/' => {
+                    if (str.len > 1) {
+                        if (str[1] == '/') {
+                            len += 1;
+                            if (str.len > 2 and str[2] == '=') {
+                                len += 1;
+                                break :blk .@"//=";
+                            }
+                            break :blk .@"//";
+                        } else if (str[1] == '=') {
+                            len += 1;
+                            break :blk .@"/=";
+                        }
+                    }
+                    break :blk .@"/";
+                },
+
+                '%' => {
+                    if (str.len > 1 and str[1] == '=') {
+                        len += 1;
+                        break :blk .@"%=";
+                    }
+                    break :blk .@"%";
+                },
+
                 '!' => {
                     if (str.len > 1 and str[1] == '=') {
                         len += 1;
@@ -351,14 +394,20 @@ const Tokenizer = struct {
                     break :blk .@"!";
                 },
                 '=' => {
-                    if (str.len > 1 and str[1] == '=') {
-                        len += 1;
-                        if (str.len > 2 and str[2] == '=') {
+                    if (str.len > 1) {
+                        if (str[1] == '=') {
                             len += 1;
-                            break :blk .@"===";
+                            if (str.len > 2 and str[2] == '=') {
+                                len += 1;
+                                break :blk .@"===";
+                            }
+                            break :blk .@"==";
+                        } else if (str[1] == '>') {
+                            len += 1;
+                            break :blk .@"=>";
                         }
-                        break :blk .@"==";
                     }
+
                     break :blk .@"=";
                 },
 
@@ -583,6 +632,7 @@ test "identifier" {
         .{ ".", .@"." },
         .{ "...", .@"..." },
         .{ "=", .@"=" },
+        .{ "=>", .@"=>" },
         .{ "==", .@"==" },
         .{ "===", .@"===" },
         .{ "!", .@"!" },
@@ -596,6 +646,16 @@ test "identifier" {
         .{ "--", .@"--" },
         .{ "-", .@"-" },
         .{ "+", .@"+" },
+        .{ "%", .@"%" },
+        .{ "%=", .@"%=" },
+        .{ "/", .@"/" },
+        .{ "//", .@"//" },
+        .{ "/=", .@"/=" },
+        .{ "//=", .@"//=" },
+        .{ "??=", .@"??=" },
+        .{ "?", .@"?" },
+        .{ "??", .@"??" },
+        .{ ",", .@"," },
     };
 
     for (identifiers) |case| {
