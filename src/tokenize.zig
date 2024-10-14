@@ -51,8 +51,6 @@ fn makeKwTagArray() [all_keywords.len]Token.Tag {
     return tags;
 }
 
-// zig fmt: on
-
 pub const Tokenizer = struct {
     const Self = @This();
     /// Source string to tokenize.
@@ -69,9 +67,7 @@ pub const Tokenizer = struct {
             return TokenizeError.InvalidUtf8;
         }
 
-        return Self{
-            .source = source,
-        };
+        return Self{ .source = source };
     }
 
     /// Return the next token.
