@@ -6,7 +6,7 @@ A JavaScript toolchain built from the ground up.
 Goals:
 
 - Faster than existing tools. 
-- 100% Spec complaint
+- 100% Spec compliant 
 - Supports JS, TS, JSX, and TSX out of the box.
 - Can do data flow analysis.
 - Linter extensible with JS plugins 
