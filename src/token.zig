@@ -17,6 +17,8 @@ pub const Token = struct {
         numeric_literal,
         string_literal,
 
+        @"\"",
+        @"'",
         @"{",
         @"}",
         @"(",
@@ -27,27 +29,42 @@ pub const Token = struct {
         @"...",
         @";",
         @",",
+
+        relational_start,
         @"<",
         @">",
         @"<=",
         @">=",
+        relational_end,
+
+        eq_op_start,
         @"==",
         @"!=",
         @"===",
         @"!==",
+        eq_op_end,
+
+        additive_start,
         @"+",
         @"-",
-        @"\"",
-        @"'",
+        additive_end,
+
+        multiplicative_start,
         @"*",
         @"/",
         @"%",
+        multiplicative_end,
+
         @"**",
         @"++",
         @"--",
+
+        shift_op_start,
         @"<<",
         @">>",
         @">>>",
+        shift_op_end,
+
         @"&",
         @"|",
         @"^",
@@ -61,8 +78,8 @@ pub const Token = struct {
         @"<<=",
         @">>=",
 
-        assignment_op_start,
         // assignment operators
+        assignment_op_start,
         @"=",
         @"%=",
         @"+=",

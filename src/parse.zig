@@ -8,7 +8,81 @@ const types = @import("./types.zig");
 
 const Node = ast.Node;
 
-const ParseError = error{UnexpectedToken} || Tokenizer.Error;
+const ParseError = error{ UnexpectedToken, OutOfMemory } || Tokenizer.Error;
+const ParseFn = fn (self: *Self) ParseError!Node.Index;
+
+// make a right associative parse function
+fn makeRightAssoc(toktag: Token.Tag, l: *const ParseFn) *const ParseFn {
+    const S = struct {
+        fn parseFn(self: *Self) ParseError!Node.Index {
+            var node = try l(self);
+
+            while (self.peek()) |token| {
+                if (token.tag != toktag) break;
+                _ = try self.next();
+
+                const rhs = try parseFn(self);
+                node = try self.addNode(.{
+                    .binary_expr = .{
+                        .lhs = node,
+                        .rhs = rhs,
+                        .op = try self.addToken(token),
+                    },
+                });
+            }
+
+            return node;
+        }
+    };
+
+    return &S.parseFn;
+}
+
+/// make a left associative parse function
+fn makeLeftAssoc(tag_min: Token.Tag, tag_max: Token.Tag, nextFn: *const ParseFn) *const ParseFn {
+    const min: u32 = @intFromEnum(tag_min);
+    const max: u32 = @intFromEnum(tag_max);
+
+    const S = struct {
+        fn parseFn(self: *Self) ParseError!Node.Index {
+            var node = try nextFn(self);
+
+            while (self.peek()) |token| {
+                if (@intFromEnum(token.tag) >= min and @intFromEnum(token.tag) <= max) {
+                    _ = try self.next();
+                    const rhs = try nextFn(self);
+                    node = try self.addNode(.{
+                        .binary_expr = .{
+                            .lhs = node,
+                            .rhs = rhs,
+                            .op = try self.addToken(token),
+                        },
+                    });
+                } else {
+                    break;
+                }
+            }
+
+            return node;
+        }
+    };
+
+    return &S.parseFn;
+}
+
+// arranged in highest to lowest binding
+const exponentExpr = makeRightAssoc(.@"**", Self.atomic);
+const multiplicativeExpr = makeLeftAssoc(.multiplicative_start, .multiplicative_end, exponentExpr);
+const additiveExpr = makeLeftAssoc(.additive_start, .additive_end, multiplicativeExpr);
+const shiftExpr = makeLeftAssoc(.shift_op_start, .shift_op_end, additiveExpr);
+const relationalExpr = makeLeftAssoc(.relational_start, .relational_end, shiftExpr);
+const eqExpr = makeLeftAssoc(.eq_op_start, .eq_op_end, relationalExpr);
+const bAndExpr = makeLeftAssoc(.@"&", .@"&", eqExpr);
+const bXorExpr = makeLeftAssoc(.@"^", .@"^", bAndExpr);
+const bOrExpr = makeLeftAssoc(.@"|", .@"|", bXorExpr);
+
+const lAndExpr = makeLeftAssoc(.@"&&", .@"&&", bOrExpr);
+const lOrExpr = makeLeftAssoc(.@"||", .@"||", lAndExpr);
 
 allocator: std.mem.Allocator,
 
@@ -19,7 +93,11 @@ nodes: std.ArrayList(Node),
 tokens: std.ArrayList(Token),
 diagnostics: std.ArrayList(types.Diagnostic),
 
-pub fn init(allocator: std.mem.Allocator, source: []const u8, file_name: []const u8) ParseError!Self {
+pub fn init(
+    allocator: std.mem.Allocator,
+    source: []const u8,
+    file_name: []const u8,
+) ParseError!Self {
     return Self{
         .allocator = allocator,
         .source = source,
@@ -49,7 +127,7 @@ fn expression(self: *Self) !Node.Index {
 }
 
 fn assignmentExpression(self: *Self) !Node.Index {
-    var node = try self.additiveExpression();
+    var node = try lOrExpr(self);
     // todo: check if `node` is valid LHS
 
     while (self.peek()) |token| {
@@ -64,49 +142,6 @@ fn assignmentExpression(self: *Self) !Node.Index {
                 .op = try self.addToken(token),
             },
         });
-    }
-
-    return node;
-}
-
-fn additiveExpression(self: *Self) !Node.Index {
-    var node = try self.multiplicativeExpression();
-
-    while (self.peek()) |token| {
-        if (token.tag == .@"+" or token.tag == .@"-") {
-            _ = try self.next();
-            const rhs = try self.multiplicativeExpression();
-            node = try self.addNode(.{
-                .binary_expr = .{
-                    .lhs = node,
-                    .rhs = rhs,
-                    .op = try self.addToken(token),
-                },
-            });
-        } else {
-            break;
-        }
-    }
-
-    return node;
-}
-
-fn multiplicativeExpression(self: *Self) !Node.Index {
-    var node = try self.atomic();
-    while (self.peek()) |token| {
-        if (token.tag == .@"*" or token.tag == .@"/") {
-            _ = try self.next();
-            const rhs = try self.atomic();
-            node = try self.addNode(.{
-                .binary_expr = .{
-                    .lhs = node,
-                    .rhs = rhs,
-                    .op = try self.addToken(token),
-                },
-            });
-        } else {
-            break;
-        }
     }
 
     return node;
@@ -243,20 +278,10 @@ test parse {
     const source = "a /= b = 2 * 3";
     var parser = try Self.init(t.allocator, source, "test.js");
     defer parser.deinit();
-    const node_idx = parser.parse() catch {
+    _ = parser.parse() catch {
         for (parser.diagnostics.items) |d| {
             std.debug.print("{s}", .{d.message});
         }
         return;
     };
-
-    var arena = std.heap.ArenaAllocator.init(t.allocator);
-    const al = arena.allocator();
-    defer arena.deinit();
-
-    const pretty_node = try parser.toPretty(al, node_idx);
-    std.debug.print(
-        "{s}",
-        .{try std.json.stringifyAlloc(al, pretty_node, .{})},
-    );
 }
