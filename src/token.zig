@@ -1,7 +1,8 @@
 const offsets = @import("offsets.zig");
+const types = @import("types.zig");
 
-const Range = offsets.Range;
-const Coordinate = offsets.Coordinate;
+pub const Range = types.Range;
+pub const Coordinate = types.Coordinate;
 
 pub const Token = struct {
     /// Index into the token array.
@@ -57,13 +58,16 @@ pub const Token = struct {
         @"??",
         @"?",
         @":",
-        @"+=",
-        @"-=",
-        @"*=",
-        @"%=",
-        @"=",
         @"<<=",
         @">>=",
+
+        assignment_op_start,
+        // assignment operators
+        @"=",
+        @"%=",
+        @"+=",
+        @"*=",
+        @"-=",
         @">>>=",
         @"&=",
         @"|=",
@@ -73,6 +77,8 @@ pub const Token = struct {
         @"/=",
         @"??=",
         @"**=",
+        assignment_op_end,
+
         @"=>",
 
         // regular keywords
@@ -164,5 +170,11 @@ pub const Token = struct {
             .start = self.startCoord(source),
             .end = self.endCoord(source),
         };
+    }
+
+    pub fn isAssignmentOperator(self: *const Token) bool {
+        const tag_u32: u32 = @intFromEnum(self.tag);
+        return tag_u32 >= @intFromEnum(Tag.assignment_op_start) and
+            tag_u32 <= @intFromEnum(Tag.assignment_op_end);
     }
 };

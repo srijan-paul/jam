@@ -15,6 +15,7 @@ const TokenizeError = error{
     BadPunctuator,
     BadEscapeSequence,
     NonTerminatedString,
+    InvalidTokenizerState,
 };
 
 // zig fmt: off
@@ -52,6 +53,8 @@ fn makeKwTagArray() [all_keywords.len]Token.Tag {
 }
 
 pub const Tokenizer = struct {
+    pub const Error = TokenizeError;
+
     const Self = @This();
     /// Source string to tokenize.
     source: []const u8,
@@ -62,16 +65,34 @@ pub const Tokenizer = struct {
     /// Current column number (0 indexed)
     col: u32 = 0,
 
-    pub fn init(source: []const u8) !Self {
+    next_token: ?Token = null,
+
+    pub fn init(source: []const u8) TokenizeError!Self {
         if (!std.unicode.utf8ValidateSlice(source)) {
             return TokenizeError.InvalidUtf8;
         }
 
-        return Self{ .source = source };
+        var self = Self{ .source = source };
+        self.next_token = try self.eatToken();
+        return self;
     }
 
     /// Return the next token.
     pub fn next(self: *Self) TokenizeError!Token {
+        if (self.next_token) |token| {
+            self.next_token = try self.eatToken();
+            return token;
+        }
+        return TokenizeError.InvalidTokenizerState;
+    }
+
+    /// Return the next token without consuming it.
+    /// self.next() will return the same token.
+    pub fn peek(self: *Self) ?Token {
+        return self.next_token;
+    }
+
+    fn eatToken(self: *Self) TokenizeError!Token {
         const byte = self.peekByte() orelse {
             return Token{
                 .tag = Token.Tag.eof,
@@ -83,11 +104,11 @@ pub const Tokenizer = struct {
         switch (byte) {
             ' ', '\t' => {
                 self.skipWhiteSpaces();
-                return self.next();
+                return self.eatToken();
             },
             '\n' => {
                 self.skipNewlines();
-                return self.next();
+                return self.eatToken();
             },
             '/' => {
                 if (try self.comment()) |tok| {
@@ -156,6 +177,7 @@ pub const Tokenizer = struct {
 
     // Skip all newlines and update the current line number.
     fn skipNewlines(self: *Self) void {
+        // todo: support all LineTerminators and LineTerminatorSequence.
         while (!self.eof()) : (self.index += 1) {
             const ch = self.source[self.index];
             if (ch == '\n') {
@@ -187,15 +209,28 @@ pub const Tokenizer = struct {
         if (std.mem.startsWith(u8, str, "//")) {
             // https://262.ecma-international.org/15.0/index.html#prod-SingleLineComment
             while (iter.nextCodepoint()) |ch| {
-                if (isNewline(ch)) break;
+                if (isNewline(ch)) {
+                    self.line += 1;
+                    break;
+                }
             }
         } else if (std.mem.startsWith(u8, str, "/*")) {
             // https://262.ecma-international.org/15.0/index.html#prod-MultiLineComment
-            std.debug.panic("Not implemented!\n", .{});
+            while (iter.nextCodepoint()) |ch| {
+                if (ch == '*') {
+                    if (iter.i < str.len and str[iter.i] == '/') {
+                        iter.i += 1;
+                        break;
+                    }
+                } else if (isNewline(ch)) {
+                    self.line += 1;
+                }
+            }
         } else {
             return null;
         }
 
+        self.index += @intCast(iter.i);
         return .{
             .start = start,
             .len = @intCast(iter.i),
@@ -593,6 +628,7 @@ pub const Tokenizer = struct {
             }
         };
 
+        self.index += len;
         return Token{
             .start = start,
             .len = len,
@@ -732,7 +768,10 @@ fn testToken(src: []const u8, tag: Token.Tag) !void {
 }
 
 fn testTokenError(str: []const u8, err: anyerror) !void {
-    var tokenizer = try Tokenizer.init(str);
+    var tokenizer = Tokenizer.init(str) catch |init_error| {
+        try t.expectEqual(err, init_error);
+        return;
+    };
     const token_or_err = tokenizer.next();
     try t.expectError(err, token_or_err);
 }
@@ -799,6 +838,7 @@ test Tokenizer {
         .{ "else", .kw_else },
         .{ "\\u0065lse", .identifier },
         .{ "elsey", .identifier },
+        .{ "/* test comment */", .comment },
     };
 
     for (test_cases) |case| {
@@ -832,5 +872,27 @@ test Tokenizer {
             std.debug.print("tokenizing {s} did not raise {any}\n", .{ text, err });
             return err;
         };
+    }
+
+    {
+        var tokenizer = try Tokenizer.init("123.00 + .333");
+        try t.expectEqual(Token.Tag.numeric_literal, (try tokenizer.next()).tag);
+        try t.expectEqual(Token.Tag.@"+", (try tokenizer.next()).tag);
+        try t.expectEqual(Token.Tag.numeric_literal, (try tokenizer.next()).tag);
+    }
+
+    {
+        var tokenizer = try Tokenizer.init(
+            \\/* this is a
+            \\ multiline
+            \\ comment */
+        );
+        const comment_token = try tokenizer.next();
+        try t.expectEqual(.comment, comment_token.tag);
+        try t.expectEqualDeep(
+            tokenizer.source,
+            comment_token.toByteSlice(tokenizer.source),
+        );
+        try t.expectEqual(2, tokenizer.line);
     }
 }

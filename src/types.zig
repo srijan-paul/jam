@@ -12,3 +12,8 @@ pub const Range = struct {
     start: Coordinate,
     end: Coordinate,
 };
+
+pub const Diagnostic = struct {
+    coord: Coordinate,
+    message: []const u8,
+};
