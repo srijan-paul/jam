@@ -6,7 +6,7 @@ pub fn main() !void {
     const allocator = gpa.allocator();
     defer std.debug.assert(gpa.deinit() == .ok);
 
-    const source = "1 + 2 * 3 ^ .33 ** 3 ** 3 & 6 & 1 && 44 % 12";
+    const source = "foo.bar + bar[baz] + 1";
 
     var io = std.io.getStdOut();
 

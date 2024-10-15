@@ -42,12 +42,22 @@ pub const Node = union(enum) {
 const BinaryPayloadPretty = struct {
     lhs: *NodePretty,
     rhs: *NodePretty,
-    op: []const u8,
+    operator: []const u8,
 };
 
 const UnaryPayloadPretty = struct {
     operand: *NodePretty,
     operator: []const u8,
+};
+
+const ComputedPropertyPretty = struct {
+    object: *NodePretty,
+    property: *NodePretty,
+};
+
+const PropertyAccessPretty = struct {
+    object: *NodePretty,
+    property: []const u8,
 };
 
 pub const NodePretty = union(enum) {
@@ -57,7 +67,10 @@ pub const NodePretty = union(enum) {
     unary_expr: UnaryPayloadPretty,
     post_unary_expr: UnaryPayloadPretty,
 
+    member_expr: PropertyAccessPretty,
+    computed_member_expr: ComputedPropertyPretty,
+
     literal: []const u8,
     identifier: []const u8,
-    this: []const u8,
+    this: void,
 };

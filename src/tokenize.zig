@@ -16,6 +16,7 @@ const TokenizeError = error{
     BadEscapeSequence,
     NonTerminatedString,
     InvalidTokenizerState,
+    MalformedIdentifier,
 };
 
 // zig fmt: off
@@ -139,7 +140,7 @@ pub const Tokenizer = struct {
             '?',
             => return try self.punctuator(),
             '"', '\'' => return try self.stringLiteral(),
-            '#' => unreachable,
+            '#' => return try self.privateIdentifier(),
             '0'...'9' => return self.numericLiteral(),
             '.' => {
                 if (self.numericLiteral()) |tok| {
@@ -148,11 +149,7 @@ pub const Tokenizer = struct {
                     return self.dot();
                 }
             },
-
-            else => {
-                return try self.identifier() orelse
-                    TokenizeError.UnexpectedByte;
-            },
+            else => return try self.identifier(),
         }
     }
 
@@ -364,7 +361,7 @@ pub const Tokenizer = struct {
         return canCodepointContinueId(code_point);
     }
 
-    fn identifier(self: *Self) TokenizeError!?Token {
+    fn identifier(self: *Self) TokenizeError!Token {
         const start = self.index;
         const str = self.source[start..];
 
@@ -373,7 +370,7 @@ pub const Tokenizer = struct {
 
         const is_valid_start = matchIdentifierStart(self, &it) catch |err|
             return err;
-        if (!is_valid_start) return null;
+        if (!is_valid_start) return TokenizeError.MalformedIdentifier;
 
         const len = blk: {
             while (it.i < str.len) {
@@ -402,6 +399,18 @@ pub const Tokenizer = struct {
             .start = start,
             .len = @intCast(len),
             .tag = Token.Tag.identifier,
+        };
+    }
+
+    /// https://262.ecma-international.org/15.0/index.html#prod-PrivateIdentifier
+    fn privateIdentifier(self: *Self) !Token {
+        const start = self.index;
+        self.index += 1; // eat '#'
+        const id = try self.identifier();
+        return Token{
+            .start = start,
+            .len = id.len + 1,
+            .tag = .private_identifier,
         };
     }
 
@@ -451,7 +460,8 @@ pub const Tokenizer = struct {
                 '}' => break :blk .@"}",
                 '(' => break :blk .@"(",
                 ')' => break :blk .@")",
-                '[' => break :blk .@"]",
+                '[' => break :blk .@"[",
+                ']' => break :blk .@"]",
                 ':' => break :blk .@":",
                 ';' => break :blk .@";",
                 '~' => break :blk .@"~",
@@ -781,6 +791,7 @@ test Tokenizer {
         .{ "$two$", .identifier },
         .{ "$123", .identifier },
         .{ "fooobar", .identifier },
+        .{ "#fooobar", .private_identifier },
         .{ "ಠ_ಠ", .identifier },
         .{ "\\u{105}bc", .identifier },
         .{ "\\u{105}\\u{5f}", .identifier },

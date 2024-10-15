@@ -12,7 +12,14 @@ const ParseError = error{ UnexpectedToken, OutOfMemory, NotSupported } || Tokeni
 const ParseFn = fn (self: *Self) ParseError!Node.Index;
 
 // arranged in highest to lowest binding
-const exponentExpr = makeRightAssoc(.@"**", Self.atomic);
+
+// TODO: Officially, exponentiation operator is defined as:
+// ExponentiationExpression :
+//  UnaryExpression
+//  | UpdateExpression ** ExponentiationExpression
+// So this isn't exactly correct.
+// The parselet for this will have to be hand-written.
+const exponentExpr = makeRightAssoc(.@"**", Self.unaryExpression);
 
 const multiplicativeExpr = makeLeftAssoc(.multiplicative_start, .multiplicative_end, exponentExpr);
 const additiveExpr = makeLeftAssoc(.additive_start, .additive_end, multiplicativeExpr);
@@ -66,25 +73,18 @@ pub fn parse(self: *Self) !Node.Index {
     return try self.expression();
 }
 
+// Expression : AssignmentExpression
+//            | Expression, AssignmentExpression
 fn expression(self: *Self) !Node.Index {
+    // TODO: comma separated expressions
     const assignment_expr = self.assignmentExpression();
-    const comma = self.peek() orelse return assignment_expr;
-    if (comma.tag != .@",") {
-        return assignment_expr;
-    }
-
-    try self.emitDiagnostic(
-        comma.startCoord(),
-        "Comma operators are not supported yet",
-        .{},
-    );
-
-    return ParseError.NotSupported;
+    return assignment_expr;
 }
 
 fn assignmentExpression(self: *Self) !Node.Index {
+    // TODO: formally, this should be ConditionalExpression parslet.
     var node = try lOrExpr(self);
-    // todo: check if `node` is valid LHS
+    // TODO: check if `node` is valid LHS
 
     while (self.peek()) |token| {
         if (!token.isAssignmentOperator()) break;
@@ -95,7 +95,7 @@ fn assignmentExpression(self: *Self) !Node.Index {
             .assignment_expr = .{
                 .lhs = node,
                 .rhs = rhs,
-                .op = try self.addToken(token),
+                .operator = try self.addToken(token),
             },
         });
     }
@@ -116,14 +116,13 @@ fn unaryExpression(self: *Self) ParseError!Node.Index {
             => {
                 _ = try self.next();
                 const expr = try self.unaryExpression();
-                return ast.Node{
+                return try self.addNode(ast.Node{
                     .unary_expr = ast.UnaryPayload{
                         .operand = expr,
                         .operator = try self.addToken(token),
                     },
-                };
+                });
             },
-
             else => {},
         }
     }
@@ -136,94 +135,94 @@ fn updateExpression(self: *Self) ParseError!Node.Index {
         if (token.tag == .@"++" and token.tag == .@"--") {
             _ = try self.next();
             const expr = try self.unaryExpression();
-            return ast.Node{
+            return self.addNode(ast.Node{
                 .update_expr = ast.UnaryPayload{
                     .operand = expr,
                     .operator = try self.addToken(token),
                 },
-            };
+            });
         }
     }
 
     // post increment / decrement
-    const expr = try self.unaryExpression();
-    if (self.peek()) |token| {
-        if (token.tag == .@"++" and token.tag == .@"--") {
-            _ = try self.next();
-            return ast.Node{
-                .post_unary_expr = .{
-                    .operand = expr,
-                    .operator = try self.addToken(token),
-                },
-            };
-        }
+    const expr = try self.lhsExpression();
+    const token = self.peek() orelse return expr;
+    if (token.tag == .@"++" and token.tag == .@"--") {
+        _ = try self.next();
+        return self.addNode(ast.Node{
+            .post_unary_expr = .{
+                .operand = expr,
+                .operator = try self.addToken(token),
+            },
+        });
     }
 
     return expr;
 }
 
 fn lhsExpression(self: *Self) ParseError!Node.Index {
-    self.memberExpression();
+    return self.memberExpression();
 }
 
 fn memberExpression(self: *Self) ParseError!Node.Index {
     const primary_expression = try self.primaryExpression();
     const token = self.peek() orelse return primary_expression;
-    switch (token) {
+    switch (token.tag) {
         .@"." => {
             _ = try self.next(); // eat "."
 
             const property_token: Token.Index = blk: {
-                if (self.peek()) |tok| {
-                    if (tok.tag == .identifier or tok.tag == .private_identifier) {
-                        break :blk try self.addToken(tok);
-                    }
-
-                    try self.emitDiagnostic(
-                        tok.startCoord(self.source),
-                        "Expected to see a property name after '.', got a '{s}' instead",
-                        .{tok.toByteSlice(self.source)},
-                    );
-                } else {
-                    // TODO: emit a diagnostic saying we've reached EOF.
-                    return ParseError.UnexpectedEof;
+                const tok = try self.next();
+                if (tok.tag == .identifier or tok.tag == .private_identifier) {
+                    break :blk try self.addToken(tok);
                 }
+
+                try self.emitDiagnostic(
+                    tok.startCoord(self.source),
+                    "Expected to see a property name after '.', got a '{s}' instead",
+                    .{tok.toByteSlice(self.source)},
+                );
                 return ParseError.UnexpectedToken;
             };
 
-            return ast.Node{
+            return self.addNode(ast.Node{
                 .member_expr = .{
                     .object = primary_expression,
                     .property = property_token,
                 },
-            };
+            });
         },
 
         .@"[" => {
-            _ = try self.next();
+            _ = try self.next(); // eat '['
             const expr = try self.expression();
             _ = try self.expect(.@"]");
-            return ast.Node{
+
+            return self.addNode(ast.Node{
                 .computed_member_expr = ast.ComputedPropertyAccess{
                     .object = primary_expression,
                     .property = expr,
                 },
-            };
+            });
+        },
+
+        else => {
+            return primary_expression;
         },
     }
 }
 
 fn primaryExpression(self: *Self) ParseError!Node.Index {
-    const token = self.peek() orelse return ParseError.UnexpectedEof;
+    const token = try self.next();
     switch (token.tag) {
-        .kw_this => return self.addNode(.{ .this = try self.addtoken(token) }),
+        .kw_this => return self.addNode(.{ .this = try self.addToken(token) }),
         .identifier => return self.addNode(.{ .identifier = try self.addToken(token) }),
         .numeric_literal,
         .string_literal,
         .kw_true,
         .kw_false,
         .kw_null,
-        => return try self.addNode(ast.Node{ .literal = try self.addToken(token) }),
+        => return self.addNode(ast.Node{ .literal = try self.addToken(token) }),
         else => {
             try self.emitDiagnostic(
                 token.startCoord(self.source),
@@ -310,14 +309,14 @@ pub fn toPretty(
         => |payload| {
             const lhs = try copy(allocator, try self.toPretty(allocator, payload.lhs));
             const rhs = try copy(allocator, try self.toPretty(allocator, payload.rhs));
-            const token = self.tokens.items[@intFromEnum(payload.op)];
+            const token = self.tokens.items[@intFromEnum(payload.operator)];
 
             if (checkActiveField(node, "binary_expr")) {
                 return ast.NodePretty{
                     .binary_expr = .{
                         .lhs = lhs,
                         .rhs = rhs,
-                        .op = token.toByteSlice(self.source),
+                        .operator = token.toByteSlice(self.source),
                     },
                 };
             } else {
@@ -325,23 +324,57 @@ pub fn toPretty(
                     .assignment_expr = .{
                         .lhs = lhs,
                         .rhs = rhs,
-                        .op = token.toByteSlice(self.source),
+                        .operator = token.toByteSlice(self.source),
                     },
                 };
             }
         },
 
-        .literal => |tok_id| {
+        .identifier,
+        .literal,
+        => |tok_id| {
             const token = self.tokens.items[@intFromEnum(tok_id)];
+            if (checkActiveField(node, "identifier")) {
+                return .{ .identifier = token.toByteSlice(self.source) };
+            } else {
+                return .{ .literal = token.toByteSlice(self.source) };
+            }
+        },
+
+        .this => return .{ .this = {} },
+        .member_expr => |payload| {
+            const obj = try copy(allocator, try self.toPretty(allocator, payload.object));
+            const member = self.tokens.items[@intFromEnum(payload.property)];
             return ast.NodePretty{
-                .literal = token.toByteSlice(self.source),
+                .member_expr = .{
+                    .object = obj,
+                    .property = member.toByteSlice(self.source),
+                },
             };
         },
 
-        .identifier => |tok_id| {
-            const token = self.tokens.items[@intFromEnum(tok_id)];
+        .computed_member_expr => |payload| {
+            const obj = try copy(allocator, try self.toPretty(allocator, payload.object));
+            const member = try copy(allocator, try self.toPretty(allocator, payload.property));
             return ast.NodePretty{
-                .literal = token.toByteSlice(self.source),
+                .computed_member_expr = .{
+                    .object = obj,
+                    .property = member,
+                },
+            };
+        },
+
+        .update_expr, .post_unary_expr, .unary_expr => |payload| {
+            const operand = try copy(
+                allocator,
+                try self.toPretty(allocator, payload.operand),
+            );
+            const token = self.tokens.items[@intFromEnum(payload.operator)];
+            return ast.NodePretty{
+                .unary_expr = .{
+                    .operand = operand,
+                    .operator = token.toByteSlice(self.source),
+                },
             };
         },
     }
@@ -366,7 +399,7 @@ fn makeRightAssoc(
                     .binary_expr = .{
                         .lhs = node,
                         .rhs = rhs,
-                        .op = try self.addToken(token),
+                        .operator = try self.addToken(token),
                     },
                 });
             }
@@ -400,7 +433,7 @@ fn makeLeftAssoc(
                         .binary_expr = .{
                             .lhs = node,
                             .rhs = rhs,
-                            .op = try self.addToken(token),
+                            .operator = try self.addToken(token),
                         },
                     });
                 } else {
