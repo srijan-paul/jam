@@ -11,72 +11,16 @@ const Node = ast.Node;
 const ParseError = error{ UnexpectedToken, OutOfMemory } || Tokenizer.Error;
 const ParseFn = fn (self: *Self) ParseError!Node.Index;
 
-// make a right associative parse function
-fn makeRightAssoc(toktag: Token.Tag, l: *const ParseFn) *const ParseFn {
-    const S = struct {
-        fn parseFn(self: *Self) ParseError!Node.Index {
-            var node = try l(self);
-
-            while (self.peek()) |token| {
-                if (token.tag != toktag) break;
-                _ = try self.next();
-
-                const rhs = try parseFn(self);
-                node = try self.addNode(.{
-                    .binary_expr = .{
-                        .lhs = node,
-                        .rhs = rhs,
-                        .op = try self.addToken(token),
-                    },
-                });
-            }
-
-            return node;
-        }
-    };
-
-    return &S.parseFn;
-}
-
-/// make a left associative parse function
-fn makeLeftAssoc(tag_min: Token.Tag, tag_max: Token.Tag, nextFn: *const ParseFn) *const ParseFn {
-    const min: u32 = @intFromEnum(tag_min);
-    const max: u32 = @intFromEnum(tag_max);
-
-    const S = struct {
-        fn parseFn(self: *Self) ParseError!Node.Index {
-            var node = try nextFn(self);
-
-            while (self.peek()) |token| {
-                if (@intFromEnum(token.tag) >= min and @intFromEnum(token.tag) <= max) {
-                    _ = try self.next();
-                    const rhs = try nextFn(self);
-                    node = try self.addNode(.{
-                        .binary_expr = .{
-                            .lhs = node,
-                            .rhs = rhs,
-                            .op = try self.addToken(token),
-                        },
-                    });
-                } else {
-                    break;
-                }
-            }
-
-            return node;
-        }
-    };
-
-    return &S.parseFn;
-}
-
 // arranged in highest to lowest binding
 const exponentExpr = makeRightAssoc(.@"**", Self.atomic);
+
 const multiplicativeExpr = makeLeftAssoc(.multiplicative_start, .multiplicative_end, exponentExpr);
 const additiveExpr = makeLeftAssoc(.additive_start, .additive_end, multiplicativeExpr);
+
 const shiftExpr = makeLeftAssoc(.shift_op_start, .shift_op_end, additiveExpr);
 const relationalExpr = makeLeftAssoc(.relational_start, .relational_end, shiftExpr);
 const eqExpr = makeLeftAssoc(.eq_op_start, .eq_op_end, relationalExpr);
+
 const bAndExpr = makeLeftAssoc(.@"&", .@"&", eqExpr);
 const bXorExpr = makeLeftAssoc(.@"^", .@"^", bAndExpr);
 const bOrExpr = makeLeftAssoc(.@"|", .@"|", bXorExpr);
@@ -271,6 +215,71 @@ pub fn toPretty(
             };
         },
     }
+}
+
+/// make a right associative parse function for an infix operator represented
+/// by tokens of tag `toktag`
+fn makeRightAssoc(toktag: Token.Tag, l: *const ParseFn) *const ParseFn {
+    const S = struct {
+        fn parseFn(self: *Self) ParseError!Node.Index {
+            var node = try l(self);
+
+            while (self.peek()) |token| {
+                if (token.tag != toktag) break;
+                _ = try self.next();
+
+                const rhs = try parseFn(self);
+                node = try self.addNode(.{
+                    .binary_expr = .{
+                        .lhs = node,
+                        .rhs = rhs,
+                        .op = try self.addToken(token),
+                    },
+                });
+            }
+
+            return node;
+        }
+    };
+
+    return &S.parseFn;
+}
+
+/// make a left associative parse function for an infix operator represented
+/// by tokens of tag `toktag`
+fn makeLeftAssoc(
+    tag_min: Token.Tag,
+    tag_max: Token.Tag,
+    nextFn: *const ParseFn,
+) *const ParseFn {
+    const min: u32 = @intFromEnum(tag_min);
+    const max: u32 = @intFromEnum(tag_max);
+
+    const S = struct {
+        fn parseFn(self: *Self) ParseError!Node.Index {
+            var node = try nextFn(self);
+
+            while (self.peek()) |token| {
+                if (@intFromEnum(token.tag) >= min and @intFromEnum(token.tag) <= max) {
+                    _ = try self.next();
+                    const rhs = try nextFn(self);
+                    node = try self.addNode(.{
+                        .binary_expr = .{
+                            .lhs = node,
+                            .rhs = rhs,
+                            .op = try self.addToken(token),
+                        },
+                    });
+                } else {
+                    break;
+                }
+            }
+
+            return node;
+        }
+    };
+
+    return &S.parseFn;
 }
 
 const t = std.testing;
