@@ -177,10 +177,9 @@ pub const Tokenizer = struct {
 
     // Skip all newlines and update the current line number.
     fn skipNewlines(self: *Self) void {
-        // todo: support all LineTerminators and LineTerminatorSequence.
         while (!self.eof()) : (self.index += 1) {
             const ch = self.source[self.index];
-            if (ch == '\n') {
+            if (isNewline(ch) and ch != '\r') {
                 self.line += 1;
             } else if (ch == '\r') {
                 if (self.index + 1 < self.source.len and

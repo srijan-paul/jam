@@ -8,7 +8,7 @@ const types = @import("./types.zig");
 
 const Node = ast.Node;
 
-const ParseError = error{ UnexpectedToken, OutOfMemory } || Tokenizer.Error;
+const ParseError = error{ UnexpectedToken, OutOfMemory, NotSupported } || Tokenizer.Error;
 const ParseFn = fn (self: *Self) ParseError!Node.Index;
 
 // arranged in highest to lowest binding
@@ -67,7 +67,19 @@ pub fn parse(self: *Self) !Node.Index {
 }
 
 fn expression(self: *Self) !Node.Index {
-    return self.assignmentExpression();
+    const assignment_expr = self.assignmentExpression();
+    const comma = self.peek() orelse return assignment_expr;
+    if (comma.tag != .@",") {
+        return assignment_expr;
+    }
+
+    try self.emitDiagnostic(
+        comma.startCoord(),
+        "Comma operators are not supported yet",
+        .{},
+    );
+
+    return ParseError.NotSupported;
 }
 
 fn assignmentExpression(self: *Self) !Node.Index {
@@ -91,27 +103,127 @@ fn assignmentExpression(self: *Self) !Node.Index {
     return node;
 }
 
-fn addToken(self: *Self, token: Token) error{OutOfMemory}!Token.Index {
-    try self.tokens.append(token);
-    return @enumFromInt(self.tokens.items.len - 1);
+fn unaryExpression(self: *Self) ParseError!Node.Index {
+    if (self.peek()) |token| {
+        switch (token.tag) {
+            .kw_delete,
+            .kw_typeof,
+            .kw_void,
+            .@"-",
+            .@"+",
+            .@"~",
+            .@"!",
+            => {
+                _ = try self.next();
+                const expr = try self.unaryExpression();
+                return ast.Node{
+                    .unary_expr = ast.UnaryPayload{
+                        .operand = expr,
+                        .operator = try self.addToken(token),
+                    },
+                };
+            },
+
+            else => {},
+        }
+    }
+
+    return self.updateExpression();
 }
 
-fn atomic(self: *Self) !Node.Index {
-    const token = try self.next();
+fn updateExpression(self: *Self) ParseError!Node.Index {
+    if (self.peek()) |token| {
+        if (token.tag == .@"++" and token.tag == .@"--") {
+            _ = try self.next();
+            const expr = try self.unaryExpression();
+            return ast.Node{
+                .update_expr = ast.UnaryPayload{
+                    .operand = expr,
+                    .operator = try self.addToken(token),
+                },
+            };
+        }
+    }
+
+    // post increment / decrement
+    const expr = try self.unaryExpression();
+    if (self.peek()) |token| {
+        if (token.tag == .@"++" and token.tag == .@"--") {
+            _ = try self.next();
+            return ast.Node{
+                .post_unary_expr = .{
+                    .operand = expr,
+                    .operator = try self.addToken(token),
+                },
+            };
+        }
+    }
+
+    return expr;
+}
+
+fn lhsExpression(self: *Self) ParseError!Node.Index {
+    self.memberExpression();
+}
+
+fn memberExpression(self: *Self) ParseError!Node.Index {
+    const primary_expression = try self.primaryExpression();
+    const token = self.peek() orelse return primary_expression;
+    switch (token) {
+        .@"." => {
+            _ = try self.next(); // eat "."
+
+            const property_token: Token.Index = blk: {
+                if (self.peek()) |tok| {
+                    if (tok.tag == .identifier or tok.tag == .private_identifier) {
+                        break :blk try self.addToken(tok);
+                    }
+
+                    try self.emitDiagnostic(
+                        tok.startCoord(self.source),
+                        "Expected to see a property name after '.', got a '{s}' instead",
+                        .{tok.toByteSlice(self.source)},
+                    );
+                } else {
+                    // TODO: emit a diagnostic saying we've reached EOF.
+                    return ParseError.UnexpectedEof;
+                }
+                return ParseError.UnexpectedToken;
+            };
+
+            return ast.Node{
+                .member_expr = .{
+                    .object = primary_expression,
+                    .property = property_token,
+                },
+            };
+        },
+
+        .@"[" => {
+            _ = try self.next();
+            const expr = try self.expression();
+            _ = try self.expect(.@"]");
+            return ast.Node{
+                .computed_member_expr = ast.ComputedPropertyAccess{
+                    .object = primary_expression,
+                    .property = expr,
+                },
+            };
+        },
+    }
+}
+
+fn primaryExpression(self: *Self) ParseError!Node.Index {
+    const token = self.peek() orelse return ParseError.UnexpectedEof;
     switch (token.tag) {
+        .kw_this => return self.addNode(.{ .this = try self.addtoken(token) }),
+        .identifier => return self.addNode(.{ .identifier = try self.addToken(token) }),
         .numeric_literal,
         .string_literal,
         .kw_true,
         .kw_false,
         .kw_null,
-        => {
-            const i = try self.addToken(token);
-            return try self.addNode(ast.Node{ .literal = i });
-        },
-        .identifier => {
-            const i = try self.addToken(token);
-            return try self.addNode(ast.Node{ .identifier = i });
-        },
+        => return try self.addNode(ast.Node{ .literal = try self.addToken(token) }),
         else => {
             try self.emitDiagnostic(
                 token.startCoord(self.source),
@@ -121,6 +233,11 @@ fn atomic(self: *Self) !Node.Index {
             return ParseError.UnexpectedToken;
         },
     }
+}
+
+fn addToken(self: *Self, token: Token) error{OutOfMemory}!Token.Index {
+    try self.tokens.append(token);
+    return @enumFromInt(self.tokens.items.len - 1);
 }
 
 fn addNode(self: *Self, node: Node) error{OutOfMemory}!Node.Index {
@@ -140,6 +257,20 @@ fn emitDiagnostic(
         .coord = coord,
         .message = message,
     });
+}
+
+fn expect(self: *Self, tag: Token.Tag) ParseError!Token {
+    const token = try self.tokenizer.next();
+    if (token.tag == tag) {
+        return token;
+    }
+
+    try self.emitDiagnostic(
+        token.startCoord(self.source),
+        "Expected a {s}, got '{s}'",
+        .{ @tagName(tag), token.toByteSlice(self.source) },
+    );
+    return ParseError.UnexpectedToken;
 }
 
 fn next(self: *Self) ParseError!Token {
@@ -200,8 +331,7 @@ pub fn toPretty(
             }
         },
 
-        .literal,
-        => |tok_id| {
+        .literal => |tok_id| {
             const token = self.tokens.items[@intFromEnum(tok_id)];
             return ast.NodePretty{
                 .literal = token.toByteSlice(self.source),
@@ -219,8 +349,11 @@ pub fn toPretty(
 
 /// make a right associative parse function for an infix operator represented
 /// by tokens of tag `toktag`
-fn makeRightAssoc(toktag: Token.Tag, l: *const ParseFn) *const ParseFn {
-    const S = struct {
+fn makeRightAssoc(
+    comptime toktag: Token.Tag,
+    comptime l: *const ParseFn,
+) *const ParseFn {
+    const Parselet = struct {
         fn parseFn(self: *Self) ParseError!Node.Index {
             var node = try l(self);
 
@@ -242,15 +375,15 @@ fn makeRightAssoc(toktag: Token.Tag, l: *const ParseFn) *const ParseFn {
         }
     };
 
-    return &S.parseFn;
+    return &Parselet.parseFn;
 }
 
 /// make a left associative parse function for an infix operator represented
 /// by tokens of tag `toktag`
 fn makeLeftAssoc(
-    tag_min: Token.Tag,
-    tag_max: Token.Tag,
-    nextFn: *const ParseFn,
+    comptime tag_min: Token.Tag,
+    comptime tag_max: Token.Tag,
+    comptime nextFn: *const ParseFn,
 ) *const ParseFn {
     const min: u32 = @intFromEnum(tag_min);
     const max: u32 = @intFromEnum(tag_max);

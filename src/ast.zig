@@ -4,7 +4,22 @@ const Token = @import("token.zig").Token;
 pub const BinaryPayload = struct {
     lhs: Node.Index,
     rhs: Node.Index,
-    op: Token.Index,
+    operator: Token.Index,
+};
+
+pub const UnaryPayload = struct {
+    operand: Node.Index,
+    operator: Token.Index,
+};
+
+pub const PropertyAccess = struct {
+    object: Node.Index,
+    property: Token.Index,
+};
+
+pub const ComputedPropertyAccess = struct {
+    object: Node.Index,
+    property: Node.Index,
 };
 
 pub const Node = union(enum) {
@@ -12,8 +27,16 @@ pub const Node = union(enum) {
     // arranged in order of precedence.
     assignment_expr: BinaryPayload,
     binary_expr: BinaryPayload,
+    member_expr: PropertyAccess,
+    computed_member_expr: ComputedPropertyAccess,
+
+    post_unary_expr: UnaryPayload,
+    unary_expr: UnaryPayload,
+    update_expr: UnaryPayload,
+
     identifier: Token.Index,
     literal: Token.Index,
+    this: Token.Index,
 };
 
 const BinaryPayloadPretty = struct {
@@ -22,29 +45,19 @@ const BinaryPayloadPretty = struct {
     op: []const u8,
 };
 
-pub const NodePretty = union(enum) {
-    binary_expr: BinaryPayloadPretty,
-    assignment_expr: BinaryPayloadPretty,
-    literal: []const u8,
-    identifier: []const u8,
-    _: []const u8,
+const UnaryPayloadPretty = struct {
+    operand: *NodePretty,
+    operator: []const u8,
 };
 
-fn PrettyType(T: anytype) type {
-    if (T == Node.Index) {
-        return NodePretty;
-    } else if (T == Token.Index) {
-        return []const u8;
-    } else {
-        const info = @typeInfo(@TypeOf(T));
-        const fields = std.meta.fields(info);
-        const new_fields: [fields.len]std.builtin.Type.StructField = undefined;
-        for (0.., fields) |i, field| {
-            new_fields[i] = field;
-            new_fields[i].type = PrettyType(field.type);
-        }
-        const return_type_info = info;
-        info.@"struct".fields = new_fields;
-        return @Type(return_type_info);
-    }
-}
+pub const NodePretty = union(enum) {
+    assignment_expr: BinaryPayloadPretty,
+    binary_expr: BinaryPayloadPretty,
+
+    unary_expr: UnaryPayloadPretty,
+    post_unary_expr: UnaryPayloadPretty,
+
+    literal: []const u8,
+    identifier: []const u8,
+    this: []const u8,
+};
