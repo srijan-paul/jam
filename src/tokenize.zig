@@ -478,6 +478,9 @@ pub const Tokenizer = struct {
                             break :blk .@"??=";
                         }
                         break :blk .@"??";
+                    } else if (str.len > 1 and str[1] == '.') {
+                        len += 1;
+                        break :blk .@"?.";
                     }
                     break :blk .@"?";
                 },
@@ -908,6 +911,7 @@ test Tokenizer {
         .{ "??=", .@"??=" },
         .{ "?", .@"?" },
         .{ "??", .@"??" },
+        .{ "?.", .@"?." },
         .{ ",", .@"," },
         .{ "'hello, world!'", .string_literal },
         .{ "'\\u{95}world!'", .string_literal },

@@ -166,11 +166,15 @@ fn updateExpression(self: *Self) ParseError!Node.Index {
 
 fn lhsExpression(self: *Self) ParseError!Node.Index {
     if (try self.tryNewExpression()) |expr| return expr;
-    const member_expr = try self.memberExpression();
-    if (try self.tryCallExpression(member_expr)) |call_expr| {
-        return call_expr;
+    var lhs_expr = try self.memberExpression();
+    if (try self.tryCallExpression(lhs_expr)) |call_expr| {
+        lhs_expr = call_expr;
     }
-    return member_expr;
+
+    if (self.isAtToken(.@"?.")) {
+        lhs_expr = try self.optionalExpression(lhs_expr);
+    }
+    return lhs_expr;
 }
 
 fn tryNewExpression(self: *Self) ParseError!?Node.Index {
@@ -200,29 +204,38 @@ fn tryCallExpression(self: *Self, callee: Node.Index) ParseError!?Node.Index {
         });
     }
 
-    if (token.tag != .@"(") {
-        return null;
-    }
+    if (token.tag != .@"(") return null;
 
     var call_expr = try self.coverCallAndAsyncArrowHead(callee);
     var maybe_token = self.peek();
     while (maybe_token) |lookahead| : (maybe_token = self.peek()) {
         switch (lookahead.tag) {
-            .@"(" => {
-                call_expr = try self.addNode(.{
-                    .call_expr = ast.CallExpr{
-                        .arguments = try self.args(),
-                        .callee = call_expr,
-                    },
-                });
-            },
-            .@"[" => call_expr = try self.completeComputedMemberExpression(call_expr),
-            .@"." => call_expr = try self.completeMemberExpression(call_expr),
+            .@"(" => call_expr = try self.completeCallExpression(call_expr, false),
+            .@"[" => call_expr = try self.completeComputedMemberExpression(call_expr, false),
+            .@"." => call_expr = try self.completeMemberExpression(call_expr, false),
             else => break,
         }
     }
 
     return call_expr;
+}
+
+fn completeCallExpression(
+    self: *Self,
+    callee: Node.Index,
+    is_optional: bool,
+) ParseError!Node.Index {
+    const call_expr = ast.CallExpr{
+        .arguments = try self.args(),
+        .callee = callee,
+    };
+
+    const ast_node: ast.Node = if (is_optional)
+        .{ .optional_call_expr = call_expr }
+    else
+        .{ .call_expr = call_expr };
+
+    return self.addNode(ast_node);
 }
 
 // CoverCallAndAsyncArrowHead:  MemberExpression Arguments
@@ -235,20 +248,79 @@ fn coverCallAndAsyncArrowHead(self: *Self, callee: Node.Index) ParseError!Node.I
     });
 }
 
+/// https://262.ecma-international.org/15.0/index.html#prod-OptionalExpression
+fn optionalExpression(self: *Self, object: Node.Index) ParseError!Node.Index {
+    var expr = object;
+    var lookahead = self.peek();
+    while (lookahead) |token| : (lookahead = self.peek()) {
+        switch (token.tag) {
+            .@"?." => expr = try self.completeOptionalChain(expr),
+            else => return expr,
+        }
+    }
+
+    return expr;
+}
+
+fn completeOptionalChain(self: *Self, prev_expr: Node.Index) ParseError!Node.Index {
+    var expr = try self.optionalChain(prev_expr);
+    var lookahead = self.peek();
+    while (lookahead) |token| : (lookahead = self.peek()) {
+        switch (token.tag) {
+            .@"[" => expr = try self.completeComputedMemberExpression(expr, true),
+            .@"." => expr = try self.completeMemberExpression(expr, true),
+            .@"(" => expr = try self.completeCallExpression(expr, true),
+            else => return expr,
+        }
+    }
+
+    return expr;
+}
+
+fn optionalChain(self: *Self, object: Node.Index) ParseError!Node.Index {
+    const chain_op = try self.next();
+    std.debug.assert(chain_op.tag == .@"?.");
+
+    const lookahead = self.peek() orelse
+        return ParseError.UnexpectedEof;
+
+    switch (lookahead.tag) {
+        .@"(" => return self.addNode(ast.Node{
+            .optional_call_expr = .{ .arguments = try self.args(), .callee = object },
+        }),
+        .@"[" => return try self.completeComputedMemberExpression(object, true),
+        .identifier, .private_identifier => {
+            _ = try self.next(); // eat the property name
+            return self.addNode(ast.Node{ .optional_expr = .{
+                .object = object,
+                .property = try self.addToken(lookahead),
+            } });
+        },
+        else => {
+            try self.emitDiagnostic(
+                lookahead.startCoord(self.source),
+                "Expected a property access or all after ?., but got {s}\n",
+                .{lookahead.toByteSlice(self.source)},
+            );
+            return ParseError.UnexpectedToken;
+        },
+    }
+}
+
 fn memberExpression(self: *Self) ParseError!Node.Index {
     var member_expr = try self.primaryExpression();
     var maybe_token = self.peek();
     while (maybe_token) |tok| : (maybe_token = self.peek()) {
         switch (tok.tag) {
-            .@"." => member_expr = try self.completeMemberExpression(member_expr),
-            .@"[" => member_expr = try self.completeComputedMemberExpression(member_expr),
+            .@"." => member_expr = try self.completeMemberExpression(member_expr, false),
+            .@"[" => member_expr = try self.completeComputedMemberExpression(member_expr, false),
             else => return member_expr,
         }
     }
     return member_expr;
 }
 
-fn completeMemberExpression(self: *Self, object: Node.Index) ParseError!Node.Index {
+fn completeMemberExpression(self: *Self, object: Node.Index, is_optional: bool) ParseError!Node.Index {
     const dot = try self.next(); // eat "."
     std.debug.assert(dot.tag == .@".");
 
@@ -266,28 +338,41 @@ fn completeMemberExpression(self: *Self, object: Node.Index) ParseError!Node.Ind
         return ParseError.UnexpectedToken;
     };
 
-    return self.addNode(ast.Node{
-        .member_expr = ast.PropertyAccess{
-            .object = object,
-            .property = property_token,
-        },
-    });
+    const property_access = ast.PropertyAccess{
+        .object = object,
+        .property = property_token,
+    };
+
+    const node: ast.Node = if (is_optional)
+        .{ .optional_expr = property_access }
+    else
+        .{ .member_expr = property_access };
+
+    return self.addNode(node);
 }
 
 fn completeComputedMemberExpression(
     self: *Self,
     object: Node.Index,
+    is_optional: bool,
 ) ParseError!Node.Index {
     const tok = try self.next(); // eat "["
     std.debug.assert(tok.tag == .@"[");
+
     const property = try self.expression();
     _ = try self.expect(.@"]");
-    return self.addNode(ast.Node{
-        .computed_member_expr = ast.ComputedPropertyAccess{
-            .object = object,
-            .property = property,
-        },
-    });
+
+    const property_access = ast.ComputedPropertyAccess{
+        .object = object,
+        .property = property,
+    };
+
+    const node: ast.Node = if (is_optional)
+        .{ .computed_optional_expr = property_access }
+    else
+        .{ .computed_member_expr = property_access };
+
+    return self.addNode(node);
 }
 
 fn primaryExpression(self: *Self) ParseError!Node.Index {
@@ -451,22 +536,32 @@ pub fn toPretty(
         },
 
         .this => return .{ .this = {} },
-        .member_expr => |payload| {
+        .optional_expr, .member_expr => |payload| {
             const obj = try copy(allocator, try self.toPretty(allocator, payload.object));
             const member = self.tokens.items[@intFromEnum(payload.property)];
-            return .{
+            return if (checkActiveField(node, "member_expr")) .{
                 .member_expression = .{
+                    .object = obj,
+                    .property = member.toByteSlice(self.source),
+                },
+            } else .{
+                .optional_expression = .{
                     .object = obj,
                     .property = member.toByteSlice(self.source),
                 },
             };
         },
 
-        .computed_member_expr => |payload| {
+        .computed_optional_expr, .computed_member_expr => |payload| {
             const obj = try copy(allocator, try self.toPretty(allocator, payload.object));
             const member = try copy(allocator, try self.toPretty(allocator, payload.property));
-            return .{
+            return if (checkActiveField(node, "computed_member_expr")) .{
                 .computed_member_expression = .{
+                    .object = obj,
+                    .property = member,
+                },
+            } else .{
+                .optional_computed_expression = .{
                     .object = obj,
                     .property = member,
                 },
@@ -511,7 +606,7 @@ pub fn toPretty(
             }
         },
 
-        .call_expr, .new_expr => |payload| {
+        .optional_call_expr, .call_expr, .new_expr => |payload| {
             const callee = try copy(allocator, try self.toPretty(allocator, payload.callee));
             const arguments = try copy(allocator, try self.toPretty(allocator, payload.arguments));
             return if (checkActiveField(node, "call_expr")) .{
@@ -519,8 +614,13 @@ pub fn toPretty(
                     .callee = callee,
                     .arguments = arguments,
                 },
-            } else .{
+            } else if (checkActiveField(node, "new_expr")) .{
                 .new_expression = .{
+                    .callee = callee,
+                    .arguments = arguments,
+                },
+            } else .{
+                .optional_call_expression = .{
                     .callee = callee,
                     .arguments = arguments,
                 },
