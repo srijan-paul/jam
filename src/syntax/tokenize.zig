@@ -1,11 +1,14 @@
 const std = @import("std");
-const offset = @import("offsets.zig");
 const unicode_id = @import("unicode-id");
 const Token = @import("token.zig").Token;
 
-const types = @import("types.zig");
-const Coordinate = types.Coordinate;
-const Range = types.Range;
+const util = @import("util");
+
+const offset = util.offsets;
+const types = util.types;
+
+pub const Coordinate = types.Coordinate;
+pub const Range = types.Range;
 
 const TokenizeError = error{
     UnexpectedEof,

@@ -1,5 +1,7 @@
 const std = @import("std");
-const Parser = @import("./parse.zig");
+const syntax = @import("jam-syntax");
+
+const Parser = syntax.Parser;
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -11,6 +13,7 @@ pub fn main() !void {
 
     var parser = try Parser.init(allocator, source, "test.js");
     defer parser.deinit();
+
     const node_idx = parser.parse() catch {
         for (parser.diagnostics.items) |d| {
             std.debug.print("{s}", .{d.message});

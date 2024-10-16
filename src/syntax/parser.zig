@@ -4,8 +4,11 @@ const Self = @This();
 const Tokenizer = @import("./tokenize.zig").Tokenizer;
 const Token = @import("./token.zig").Token;
 const ast = @import("./ast.zig");
-const types = @import("./types.zig");
-const offsets = @import("./offsets.zig");
+
+const util = @import("util");
+
+const types = util.types;
+const offsets = util.offsets;
 
 const Node = ast.Node;
 

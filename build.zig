@@ -17,6 +17,19 @@ pub fn build(b: *std.Build) !void {
 
     b.installArtifact(lib);
 
+    const util_module = b.addModule("util", .{
+        .root_source_file = b.path("src/util/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+
+    const jam_syntax_module = b.addModule("jam-syntax", .{
+        .root_source_file = b.path("src/syntax/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    jam_syntax_module.addImport("util", util_module);
+
     const exe = b.addExecutable(.{
         .name = "jsickle",
         .root_source_file = b.path("src/main.zig"),
@@ -70,9 +83,12 @@ pub fn build(b: *std.Build) !void {
         },
     });
 
+    exe.root_module.addImport("jam-syntax", jam_syntax_module);
+
     for (deps.items) |dep| {
         lib_unit_tests.root_module.addImport(dep.name, dep.module);
         lib.root_module.addImport(dep.name, dep.module);
         exe.root_module.addImport(dep.name, dep.module);
+        jam_syntax_module.addImport(dep.name, dep.module);
     }
 }

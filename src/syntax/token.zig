@@ -1,5 +1,5 @@
-const offsets = @import("offsets.zig");
-const types = @import("types.zig");
+const offsets = @import("util").offsets;
+const types = @import("util").types;
 
 pub const Range = types.Range;
 pub const Coordinate = types.Coordinate;

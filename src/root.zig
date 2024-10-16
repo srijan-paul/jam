@@ -1,9 +1,8 @@
-pub const tokenize = @import("./tokenize.zig");
-pub const parse = @import("./parse.zig");
-pub const offsets = @import("./offsets.zig");
+pub const syntax = @import("./syntax/root.zig");
 
 test {
-    _ = tokenize;
-    _ = offsets;
-    _ = parse;
+    const std = @import("std");
+    std.testing.refAllDeclsRecursive(syntax);
+
+    _ = syntax;
 }
