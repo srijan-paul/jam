@@ -15,6 +15,25 @@ fn checkActiveField(v: anytype, want: []const u8) bool {
     return std.mem.eql(u8, tag_name, want);
 }
 
+fn prettyNodeList(
+    allocator: std.mem.Allocator,
+    self: *const Parser,
+    maybe_args: ?ast.NodeList,
+) error{OutOfMemory}![]ast.NodePretty {
+    if (maybe_args) |arguments| {
+        var new_args = std.ArrayList(ast.NodePretty).init(allocator);
+        const from: usize = @intFromEnum(arguments.from);
+        const to: usize = @intFromEnum(arguments.to);
+        for (from..to) |i| {
+            const arg_node = self.arguments.items[i];
+            const new_arg = try toPretty(self, allocator, arg_node);
+            try new_args.append(new_arg);
+        }
+        return try new_args.toOwnedSlice();
+    }
+    return try allocator.alloc(ast.NodePretty, 0);
+}
+
 /// Convert an AST Node to a struct that can be JSON serialized
 /// in a human readable form.
 fn toPretty(
@@ -104,20 +123,8 @@ fn toPretty(
                 };
         },
 
-        .super_call_expr, .arguments => |maybe_args| {
-            if (maybe_args) |arguments| {
-                var new_args = std.ArrayList(ast.NodePretty).init(allocator);
-                const from: usize = @intFromEnum(arguments.from);
-                const to: usize = @intFromEnum(arguments.to);
-                for (from..to) |i| {
-                    const arg_node = self.arguments.items[i];
-                    const new_arg = try toPretty(self, allocator, arg_node);
-                    try new_args.append(new_arg);
-                }
-                return .{ .arguments = try new_args.toOwnedSlice() };
-            } else {
-                return .{ .arguments = try allocator.alloc(ast.NodePretty, 0) };
-            }
+        .super_call_expr, .arguments => |maybe_args| return .{
+            .arguments = try prettyNodeList(allocator, self, maybe_args),
         },
 
         .call_expr, .new_expr => |payload| {
@@ -139,6 +146,11 @@ fn toPretty(
         .optional_expr => |payload| {
             const expr = try copy(allocator, try toPretty(self, allocator, payload));
             return .{ .optional_expression = expr };
+        },
+
+        .empty_array_item => return .{ .empty_array_item = {} },
+        .array_literal => |items| return .{
+            .array = try prettyNodeList(allocator, self, items),
         },
     }
 }

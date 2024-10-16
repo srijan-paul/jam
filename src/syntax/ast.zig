@@ -22,7 +22,7 @@ pub const ComputedPropertyAccess = struct {
     property: Node.Index,
 };
 
-pub const Arguments = struct {
+pub const NodeList = struct {
     // An index into the `arguments` array in the AST.
     pub const Index = enum(u32) { _ };
     from: Index,
@@ -40,10 +40,10 @@ pub const Node = union(enum) {
     binary_expr: BinaryPayload,
     member_expr: PropertyAccess,
     computed_member_expr: ComputedPropertyAccess,
-    arguments: ?Arguments,
+    arguments: ?NodeList,
     new_expr: CallExpr,
     call_expr: CallExpr,
-    super_call_expr: ?Arguments,
+    super_call_expr: ?NodeList,
     // points to  call_expr, member_expr, or computed_member_expr
     optional_expr: Node.Index,
 
@@ -54,6 +54,8 @@ pub const Node = union(enum) {
     identifier: Token.Index,
     literal: Token.Index,
     this: Token.Index,
+    empty_array_item: void,
+    array_literal: ?NodeList,
 
     comptime {
         std.debug.assert(@bitSizeOf(Node) <= 128);
@@ -74,10 +76,10 @@ pub const NodePretty = union(enum) {
     member_expression: PropertyAccess_,
     computed_member_expression: ComputedPropertyAccess_,
     optional_expression: Pretty(Node.Index),
-    arguments: Pretty(Arguments),
+    arguments: Pretty(NodeList),
     new_expression: Pretty(CallExpr),
     call_expression: Pretty(CallExpr),
-    super_call_expression: Pretty(Arguments),
+    super_call_expression: Pretty(NodeList),
 
     post_unary_expression: UnaryPayload_,
     unary_expression: UnaryPayload_,
@@ -86,11 +88,13 @@ pub const NodePretty = union(enum) {
     identifier: Token_,
     literal: Token_,
     this: void,
+    empty_array_item: void,
+    array: Pretty(NodeList),
 };
 
 fn Pretty(T: type) type {
     if (T == Node.Index) return *NodePretty;
-    if (T == Arguments) return []NodePretty;
+    if (T == NodeList) return []NodePretty;
     if (T == Token.Index) return []const u8;
 
     switch (@typeInfo(T)) {

@@ -145,7 +145,7 @@ fn unaryExpression(self: *Self) ParseError!Node.Index {
 
 fn updateExpression(self: *Self) ParseError!Node.Index {
     if (self.peek()) |token| {
-        if (token.tag == .@"++" and token.tag == .@"--") {
+        if (token.tag == .@"++" or token.tag == .@"--") {
             _ = try self.next();
             const expr = try self.unaryExpression();
             return self.addNode(ast.Node{
@@ -390,6 +390,7 @@ fn primaryExpression(self: *Self) ParseError!Node.Index {
         .kw_false,
         .kw_null,
         => return self.addNode(ast.Node{ .literal = try self.addToken(token) }),
+        .@"[" => return self.arrayLiteral(),
         else => {
             try self.emitDiagnostic(
                 token.startCoord(self.source),
@@ -401,6 +402,38 @@ fn primaryExpression(self: *Self) ParseError!Node.Index {
     }
 }
 
+/// Parse an ArrayLiteral:
+/// https://262.ecma-international.org/15.0/index.html#prod-ArrayLiteral
+fn arrayLiteral(self: *Self) ParseError!Node.Index {
+    var elements = std.ArrayList(Node.Index).init(self.allocator);
+    defer elements.deinit();
+
+    while (true) {
+        while (self.isAtToken(.@",")) {
+            // elision: https://262.ecma-international.org/15.0/index.html#prod-Elision
+            _ = try self.next();
+            try elements.append(try self.addNode(.{ .empty_array_item = {} }));
+        }
+
+        if (self.isAtToken(.@"]")) break;
+
+        const item = try self.assignmentExpression();
+        try elements.append(item);
+
+        if ((try self.expect2(.@",", .@"]")).tag == .@"]") {
+            break;
+        }
+    }
+
+    _ = try self.next(); // eat closing ']'
+
+    const from: ast.NodeList.Index = @enumFromInt(self.arguments.items.len);
+    try self.arguments.appendSlice(elements.items);
+    const to: ast.NodeList.Index = @enumFromInt(self.arguments.items.len);
+
+    return self.addNode(.{ .array_literal = .{ .from = from, .to = to } });
+}
+
 fn getNode(self: *const Self, index: Node.Index) *const ast.Node {
     return &self.nodes.items[@intFromEnum(index)];
 }
@@ -409,7 +442,7 @@ fn args(self: *Self) ParseError!Node.Index {
     return self.addNode(.{ .arguments = try self.parseArgs() });
 }
 
-fn parseArgs(self: *Self) ParseError!ast.Arguments {
+fn parseArgs(self: *Self) ParseError!ast.NodeList {
     _ = try self.expect(.@"(");
 
     var arg_list = std.ArrayList(Node.Index).init(self.allocator);
@@ -424,10 +457,10 @@ fn parseArgs(self: *Self) ParseError!ast.Arguments {
     }
 
     _ = try self.expect(.@")"); // eat closing ')'
-    const from: ast.Arguments.Index = @enumFromInt(self.arguments.items.len);
+    const from: ast.NodeList.Index = @enumFromInt(self.arguments.items.len);
     try self.arguments.appendSlice(arg_list.items);
-    const to: ast.Arguments.Index = @enumFromInt(self.arguments.items.len);
-    return ast.Arguments{ .from = from, .to = to };
+    const to: ast.NodeList.Index = @enumFromInt(self.arguments.items.len);
+    return ast.NodeList{ .from = from, .to = to };
 }
 
 fn addToken(self: *Self, token: Token) error{OutOfMemory}!Token.Index {
@@ -462,8 +495,26 @@ fn expect(self: *Self, tag: Token.Tag) ParseError!Token {
 
     try self.emitDiagnostic(
         token.startCoord(self.source),
-        "Expected a {s}, got '{s}'",
+        "Expected a '{s}'', but found a '{s}'",
         .{ @tagName(tag), token.toByteSlice(self.source) },
+    );
+    return ParseError.UnexpectedToken;
+}
+
+fn expect2(self: *Self, tag1: Token.Tag, tag2: Token.Tag) ParseError!Token {
+    const token = try self.tokenizer.next();
+    if (token.tag == tag1 or token.tag == tag2) {
+        return token;
+    }
+
+    try self.emitDiagnostic(
+        token.startCoord(self.source),
+        "Expected a '{s}' or a '{s}', but found a '{s}'",
+        .{
+            @tagName(tag1),
+            @tagName(tag2),
+            token.toByteSlice(self.source),
+        },
     );
     return ParseError.UnexpectedToken;
 }

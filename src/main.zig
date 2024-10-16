@@ -9,7 +9,7 @@ pub fn main() !void {
 
     defer std.debug.assert(gpa.deinit() == .ok);
 
-    const source = "foo.bar(a = b++)";
+    const source = "[a,, b,]";
 
     var parser = try Parser.init(allocator, source, "test.js");
     defer parser.deinit();
