@@ -210,9 +210,9 @@ fn tryCallExpression(self: *Self, callee: Node.Index) ParseError!?Node.Index {
     var maybe_token = self.peek();
     while (maybe_token) |lookahead| : (maybe_token = self.peek()) {
         switch (lookahead.tag) {
-            .@"(" => call_expr = try self.completeCallExpression(call_expr, false),
-            .@"[" => call_expr = try self.completeComputedMemberExpression(call_expr, false),
-            .@"." => call_expr = try self.completeMemberExpression(call_expr, false),
+            .@"(" => call_expr = try self.completeCallExpression(call_expr),
+            .@"[" => call_expr = try self.completeComputedMemberExpression(call_expr),
+            .@"." => call_expr = try self.completeMemberExpression(call_expr),
             else => break,
         }
     }
@@ -220,22 +220,13 @@ fn tryCallExpression(self: *Self, callee: Node.Index) ParseError!?Node.Index {
     return call_expr;
 }
 
-fn completeCallExpression(
-    self: *Self,
-    callee: Node.Index,
-    is_optional: bool,
-) ParseError!Node.Index {
+fn completeCallExpression(self: *Self, callee: Node.Index) ParseError!Node.Index {
     const call_expr = ast.CallExpr{
         .arguments = try self.args(),
         .callee = callee,
     };
 
-    const ast_node: ast.Node = if (is_optional)
-        .{ .optional_call_expr = call_expr }
-    else
-        .{ .call_expr = call_expr };
-
-    return self.addNode(ast_node);
+    return self.addNode(.{ .call_expr = call_expr });
 }
 
 // CoverCallAndAsyncArrowHead:  MemberExpression Arguments
@@ -267,9 +258,18 @@ fn completeOptionalChain(self: *Self, prev_expr: Node.Index) ParseError!Node.Ind
     var lookahead = self.peek();
     while (lookahead) |token| : (lookahead = self.peek()) {
         switch (token.tag) {
-            .@"[" => expr = try self.completeComputedMemberExpression(expr, true),
-            .@"." => expr = try self.completeMemberExpression(expr, true),
-            .@"(" => expr = try self.completeCallExpression(expr, true),
+            .@"[" => {
+                const member_expr = try self.completeComputedMemberExpression(expr);
+                expr = try self.addNode(.{ .optional_expr = member_expr });
+            },
+            .@"." => {
+                const member_expr = try self.completeMemberExpression(expr);
+                expr = try self.addNode(.{ .optional_expr = member_expr });
+            },
+            .@"(" => {
+                const call_expr = try self.completeCallExpression(expr);
+                expr = try self.addNode(.{ .optional_expr = call_expr });
+            },
             else => return expr,
         }
     }
@@ -285,16 +285,26 @@ fn optionalChain(self: *Self, object: Node.Index) ParseError!Node.Index {
         return ParseError.UnexpectedEof;
 
     switch (lookahead.tag) {
-        .@"(" => return self.addNode(ast.Node{
-            .optional_call_expr = .{ .arguments = try self.args(), .callee = object },
-        }),
-        .@"[" => return try self.completeComputedMemberExpression(object, true),
+        .@"(" => {
+            const expr = try self.addNode(ast.Node{
+                .call_expr = .{
+                    .arguments = try self.args(),
+                    .callee = object,
+                },
+            });
+            return self.addNode(ast.Node{ .optional_expr = expr });
+        },
+        .@"[" => {
+            const expr = try self.completeComputedMemberExpression(object);
+            return self.addNode(ast.Node{ .optional_expr = expr });
+        },
         .identifier, .private_identifier => {
             _ = try self.next(); // eat the property name
-            return self.addNode(ast.Node{ .optional_expr = .{
+            const expr = try self.addNode(ast.Node{ .member_expr = .{
                 .object = object,
                 .property = try self.addToken(lookahead),
             } });
+            return self.addNode(ast.Node{ .optional_expr = expr });
         },
         else => {
             try self.emitDiagnostic(
@@ -312,15 +322,15 @@ fn memberExpression(self: *Self) ParseError!Node.Index {
     var maybe_token = self.peek();
     while (maybe_token) |tok| : (maybe_token = self.peek()) {
         switch (tok.tag) {
-            .@"." => member_expr = try self.completeMemberExpression(member_expr, false),
-            .@"[" => member_expr = try self.completeComputedMemberExpression(member_expr, false),
+            .@"." => member_expr = try self.completeMemberExpression(member_expr),
+            .@"[" => member_expr = try self.completeComputedMemberExpression(member_expr),
             else => return member_expr,
         }
     }
     return member_expr;
 }
 
-fn completeMemberExpression(self: *Self, object: Node.Index, is_optional: bool) ParseError!Node.Index {
+fn completeMemberExpression(self: *Self, object: Node.Index) ParseError!Node.Index {
     const dot = try self.next(); // eat "."
     std.debug.assert(dot.tag == .@".");
 
@@ -342,20 +352,10 @@ fn completeMemberExpression(self: *Self, object: Node.Index, is_optional: bool) 
         .object = object,
         .property = property_token,
     };
-
-    const node: ast.Node = if (is_optional)
-        .{ .optional_expr = property_access }
-    else
-        .{ .member_expr = property_access };
-
-    return self.addNode(node);
+    return self.addNode(.{ .member_expr = property_access });
 }
 
-fn completeComputedMemberExpression(
-    self: *Self,
-    object: Node.Index,
-    is_optional: bool,
-) ParseError!Node.Index {
+fn completeComputedMemberExpression(self: *Self, object: Node.Index) ParseError!Node.Index {
     const tok = try self.next(); // eat "["
     std.debug.assert(tok.tag == .@"[");
 
@@ -367,12 +367,7 @@ fn completeComputedMemberExpression(
         .property = property,
     };
 
-    const node: ast.Node = if (is_optional)
-        .{ .computed_optional_expr = property_access }
-    else
-        .{ .computed_member_expr = property_access };
-
-    return self.addNode(node);
+    return self.addNode(.{ .computed_member_expr = property_access });
 }
 
 fn primaryExpression(self: *Self) ParseError!Node.Index {
@@ -397,7 +392,7 @@ fn primaryExpression(self: *Self) ParseError!Node.Index {
     }
 }
 
-fn getNode(self: *Self, index: Node.Index) *ast.Node {
+fn getNode(self: *const Self, index: Node.Index) *const ast.Node {
     return &self.nodes.items[@intFromEnum(index)];
 }
 
@@ -536,32 +531,20 @@ pub fn toPretty(
         },
 
         .this => return .{ .this = {} },
-        .optional_expr, .member_expr => |payload| {
+        .member_expr => |payload| {
             const obj = try copy(allocator, try self.toPretty(allocator, payload.object));
             const member = self.tokens.items[@intFromEnum(payload.property)];
-            return if (checkActiveField(node, "member_expr")) .{
-                .member_expression = .{
-                    .object = obj,
-                    .property = member.toByteSlice(self.source),
-                },
-            } else .{
-                .optional_expression = .{
-                    .object = obj,
-                    .property = member.toByteSlice(self.source),
-                },
-            };
+            return .{ .member_expression = .{
+                .object = obj,
+                .property = member.toByteSlice(self.source),
+            } };
         },
 
-        .computed_optional_expr, .computed_member_expr => |payload| {
+        .computed_member_expr => |payload| {
             const obj = try copy(allocator, try self.toPretty(allocator, payload.object));
             const member = try copy(allocator, try self.toPretty(allocator, payload.property));
-            return if (checkActiveField(node, "computed_member_expr")) .{
+            return .{
                 .computed_member_expression = .{
-                    .object = obj,
-                    .property = member,
-                },
-            } else .{
-                .optional_computed_expression = .{
                     .object = obj,
                     .property = member,
                 },
@@ -606,7 +589,7 @@ pub fn toPretty(
             }
         },
 
-        .optional_call_expr, .call_expr, .new_expr => |payload| {
+        .call_expr, .new_expr => |payload| {
             const callee = try copy(allocator, try self.toPretty(allocator, payload.callee));
             const arguments = try copy(allocator, try self.toPretty(allocator, payload.arguments));
             return if (checkActiveField(node, "call_expr")) .{
@@ -614,17 +597,17 @@ pub fn toPretty(
                     .callee = callee,
                     .arguments = arguments,
                 },
-            } else if (checkActiveField(node, "new_expr")) .{
+            } else .{
                 .new_expression = .{
                     .callee = callee,
                     .arguments = arguments,
                 },
-            } else .{
-                .optional_call_expression = .{
-                    .callee = callee,
-                    .arguments = arguments,
-                },
             };
+        },
+
+        .optional_expr => |payload| {
+            const expr = try copy(allocator, try self.toPretty(allocator, payload));
+            return .{ .optional_expression = expr };
         },
     }
 }
