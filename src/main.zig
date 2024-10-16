@@ -21,11 +21,9 @@ pub fn main() !void {
         return;
     };
 
-    var arena = std.heap.ArenaAllocator.init(allocator);
-    const al = arena.allocator();
-    defer arena.deinit();
+    const s = try syntax.pretty.toJsonString(allocator, &parser, node_idx);
+    defer allocator.free(s);
 
-    const pretty_node = try parser.toPretty(al, node_idx);
-    var io = std.io.getStdOut();
-    try io.writeAll(try std.json.stringifyAlloc(al, pretty_node, .{}));
+    const io = std.io.getStdOut();
+    try io.writeAll(s);
 }
