@@ -44,8 +44,14 @@ allocator: std.mem.Allocator,
 source: []const u8,
 file_name: []const u8,
 tokenizer: Tokenizer,
+
+/// All AST nodes are stored in this flat list and reference
+/// each other using their indices.
 nodes: std.ArrayList(Node),
+/// List of tokens that are necessary to keep around
+/// e.g - identifiers, literals, node start and end nodes, etc.
 tokens: std.ArrayList(Token),
+/// Arguments for function calls, new-expressions, etc.
 arguments: std.ArrayList(Node.Index),
 diagnostics: std.ArrayList(types.Diagnostic),
 
