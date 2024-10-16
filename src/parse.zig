@@ -5,6 +5,7 @@ const Tokenizer = @import("./tokenize.zig").Tokenizer;
 const Token = @import("./token.zig").Token;
 const ast = @import("./ast.zig");
 const types = @import("./types.zig");
+const offsets = @import("./offsets.zig");
 
 const Node = ast.Node;
 
@@ -42,6 +43,7 @@ file_name: []const u8,
 tokenizer: Tokenizer,
 nodes: std.ArrayList(Node),
 tokens: std.ArrayList(Token),
+arguments: std.ArrayList(Node.Index),
 diagnostics: std.ArrayList(types.Diagnostic),
 
 pub fn init(
@@ -57,6 +59,7 @@ pub fn init(
         .nodes = std.ArrayList(Node).init(allocator),
         .tokens = std.ArrayList(Token).init(allocator),
         .diagnostics = std.ArrayList(types.Diagnostic).init(allocator),
+        .arguments = std.ArrayList(Node.Index).init(allocator),
     };
 }
 
@@ -67,6 +70,7 @@ pub fn deinit(self: *Self) void {
         self.allocator.free(d.message);
     }
     self.diagnostics.deinit();
+    self.arguments.deinit();
 }
 
 pub fn parse(self: *Self) !Node.Index {
@@ -161,55 +165,129 @@ fn updateExpression(self: *Self) ParseError!Node.Index {
 }
 
 fn lhsExpression(self: *Self) ParseError!Node.Index {
-    return self.memberExpression();
+    if (try self.tryNewExpression()) |expr| return expr;
+    const member_expr = try self.memberExpression();
+    if (try self.tryCallExpression(member_expr)) |call_expr| {
+        return call_expr;
+    }
+    return member_expr;
+}
+
+fn tryNewExpression(self: *Self) ParseError!?Node.Index {
+    if (self.isAtToken(.kw_new)) {
+        _ = try self.next(); // eat "new"
+        const expr = try self.memberExpression();
+        return try self.addNode(.{
+            .new_expr = .{
+                .callee = expr,
+                .arguments = if (self.isAtToken(.@"("))
+                    try self.args()
+                else
+                    try self.addNode(.{ .arguments = null }),
+            },
+        });
+    }
+
+    return null;
+}
+
+fn tryCallExpression(self: *Self, callee: Node.Index) ParseError!?Node.Index {
+    const token = self.peek() orelse return ParseError.UnexpectedEof;
+    if (token.tag == .kw_super) {
+        _ = try self.next();
+        return try self.addNode(.{
+            .super_call_expr = try self.parseArgs(),
+        });
+    }
+
+    if (token.tag != .@"(") {
+        return null;
+    }
+
+    var call_expr = try self.coverCallAndAsyncArrowHead(callee);
+    var maybe_token = self.peek();
+    while (maybe_token) |lookahead| : (maybe_token = self.peek()) {
+        switch (lookahead.tag) {
+            .@"(" => {
+                call_expr = try self.addNode(.{
+                    .call_expr = ast.CallExpr{
+                        .arguments = try self.args(),
+                        .callee = call_expr,
+                    },
+                });
+            },
+            .@"[" => call_expr = try self.completeComputedMemberExpression(call_expr),
+            .@"." => call_expr = try self.completeMemberExpression(call_expr),
+            else => break,
+        }
+    }
+
+    return call_expr;
+}
+
+// CoverCallAndAsyncArrowHead:  MemberExpression Arguments
+fn coverCallAndAsyncArrowHead(self: *Self, callee: Node.Index) ParseError!Node.Index {
+    return self.addNode(.{
+        .call_expr = .{
+            .callee = callee,
+            .arguments = try self.args(),
+        },
+    });
 }
 
 fn memberExpression(self: *Self) ParseError!Node.Index {
-    const primary_expression = try self.primaryExpression();
-    const token = self.peek() orelse return primary_expression;
-    switch (token.tag) {
-        .@"." => {
-            _ = try self.next(); // eat "."
-
-            const property_token: Token.Index = blk: {
-                const tok = try self.next();
-                if (tok.tag == .identifier or tok.tag == .private_identifier) {
-                    break :blk try self.addToken(tok);
-                }
-
-                try self.emitDiagnostic(
-                    tok.startCoord(self.source),
-                    "Expected to see a property name after '.', got a '{s}' instead",
-                    .{tok.toByteSlice(self.source)},
-                );
-                return ParseError.UnexpectedToken;
-            };
-
-            return self.addNode(ast.Node{
-                .member_expr = .{
-                    .object = primary_expression,
-                    .property = property_token,
-                },
-            });
-        },
-
-        .@"[" => {
-            _ = try self.next(); // eat '['
-            const expr = try self.expression();
-            _ = try self.expect(.@"]");
-
-            return self.addNode(ast.Node{
-                .computed_member_expr = ast.ComputedPropertyAccess{
-                    .object = primary_expression,
-                    .property = expr,
-                },
-            });
-        },
-
-        else => {
-            return primary_expression;
-        },
+    var member_expr = try self.primaryExpression();
+    var maybe_token = self.peek();
+    while (maybe_token) |tok| : (maybe_token = self.peek()) {
+        switch (tok.tag) {
+            .@"." => member_expr = try self.completeMemberExpression(member_expr),
+            .@"[" => member_expr = try self.completeComputedMemberExpression(member_expr),
+            else => return member_expr,
+        }
     }
+    return member_expr;
+}
+
+fn completeMemberExpression(self: *Self, object: Node.Index) ParseError!Node.Index {
+    const dot = try self.next(); // eat "."
+    std.debug.assert(dot.tag == .@".");
+
+    const property_token: Token.Index = blk: {
+        const tok = try self.next();
+        if (tok.tag == .identifier or tok.tag == .private_identifier) {
+            break :blk try self.addToken(tok);
+        }
+
+        try self.emitDiagnostic(
+            tok.startCoord(self.source),
+            "Expected to see a property name after '.', got a '{s}' instead",
+            .{tok.toByteSlice(self.source)},
+        );
+        return ParseError.UnexpectedToken;
+    };
+
+    return self.addNode(ast.Node{
+        .member_expr = ast.PropertyAccess{
+            .object = object,
+            .property = property_token,
+        },
+    });
+}
+
+fn completeComputedMemberExpression(
+    self: *Self,
+    object: Node.Index,
+) ParseError!Node.Index {
+    const tok = try self.next(); // eat "["
+    std.debug.assert(tok.tag == .@"[");
+    const property = try self.expression();
+    _ = try self.expect(.@"]");
+    return self.addNode(ast.Node{
+        .computed_member_expr = ast.ComputedPropertyAccess{
+            .object = object,
+            .property = property,
+        },
+    });
 }
 
 fn primaryExpression(self: *Self) ParseError!Node.Index {
@@ -234,6 +312,35 @@ fn primaryExpression(self: *Self) ParseError!Node.Index {
     }
 }
 
+fn getNode(self: *Self, index: Node.Index) *ast.Node {
+    return &self.nodes.items[@intFromEnum(index)];
+}
+
+fn args(self: *Self) ParseError!Node.Index {
+    return self.addNode(.{ .arguments = try self.parseArgs() });
+}
+
+fn parseArgs(self: *Self) ParseError!ast.Arguments {
+    _ = try self.expect(.@"(");
+
+    var arg_list = std.ArrayList(Node.Index).init(self.allocator);
+    defer arg_list.deinit();
+
+    while (!self.isAtToken(.@")")) {
+        const expr = try self.assignmentExpression();
+        try arg_list.append(expr);
+        if (!self.isAtToken(.@","))
+            break;
+        _ = try self.next(); // eat ','
+    }
+
+    _ = try self.expect(.@")"); // eat closing ')'
+    const from: ast.Arguments.Index = @enumFromInt(self.arguments.items.len);
+    try self.arguments.appendSlice(arg_list.items);
+    const to: ast.Arguments.Index = @enumFromInt(self.arguments.items.len);
+    return ast.Arguments{ .from = from, .to = to };
+}
+
 fn addToken(self: *Self, token: Token) error{OutOfMemory}!Token.Index {
     try self.tokens.append(token);
     return @enumFromInt(self.tokens.items.len - 1);
@@ -249,9 +356,9 @@ fn emitDiagnostic(
     self: *Self,
     coord: types.Coordinate,
     comptime fmt: []const u8,
-    args: anytype,
+    fmt_args: anytype,
 ) error{OutOfMemory}!void {
-    const message = try std.fmt.allocPrint(self.allocator, fmt, args);
+    const message = try std.fmt.allocPrint(self.allocator, fmt, fmt_args);
     try self.diagnostics.append(types.Diagnostic{
         .coord = coord,
         .message = message,
@@ -280,10 +387,12 @@ fn peek(self: *Self) ?Token {
     return self.tokenizer.peek();
 }
 
-fn isAtToken(self: *Self, tag: Token.Tag) !Token {
+fn isAtToken(self: *Self, tag: Token.Tag) bool {
     if (self.peek()) |token| {
         return token.tag == tag;
     }
+
+    return false;
 }
 
 fn copy(al: std.mem.Allocator, value: anytype) !*@TypeOf(value) {
@@ -312,16 +421,16 @@ pub fn toPretty(
             const token = self.tokens.items[@intFromEnum(payload.operator)];
 
             if (checkActiveField(node, "binary_expr")) {
-                return ast.NodePretty{
-                    .binary_expr = .{
+                return .{
+                    .binary_expression = .{
                         .lhs = lhs,
                         .rhs = rhs,
                         .operator = token.toByteSlice(self.source),
                     },
                 };
             } else {
-                return ast.NodePretty{
-                    .assignment_expr = .{
+                return .{
+                    .assignment_expression = .{
                         .lhs = lhs,
                         .rhs = rhs,
                         .operator = token.toByteSlice(self.source),
@@ -345,8 +454,8 @@ pub fn toPretty(
         .member_expr => |payload| {
             const obj = try copy(allocator, try self.toPretty(allocator, payload.object));
             const member = self.tokens.items[@intFromEnum(payload.property)];
-            return ast.NodePretty{
-                .member_expr = .{
+            return .{
+                .member_expression = .{
                     .object = obj,
                     .property = member.toByteSlice(self.source),
                 },
@@ -356,8 +465,8 @@ pub fn toPretty(
         .computed_member_expr => |payload| {
             const obj = try copy(allocator, try self.toPretty(allocator, payload.object));
             const member = try copy(allocator, try self.toPretty(allocator, payload.property));
-            return ast.NodePretty{
-                .computed_member_expr = .{
+            return .{
+                .computed_member_expression = .{
                     .object = obj,
                     .property = member,
                 },
@@ -370,10 +479,42 @@ pub fn toPretty(
                 try self.toPretty(allocator, payload.operand),
             );
             const token = self.tokens.items[@intFromEnum(payload.operator)];
-            return ast.NodePretty{
-                .unary_expr = .{
+            return .{
+                .unary_expression = .{
                     .operand = operand,
                     .operator = token.toByteSlice(self.source),
+                },
+            };
+        },
+
+        .super_call_expr, .arguments => |maybe_args| {
+            if (maybe_args) |arguments| {
+                var new_args = std.ArrayList(ast.NodePretty).init(allocator);
+                const from: usize = @intFromEnum(arguments.from);
+                const to: usize = @intFromEnum(arguments.to);
+                for (from..to) |i| {
+                    const arg_node = self.arguments.items[i];
+                    const new_arg = try self.toPretty(allocator, arg_node);
+                    try new_args.append(new_arg);
+                }
+                return .{ .arguments = try new_args.toOwnedSlice() };
+            } else {
+                return .{ .arguments = try allocator.alloc(ast.NodePretty, 0) };
+            }
+        },
+
+        .call_expr, .new_expr => |payload| {
+            const callee = try copy(allocator, try self.toPretty(allocator, payload.callee));
+            const arguments = try copy(allocator, try self.toPretty(allocator, payload.arguments));
+            return if (checkActiveField(node, "call_expr")) .{
+                .call_expression = .{
+                    .callee = callee,
+                    .arguments = arguments,
+                },
+            } else .{
+                .new_expression = .{
+                    .callee = callee,
+                    .arguments = arguments,
                 },
             };
         },

@@ -386,6 +386,7 @@ pub const Tokenizer = struct {
         const id_str = str[0..len];
         for (0.., all_keywords) |i, kw| {
             if (std.mem.eql(u8, id_str, kw)) {
+                self.index += @intCast(len);
                 return Token{
                     .start = start,
                     .len = @intCast(len),

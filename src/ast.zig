@@ -22,13 +22,28 @@ pub const ComputedPropertyAccess = struct {
     property: Node.Index,
 };
 
+pub const Arguments = struct {
+    // An index into the `arguments` array in the AST.
+    pub const Index = enum(u32) { _ };
+    from: Index,
+    to: Index,
+};
+
+pub const CallExpr = struct {
+    callee: Node.Index,
+    arguments: Node.Index,
+};
+
 pub const Node = union(enum) {
     pub const Index = enum(u32) { _ };
-    // arranged in order of precedence.
     assignment_expr: BinaryPayload,
     binary_expr: BinaryPayload,
     member_expr: PropertyAccess,
     computed_member_expr: ComputedPropertyAccess,
+    arguments: ?Arguments,
+    new_expr: CallExpr,
+    call_expr: CallExpr,
+    super_call_expr: ?Arguments,
 
     post_unary_expr: UnaryPayload,
     unary_expr: UnaryPayload,
@@ -37,40 +52,78 @@ pub const Node = union(enum) {
     identifier: Token.Index,
     literal: Token.Index,
     this: Token.Index,
+
+    comptime {
+        std.debug.assert(@bitSizeOf(Node) <= 128);
+    }
 };
 
-const BinaryPayloadPretty = struct {
-    lhs: *NodePretty,
-    rhs: *NodePretty,
-    operator: []const u8,
-};
-
-const UnaryPayloadPretty = struct {
-    operand: *NodePretty,
-    operator: []const u8,
-};
-
-const ComputedPropertyPretty = struct {
-    object: *NodePretty,
-    property: *NodePretty,
-};
-
-const PropertyAccessPretty = struct {
-    object: *NodePretty,
-    property: []const u8,
-};
+const Type = std.builtin.Type;
 
 pub const NodePretty = union(enum) {
-    assignment_expr: BinaryPayloadPretty,
-    binary_expr: BinaryPayloadPretty,
+    const BinaryPayload_ = Pretty(BinaryPayload);
+    const PropertyAccess_ = Pretty(PropertyAccess);
+    const ComputedPropertyAccess_ = Pretty(ComputedPropertyAccess);
+    const UnaryPayload_ = Pretty(UnaryPayload);
+    const Token_ = Pretty(Token.Index);
 
-    unary_expr: UnaryPayloadPretty,
-    post_unary_expr: UnaryPayloadPretty,
+    assignment_expression: BinaryPayload_,
+    binary_expression: BinaryPayload_,
+    member_expression: PropertyAccess_,
+    computed_member_expression: ComputedPropertyAccess_,
+    arguments: Pretty(Arguments),
+    new_expression: Pretty(CallExpr),
+    call_expression: Pretty(CallExpr),
+    super_call_expression: Pretty(Arguments),
 
-    member_expr: PropertyAccessPretty,
-    computed_member_expr: ComputedPropertyPretty,
+    post_unary_expression: UnaryPayload_,
+    unary_expression: UnaryPayload_,
+    update_expression: UnaryPayload_,
 
-    literal: []const u8,
-    identifier: []const u8,
+    identifier: Token_,
+    literal: Token_,
     this: void,
 };
+
+fn Pretty(T: type) type {
+    if (T == Node.Index) return *NodePretty;
+    if (T == Arguments) return []NodePretty;
+    if (T == Token.Index) return []const u8;
+
+    switch (@typeInfo(T)) {
+        .@"struct" => |s| {
+            const fields: []const Type.StructField = s.fields;
+            var new_fields: [fields.len]Type.StructField = undefined;
+            for (0.., fields) |i, field| {
+                new_fields[i] = field;
+                new_fields[i].type = Pretty(field.type);
+            }
+            var new_struct_info = s;
+            new_struct_info.fields = &new_fields;
+            return @Type(.{ .@"struct" = new_struct_info });
+        },
+        else => {
+            return T;
+        },
+    }
+}
+
+// Dependency loop that shouldn't exist.
+// The zig compiler caches types to tie loops.
+// Why does this happen? I should submit a bug report to ziglang/zig.
+// pub const NodePretty =
+//     switch (@typeInfo(Node)) {
+//     .@"union" => |struct_info| {
+//         const fields: []const Type.UnionField = struct_info.fields;
+//         var new_fields: [fields.len]Type.UnionField = undefined;
+//         for (0.., fields) |i, field| {
+//             new_fields[i] = field;
+//             new_fields[i].type = ToPrettyPayload(field.type);
+//         }
+
+//         var new_union_info = struct_info;
+//         new_union_info.fields = &new_fields;
+//         @Type(.{ .@"union" = new_union_info });
+//     },
+//     else => unreachable,
+// };
