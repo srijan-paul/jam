@@ -150,13 +150,13 @@ fn updateExpression(self: *Self) ParseError!Node.Index {
 
     // post increment / decrement
     const expr = try self.lhsExpression();
-    const token = self.peek() orelse return expr;
-    if (token.tag == .@"++" and token.tag == .@"--") {
+    const lookahead = self.peek() orelse return expr;
+    if (lookahead.tag == .@"++" or lookahead.tag == .@"--") {
         _ = try self.next();
         return self.addNode(ast.Node{
             .post_unary_expr = .{
                 .operand = expr,
-                .operator = try self.addToken(token),
+                .operator = try self.addToken(lookahead),
             },
         });
     }
@@ -479,12 +479,20 @@ pub fn toPretty(
                 try self.toPretty(allocator, payload.operand),
             );
             const token = self.tokens.items[@intFromEnum(payload.operator)];
-            return .{
-                .unary_expression = .{
-                    .operand = operand,
-                    .operator = token.toByteSlice(self.source),
-                },
-            };
+            return if (checkActiveField(node, "post_unary_expr"))
+                ast.NodePretty{
+                    .post_unary_expression = .{
+                        .operand = operand,
+                        .operator = token.toByteSlice(self.source),
+                    },
+                }
+            else
+                .{
+                    .unary_expression = .{
+                        .operand = operand,
+                        .operator = token.toByteSlice(self.source),
+                    },
+                };
         },
 
         .super_call_expr, .arguments => |maybe_args| {
