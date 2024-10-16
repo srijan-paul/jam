@@ -12,6 +12,8 @@ const TokenizeError = error{
     InvalidUtf8,
     UnexpectedByte,
     InvalidNumericLiteral,
+    InvalidHexLiteral,
+    InvalidBinaryLiteral,
     BadPunctuator,
     BadEscapeSequence,
     NonTerminatedString,
@@ -666,6 +668,27 @@ pub const Tokenizer = struct {
         return i;
     }
 
+    /// https://262.ecma-international.org/15.0/index.html#prod-grammar-notation-HexIntegerLiteral
+    fn matchHexDigits(str: []const u8) ?u32 {
+        var i: u32 = 0;
+        while (i < str.len and std.ascii.isHex(str[i])) : (i += 1) {
+            if (i + 1 < str.len and str[i + 1] == '_')
+                i += 1;
+        }
+
+        return if (i > 0) i else null;
+    }
+
+    fn matchBinaryDigits(str: []const u8) ?u32 {
+        var i: u32 = 0;
+        while (i < str.len and (str[i] == '0' or str[i] == '1')) : (i += 1) {
+            if (i + 1 < str.len and str[i + 1] == '_')
+                i += 1;
+        }
+
+        return if (i > 0) i else null;
+    }
+
     /// https://tc39.es/ecma262/#prod-DecimalLiteral
     fn matchDecimalPart(str: []const u8) ?u32 {
         if (str[0] != '.') return null;
@@ -673,6 +696,31 @@ pub const Tokenizer = struct {
         var i: u32 = 1;
         while (i < str.len and std.ascii.isDigit(str[i])) : (i += 1) {}
         if (i == 1) return null;
+        return i;
+    }
+
+    /// https://262.ecma-international.org/15.0/index.html#prod-ExponentPart
+    fn matchExponentPart(str: []const u8) ?u32 {
+        if (str.len < 2) return null;
+        if (str[0] != 'e' and str[0] != 'E') return null;
+
+        var i: u32 = 1;
+        if (str[i] == '+' or str[i] == '-') {
+            i += 1;
+            if (i == str.len) return null;
+        }
+
+        while (i < str.len and std.ascii.isDigit(str[i])) : (i += 1) {
+            if (i + 1 < str.len and str[i + 1] == '_') {
+                i += 1; // eat '_'
+            }
+        }
+
+        // we should've consumed at least one digit after e/e+/e-
+        if (!std.ascii.isDigit(str[i - 1])) {
+            return null;
+        }
+
         return i;
     }
 
@@ -687,11 +735,26 @@ pub const Tokenizer = struct {
                     return TokenizeError.InvalidNumericLiteral;
             }
 
+            if (str.len > 2 and str[0] == '0' and (str[1] == 'x' or str[1] == 'X')) {
+                const hex_len: u32 = matchHexDigits(str[2..]) orelse
+                    return TokenizeError.InvalidHexLiteral;
+                break :blk hex_len + 2;
+            } else if (str.len > 2 and str[0] == '0' and (str[1] == 'b' or str[1] == 'B')) {
+                const binary_len: u32 = matchBinaryDigits(str[2..]) orelse
+                    return TokenizeError.InvalidBinaryLiteral;
+                break :blk binary_len + 2;
+            }
+
             var decimal_len = matchDecimalIntegerLiteral(str) orelse
                 return TokenizeError.InvalidNumericLiteral;
             if (decimal_len < str.len) {
                 decimal_len += matchDecimalPart(str[decimal_len..]) orelse 0;
             }
+
+            if (decimal_len < str.len) {
+                decimal_len += matchExponentPart(str[decimal_len..]) orelse 0;
+            }
+
             break :blk decimal_len;
         };
 
@@ -805,6 +868,14 @@ test Tokenizer {
         .{ "1.5", .numeric_literal },
         .{ "1.523", .numeric_literal },
         .{ "1_000_000.523", .numeric_literal },
+        .{ "0x55ffee1", .numeric_literal },
+        .{ "0b1011_0101", .numeric_literal },
+        .{ "0b1", .numeric_literal },
+        .{ "0x5", .numeric_literal },
+        .{ "55e+1", .numeric_literal },
+        .{ "55e-1", .numeric_literal },
+        .{ "55e112", .numeric_literal },
+        .{ "0XF", .numeric_literal },
         .{ ".1", .numeric_literal },
         .{ ".33", .numeric_literal },
         .{ "<<", .@"<<" },
@@ -875,6 +946,8 @@ test Tokenizer {
         .{ "1.5.5", TokenizeError.InvalidNumericLiteral },
         .{ "1.5aaaA", TokenizeError.InvalidNumericLiteral },
         .{ "1.5_1", TokenizeError.InvalidNumericLiteral },
+        .{ "1__1", TokenizeError.InvalidNumericLiteral },
+        .{ "0xg1", TokenizeError.InvalidHexLiteral },
     };
 
     for (bad_cases) |case| {
