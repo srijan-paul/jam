@@ -61,6 +61,9 @@ pub const Node = union(enum) {
     this: Token.Index,
     empty_array_item: void,
     array_literal: ?NodeList,
+    // points to a list of `ObjectProperty`s.
+    object_literal: ?NodeList,
+    object_property: ObjectProperty,
 
     comptime {
         std.debug.assert(@bitSizeOf(Node) <= 128);
@@ -95,6 +98,8 @@ pub const NodePretty = union(enum) {
     this: void,
     empty_array_item: void,
     array: Pretty(NodeList),
+    object_literal: Pretty(NodeList),
+    object_property: Pretty(ObjectProperty),
 };
 
 fn Pretty(T: type) type {

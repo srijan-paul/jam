@@ -286,6 +286,7 @@ pub const Tokenizer = struct {
         }
 
         const len: u32 = @intCast(iter.i);
+        self.index += len;
         return .{
             .tag = .string_literal,
             .start = start,

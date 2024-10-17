@@ -419,8 +419,74 @@ fn primaryExpression(self: *Self) ParseError!Node.Index {
 
 /// Parse an object literal, assuming the `{` has already been consumed.
 /// https://262.ecma-international.org/15.0/index.html#prod-ObjectLiteral
-fn objectLiteral(_: *Self) ParseError!Node.Index {
-    return ParseError.NotSupported;
+fn objectLiteral(self: *Self) ParseError!Node.Index {
+    const properties = try self.propertyDefinitionList();
+    _ = try self.expect(.@"}");
+
+    return try self.addNode(.{ .object_literal = properties });
+}
+
+fn propertyDefinitionList(self: *Self) ParseError!?ast.NodeList {
+    var property_defs = std.ArrayList(Node.Index).init(self.allocator);
+    defer property_defs.deinit();
+
+    while (self.peek()) |lookahead| {
+        switch (lookahead.tag) {
+            .identifier => {
+                const key_token = try self.next();
+                const key = try self.addNode(.{ .identifier = try self.addToken(key_token) });
+
+                const maybe_colon = self.peek() orelse return ParseError.UnexpectedEof;
+                if (maybe_colon.tag != .@":") {
+                    const kv_node = ast.ObjectProperty{ .key = key, .value = key };
+                    try property_defs.append(try self.addNode(.{ .object_property = kv_node }));
+                } else {
+                    _ = try self.next();
+                    try property_defs.append(try self.completePropertyDef(key));
+                }
+            },
+
+            .@"[" => {
+                _ = try self.next();
+                const key = try self.assignmentExpression();
+                _ = try self.expect(.@"]");
+                _ = try self.expect(.@":");
+                try property_defs.append(try self.completePropertyDef(key));
+            },
+
+            .numeric_literal, .string_literal => {
+                const key_token = try self.next();
+                const key = try self.addNode(.{ .literal = try self.addToken(key_token) });
+                _ = try self.expect(.@":");
+                try property_defs.append(try self.completePropertyDef(key));
+            },
+            else => break,
+        }
+
+        const maybe_comma = self.peek() orelse break;
+        if (maybe_comma.tag == .@",") {
+            _ = try self.next();
+        } else {
+            break;
+        }
+    }
+
+    if (property_defs.items.len == 0) return null;
+
+    // todo: separate this out into a helper function
+    const from: ast.NodeList.Index = @enumFromInt(self.arguments.items.len);
+    try self.arguments.appendSlice(property_defs.items);
+    const to: ast.NodeList.Index = @enumFromInt(self.arguments.items.len);
+    return ast.NodeList{ .from = from, .to = to };
+}
+
+fn completePropertyDef(self: *Self, key: Node.Index) ParseError!Node.Index {
+    const value = try self.assignmentExpression();
+    const kv_node = ast.ObjectProperty{
+        .key = key,
+        .value = value,
+    };
+    return self.addNode(.{ .object_property = kv_node });
 }
 
 /// Parse an ArrayLiteral:

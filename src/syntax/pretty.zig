@@ -148,6 +148,17 @@ fn toPretty(
         .array_literal => |items| return .{
             .array = try prettyNodeList(allocator, self, items),
         },
+
+        .object_literal => |properties| return .{
+            .object_literal = try prettyNodeList(allocator, self, properties),
+        },
+
+        .object_property => |prop| return ast.NodePretty{
+            .object_property = .{
+                .key = try copy(allocator, try toPretty(self, allocator, prop.key)),
+                .value = try copy(allocator, try toPretty(self, allocator, prop.value)),
+            },
+        },
     }
 }
 
