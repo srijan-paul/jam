@@ -204,6 +204,12 @@ fn tryNewExpression(self: *Self) ParseError!?Node.Index {
     return null;
 }
 
+/// Try parsing a call expression. If the input is malformed, return a `ParseError`,
+/// If no call expression was found, return `null`,
+/// Otherwise, return the index of the call expression node.
+/// NOTE: The call expression grammar might seem a little odd, because it
+/// also has productions that parse member expressions:
+/// https://262.ecma-international.org/15.0/index.html#prod-CallExpression
 fn tryCallExpression(self: *Self, callee: Node.Index) ParseError!?Node.Index {
     const token = self.peek() orelse return ParseError.UnexpectedEof;
     if (token.tag == .kw_super) {
@@ -262,6 +268,10 @@ fn optionalExpression(self: *Self, object: Node.Index) ParseError!Node.Index {
     return expr;
 }
 
+/// Assuming a `<object>?.<property>` has been consumed already, consume the
+/// operators that are chained on top, and return a node which will be put into
+/// an `optional_expr` field of `ast.Node`.
+/// see: `Self.optionalChain`.
 fn completeOptionalChain(self: *Self, prev_expr: Node.Index) ParseError!Node.Index {
     var expr = try self.optionalChain(prev_expr);
     var lookahead = self.peek();
@@ -286,6 +296,10 @@ fn completeOptionalChain(self: *Self, prev_expr: Node.Index) ParseError!Node.Ind
     return expr;
 }
 
+/// Parse an OptionalExpression:
+/// The expression before the `?.` operator is already parsed and passed as an argument.
+///
+/// See: https://262.ecma-international.org/15.0/index.html#prod-OptionalExpression
 fn optionalChain(self: *Self, object: Node.Index) ParseError!Node.Index {
     const chain_op = try self.next();
     std.debug.assert(chain_op.tag == .@"?.");
@@ -391,15 +405,22 @@ fn primaryExpression(self: *Self) ParseError!Node.Index {
         .kw_null,
         => return self.addNode(ast.Node{ .literal = try self.addToken(token) }),
         .@"[" => return self.arrayLiteral(),
+        .@"{" => return self.objectLiteral(),
         else => {
             try self.emitDiagnostic(
                 token.startCoord(self.source),
-                "expected literal, found '{s}'",
+                "expected an expression, found '{s}'",
                 .{token.toByteSlice(self.source)},
             );
             return ParseError.UnexpectedToken;
         },
     }
+}
+
+/// Parse an object literal, assuming the `{` has already been consumed.
+/// https://262.ecma-international.org/15.0/index.html#prod-ObjectLiteral
+fn objectLiteral(_: *Self) ParseError!Node.Index {
+    return ParseError.NotSupported;
 }
 
 /// Parse an ArrayLiteral:
@@ -415,7 +436,10 @@ fn arrayLiteral(self: *Self) ParseError!Node.Index {
             try elements.append(try self.addNode(.{ .empty_array_item = {} }));
         }
 
-        if (self.isAtToken(.@"]")) break;
+        if (self.isAtToken(.@"]")) {
+            _ = try self.next();
+            break;
+        }
 
         const item = try self.assignmentExpression();
         try elements.append(item);
@@ -424,8 +448,6 @@ fn arrayLiteral(self: *Self) ParseError!Node.Index {
             break;
         }
     }
-
-    _ = try self.next(); // eat closing ']'
 
     const from: ast.NodeList.Index = @enumFromInt(self.arguments.items.len);
     try self.arguments.appendSlice(elements.items);

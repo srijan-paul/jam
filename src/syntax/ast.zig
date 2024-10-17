@@ -34,6 +34,11 @@ pub const CallExpr = struct {
     arguments: Node.Index,
 };
 
+pub const ObjectProperty = struct {
+    key: Node.Index,
+    value: Node.Index,
+};
+
 pub const Node = union(enum) {
     pub const Index = enum(u32) { _ };
     assignment_expr: BinaryPayload,

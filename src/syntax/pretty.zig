@@ -50,23 +50,19 @@ fn toPretty(
             const rhs = try copy(allocator, try toPretty(self, allocator, payload.rhs));
             const token = self.tokens.items[@intFromEnum(payload.operator)];
 
-            if (checkActiveField(node, "binary_expr")) {
-                return .{
-                    .binary_expression = .{
-                        .lhs = lhs,
-                        .rhs = rhs,
-                        .operator = token.toByteSlice(self.source),
-                    },
-                };
-            } else {
-                return .{
-                    .assignment_expression = .{
-                        .lhs = lhs,
-                        .rhs = rhs,
-                        .operator = token.toByteSlice(self.source),
-                    },
-                };
-            }
+            const operator = token.toByteSlice(self.source);
+
+            const binary = .{
+                .binary_expression = .{ .lhs = lhs, .rhs = rhs, .operator = operator },
+            };
+            const assignment = .{
+                .assignment_expression = .{ .lhs = lhs, .rhs = rhs, .operator = operator },
+            };
+
+            return if (checkActiveField(node, "binary_expr"))
+                binary
+            else
+                assignment;
         },
 
         .identifier,
@@ -108,7 +104,7 @@ fn toPretty(
             );
             const token = self.tokens.items[@intFromEnum(payload.operator)];
             return if (checkActiveField(node, "post_unary_expr"))
-                ast.NodePretty{
+                .{
                     .post_unary_expression = .{
                         .operand = operand,
                         .operator = token.toByteSlice(self.source),

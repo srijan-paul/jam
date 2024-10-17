@@ -986,4 +986,14 @@ test Tokenizer {
         );
         try t.expectEqual(2, tokenizer.line);
     }
+
+    {
+        var tokenizer = try Tokenizer.init("f([1])");
+        try t.expectEqual(Token.Tag.identifier, (try tokenizer.next()).tag);
+        try t.expectEqual(Token.Tag.@"(", (try tokenizer.next()).tag);
+        try t.expectEqual(Token.Tag.@"[", (try tokenizer.next()).tag);
+        try t.expectEqual(Token.Tag.numeric_literal, (try tokenizer.next()).tag);
+        try t.expectEqual(Token.Tag.@"]", (try tokenizer.next()).tag);
+        try t.expectEqual(Token.Tag.@")", (try tokenizer.next()).tag);
+    }
 }

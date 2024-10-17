@@ -178,7 +178,7 @@ pub const Token = struct {
     }
 
     /// (line, column) position for the end of this token.
-    pub fn endCoord(self: Token, source: []const u8) Range {
+    pub fn endCoord(self: Token, source: []const u8) Coordinate {
         return offsets.byteIndexToCoordinate(source, self.start + self.len);
     }
 
