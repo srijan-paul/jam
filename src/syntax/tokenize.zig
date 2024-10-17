@@ -71,34 +71,15 @@ pub const Tokenizer = struct {
     /// Current column number (0 indexed)
     col: u32 = 0,
 
-    next_token: ?Token = null,
-
     pub fn init(source: []const u8) TokenizeError!Self {
         if (!std.unicode.utf8ValidateSlice(source)) {
             return TokenizeError.InvalidUtf8;
         }
 
-        var self = Self{ .source = source };
-        self.next_token = try self.eatToken();
-        return self;
+        return Self{ .source = source };
     }
 
-    /// Return the next token.
     pub fn next(self: *Self) TokenizeError!Token {
-        if (self.next_token) |token| {
-            self.next_token = try self.eatToken();
-            return token;
-        }
-        return TokenizeError.InvalidTokenizerState;
-    }
-
-    /// Return the next token without consuming it.
-    /// self.next() will return the same token.
-    pub fn peek(self: *Self) ?Token {
-        return self.next_token;
-    }
-
-    fn eatToken(self: *Self) TokenizeError!Token {
         const byte = self.peekByte() orelse {
             return Token{
                 .tag = Token.Tag.eof,
@@ -110,11 +91,11 @@ pub const Tokenizer = struct {
         switch (byte) {
             ' ', '\t' => {
                 self.skipWhiteSpaces();
-                return self.eatToken();
+                return self.next();
             },
             '\n' => {
                 self.skipNewlines();
-                return self.eatToken();
+                return self.next();
             },
             '/' => {
                 if (try self.comment()) |tok| {

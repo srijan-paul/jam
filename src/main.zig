@@ -3,13 +3,18 @@ const syntax = @import("jam-syntax");
 
 const Parser = syntax.Parser;
 
+const source =
+    \\ [1, 2, 3, 4 + 5, {a:b} ]
+    \\
+    \\
+    \\
+;
+
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
 
     defer std.debug.assert(gpa.deinit() == .ok);
-
-    const source = "{ hello, world, 'bye': 1, [1+1]: 2, 2: 3 }";
 
     var parser = try Parser.init(allocator, source, "test.js");
     defer parser.deinit();

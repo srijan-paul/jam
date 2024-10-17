@@ -25,7 +25,7 @@ fn prettyNodeList(
         const from: usize = @intFromEnum(arguments.from);
         const to: usize = @intFromEnum(arguments.to);
         for (from..to) |i| {
-            const arg_node = self.arguments.items[i];
+            const arg_node = self.node_lists.items[i];
             const new_arg = try toPretty(self, allocator, arg_node);
             try new_args.append(new_arg);
         }

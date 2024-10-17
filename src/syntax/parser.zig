@@ -52,24 +52,37 @@ nodes: std.ArrayList(Node),
 /// e.g - identifiers, literals, node start and end nodes, etc.
 tokens: std.ArrayList(Token),
 /// Arguments for function calls, new-expressions, etc.
-arguments: std.ArrayList(Node.Index),
+node_lists: std.ArrayList(Node.Index),
 diagnostics: std.ArrayList(types.Diagnostic),
+
+/// The token that we're currently at.
+/// Calling `next()` or `peek()` will return this token.
+current_token: Token,
+/// The next token that we're going to read.
+next_token: Token,
 
 pub fn init(
     allocator: std.mem.Allocator,
     source: []const u8,
     file_name: []const u8,
 ) ParseError!Self {
-    return Self{
+    var self = Self{
         .allocator = allocator,
         .source = source,
         .file_name = file_name,
         .tokenizer = try Tokenizer.init(source),
+        .current_token = undefined,
+        .next_token = undefined,
         .nodes = std.ArrayList(Node).init(allocator),
         .tokens = std.ArrayList(Token).init(allocator),
         .diagnostics = std.ArrayList(types.Diagnostic).init(allocator),
-        .arguments = std.ArrayList(Node.Index).init(allocator),
+        .node_lists = std.ArrayList(Node.Index).init(allocator),
     };
+
+    // this call will initialize `current_token` and `next_token`.
+    _ = try self.next();
+    _ = try self.next();
+    return self;
 }
 
 pub fn deinit(self: *Self) void {
@@ -79,7 +92,7 @@ pub fn deinit(self: *Self) void {
         self.allocator.free(d.message);
     }
     self.diagnostics.deinit();
-    self.arguments.deinit();
+    self.node_lists.deinit();
 }
 
 pub fn parse(self: *Self) !Node.Index {
@@ -99,7 +112,8 @@ fn assignmentExpression(self: *Self) !Node.Index {
     var node = try lOrExpr(self);
     // TODO: check if `node` is valid LHS
 
-    while (self.peek()) |token| {
+    var token = self.peek();
+    while (true) : (token = self.peek()) {
         if (!token.isAssignmentOperator()) break;
         _ = try self.next();
 
@@ -117,49 +131,45 @@ fn assignmentExpression(self: *Self) !Node.Index {
 }
 
 fn unaryExpression(self: *Self) ParseError!Node.Index {
-    if (self.peek()) |token| {
-        switch (token.tag) {
-            .kw_delete,
-            .kw_typeof,
-            .kw_void,
-            .@"-",
-            .@"+",
-            .@"~",
-            .@"!",
-            => {
-                _ = try self.next();
-                const expr = try self.unaryExpression();
-                return try self.addNode(ast.Node{
-                    .unary_expr = ast.UnaryPayload{
-                        .operand = expr,
-                        .operator = try self.addToken(token),
-                    },
-                });
-            },
-            else => {},
-        }
-    }
-
-    return self.updateExpression();
-}
-
-fn updateExpression(self: *Self) ParseError!Node.Index {
-    if (self.peek()) |token| {
-        if (token.tag == .@"++" or token.tag == .@"--") {
+    const token = self.peek();
+    switch (token.tag) {
+        .kw_delete,
+        .kw_typeof,
+        .kw_void,
+        .@"-",
+        .@"+",
+        .@"~",
+        .@"!",
+        => {
             _ = try self.next();
             const expr = try self.unaryExpression();
-            return self.addNode(ast.Node{
-                .update_expr = ast.UnaryPayload{
+            return try self.addNode(ast.Node{
+                .unary_expr = ast.UnaryPayload{
                     .operand = expr,
                     .operator = try self.addToken(token),
                 },
             });
-        }
+        },
+        else => return self.updateExpression(),
+    }
+}
+
+fn updateExpression(self: *Self) ParseError!Node.Index {
+    const token = self.peek();
+    if (token.tag == .@"++" or token.tag == .@"--") {
+        _ = try self.next();
+        const expr = try self.unaryExpression();
+        return self.addNode(ast.Node{
+            .update_expr = ast.UnaryPayload{
+                .operand = expr,
+                .operator = try self.addToken(token),
+            },
+        });
     }
 
     // post increment / decrement
     const expr = try self.lhsExpression();
-    const lookahead = self.peek() orelse return expr;
+    const lookahead = self.peek();
     if (lookahead.tag == .@"++" or lookahead.tag == .@"--") {
         _ = try self.next();
         return self.addNode(ast.Node{
@@ -211,7 +221,7 @@ fn tryNewExpression(self: *Self) ParseError!?Node.Index {
 /// also has productions that parse member expressions:
 /// https://262.ecma-international.org/15.0/index.html#prod-CallExpression
 fn tryCallExpression(self: *Self, callee: Node.Index) ParseError!?Node.Index {
-    const token = self.peek() orelse return ParseError.UnexpectedEof;
+    const token = self.peek();
     if (token.tag == .kw_super) {
         _ = try self.next();
         return try self.addNode(.{
@@ -222,8 +232,8 @@ fn tryCallExpression(self: *Self, callee: Node.Index) ParseError!?Node.Index {
     if (token.tag != .@"(") return null;
 
     var call_expr = try self.coverCallAndAsyncArrowHead(callee);
-    var maybe_token = self.peek();
-    while (maybe_token) |lookahead| : (maybe_token = self.peek()) {
+    var lookahead = self.peek();
+    while (lookahead.tag != .eof) : (lookahead = self.peek()) {
         switch (lookahead.tag) {
             .@"(" => call_expr = try self.completeCallExpression(call_expr),
             .@"[" => call_expr = try self.completeComputedMemberExpression(call_expr),
@@ -258,8 +268,8 @@ fn coverCallAndAsyncArrowHead(self: *Self, callee: Node.Index) ParseError!Node.I
 fn optionalExpression(self: *Self, object: Node.Index) ParseError!Node.Index {
     var expr = object;
     var lookahead = self.peek();
-    while (lookahead) |token| : (lookahead = self.peek()) {
-        switch (token.tag) {
+    while (lookahead.tag != .eof) : (lookahead = self.peek()) {
+        switch (lookahead.tag) {
             .@"?." => expr = try self.completeOptionalChain(expr),
             else => return expr,
         }
@@ -275,8 +285,8 @@ fn optionalExpression(self: *Self, object: Node.Index) ParseError!Node.Index {
 fn completeOptionalChain(self: *Self, prev_expr: Node.Index) ParseError!Node.Index {
     var expr = try self.optionalChain(prev_expr);
     var lookahead = self.peek();
-    while (lookahead) |token| : (lookahead = self.peek()) {
-        switch (token.tag) {
+    while (lookahead.tag != .eof) : (lookahead = self.peek()) {
+        switch (lookahead.tag) {
             .@"[" => {
                 const member_expr = try self.completeComputedMemberExpression(expr);
                 expr = try self.addNode(.{ .optional_expr = member_expr });
@@ -304,8 +314,7 @@ fn optionalChain(self: *Self, object: Node.Index) ParseError!Node.Index {
     const chain_op = try self.next();
     std.debug.assert(chain_op.tag == .@"?.");
 
-    const lookahead = self.peek() orelse
-        return ParseError.UnexpectedEof;
+    const lookahead = self.peek();
 
     switch (lookahead.tag) {
         .@"(" => {
@@ -342,9 +351,9 @@ fn optionalChain(self: *Self, object: Node.Index) ParseError!Node.Index {
 
 fn memberExpression(self: *Self) ParseError!Node.Index {
     var member_expr = try self.primaryExpression();
-    var maybe_token = self.peek();
-    while (maybe_token) |tok| : (maybe_token = self.peek()) {
-        switch (tok.tag) {
+    var token = self.peek();
+    while (token.tag != .eof) : (token = self.peek()) {
+        switch (token.tag) {
             .@"." => member_expr = try self.completeMemberExpression(member_expr),
             .@"[" => member_expr = try self.completeComputedMemberExpression(member_expr),
             else => return member_expr,
@@ -430,13 +439,14 @@ fn propertyDefinitionList(self: *Self) ParseError!?ast.NodeList {
     var property_defs = std.ArrayList(Node.Index).init(self.allocator);
     defer property_defs.deinit();
 
-    while (self.peek()) |lookahead| {
+    const lookahead = self.peek();
+    while (lookahead.tag != .eof) {
         switch (lookahead.tag) {
             .identifier => {
                 const key_token = try self.next();
                 const key = try self.addNode(.{ .identifier = try self.addToken(key_token) });
 
-                const maybe_colon = self.peek() orelse return ParseError.UnexpectedEof;
+                const maybe_colon = self.peek();
                 if (maybe_colon.tag != .@":") {
                     const kv_node = ast.ObjectProperty{ .key = key, .value = key };
                     try property_defs.append(try self.addNode(.{ .object_property = kv_node }));
@@ -463,7 +473,7 @@ fn propertyDefinitionList(self: *Self) ParseError!?ast.NodeList {
             else => break,
         }
 
-        const maybe_comma = self.peek() orelse break;
+        const maybe_comma = self.peek();
         if (maybe_comma.tag == .@",") {
             _ = try self.next();
         } else {
@@ -472,12 +482,7 @@ fn propertyDefinitionList(self: *Self) ParseError!?ast.NodeList {
     }
 
     if (property_defs.items.len == 0) return null;
-
-    // todo: separate this out into a helper function
-    const from: ast.NodeList.Index = @enumFromInt(self.arguments.items.len);
-    try self.arguments.appendSlice(property_defs.items);
-    const to: ast.NodeList.Index = @enumFromInt(self.arguments.items.len);
-    return ast.NodeList{ .from = from, .to = to };
+    return try self.addNodeList(property_defs.items);
 }
 
 fn completePropertyDef(self: *Self, key: Node.Index) ParseError!Node.Index {
@@ -515,11 +520,8 @@ fn arrayLiteral(self: *Self) ParseError!Node.Index {
         }
     }
 
-    const from: ast.NodeList.Index = @enumFromInt(self.arguments.items.len);
-    try self.arguments.appendSlice(elements.items);
-    const to: ast.NodeList.Index = @enumFromInt(self.arguments.items.len);
-
-    return self.addNode(.{ .array_literal = .{ .from = from, .to = to } });
+    const nodes = try self.addNodeList(elements.items);
+    return self.addNode(.{ .array_literal = nodes });
 }
 
 fn getNode(self: *const Self, index: Node.Index) *const ast.Node {
@@ -545,9 +547,14 @@ fn parseArgs(self: *Self) ParseError!ast.NodeList {
     }
 
     _ = try self.expect(.@")"); // eat closing ')'
-    const from: ast.NodeList.Index = @enumFromInt(self.arguments.items.len);
-    try self.arguments.appendSlice(arg_list.items);
-    const to: ast.NodeList.Index = @enumFromInt(self.arguments.items.len);
+
+    return self.addNodeList(arg_list.items);
+}
+
+fn addNodeList(self: *Self, nodes: []Node.Index) error{OutOfMemory}!ast.NodeList {
+    const from: ast.NodeList.Index = @enumFromInt(self.node_lists.items.len);
+    try self.node_lists.appendSlice(nodes);
+    const to: ast.NodeList.Index = @enumFromInt(self.node_lists.items.len);
     return ast.NodeList{ .from = from, .to = to };
 }
 
@@ -576,7 +583,7 @@ fn emitDiagnostic(
 }
 
 fn expect(self: *Self, tag: Token.Tag) ParseError!Token {
-    const token = try self.tokenizer.next();
+    const token = try self.next();
     if (token.tag == tag) {
         return token;
     }
@@ -590,7 +597,7 @@ fn expect(self: *Self, tag: Token.Tag) ParseError!Token {
 }
 
 fn expect2(self: *Self, tag1: Token.Tag, tag2: Token.Tag) ParseError!Token {
-    const token = try self.tokenizer.next();
+    const token = try self.next();
     if (token.tag == tag1 or token.tag == tag2) {
         return token;
     }
@@ -608,19 +615,23 @@ fn expect2(self: *Self, tag1: Token.Tag, tag2: Token.Tag) ParseError!Token {
 }
 
 fn next(self: *Self) ParseError!Token {
-    return self.tokenizer.next();
+    var next_token = try self.tokenizer.next();
+    while (next_token.tag == .comment) : (next_token = try self.tokenizer.next()) {
+        // TODO: store comments as trivia.
+    }
+
+    const ret_token = self.current_token;
+    self.current_token = self.next_token;
+    self.next_token = next_token;
+    return ret_token;
 }
 
-fn peek(self: *Self) ?Token {
-    return self.tokenizer.peek();
+inline fn peek(self: *Self) Token {
+    return self.current_token;
 }
 
 fn isAtToken(self: *Self, tag: Token.Tag) bool {
-    if (self.peek()) |token| {
-        return token.tag == tag;
-    }
-
-    return false;
+    return self.peek().tag == tag;
 }
 
 /// make a right associative parse function for an infix operator represented
@@ -633,7 +644,8 @@ fn makeRightAssoc(
         fn parseFn(self: *Self) ParseError!Node.Index {
             var node = try l(self);
 
-            while (self.peek()) |token| {
+            var token = self.peek();
+            while (true) : (token = self.peek()) {
                 if (token.tag != toktag) break;
                 _ = try self.next();
 
@@ -668,7 +680,8 @@ fn makeLeftAssoc(
         fn parseFn(self: *Self) ParseError!Node.Index {
             var node = try nextFn(self);
 
-            while (self.peek()) |token| {
+            var token = self.peek();
+            while (true) : (token = self.peek()) {
                 if (@intFromEnum(token.tag) >= min and @intFromEnum(token.tag) <= max) {
                     _ = try self.next();
                     const rhs = try nextFn(self);
