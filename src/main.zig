@@ -4,10 +4,7 @@ const syntax = @import("jam-syntax");
 const Parser = syntax.Parser;
 
 const source =
-    \\ [1, 2, 3, 4 + 5, {a:b} ]
-    \\
-    \\
-    \\
+    \\ 1 + 2 * 3 ^ 4 ** 5 + 7++ - 8++ && 5 | 6 & 7 ^ 8 | 9 & 10 && 11 || 12;
 ;
 
 pub fn main() !void {

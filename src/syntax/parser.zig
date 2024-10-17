@@ -705,14 +705,44 @@ fn makeLeftAssoc(
 }
 
 const t = std.testing;
-test parse {
-    const source = "a /= b = 2 * 3";
-    var parser = try Self.init(t.allocator, source, "test.js");
+
+const pretty = @import("./pretty.zig");
+fn runTestOnFile(tests_dir: std.fs.Dir, file_path: []const u8) !void {
+    const source_code = try tests_dir.readFileAlloc(
+        t.allocator,
+        file_path,
+        std.math.maxInt(u32),
+    );
+    defer t.allocator.free(source_code);
+
+    var parser = try Self.init(t.allocator, source_code, file_path);
     defer parser.deinit();
-    _ = parser.parse() catch {
-        for (parser.diagnostics.items) |d| {
-            std.debug.print("{s}", .{d.message});
+
+    const root_node = try parser.parse();
+    const pretty_ast = try pretty.toJsonString(t.allocator, &parser, root_node);
+    defer t.allocator.free(pretty_ast);
+
+    // The first line is a comment that has the expected JSON stringified AST.
+    const first_line_len = std.mem.indexOfScalar(u8, source_code, '\n') orelse unreachable;
+    const expected_json_str = source_code[2..first_line_len];
+
+    try t.expectEqualDeep(expected_json_str, pretty_ast);
+}
+
+test parse {
+    var root_dir = std.fs.cwd();
+    var tests_dir = try root_dir.openDir("expression-tests", .{});
+    defer tests_dir.close();
+
+    var iter = tests_dir.iterate();
+    while (try iter.next()) |entry| {
+        if (!std.mem.eql(u8, std.fs.path.extension(entry.name), ".js")) {
+            continue;
         }
-        return;
-    };
+
+        runTestOnFile(tests_dir, entry.name) catch |err| {
+            std.debug.print("Error comparing ASTs for file: {s}\n", .{entry.name});
+            return err;
+        };
+    }
 }
