@@ -1,5 +1,6 @@
 const std = @import("std");
 const Token = @import("token.zig").Token;
+const types = @import("util").types;
 
 pub const BinaryPayload = struct {
     lhs: Node.Index,
@@ -23,7 +24,6 @@ pub const ComputedPropertyAccess = struct {
 };
 
 pub const NodeList = struct {
-    // An index into the `arguments` array in the AST.
     pub const Index = enum(u32) { _ };
     from: Index,
     to: Index,
@@ -39,8 +39,7 @@ pub const ObjectProperty = struct {
     value: Node.Index,
 };
 
-pub const Node = union(enum) {
-    pub const Index = enum(u32) { _ };
+pub const NodeData = union(enum) {
     assignment_expr: BinaryPayload,
     binary_expr: BinaryPayload,
     member_expr: PropertyAccess,
@@ -62,16 +61,26 @@ pub const Node = union(enum) {
     empty_array_item: void,
     array_literal: ?NodeList,
     spread_element: Node.Index,
-    // points to a list of `ObjectProperty`s.
     object_literal: ?NodeList,
     object_property: ObjectProperty,
 
     comptime {
-        std.debug.assert(@bitSizeOf(Node) <= 128);
+        std.debug.assert(@bitSizeOf(NodeData) <= 128);
     }
 };
 
 const Type = std.builtin.Type;
+
+pub const Node = struct {
+    /// An index into the AST's `nodes` array list.
+    pub const Index = enum(u32) { _ };
+    /// Byte offset into the source file where this node begins.
+    start: u32,
+    /// Byte offset into the source file where this node ends.
+    end: u32,
+    /// The actual data stored by this node.
+    data: NodeData,
+};
 
 pub const NodePretty = union(enum) {
     const BinaryPayload_ = Pretty(BinaryPayload);

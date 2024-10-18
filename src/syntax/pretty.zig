@@ -42,7 +42,7 @@ fn toPretty(
     node_id: Node.Index,
 ) !ast.NodePretty {
     const node = self.nodes.items[@intFromEnum(node_id)];
-    switch (node) {
+    switch (node.data) {
         .binary_expr,
         .assignment_expr,
         => |payload| {
@@ -59,7 +59,7 @@ fn toPretty(
                 .assignment_expression = .{ .lhs = lhs, .rhs = rhs, .operator = operator },
             };
 
-            return if (checkActiveField(node, "binary_expr"))
+            return if (checkActiveField(node.data, "binary_expr"))
                 binary
             else
                 assignment;
@@ -69,7 +69,7 @@ fn toPretty(
         .literal,
         => |tok_id| {
             const token = self.tokens.items[@intFromEnum(tok_id)];
-            if (checkActiveField(node, "identifier")) {
+            if (checkActiveField(node.data, "identifier")) {
                 return .{ .identifier = token.toByteSlice(self.source) };
             } else {
                 return .{ .literal = token.toByteSlice(self.source) };
@@ -103,7 +103,7 @@ fn toPretty(
                 try toPretty(self, allocator, payload.operand),
             );
             const token = self.tokens.items[@intFromEnum(payload.operator)];
-            return if (checkActiveField(node, "post_unary_expr"))
+            return if (checkActiveField(node.data, "post_unary_expr"))
                 .{
                     .post_unary_expression = .{
                         .operand = operand,
@@ -126,7 +126,7 @@ fn toPretty(
         .call_expr, .new_expr => |payload| {
             const callee = try copy(allocator, try toPretty(self, allocator, payload.callee));
             const arguments = try copy(allocator, try toPretty(self, allocator, payload.arguments));
-            return if (checkActiveField(node, "call_expr")) .{
+            return if (checkActiveField(node.data, "call_expr")) .{
                 .call_expression = .{
                     .callee = callee,
                     .arguments = arguments,

@@ -11,6 +11,7 @@ const types = util.types;
 const offsets = util.offsets;
 
 const Node = ast.Node;
+const NodeData = ast.NodeData;
 
 const ParseError = error{ UnexpectedToken, OutOfMemory, NotSupported } || Tokenizer.Error;
 const ParseFn = fn (self: *Self) ParseError!Node.Index;
@@ -79,7 +80,7 @@ pub fn init(
         .node_lists = std.ArrayList(Node.Index).init(allocator),
     };
 
-    // this call will initialize `current_token` and `next_token`.
+    // these calls will initialize `current_token` and `next_token`.
     _ = try self.next();
     _ = try self.next();
     return self;
@@ -118,13 +119,19 @@ fn assignmentExpression(self: *Self) !Node.Index {
         _ = try self.next();
 
         const rhs = try self.assignmentExpression();
-        node = try self.addNode(.{
-            .assignment_expr = .{
-                .lhs = node,
-                .rhs = rhs,
-                .operator = try self.addToken(token),
+        const lhs_start_pos = self.nodes.items[@intFromEnum(rhs)].end;
+        const rhs_end_pos = self.nodes.items[@intFromEnum(node)].start;
+        node = try self.addNode(
+            .{
+                .assignment_expr = .{
+                    .lhs = node,
+                    .rhs = rhs,
+                    .operator = try self.addToken(token),
+                },
             },
-        });
+            lhs_start_pos,
+            rhs_end_pos,
+        );
     }
 
     return node;
@@ -141,14 +148,15 @@ fn unaryExpression(self: *Self) ParseError!Node.Index {
         .@"~",
         .@"!",
         => {
-            _ = try self.next();
+            const op_token = try self.next();
             const expr = try self.unaryExpression();
-            return try self.addNode(ast.Node{
+            const expr_end_pos = self.nodes.items[@intFromEnum(expr)].end;
+            return try self.addNode(.{
                 .unary_expr = ast.UnaryPayload{
                     .operand = expr,
                     .operator = try self.addToken(token),
                 },
-            });
+            }, op_token.start, expr_end_pos);
         },
         else => return self.updateExpression(),
     }
@@ -157,27 +165,29 @@ fn unaryExpression(self: *Self) ParseError!Node.Index {
 fn updateExpression(self: *Self) ParseError!Node.Index {
     const token = self.peek();
     if (token.tag == .@"++" or token.tag == .@"--") {
-        _ = try self.next();
+        const op_token = try self.next();
         const expr = try self.unaryExpression();
-        return self.addNode(ast.Node{
+        const expr_end_pos = self.nodes.items[@intFromEnum(expr)].end;
+        return self.addNode(.{
             .update_expr = ast.UnaryPayload{
                 .operand = expr,
                 .operator = try self.addToken(token),
             },
-        });
+        }, op_token.start, expr_end_pos);
     }
 
     // post increment / decrement
     const expr = try self.lhsExpression();
     const lookahead = self.peek();
     if (lookahead.tag == .@"++" or lookahead.tag == .@"--") {
-        _ = try self.next();
-        return self.addNode(ast.Node{
+        const op_token = try self.next();
+        const expr_end_pos = self.nodes.items[@intFromEnum(expr)].end;
+        return self.addNode(.{
             .post_unary_expr = .{
                 .operand = expr,
                 .operator = try self.addToken(lookahead),
             },
-        });
+        }, op_token.start, expr_end_pos);
     }
 
     return expr;
@@ -198,17 +208,18 @@ fn lhsExpression(self: *Self) ParseError!Node.Index {
 
 fn tryNewExpression(self: *Self) ParseError!?Node.Index {
     if (self.isAtToken(.kw_new)) {
-        _ = try self.next(); // eat "new"
+        const new_token = try self.next(); // eat "new"
         const expr = try self.memberExpression();
+        const expr_end_pos = self.nodes.items[@intFromEnum(expr)].end;
         return try self.addNode(.{
             .new_expr = .{
                 .callee = expr,
                 .arguments = if (self.isAtToken(.@"("))
                     try self.args()
                 else
-                    try self.addNode(.{ .arguments = null }),
+                    try self.addNode(.{ .arguments = null }, new_token.start, new_token.start),
             },
-        });
+        }, new_token.start, expr_end_pos);
     }
 
     return null;
@@ -223,10 +234,10 @@ fn tryNewExpression(self: *Self) ParseError!?Node.Index {
 fn tryCallExpression(self: *Self, callee: Node.Index) ParseError!?Node.Index {
     const token = self.peek();
     if (token.tag == .kw_super) {
-        _ = try self.next();
+        const super_call_args, const start, const end = try self.parseArgs();
         return try self.addNode(.{
-            .super_call_expr = try self.parseArgs(),
-        });
+            .super_call_expr = super_call_args,
+        }, start, end);
     }
 
     if (token.tag != .@"(") return null;
@@ -246,22 +257,28 @@ fn tryCallExpression(self: *Self, callee: Node.Index) ParseError!?Node.Index {
 }
 
 fn completeCallExpression(self: *Self, callee: Node.Index) ParseError!Node.Index {
+    const start_pos = self.nodes.items[@intFromEnum(callee)].start;
+    const call_args = try self.args();
     const call_expr = ast.CallExpr{
-        .arguments = try self.args(),
+        .arguments = call_args,
         .callee = callee,
     };
-
-    return self.addNode(.{ .call_expr = call_expr });
+    const end_pos = self.nodes.items[@intFromEnum(call_args)].end;
+    return self.addNode(.{ .call_expr = call_expr }, start_pos, end_pos);
 }
 
 // CoverCallAndAsyncArrowHead:  MemberExpression Arguments
 fn coverCallAndAsyncArrowHead(self: *Self, callee: Node.Index) ParseError!Node.Index {
+    const call_args = try self.args();
+    const start_pos = self.nodes.items[@intFromEnum(callee)].start;
+    const end_pos = self.nodes.items[@intFromEnum(call_args)].end;
+
     return self.addNode(.{
         .call_expr = .{
             .callee = callee,
             .arguments = try self.args(),
         },
-    });
+    }, start_pos, end_pos);
 }
 
 /// https://262.ecma-international.org/15.0/index.html#prod-OptionalExpression
@@ -284,20 +301,25 @@ fn optionalExpression(self: *Self, object: Node.Index) ParseError!Node.Index {
 /// see: `Self.optionalChain`.
 fn completeOptionalChain(self: *Self, prev_expr: Node.Index) ParseError!Node.Index {
     var expr = try self.optionalChain(prev_expr);
+    const start_pos = self.nodes.items[@intFromEnum(expr)].start;
+
     var lookahead = self.peek();
     while (lookahead.tag != .eof) : (lookahead = self.peek()) {
         switch (lookahead.tag) {
             .@"[" => {
                 const member_expr = try self.completeComputedMemberExpression(expr);
-                expr = try self.addNode(.{ .optional_expr = member_expr });
+                const end_pos = self.nodes.items[@intFromEnum(member_expr)].end;
+                expr = try self.addNode(.{ .optional_expr = member_expr }, start_pos, end_pos);
             },
             .@"." => {
                 const member_expr = try self.completeMemberExpression(expr);
-                expr = try self.addNode(.{ .optional_expr = member_expr });
+                const end_pos = self.nodes.items[@intFromEnum(member_expr)].end;
+                expr = try self.addNode(.{ .optional_expr = member_expr }, start_pos, end_pos);
             },
             .@"(" => {
                 const call_expr = try self.completeCallExpression(expr);
-                expr = try self.addNode(.{ .optional_expr = call_expr });
+                const end_pos = self.nodes.items[@intFromEnum(call_expr)].end;
+                expr = try self.addNode(.{ .optional_expr = call_expr }, start_pos, end_pos);
             },
             else => return expr,
         }
@@ -311,6 +333,8 @@ fn completeOptionalChain(self: *Self, prev_expr: Node.Index) ParseError!Node.Ind
 ///
 /// See: https://262.ecma-international.org/15.0/index.html#prod-OptionalExpression
 fn optionalChain(self: *Self, object: Node.Index) ParseError!Node.Index {
+    const start_pos = self.nodes.items[@intFromEnum(object)].start;
+
     const chain_op = try self.next();
     std.debug.assert(chain_op.tag == .@"?.");
 
@@ -318,25 +342,29 @@ fn optionalChain(self: *Self, object: Node.Index) ParseError!Node.Index {
 
     switch (lookahead.tag) {
         .@"(" => {
-            const expr = try self.addNode(ast.Node{
+            const call_args = try self.args();
+            const end_pos = self.nodes.items[@intFromEnum(call_args)].end;
+            const call_expr = try self.addNode(.{
                 .call_expr = .{
-                    .arguments = try self.args(),
+                    .arguments = call_args,
                     .callee = object,
                 },
-            });
-            return self.addNode(ast.Node{ .optional_expr = expr });
+            }, start_pos, end_pos);
+            return self.addNode(ast.NodeData{ .optional_expr = call_expr }, start_pos, end_pos);
         },
         .@"[" => {
             const expr = try self.completeComputedMemberExpression(object);
-            return self.addNode(ast.Node{ .optional_expr = expr });
+            const end_pos = self.nodes.items[@intFromEnum(expr)].end;
+            return self.addNode(.{ .optional_expr = expr }, start_pos, end_pos);
         },
         .identifier, .private_identifier => {
-            _ = try self.next(); // eat the property name
-            const expr = try self.addNode(ast.Node{ .member_expr = .{
+            const property_name_token = try self.next(); // eat the property name
+            const end_pos = property_name_token.start + property_name_token.len;
+            const expr = try self.addNode(.{ .member_expr = .{
                 .object = object,
                 .property = try self.addToken(lookahead),
-            } });
-            return self.addNode(ast.Node{ .optional_expr = expr });
+            } }, start_pos, end_pos);
+            return self.addNode(.{ .optional_expr = expr }, start_pos, end_pos);
         },
         else => {
             try self.emitDiagnostic(
@@ -366,7 +394,9 @@ fn completeMemberExpression(self: *Self, object: Node.Index) ParseError!Node.Ind
     const dot = try self.next(); // eat "."
     std.debug.assert(dot.tag == .@".");
 
-    const property_token: Token.Index = blk: {
+    const start_pos = self.nodes.items[@intFromEnum(object)].start;
+
+    const property_token_idx: Token.Index = blk: {
         const tok = try self.next();
         if (tok.tag == .identifier or tok.tag == .private_identifier) {
             break :blk try self.addToken(tok);
@@ -382,9 +412,12 @@ fn completeMemberExpression(self: *Self, object: Node.Index) ParseError!Node.Ind
 
     const property_access = ast.PropertyAccess{
         .object = object,
-        .property = property_token,
+        .property = property_token_idx,
     };
-    return self.addNode(.{ .member_expr = property_access });
+
+    const property_token = self.tokens.items[@intFromEnum(property_token_idx)];
+    const end_pos = property_token.start + property_token.len;
+    return self.addNode(.{ .member_expr = property_access }, start_pos, end_pos);
 }
 
 fn completeComputedMemberExpression(self: *Self, object: Node.Index) ParseError!Node.Index {
@@ -399,22 +432,36 @@ fn completeComputedMemberExpression(self: *Self, object: Node.Index) ParseError!
         .property = property,
     };
 
-    return self.addNode(.{ .computed_member_expr = property_access });
+    const start_pos = self.nodes.items[@intFromEnum(object)].start;
+    const end_pos = self.nodes.items[@intFromEnum(property)].end;
+    return self.addNode(.{ .computed_member_expr = property_access }, start_pos, end_pos);
 }
 
 fn primaryExpression(self: *Self) ParseError!Node.Index {
     const token = try self.next();
     switch (token.tag) {
-        .kw_this => return self.addNode(.{ .this = try self.addToken(token) }),
-        .identifier => return self.addNode(.{ .identifier = try self.addToken(token) }),
+        .kw_this => return self.addNode(
+            .{ .this = try self.addToken(token) },
+            token.start,
+            token.start + token.len,
+        ),
+        .identifier => return self.addNode(
+            .{ .identifier = try self.addToken(token) },
+            token.start,
+            token.start + token.len,
+        ),
         .numeric_literal,
         .string_literal,
         .kw_true,
         .kw_false,
         .kw_null,
-        => return self.addNode(ast.Node{ .literal = try self.addToken(token) }),
-        .@"[" => return self.arrayLiteral(),
-        .@"{" => return self.objectLiteral(),
+        => return self.addNode(
+            .{ .literal = try self.addToken(token) },
+            token.start,
+            token.start + token.len,
+        ),
+        .@"[" => return self.arrayLiteral(token.start),
+        .@"{" => return self.objectLiteral(token.start),
         else => {
             try self.emitDiagnostic(
                 token.startCoord(self.source),
@@ -428,11 +475,11 @@ fn primaryExpression(self: *Self) ParseError!Node.Index {
 
 /// Parse an object literal, assuming the `{` has already been consumed.
 /// https://262.ecma-international.org/15.0/index.html#prod-ObjectLiteral
-fn objectLiteral(self: *Self) ParseError!Node.Index {
+fn objectLiteral(self: *Self, start_pos: u32) ParseError!Node.Index {
     const properties = try self.propertyDefinitionList();
-    _ = try self.expect(.@"}");
-
-    return try self.addNode(.{ .object_literal = properties });
+    const closing_brace = try self.expect(.@"}");
+    const end_pos = closing_brace.start + closing_brace.len;
+    return try self.addNode(.{ .object_literal = properties }, start_pos, end_pos);
 }
 
 fn propertyDefinitionList(self: *Self) ParseError!?ast.NodeList {
@@ -444,12 +491,21 @@ fn propertyDefinitionList(self: *Self) ParseError!?ast.NodeList {
         switch (lookahead.tag) {
             .identifier => {
                 const key_token = try self.next();
-                const key = try self.addNode(.{ .identifier = try self.addToken(key_token) });
+                const key_end_pos = key_token.start + key_token.len;
+                const key = try self.addNode(
+                    .{ .identifier = try self.addToken(key_token) },
+                    key_token.start,
+                    key_end_pos,
+                );
 
                 const maybe_colon = self.peek();
                 if (maybe_colon.tag != .@":") {
                     const kv_node = ast.ObjectProperty{ .key = key, .value = key };
-                    try property_defs.append(try self.addNode(.{ .object_property = kv_node }));
+                    try property_defs.append(try self.addNode(
+                        .{ .object_property = kv_node },
+                        key_token.start,
+                        key_end_pos,
+                    ));
                 } else {
                     _ = try self.next();
                     try property_defs.append(try self.completePropertyDef(key));
@@ -466,15 +522,21 @@ fn propertyDefinitionList(self: *Self) ParseError!?ast.NodeList {
 
             .numeric_literal, .string_literal => {
                 const key_token = try self.next();
-                const key = try self.addNode(.{ .literal = try self.addToken(key_token) });
+                const key = try self.addNode(
+                    .{ .literal = try self.addToken(key_token) },
+                    key_token.start,
+                    key_token.start + key_token.len,
+                );
                 _ = try self.expect(.@":");
                 try property_defs.append(try self.completePropertyDef(key));
             },
 
             .@"..." => {
-                _ = try self.next();
+                const ellipsis_tok = try self.next();
                 const expr = try self.assignmentExpression();
-                try property_defs.append(try self.addNode(ast.Node{ .spread_element = expr }));
+                const start = ellipsis_tok.start;
+                const end = self.nodes.items[@intFromEnum(expr)].end;
+                try property_defs.append(try self.addNode(.{ .spread_element = expr }, start, end));
             },
             else => break,
         }
@@ -493,48 +555,60 @@ fn propertyDefinitionList(self: *Self) ParseError!?ast.NodeList {
 
 fn completePropertyDef(self: *Self, key: Node.Index) ParseError!Node.Index {
     const value = try self.assignmentExpression();
+    const start_pos = self.nodes.items[@intFromEnum(key)].start;
+    const end_pos = self.nodes.items[@intFromEnum(value)].end;
     const kv_node = ast.ObjectProperty{
         .key = key,
         .value = value,
     };
-    return self.addNode(.{ .object_property = kv_node });
+    return self.addNode(.{ .object_property = kv_node }, start_pos, end_pos);
 }
 
 /// Parse an ArrayLiteral:
 /// https://262.ecma-international.org/15.0/index.html#prod-ArrayLiteral
-fn arrayLiteral(self: *Self) ParseError!Node.Index {
+fn arrayLiteral(self: *Self, start_pos: u32) ParseError!Node.Index {
     var elements = std.ArrayList(Node.Index).init(self.allocator);
     defer elements.deinit();
 
+    var end_pos = start_pos;
     while (true) {
         while (self.isAtToken(.@",")) {
             // elision: https://262.ecma-international.org/15.0/index.html#prod-Elision
-            _ = try self.next();
-            try elements.append(try self.addNode(.{ .empty_array_item = {} }));
+            const comma = try self.next();
+            try elements.append(try self.addNode(
+                .{ .empty_array_item = {} },
+                comma.start,
+                comma.start + comma.len,
+            ));
         }
 
         if (self.isAtToken(.@"]")) {
-            _ = try self.next();
+            const end_tok = try self.next();
+            end_pos = end_tok.start + end_tok.len;
             break;
         }
 
         // Spread element
         if (self.isAtToken(.@"...")) {
-            _ = try self.next();
+            const ellipsis_tok = try self.next();
             const expr = try self.assignmentExpression();
-            try elements.append(try self.addNode(.{ .spread_element = expr }));
+            const start = ellipsis_tok.start;
+            const end = self.nodes.items[@intFromEnum(expr)].end;
+            try elements.append(try self.addNode(.{ .spread_element = expr }, start, end));
         } else {
             const item = try self.assignmentExpression();
             try elements.append(item);
         }
 
-        if ((try self.expect2(.@",", .@"]")).tag == .@"]") {
+        const next_token = try self.expect2(.@",", .@"]");
+        if (next_token.tag == .@"]") {
+            end_pos = next_token.start + next_token.len;
             break;
         }
     }
 
     const nodes = try self.addNodeList(elements.items);
-    return self.addNode(.{ .array_literal = nodes });
+    return self.addNode(.{ .array_literal = nodes }, start_pos, end_pos);
 }
 
 fn getNode(self: *const Self, index: Node.Index) *const ast.Node {
@@ -542,11 +616,12 @@ fn getNode(self: *const Self, index: Node.Index) *const ast.Node {
 }
 
 fn args(self: *Self) ParseError!Node.Index {
-    return self.addNode(.{ .arguments = try self.parseArgs() });
+    const args_node, const start, const end = try self.parseArgs();
+    return self.addNode(.{ .arguments = args_node }, start, end);
 }
 
-fn parseArgs(self: *Self) ParseError!ast.NodeList {
-    _ = try self.expect(.@"(");
+fn parseArgs(self: *Self) ParseError!struct { ast.NodeList, u32, u32 } {
+    const start_pos = (try self.expect(.@"(")).start;
 
     var arg_list = std.ArrayList(Node.Index).init(self.allocator);
     defer arg_list.deinit();
@@ -559,9 +634,10 @@ fn parseArgs(self: *Self) ParseError!ast.NodeList {
         _ = try self.next(); // eat ','
     }
 
-    _ = try self.expect(.@")"); // eat closing ')'
+    const close_paren = try self.expect(.@")"); // eat closing ')'
+    const end_pos = close_paren.start + close_paren.len;
 
-    return self.addNodeList(arg_list.items);
+    return .{ try self.addNodeList(arg_list.items), start_pos, end_pos };
 }
 
 fn addNodeList(self: *Self, nodes: []Node.Index) error{OutOfMemory}!ast.NodeList {
@@ -576,8 +652,8 @@ fn addToken(self: *Self, token: Token) error{OutOfMemory}!Token.Index {
     return @enumFromInt(self.tokens.items.len - 1);
 }
 
-fn addNode(self: *Self, node: Node) error{OutOfMemory}!Node.Index {
-    try self.nodes.append(node);
+fn addNode(self: *Self, node: NodeData, start: u32, end: u32) error{OutOfMemory}!Node.Index {
+    try self.nodes.append(.{ .data = node, .start = start, .end = end });
     return @enumFromInt(self.nodes.items.len - 1);
 }
 
@@ -663,13 +739,15 @@ fn makeRightAssoc(
                 _ = try self.next();
 
                 const rhs = try parseFn(self);
+                const start_pos = self.nodes.items[@intFromEnum(node)].start;
+                const end_pos = self.nodes.items[@intFromEnum(rhs)].end;
                 node = try self.addNode(.{
                     .binary_expr = .{
                         .lhs = node,
                         .rhs = rhs,
                         .operator = try self.addToken(token),
                     },
-                });
+                }, start_pos, end_pos);
             }
 
             return node;
@@ -698,13 +776,16 @@ fn makeLeftAssoc(
                 if (@intFromEnum(token.tag) >= min and @intFromEnum(token.tag) <= max) {
                     _ = try self.next();
                     const rhs = try nextFn(self);
+
+                    const start_pos = self.nodes.items[@intFromEnum(node)].start;
+                    const end_pos = self.nodes.items[@intFromEnum(rhs)].end;
                     node = try self.addNode(.{
                         .binary_expr = .{
                             .lhs = node,
                             .rhs = rhs,
                             .operator = try self.addToken(token),
                         },
-                    });
+                    }, start_pos, end_pos);
                 } else {
                     break;
                 }
