@@ -61,6 +61,7 @@ pub const Node = union(enum) {
     this: Token.Index,
     empty_array_item: void,
     array_literal: ?NodeList,
+    spread_element: Node.Index,
     // points to a list of `ObjectProperty`s.
     object_literal: ?NodeList,
     object_property: ObjectProperty,
@@ -88,6 +89,7 @@ pub const NodePretty = union(enum) {
     new_expression: Pretty(CallExpr),
     call_expression: Pretty(CallExpr),
     super_call_expression: Pretty(NodeList),
+    spread_element: Pretty(Node.Index),
 
     post_unary_expression: UnaryPayload_,
     unary_expression: UnaryPayload_,

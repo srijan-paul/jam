@@ -470,6 +470,12 @@ fn propertyDefinitionList(self: *Self) ParseError!?ast.NodeList {
                 _ = try self.expect(.@":");
                 try property_defs.append(try self.completePropertyDef(key));
             },
+
+            .@"..." => {
+                _ = try self.next();
+                const expr = try self.assignmentExpression();
+                try property_defs.append(try self.addNode(ast.Node{ .spread_element = expr }));
+            },
             else => break,
         }
 
@@ -512,8 +518,15 @@ fn arrayLiteral(self: *Self) ParseError!Node.Index {
             break;
         }
 
-        const item = try self.assignmentExpression();
-        try elements.append(item);
+        // Spread element
+        if (self.isAtToken(.@"...")) {
+            _ = try self.next();
+            const expr = try self.assignmentExpression();
+            try elements.append(try self.addNode(.{ .spread_element = expr }));
+        } else {
+            const item = try self.assignmentExpression();
+            try elements.append(item);
+        }
 
         if ((try self.expect2(.@",", .@"]")).tag == .@"]") {
             break;

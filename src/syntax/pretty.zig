@@ -159,6 +159,10 @@ fn toPretty(
                 .value = try copy(allocator, try toPretty(self, allocator, prop.value)),
             },
         },
+        .spread_element => |payload| {
+            const expr = try copy(allocator, try toPretty(self, allocator, payload));
+            return .{ .spread_element = expr };
+        },
     }
 }
 
