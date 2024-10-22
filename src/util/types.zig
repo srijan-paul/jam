@@ -13,6 +13,12 @@ pub const Range = struct {
     end: Coordinate,
 };
 
+/// Start and end byte offsets in a text file.
+pub const Span = struct {
+    start: u32,
+    end: u32,
+};
+
 pub const Diagnostic = struct {
     coord: Coordinate,
     message: []const u8,

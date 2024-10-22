@@ -45,6 +45,22 @@ pub const ConditionalExpr = struct {
     alternate: Node.Index,
 };
 
+pub const VariableDeclarator = struct {
+    lhs: Node.Index,
+    init: ?Node.Index,
+};
+
+pub const VarDeclKind = enum {
+    let,
+    @"var",
+    @"const",
+};
+
+pub const VariableDeclaration = struct {
+    declarators: NodeList,
+    kind: VarDeclKind,
+};
+
 pub const NodeData = union(enum) {
     // Expressions:
     assignment_expr: BinaryPayload,
@@ -82,6 +98,8 @@ pub const NodeData = union(enum) {
     empty_statement: void,
     block_statement: ?NodeList,
     expression_statement: Node.Index,
+    variable_declaration: VariableDeclaration,
+    variable_declarator: VariableDeclarator,
 
     comptime {
         std.debug.assert(@bitSizeOf(NodeData) <= 128);
@@ -140,12 +158,16 @@ pub const NodePretty = union(enum) {
     empty_statement: void,
     expression_statement: Pretty(Node.Index),
     block_statement: Pretty(NodeList),
+    variable_declaration: Pretty(VariableDeclaration),
+    variable_declarator: Pretty(VariableDeclarator),
 };
 
 fn Pretty(T: type) type {
     if (T == Node.Index) return *NodePretty;
+    if (T == ?Node.Index) return ?*NodePretty;
     if (T == NodeList) return []NodePretty;
     if (T == Token.Index) return []const u8;
+    if (T == VarDeclKind) return T;
 
     switch (@typeInfo(T)) {
         .@"struct" => |s| {

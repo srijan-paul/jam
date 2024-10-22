@@ -207,6 +207,30 @@ fn toPretty(
         },
 
         .empty_statement => return .{ .empty_statement = {} },
+
+        .variable_declarator => |decl| {
+            const lhs = try copy(allocator, try toPretty(self, allocator, decl.lhs));
+            const init = if (decl.init) |init|
+                try copy(allocator, try toPretty(self, allocator, init))
+            else
+                null;
+            return .{
+                .variable_declarator = .{
+                    .lhs = lhs,
+                    .init = init,
+                },
+            };
+        },
+
+        .variable_declaration => |d| {
+            const decls = try prettyNodeList(allocator, self, d.declarators);
+            return .{
+                .variable_declaration = .{
+                    .declarators = decls,
+                    .kind = d.kind,
+                },
+            };
+        },
     }
 }
 

@@ -157,6 +157,7 @@ fn statement(self: *Self) ParseError!Node.Index {
                 can_end_in_semi = false;
                 break :blk try self.emptyStatement();
             },
+            .kw_let, .kw_var, .kw_const => break :blk self.variableStatement(),
             else => break :blk self.expressionStatement(),
         }
     };
@@ -164,6 +165,62 @@ fn statement(self: *Self) ParseError!Node.Index {
     if (can_end_in_semi) try self.consume(.@";");
 
     return stmt;
+}
+
+fn variableStatement(self: *Self) ParseError!Node.Index {
+    const kw = try self.next();
+    std.debug.assert(kw.tag == .kw_let or kw.tag == .kw_var or kw.tag == .kw_const);
+
+    // TODO: fast path for single variable declaration?
+    var declarators = std.ArrayList(Node.Index).init(self.allocator);
+    defer declarators.deinit();
+
+    // parse a VariableDeclarationList
+    while (true) {
+        const decl = try self.variableDeclarator();
+        try declarators.append(decl);
+        const token = self.peek();
+        if (token.tag != .@",") break;
+        _ = try self.next();
+    }
+
+    const decls = try self.addNodeList(declarators.items);
+    const last_decl = self.node_lists.items[@intFromEnum(decls.to) - 1];
+
+    return self.addNode(
+        .{ .variable_declaration = .{
+            .kind = switch (kw.tag) {
+                .kw_let => .let,
+                .kw_var => .@"var",
+                .kw_const => .@"const",
+                else => unreachable,
+            },
+            .declarators = decls,
+        } },
+        kw.start,
+        self.getNode(last_decl).end,
+    );
+}
+
+fn variableDeclarator(self: *Self) ParseError!Node.Index {
+    const lhs = try self.assignmentLhsExpr();
+
+    const start_pos = self.nodeSpan(lhs).start;
+    var end_pos = self.nodeSpan(lhs).end;
+
+    var rhs: ?Node.Index = null;
+    if (self.isAtToken(.@"=")) {
+        _ = try self.next();
+        const init_expr = try self.assignmentExpression();
+        end_pos = self.nodeSpan(init_expr).end;
+        rhs = init_expr;
+    }
+
+    return self.addNode(
+        .{ .variable_declarator = .{ .lhs = lhs, .init = rhs } },
+        start_pos,
+        end_pos,
+    );
 }
 
 fn emptyStatement(self: *Self) ParseError!Node.Index {
@@ -357,6 +414,14 @@ fn assignmentLhsExpr(self: *Self) ParseError!Node.Index {
     switch (token.tag) {
         .@"{" => return self.objectAssignmentPattern(),
         .@"[" => return self.arrayAssignmentPattern(),
+        .identifier => {
+            _ = try self.next();
+            const start = token.start;
+            const end = token.start + token.len;
+            return self.addNode(.{
+                .identifier = try self.addToken(token),
+            }, start, end);
+        },
         else => {
             try self.emitDiagnostic(
                 token.startCoord(self.source),
@@ -1187,8 +1252,16 @@ fn arrayLiteral(self: *Self, start_pos: u32) ParseError!Node.Index {
     return self.addNode(.{ .array_literal = nodes }, start_pos, end_pos);
 }
 
+/// Get a pointer to a node by its index.
+/// The returned value can be invalidated by any call to `addNode`, `restoreState`, `addNodeList`.
 fn getNode(self: *const Self, index: Node.Index) *const ast.Node {
+    // TODO: should this return a non-pointer instead?
     return &self.nodes.items[@intFromEnum(index)];
+}
+
+fn nodeSpan(self: *const Self, index: Node.Index) types.Span {
+    const node = &self.nodes.items[@intFromEnum(index)];
+    return .{ .start = node.start, .end = node.end };
 }
 
 fn args(self: *Self) ParseError!Node.Index {
