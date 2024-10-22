@@ -21,6 +21,8 @@ const ParseError = error{
 } || Tokenizer.Error;
 const ParseFn = fn (self: *Self) ParseError!Node.Index;
 
+/// Used to save and restore the parser state.
+/// Helpful when backtracking for cover grammars (like arrow functions v/s parenthesized exprs)
 const State = struct {
     nodes_len: usize,
     tokens_len: usize,
@@ -179,6 +181,7 @@ fn emitDiagnostic(
     });
 }
 
+/// Emit a parse error if the current token does not match `tag`.
 fn expect(self: *Self, tag: Token.Tag) ParseError!Token {
     const token = try self.next();
     if (token.tag == tag) {
@@ -193,6 +196,7 @@ fn expect(self: *Self, tag: Token.Tag) ParseError!Token {
     return ParseError.UnexpectedToken;
 }
 
+/// Emit a parse error if the current token does not match `tag1` or `tag2`.
 fn expect2(self: *Self, tag1: Token.Tag, tag2: Token.Tag) ParseError!Token {
     const token = try self.next();
     if (token.tag == tag1 or token.tag == tag2) {
