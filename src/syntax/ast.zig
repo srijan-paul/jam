@@ -62,6 +62,8 @@ pub const VariableDeclaration = struct {
 };
 
 pub const NodeData = union(enum) {
+    program: ?NodeList,
+
     // Expressions:
     assignment_expr: BinaryPayload,
     binary_expr: BinaryPayload,
@@ -100,6 +102,7 @@ pub const NodeData = union(enum) {
     expression_statement: Node.Index,
     variable_declaration: VariableDeclaration,
     variable_declarator: VariableDeclarator,
+    debugger_statement: void,
 
     comptime {
         std.debug.assert(@bitSizeOf(NodeData) <= 128);
@@ -117,6 +120,10 @@ pub const Node = struct {
     end: u32,
     /// The actual data stored by this node.
     data: NodeData,
+
+    comptime {
+        std.debug.assert(@bitSizeOf(Node) <= 196);
+    }
 };
 
 pub const NodePretty = union(enum) {
@@ -156,10 +163,13 @@ pub const NodePretty = union(enum) {
 
     // statements
     empty_statement: void,
+    debugger_statement: void,
     expression_statement: Pretty(Node.Index),
     block_statement: Pretty(NodeList),
     variable_declaration: Pretty(VariableDeclaration),
     variable_declarator: Pretty(VariableDeclarator),
+
+    program: Pretty(NodeList),
 };
 
 fn Pretty(T: type) type {

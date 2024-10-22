@@ -142,9 +142,28 @@ fn restoreState(self: *Self, state: *const State) void {
 }
 
 pub fn parse(self: *Self) !Node.Index {
-    return try self.statement();
+    var statements = std.ArrayList(Node.Index).init(self.allocator);
+    defer statements.deinit();
+
+    while (!self.tokenizer.eof()) {
+        const stmt = try self.statement();
+        try statements.append(stmt);
+    }
+
+    const stmt_list = try self.addNodeList(statements.items);
+    return try self.addNode(
+        .{ .program = stmt_list },
+        0,
+        @intCast(self.source.len),
+    );
 }
 
+// ----------------------------------------------------------------------------
+// Statements and declarators.
+// https://tc39.es/ecma262/#sec-ecmascript-language-statements-and-declarations
+// ----------------------------------------------------------------------------
+
+/// https://tc39.es/ecma262/#prod-Statement
 fn statement(self: *Self) ParseError!Node.Index {
     var can_end_in_semi = true;
     const stmt = blk: {
@@ -156,6 +175,14 @@ fn statement(self: *Self) ParseError!Node.Index {
             .@";" => {
                 can_end_in_semi = false;
                 break :blk try self.emptyStatement();
+            },
+            .kw_debugger => {
+                const token = try self.next();
+                break :blk try self.addNode(
+                    .{ .debugger_statement = {} },
+                    token.start,
+                    token.start + token.len,
+                );
             },
             .kw_let, .kw_var, .kw_const => break :blk self.variableStatement(),
             else => break :blk self.expressionStatement(),
@@ -415,11 +442,11 @@ fn assignmentLhsExpr(self: *Self) ParseError!Node.Index {
         .@"{" => return self.objectAssignmentPattern(),
         .@"[" => return self.arrayAssignmentPattern(),
         .identifier => {
-            _ = try self.next();
+            const id_token = try self.next();
             const start = token.start;
             const end = token.start + token.len;
             return self.addNode(.{
-                .identifier = try self.addToken(token),
+                .identifier = try self.addToken(id_token),
             }, start, end);
         },
         else => {

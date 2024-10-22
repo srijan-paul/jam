@@ -788,7 +788,7 @@ pub const Tokenizer = struct {
         return self.source[self.index..];
     }
 
-    fn eof(self: *Tokenizer) bool {
+    pub fn eof(self: *Tokenizer) bool {
         return self.index >= self.source.len;
     }
 

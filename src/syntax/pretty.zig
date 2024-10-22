@@ -206,7 +206,13 @@ fn toPretty(
             return .{ .block_statement = body };
         },
 
+        .program => |block| {
+            const body = try prettyNodeList(allocator, self, block);
+            return .{ .program = body };
+        },
+
         .empty_statement => return .{ .empty_statement = {} },
+        .debugger_statement => return .{ .debugger_statement = {} },
 
         .variable_declarator => |decl| {
             const lhs = try copy(allocator, try toPretty(self, allocator, decl.lhs));
