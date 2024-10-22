@@ -39,6 +39,12 @@ pub const ObjectProperty = struct {
     value: Node.Index,
 };
 
+pub const ConditionalExpr = struct {
+    condition: Node.Index,
+    consequent: Node.Index,
+    alternate: Node.Index,
+};
+
 pub const NodeData = union(enum) {
     assignment_expr: BinaryPayload,
     binary_expr: BinaryPayload,
@@ -64,6 +70,7 @@ pub const NodeData = union(enum) {
     object_literal: ?NodeList,
     object_property: ObjectProperty,
     sequence_expr: NodeList,
+    conditional_expr: ConditionalExpr,
 
     comptime {
         std.debug.assert(@bitSizeOf(NodeData) <= 128);
@@ -113,6 +120,7 @@ pub const NodePretty = union(enum) {
     object_literal: Pretty(NodeList),
     object_property: Pretty(ObjectProperty),
     sequence_expression: Pretty(NodeList),
+    conditional_expression: Pretty(ConditionalExpr),
 };
 
 fn Pretty(T: type) type {

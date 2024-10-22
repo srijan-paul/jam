@@ -169,6 +169,19 @@ fn toPretty(
             const expr = try copy(allocator, try toPretty(self, allocator, payload));
             return .{ .spread_element = expr };
         },
+
+        .conditional_expr => |cond_expr| {
+            const cond = try copy(allocator, try toPretty(self, allocator, cond_expr.condition));
+            const consequent = try copy(allocator, try toPretty(self, allocator, cond_expr.consequent));
+            const alternate = try copy(allocator, try toPretty(self, allocator, cond_expr.alternate));
+            return ast.NodePretty{
+                .conditional_expression = .{
+                    .condition = cond,
+                    .consequent = consequent,
+                    .alternate = alternate,
+                },
+            };
+        },
     }
 }
 

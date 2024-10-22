@@ -126,17 +126,45 @@ fn expression(self: *Self) !Node.Index {
     }, start_pos, end_pos);
 }
 
+fn shortCircuitExpresion(self: *Self) ParseError!Node.Index {
+    return try lOrExpr(self);
+}
+
+fn conditionalExpression(self: *Self) ParseError!Node.Index {
+    const cond_expr = try self.shortCircuitExpresion();
+    if (!self.isAtToken(.@"?")) return cond_expr;
+
+    _ = try self.next(); // eat '?'
+    const true_expr = try self.assignmentExpression();
+    _ = try self.expect(.@":");
+    const false_expr = try self.assignmentExpression();
+
+    const start_pos = self.nodes.items[@intFromEnum(cond_expr)].start;
+    const end_pos = self.nodes.items[@intFromEnum(false_expr)].end;
+
+    return try self.addNode(
+        .{
+            .conditional_expr = .{
+                .condition = cond_expr,
+                .consequent = true_expr,
+                .alternate = false_expr,
+            },
+        },
+        start_pos,
+        end_pos,
+    );
+}
+
 fn assignmentExpression(self: *Self) !Node.Index {
-    // TODO: formally, this should be ConditionalExpression parslet.
-    var node = try lOrExpr(self);
     // TODO: check if `node` is valid LHS
+    var node = try conditionalExpression(self);
 
     var token = self.peek();
     while (true) : (token = self.peek()) {
         if (!token.isAssignmentOperator()) break;
         _ = try self.next();
 
-        const rhs = try self.assignmentExpression();
+        const rhs = try self.conditionalExpression();
         const lhs_start_pos = self.nodes.items[@intFromEnum(rhs)].end;
         const rhs_end_pos = self.nodes.items[@intFromEnum(node)].start;
         node = try self.addNode(
