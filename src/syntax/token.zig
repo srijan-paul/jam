@@ -35,6 +35,8 @@ pub const Token = struct {
         @">",
         @"<=",
         @">=",
+        kw_in,
+        kw_instanceof,
         relational_end,
 
         eq_op_start,
@@ -134,8 +136,6 @@ pub const Token = struct {
         kw_typeof,
         kw_void,
         kw_delete,
-        kw_in,
-        kw_instanceof,
 
         // strict mode keywords
         kw_implements,

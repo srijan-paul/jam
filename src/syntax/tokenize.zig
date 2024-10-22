@@ -71,6 +71,28 @@ pub const Tokenizer = struct {
     /// Current column number (0 indexed)
     col: u32 = 0,
 
+    /// Can be used to restore the state of the tokenizer to a previous
+    /// location in the input.
+    pub const State = struct {
+        index: u32,
+        line: u32,
+        col: u32,
+    };
+
+    pub fn saveState(self: *Self) State {
+        return State{
+            .index = self.index,
+            .line = self.line,
+            .col = self.col,
+        };
+    }
+
+    pub fn restoreState(self: *Self, state: State) void {
+        self.index = state.index;
+        self.line = state.line;
+        self.col = state.col;
+    }
+
     pub fn init(source: []const u8) TokenizeError!Self {
         if (!std.unicode.utf8ValidateSlice(source)) {
             return TokenizeError.InvalidUtf8;

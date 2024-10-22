@@ -4,7 +4,7 @@ const syntax = @import("jam-syntax");
 const Parser = syntax.Parser;
 
 const source =
-    \\ a | a ?? b | c
+    \\ [a, b = c] = b
 ;
 
 pub fn main() !void {

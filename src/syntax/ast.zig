@@ -66,11 +66,15 @@ pub const NodeData = union(enum) {
     this: Token.Index,
     empty_array_item: void,
     array_literal: ?NodeList,
+    array_pattern: ?NodeList,
     spread_element: Node.Index,
+
     object_literal: ?NodeList,
     object_property: ObjectProperty,
     sequence_expr: NodeList,
     conditional_expr: ConditionalExpr,
+
+    assignment_pattern: BinaryPayload,
 
     comptime {
         std.debug.assert(@bitSizeOf(NodeData) <= 128);
@@ -117,6 +121,8 @@ pub const NodePretty = union(enum) {
     this: void,
     empty_array_item: void,
     array: Pretty(NodeList),
+    array_pattern: Pretty(NodeList),
+    assignment_pattern: BinaryPayload_,
     object_literal: Pretty(NodeList),
     object_property: Pretty(ObjectProperty),
     sequence_expression: Pretty(NodeList),

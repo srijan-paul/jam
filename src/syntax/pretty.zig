@@ -45,6 +45,7 @@ fn toPretty(
     switch (node.data) {
         .binary_expr,
         .assignment_expr,
+        .assignment_pattern,
         => |payload| {
             const lhs = try copy(allocator, try toPretty(self, allocator, payload.lhs));
             const rhs = try copy(allocator, try toPretty(self, allocator, payload.rhs));
@@ -61,8 +62,12 @@ fn toPretty(
 
             return if (checkActiveField(node.data, "binary_expr"))
                 binary
+            else if (checkActiveField(node.data, "assignment_expr"))
+                assignment
             else
-                assignment;
+                .{
+                    .assignment_pattern = .{ .lhs = lhs, .rhs = rhs, .operator = operator },
+                };
         },
 
         .identifier,
@@ -153,6 +158,10 @@ fn toPretty(
         .empty_array_item => return .{ .empty_array_item = {} },
         .array_literal => |items| return .{
             .array = try prettyNodeList(allocator, self, items),
+        },
+
+        .array_pattern => |items| return .{
+            .array_pattern = try prettyNodeList(allocator, self, items),
         },
 
         .object_literal => |properties| return .{

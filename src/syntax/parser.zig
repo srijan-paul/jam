@@ -13,8 +13,22 @@ const offsets = util.offsets;
 const Node = ast.Node;
 const NodeData = ast.NodeData;
 
-const ParseError = error{ UnexpectedToken, OutOfMemory, NotSupported } || Tokenizer.Error;
+const ParseError = error{
+    UnexpectedToken,
+    OutOfMemory,
+    NotSupported,
+    InvalidAssignmentTarget,
+} || Tokenizer.Error;
 const ParseFn = fn (self: *Self) ParseError!Node.Index;
+
+const State = struct {
+    nodes_len: usize,
+    tokens_len: usize,
+    node_lists_len: usize,
+    current_token: Token,
+    next_token: Token,
+    tokenizer_state: Tokenizer.State,
+};
 
 // arranged in highest to lowest binding
 
@@ -48,6 +62,9 @@ tokenizer: Tokenizer,
 
 /// All AST nodes are stored in this flat list and reference
 /// each other using their indices.
+/// This is an *append only* list.
+/// No function other than `saveState`, and `restoreState` should modify
+/// the existing items in this list.
 nodes: std.ArrayList(Node),
 /// List of tokens that are necessary to keep around
 /// e.g - identifiers, literals, node start and end nodes, etc.
@@ -61,6 +78,8 @@ diagnostics: std.ArrayList(types.Diagnostic),
 current_token: Token,
 /// The next token that we're going to read.
 next_token: Token,
+
+saved_states: std.ArrayList(State),
 
 pub fn init(
     allocator: std.mem.Allocator,
@@ -78,6 +97,7 @@ pub fn init(
         .tokens = std.ArrayList(Token).init(allocator),
         .diagnostics = std.ArrayList(types.Diagnostic).init(allocator),
         .node_lists = std.ArrayList(Node.Index).init(allocator),
+        .saved_states = std.ArrayList(State).init(allocator),
     };
 
     // these calls will initialize `current_token` and `next_token`.
@@ -94,6 +114,31 @@ pub fn deinit(self: *Self) void {
     }
     self.diagnostics.deinit();
     self.node_lists.deinit();
+}
+
+/// Save the parser and tokenizer state, then return an object
+/// that can be used to restore the state with `restoreState`.
+fn saveState(self: *Self) State {
+    return State{
+        .current_token = self.current_token,
+        .next_token = self.next_token,
+        .nodes_len = self.nodes.items.len,
+        .tokens_len = self.tokens.items.len,
+        .node_lists_len = self.node_lists.items.len,
+        .tokenizer_state = self.tokenizer.saveState(),
+    };
+}
+
+/// Restore the parser and tokenizer state to a saved state snapshot.
+fn restoreState(self: *Self, state: *const State) void {
+    self.current_token = state.current_token;
+    self.next_token = state.next_token;
+
+    self.nodes.items = self.nodes.items[0..state.nodes_len];
+    self.tokens.items = self.tokens.items[0..state.tokens_len];
+    self.node_lists.items = self.node_lists.items[0..state.node_lists_len];
+
+    self.tokenizer.restoreState(state.tokenizer_state);
 }
 
 pub fn parse(self: *Self) !Node.Index {
@@ -124,6 +169,48 @@ fn expression(self: *Self) !Node.Index {
     return try self.addNode(ast.NodeData{
         .sequence_expr = expr_list,
     }, start_pos, end_pos);
+}
+
+fn isSimpleAssignmentTarget(self: *const Self, node: Node.Index) bool {
+    return switch (self.getNode(node).data) {
+        .identifier, .member_expr, .computed_member_expr => true,
+        else => false,
+    };
+}
+
+fn assignmentExpression(self: *Self) !Node.Index {
+    const snapshot = self.saveState(); // to re-parse LHS if its destrucuted.
+
+    var lhs = try conditionalExpression(self);
+    if (self.peek().isAssignmentOperator()) {
+        // If we see a '=' token, and lhs is not an identifier or member-expression
+        // go back and re-parse the LHS as an assignment target.
+        // (AssignmentPattern).
+        if (!self.isSimpleAssignmentTarget(lhs)) {
+            self.restoreState(&snapshot);
+            lhs = try self.arrayAssignmentPattern();
+        }
+
+        const op_token = try self.next(); // eat '='
+        std.debug.assert(op_token.isAssignmentOperator());
+
+        const rhs = try self.assignmentExpression();
+        const lhs_start_pos = self.nodes.items[@intFromEnum(rhs)].end;
+        const rhs_end_pos = self.nodes.items[@intFromEnum(lhs)].start;
+        lhs = try self.addNode(
+            .{
+                .assignment_expr = .{
+                    .lhs = lhs,
+                    .rhs = rhs,
+                    .operator = try self.addToken(op_token),
+                },
+            },
+            lhs_start_pos,
+            rhs_end_pos,
+        );
+    }
+
+    return lhs;
 }
 
 fn coalesceExpression(self: *Self, start_expr: Node.Index) ParseError!Node.Index {
@@ -198,32 +285,85 @@ fn conditionalExpression(self: *Self) ParseError!Node.Index {
     );
 }
 
-fn assignmentExpression(self: *Self) !Node.Index {
-    // TODO: check if `node` is valid LHS
-    var node = try conditionalExpression(self);
+// TODO: check static semantics according to the spec.
+fn assignmentPattern(self: *Self) ParseError!Node.Index {
+    const lhs = try self.lhsExpression();
+    if (!self.isAtToken(.@"=")) return lhs;
+
+    const op_token = try self.next(); // eat '='
+    const rhs = try self.assignmentExpression();
+    const lhs_start_pos = self.nodes.items[@intFromEnum(lhs)].start;
+    const rhs_end_pos = self.nodes.items[@intFromEnum(rhs)].end;
+    return try self.addNode(
+        .{
+            .assignment_pattern = .{
+                .lhs = lhs,
+                .rhs = rhs,
+                .operator = try self.addToken(op_token),
+            },
+        },
+        lhs_start_pos,
+        rhs_end_pos,
+    );
+}
+
+fn arrayAssignmentPattern(self: *Self) ParseError!Node.Index {
+    const lbrac = try self.next(); // eat '['
+    std.debug.assert(lbrac.tag == .@"[");
+
+    var items = std.ArrayList(Node.Index).init(self.allocator);
+    defer items.deinit();
 
     var token = self.peek();
-    while (true) : (token = self.peek()) {
-        if (!token.isAssignmentOperator()) break;
-        _ = try self.next();
-
-        const rhs = try self.conditionalExpression();
-        const lhs_start_pos = self.nodes.items[@intFromEnum(rhs)].end;
-        const rhs_end_pos = self.nodes.items[@intFromEnum(node)].start;
-        node = try self.addNode(
-            .{
-                .assignment_expr = .{
-                    .lhs = node,
-                    .rhs = rhs,
-                    .operator = try self.addToken(token),
-                },
+    while (token.tag != .@"]") : (token = self.peek()) {
+        switch (token.tag) {
+            .@"," => {
+                _ = try self.next(); // eat ','
+                try items.append(try self.addNode(
+                    .{ .empty_array_item = {} },
+                    token.start,
+                    token.start + token.len,
+                ));
             },
-            lhs_start_pos,
-            rhs_end_pos,
-        );
+
+            .@"..." => {
+                _ = try self.next(); // eat '...'
+                const start_pos = token.start;
+                const spread_elem = try self.lhsExpression();
+                const end_pos = self.nodes.items[@intFromEnum(spread_elem)].end;
+                try items.append(
+                    try self.addNode(.{ .spread_element = spread_elem }, start_pos, end_pos),
+                );
+
+                if (self.isAtToken(.@",")) {
+                    const comma_tok = try self.next();
+                    try self.emitDiagnostic(
+                        comma_tok.startCoord(self.source),
+                        "Comma not permitted after spread element in assignment target",
+                        .{},
+                    );
+                }
+
+                break;
+            },
+
+            else => {
+                try items.append(try self.assignmentPattern());
+            },
+        }
     }
 
-    return node;
+    const rbrac = try self.next(); // eat ']'
+    const array_items = try self.addNodeList(items.items);
+    return try self.addNode(
+        .{ .array_pattern = array_items },
+        lbrac.start,
+        rbrac.start + rbrac.len,
+    );
+}
+
+fn objectAssignmentPattern(self: *Self) ParseError!Node.Index {
+    _ = self;
 }
 
 fn unaryExpression(self: *Self) ParseError!Node.Index {
@@ -551,6 +691,7 @@ fn primaryExpression(self: *Self) ParseError!Node.Index {
         ),
         .@"[" => return self.arrayLiteral(token.start),
         .@"{" => return self.objectLiteral(token.start),
+        .@"(" => return self.coverParenExprAndArrowParams(token.start),
         else => {
             try self.emitDiagnostic(
                 token.startCoord(self.source),
@@ -560,6 +701,10 @@ fn primaryExpression(self: *Self) ParseError!Node.Index {
             return ParseError.UnexpectedToken;
         },
     }
+}
+
+fn coverParenExprAndArrowParams(_: *Self, _: u32) ParseError!Node.Index {
+    unreachable;
 }
 
 /// Parse an object literal, assuming the `{` has already been consumed.
