@@ -103,9 +103,27 @@ pub fn parse(self: *Self) !Node.Index {
 // Expression : AssignmentExpression
 //            | Expression, AssignmentExpression
 fn expression(self: *Self) !Node.Index {
-    // TODO: comma separated expressions
-    const assignment_expr = self.assignmentExpression();
-    return assignment_expr;
+    const expr = try self.assignmentExpression();
+    if (!self.isAtToken(.@",")) return expr;
+
+    var nodes = std.ArrayList(Node.Index).init(self.allocator);
+    defer nodes.deinit();
+
+    _ = try nodes.append(expr);
+
+    const start_pos = self.nodes.items[@intFromEnum(expr)].start;
+    var end_pos = self.nodes.items[@intFromEnum(expr)].end;
+    while (self.isAtToken(.@",")) {
+        _ = try self.next(); // eat ','
+        const rhs = try self.assignmentExpression();
+        end_pos = self.nodes.items[@intFromEnum(rhs)].end;
+        try nodes.append(rhs);
+    }
+
+    const expr_list = try self.addNodeList(nodes.items);
+    return try self.addNode(ast.NodeData{
+        .sequence_expr = expr_list,
+    }, start_pos, end_pos);
 }
 
 fn assignmentExpression(self: *Self) !Node.Index {

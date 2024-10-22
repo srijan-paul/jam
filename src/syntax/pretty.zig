@@ -139,6 +139,12 @@ fn toPretty(
             };
         },
 
+        .sequence_expr => |nodes| {
+            return .{
+                .sequence_expression = try prettyNodeList(allocator, self, nodes),
+            };
+        },
+
         .optional_expr => |payload| {
             const expr = try copy(allocator, try toPretty(self, allocator, payload));
             return .{ .optional_expression = expr };

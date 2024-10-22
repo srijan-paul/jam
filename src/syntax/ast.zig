@@ -63,6 +63,7 @@ pub const NodeData = union(enum) {
     spread_element: Node.Index,
     object_literal: ?NodeList,
     object_property: ObjectProperty,
+    sequence_expr: NodeList,
 
     comptime {
         std.debug.assert(@bitSizeOf(NodeData) <= 128);
@@ -111,6 +112,7 @@ pub const NodePretty = union(enum) {
     array: Pretty(NodeList),
     object_literal: Pretty(NodeList),
     object_property: Pretty(ObjectProperty),
+    sequence_expression: Pretty(NodeList),
 };
 
 fn Pretty(T: type) type {
