@@ -56,6 +56,7 @@ const lOrExpr = makeLeftAssoc(.@"||", .@"||", lAndExpr);
 
 allocator: std.mem.Allocator,
 
+/// Immutable reference to the source code.
 source: []const u8,
 file_name: []const u8,
 tokenizer: Tokenizer,
@@ -71,15 +72,13 @@ nodes: std.ArrayList(Node),
 tokens: std.ArrayList(Token),
 /// Arguments for function calls, new-expressions, etc.
 node_lists: std.ArrayList(Node.Index),
+/// List of error messages and warnings generated during parsing.
 diagnostics: std.ArrayList(types.Diagnostic),
-
 /// The token that we're currently at.
 /// Calling `next()` or `peek()` will return this token.
 current_token: Token,
 /// The next token that we're going to read.
 next_token: Token,
-
-saved_states: std.ArrayList(State),
 
 pub fn init(
     allocator: std.mem.Allocator,
@@ -97,7 +96,6 @@ pub fn init(
         .tokens = std.ArrayList(Token).init(allocator),
         .diagnostics = std.ArrayList(types.Diagnostic).init(allocator),
         .node_lists = std.ArrayList(Node.Index).init(allocator),
-        .saved_states = std.ArrayList(State).init(allocator),
     };
 
     // these calls will initialize `current_token` and `next_token`.
@@ -145,6 +143,100 @@ pub fn parse(self: *Self) !Node.Index {
     return try self.expression();
 }
 
+// ------------------------
+// Common helper functions
+// ------------------------
+
+fn addNodeList(self: *Self, nodes: []Node.Index) error{OutOfMemory}!ast.NodeList {
+    const from: ast.NodeList.Index = @enumFromInt(self.node_lists.items.len);
+    try self.node_lists.appendSlice(nodes);
+    const to: ast.NodeList.Index = @enumFromInt(self.node_lists.items.len);
+    return ast.NodeList{ .from = from, .to = to };
+}
+
+fn addToken(self: *Self, token: Token) error{OutOfMemory}!Token.Index {
+    try self.tokens.append(token);
+    return @enumFromInt(self.tokens.items.len - 1);
+}
+
+/// Append a node to the flat node list.
+fn addNode(self: *Self, node: NodeData, start: u32, end: u32) error{OutOfMemory}!Node.Index {
+    try self.nodes.append(.{ .data = node, .start = start, .end = end });
+    return @enumFromInt(self.nodes.items.len - 1);
+}
+
+/// Push an error essage to the list of diagnostics.
+fn emitDiagnostic(
+    self: *Self,
+    coord: types.Coordinate,
+    comptime fmt: []const u8,
+    fmt_args: anytype,
+) error{OutOfMemory}!void {
+    const message = try std.fmt.allocPrint(self.allocator, fmt, fmt_args);
+    try self.diagnostics.append(types.Diagnostic{
+        .coord = coord,
+        .message = message,
+    });
+}
+
+fn expect(self: *Self, tag: Token.Tag) ParseError!Token {
+    const token = try self.next();
+    if (token.tag == tag) {
+        return token;
+    }
+
+    try self.emitDiagnostic(
+        token.startCoord(self.source),
+        "Expected a '{s}', but found a '{s}'",
+        .{ @tagName(tag), token.toByteSlice(self.source) },
+    );
+    return ParseError.UnexpectedToken;
+}
+
+fn expect2(self: *Self, tag1: Token.Tag, tag2: Token.Tag) ParseError!Token {
+    const token = try self.next();
+    if (token.tag == tag1 or token.tag == tag2) {
+        return token;
+    }
+
+    try self.emitDiagnostic(
+        token.startCoord(self.source),
+        "Expected a '{s}' or a '{s}', but found a '{s}'",
+        .{
+            @tagName(tag1),
+            @tagName(tag2),
+            token.toByteSlice(self.source),
+        },
+    );
+    return ParseError.UnexpectedToken;
+}
+
+/// Consume the next token from the lexer, skipping all comments.
+fn next(self: *Self) ParseError!Token {
+    var next_token = try self.tokenizer.next();
+    while (next_token.tag == .comment) : (next_token = try self.tokenizer.next()) {
+        // TODO: store comments as trivia.
+    }
+
+    const ret_token = self.current_token;
+    self.current_token = self.next_token;
+    self.next_token = next_token;
+    return ret_token;
+}
+
+inline fn peek(self: *Self) Token {
+    return self.current_token;
+}
+
+fn isAtToken(self: *Self, tag: Token.Tag) bool {
+    return self.peek().tag == tag;
+}
+
+// --------------------------------------------------------------------------------------
+// Expression parsing.
+// https://262.ecma-international.org/15.0/index.html#sec-ecmascript-language-expressions
+// --------------------------------------------------------------------------------------
+
 // Expression : AssignmentExpression
 //            | Expression, AssignmentExpression
 fn expression(self: *Self) !Node.Index {
@@ -171,6 +263,22 @@ fn expression(self: *Self) !Node.Index {
     }, start_pos, end_pos);
 }
 
+fn assignmentLhsExpr(self: *Self) ParseError!Node.Index {
+    const token = self.peek();
+    switch (token.tag) {
+        .@"{" => return self.objectAssignmentPattern(),
+        .@"[" => return self.arrayAssignmentPattern(),
+        else => {
+            try self.emitDiagnostic(
+                token.startCoord(self.source),
+                "Expected assignment target, got: {s}",
+                .{token.toByteSlice(self.source)},
+            );
+            return ParseError.InvalidAssignmentTarget;
+        },
+    }
+}
+
 fn isSimpleAssignmentTarget(self: *const Self, node: Node.Index) bool {
     return switch (self.getNode(node).data) {
         .identifier, .member_expr, .computed_member_expr => true,
@@ -181,36 +289,51 @@ fn isSimpleAssignmentTarget(self: *const Self, node: Node.Index) bool {
 fn assignmentExpression(self: *Self) !Node.Index {
     const snapshot = self.saveState(); // to re-parse LHS if its destrucuted.
 
-    var lhs = try conditionalExpression(self);
-    if (self.peek().isAssignmentOperator()) {
-        // If we see a '=' token, and lhs is not an identifier or member-expression
-        // go back and re-parse the LHS as an assignment target.
-        // (AssignmentPattern).
-        if (!self.isSimpleAssignmentTarget(lhs)) {
-            self.restoreState(&snapshot);
-            lhs = try self.arrayAssignmentPattern();
-        }
+    var is_assignment_pattern = false;
 
-        const op_token = try self.next(); // eat '='
-        std.debug.assert(op_token.isAssignmentOperator());
+    var lhs = conditionalExpression(self) catch blk: {
+        // if parsing as a conditional expression fails,
+        // try to parse as an assignment target.
+        // This is necessary for cases like: {a, b = c} = { a: 1, b: 2 }
+        // Where the LHS isn't valid assignment expr, but a valid destructuring pattern.
+        self.restoreState(&snapshot);
+        is_assignment_pattern = true;
+        break :blk try self.assignmentLhsExpr();
+        // TODO: if the parsing fails here too, we will now have two error messages:
+        // one for the conditional expression, and one for the assignment target.
+        // I should remove the diagnostic for the latter.
+    };
 
-        const rhs = try self.assignmentExpression();
-        const lhs_start_pos = self.nodes.items[@intFromEnum(rhs)].end;
-        const rhs_end_pos = self.nodes.items[@intFromEnum(lhs)].start;
-        lhs = try self.addNode(
-            .{
-                .assignment_expr = .{
-                    .lhs = lhs,
-                    .rhs = rhs,
-                    .operator = try self.addToken(op_token),
-                },
-            },
-            lhs_start_pos,
-            rhs_end_pos,
-        );
+    if (!self.peek().isAssignmentOperator()) {
+        return lhs;
     }
 
-    return lhs;
+    // If we see a '=' token, and lhs is not an identifier or member-expression
+    // go back and re-parse the LHS as an assignment target.
+    // (AssignmentPattern).
+    if (!is_assignment_pattern and !self.isSimpleAssignmentTarget(lhs)) {
+        self.restoreState(&snapshot);
+        lhs = try self.assignmentLhsExpr();
+    }
+
+    const op_token = try self.next(); // eat '='
+    std.debug.assert(op_token.isAssignmentOperator());
+
+    const rhs = try self.assignmentExpression();
+    const start = self.nodes.items[@intFromEnum(rhs)].end;
+    const end = self.nodes.items[@intFromEnum(lhs)].start;
+
+    return self.addNode(
+        .{
+            .assignment_expr = .{
+                .lhs = lhs,
+                .rhs = rhs,
+                .operator = try self.addToken(op_token),
+            },
+        },
+        start,
+        end,
+    );
 }
 
 fn coalesceExpression(self: *Self, start_expr: Node.Index) ParseError!Node.Index {
@@ -307,6 +430,7 @@ fn assignmentPattern(self: *Self) ParseError!Node.Index {
     );
 }
 
+/// https://tc39.es/ecma262/#prod-ArrayAssignmentPattern
 fn arrayAssignmentPattern(self: *Self) ParseError!Node.Index {
     const lbrac = try self.next(); // eat '['
     std.debug.assert(lbrac.tag == .@"[");
@@ -342,6 +466,7 @@ fn arrayAssignmentPattern(self: *Self) ParseError!Node.Index {
                         "Comma not permitted after spread element in assignment target",
                         .{},
                     );
+                    return ParseError.InvalidAssignmentTarget;
                 }
 
                 break;
@@ -362,8 +487,136 @@ fn arrayAssignmentPattern(self: *Self) ParseError!Node.Index {
     );
 }
 
+fn completePropertyPatternDef(self: *Self, key: Node.Index) ParseError!Node.Index {
+    _ = try self.expect(.@":");
+
+    const value = try self.assignmentPattern();
+    const start_pos = self.nodes.items[@intFromEnum(key)].start;
+    const end_pos = self.nodes.items[@intFromEnum(value)].end;
+
+    return self.addNode(
+        .{ .object_property = .{ .key = key, .value = value } },
+        start_pos,
+        end_pos,
+    );
+}
+
+fn destructuredPropertyDefinition(self: *Self) ParseError!Node.Index {
+    switch (self.peek().tag) {
+        .string_literal, .numeric_literal => {
+            const key_token = try self.next();
+            const key = try self.addNode(
+                .{ .literal = try self.addToken(key_token) },
+                key_token.start,
+                key_token.start + key_token.len,
+            );
+            return self.completePropertyPatternDef(key);
+        },
+        .identifier => {
+            const key_token = try self.next();
+            const key = try self.addNode(
+                .{ .identifier = try self.addToken(key_token) },
+                key_token.start,
+                key_token.start + key_token.len,
+            );
+
+            const lookahead = self.peek();
+            if (lookahead.tag == .@"=") {
+                const eq_token = try self.next(); // eat '='
+                const rhs = try self.assignmentExpression();
+                const end_pos = self.getNode(rhs).end;
+
+                const assign_pattern = try self.addNode(
+                    .{ .assignment_pattern = .{
+                        .lhs = key,
+                        .rhs = rhs,
+                        .operator = try self.addToken(eq_token),
+                    } },
+                    key_token.start,
+                    end_pos,
+                );
+
+                return self.addNode(
+                    .{ .object_property = .{ .key = key, .value = assign_pattern } },
+                    key_token.start,
+                    end_pos,
+                );
+            }
+
+            if (lookahead.tag == .@":") {
+                return self.completePropertyPatternDef(key);
+            }
+
+            return self.addNode(
+                .{ .object_property = ast.PropertyDefinition{ .key = key, .value = key } },
+                key_token.start,
+                key_token.start + key_token.len,
+            );
+        },
+        .@"[" => {
+            _ = try self.next(); // eat '['
+            const key = try self.assignmentExpression();
+            _ = try self.expect(.@"]");
+            return self.completePropertyPatternDef(key);
+        },
+        else => {
+            return try self.assignmentPattern();
+        },
+    }
+}
+
+/// https://tc39.es/ecma262/#prod-ObjectAssignmentPattern
 fn objectAssignmentPattern(self: *Self) ParseError!Node.Index {
-    _ = self;
+    const lbrace = try self.next(); // eat '{'
+    std.debug.assert(lbrace.tag == .@"{");
+
+    var props = std.ArrayList(Node.Index).init(self.allocator);
+    defer props.deinit();
+
+    var end_pos = lbrace.start + lbrace.len;
+
+    var lookahead = self.peek();
+    while (lookahead.tag != .@"}") : (lookahead = self.peek()) {
+        switch (lookahead.tag) {
+            .@"..." => {
+                _ = try self.next(); // eat '...'
+                const start_pos = lookahead.start;
+                const expr = try self.lhsExpression();
+                const end = self.nodes.items[@intFromEnum(expr)].end;
+                const spread_expr = try self.addNode(.{ .spread_element = expr }, start_pos, end);
+                try props.append(spread_expr);
+                break; // spread element must be the last element
+            },
+
+            .identifier, .string_literal, .numeric_literal, .@"[" => {
+                const prop = try self.destructuredPropertyDefinition();
+                try props.append(prop);
+            },
+
+            else => {
+                try self.emitDiagnostic(
+                    lookahead.startCoord(self.source),
+                    "Unexpected '{s}' while parsing destructured object pattern",
+                    .{lookahead.toByteSlice(self.source)},
+                );
+
+                return ParseError.InvalidAssignmentTarget;
+            },
+        }
+
+        const comma_or_rbrace = try self.expect2(.@"}", .@",");
+        if (comma_or_rbrace.tag == .@"}") {
+            end_pos = comma_or_rbrace.start + comma_or_rbrace.len;
+            break;
+        }
+    }
+
+    const destructured_props = try self.addNodeList(props.items);
+    return self.addNode(
+        .{ .object_pattern = destructured_props },
+        lbrace.start,
+        end_pos,
+    );
 }
 
 fn unaryExpression(self: *Self) ParseError!Node.Index {
@@ -734,7 +987,7 @@ fn propertyDefinitionList(self: *Self) ParseError!?ast.NodeList {
 
                 const maybe_colon = self.peek();
                 if (maybe_colon.tag != .@":") {
-                    const kv_node = ast.ObjectProperty{ .key = key, .value = key };
+                    const kv_node = ast.PropertyDefinition{ .key = key, .value = key };
                     try property_defs.append(try self.addNode(
                         .{ .object_property = kv_node },
                         key_token.start,
@@ -791,7 +1044,7 @@ fn completePropertyDef(self: *Self, key: Node.Index) ParseError!Node.Index {
     const value = try self.assignmentExpression();
     const start_pos = self.nodes.items[@intFromEnum(key)].start;
     const end_pos = self.nodes.items[@intFromEnum(value)].end;
-    const kv_node = ast.ObjectProperty{
+    const kv_node = ast.PropertyDefinition{
         .key = key,
         .value = value,
     };
@@ -872,89 +1125,6 @@ fn parseArgs(self: *Self) ParseError!struct { ast.NodeList, u32, u32 } {
     const end_pos = close_paren.start + close_paren.len;
 
     return .{ try self.addNodeList(arg_list.items), start_pos, end_pos };
-}
-
-fn addNodeList(self: *Self, nodes: []Node.Index) error{OutOfMemory}!ast.NodeList {
-    const from: ast.NodeList.Index = @enumFromInt(self.node_lists.items.len);
-    try self.node_lists.appendSlice(nodes);
-    const to: ast.NodeList.Index = @enumFromInt(self.node_lists.items.len);
-    return ast.NodeList{ .from = from, .to = to };
-}
-
-fn addToken(self: *Self, token: Token) error{OutOfMemory}!Token.Index {
-    try self.tokens.append(token);
-    return @enumFromInt(self.tokens.items.len - 1);
-}
-
-fn addNode(self: *Self, node: NodeData, start: u32, end: u32) error{OutOfMemory}!Node.Index {
-    try self.nodes.append(.{ .data = node, .start = start, .end = end });
-    return @enumFromInt(self.nodes.items.len - 1);
-}
-
-/// Push an error essage to the list of diagnostics.
-fn emitDiagnostic(
-    self: *Self,
-    coord: types.Coordinate,
-    comptime fmt: []const u8,
-    fmt_args: anytype,
-) error{OutOfMemory}!void {
-    const message = try std.fmt.allocPrint(self.allocator, fmt, fmt_args);
-    try self.diagnostics.append(types.Diagnostic{
-        .coord = coord,
-        .message = message,
-    });
-}
-
-fn expect(self: *Self, tag: Token.Tag) ParseError!Token {
-    const token = try self.next();
-    if (token.tag == tag) {
-        return token;
-    }
-
-    try self.emitDiagnostic(
-        token.startCoord(self.source),
-        "Expected a '{s}'', but found a '{s}'",
-        .{ @tagName(tag), token.toByteSlice(self.source) },
-    );
-    return ParseError.UnexpectedToken;
-}
-
-fn expect2(self: *Self, tag1: Token.Tag, tag2: Token.Tag) ParseError!Token {
-    const token = try self.next();
-    if (token.tag == tag1 or token.tag == tag2) {
-        return token;
-    }
-
-    try self.emitDiagnostic(
-        token.startCoord(self.source),
-        "Expected a '{s}' or a '{s}', but found a '{s}'",
-        .{
-            @tagName(tag1),
-            @tagName(tag2),
-            token.toByteSlice(self.source),
-        },
-    );
-    return ParseError.UnexpectedToken;
-}
-
-fn next(self: *Self) ParseError!Token {
-    var next_token = try self.tokenizer.next();
-    while (next_token.tag == .comment) : (next_token = try self.tokenizer.next()) {
-        // TODO: store comments as trivia.
-    }
-
-    const ret_token = self.current_token;
-    self.current_token = self.next_token;
-    self.next_token = next_token;
-    return ret_token;
-}
-
-inline fn peek(self: *Self) Token {
-    return self.current_token;
-}
-
-fn isAtToken(self: *Self, tag: Token.Tag) bool {
-    return self.peek().tag == tag;
 }
 
 /// make a right associative parse function for an infix operator represented

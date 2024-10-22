@@ -4,7 +4,7 @@ const syntax = @import("jam-syntax");
 const Parser = syntax.Parser;
 
 const source =
-    \\ [a, b = c] = b
+    \\ { a, b = c } = 123
 ;
 
 pub fn main() !void {
@@ -18,8 +18,10 @@ pub fn main() !void {
 
     const node_idx = parser.parse() catch {
         for (parser.diagnostics.items) |d| {
-            std.debug.print("{s}", .{d.message});
+            std.log.err("{s}", .{d.message});
         }
+
+        std.log.err("\nfound {d} errors.\n", .{parser.diagnostics.items.len});
         return;
     };
 
