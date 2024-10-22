@@ -126,10 +126,53 @@ fn expression(self: *Self) !Node.Index {
     }, start_pos, end_pos);
 }
 
-fn shortCircuitExpresion(self: *Self) ParseError!Node.Index {
-    return try lOrExpr(self);
+fn coalesceExpression(self: *Self, start_expr: Node.Index) ParseError!Node.Index {
+    const start_pos = self.nodes.items[@intFromEnum(start_expr)].start;
+    var end_pos = self.nodes.items[@intFromEnum(start_expr)].end;
+
+    var expr: Node.Index = start_expr;
+    while (self.isAtToken(.@"??")) {
+        const op = try self.next(); // eat '??'
+        const rhs = try bOrExpr(self);
+        end_pos = self.nodes.items[@intFromEnum(rhs)].end;
+        expr = try self.addNode(
+            .{
+                .binary_expr = .{
+                    .lhs = expr,
+                    .rhs = rhs,
+                    .operator = try self.addToken(op),
+                },
+            },
+            start_pos,
+            end_pos,
+        );
+    }
+
+    return expr;
 }
 
+/// ShortCircuitExpression:
+///    LogicalOrExpression
+///    CoalesceExpression
+fn shortCircuitExpresion(self: *Self) ParseError!Node.Index {
+    const expr = try lOrExpr(self);
+    switch (self.nodes.items[@intFromEnum(expr)].data) {
+        .binary_expr => |pl| {
+            const op_tag = self.tokens.items[@intFromEnum(pl.operator)].tag;
+            if (op_tag == .@"||" or op_tag == .@"&&") {
+                return expr;
+            }
+            return self.coalesceExpression(expr);
+        },
+        else => {
+            return self.coalesceExpression(expr);
+        },
+    }
+}
+
+/// ConditionalExpression:
+///     ShortCircuitExpression
+///     ShortCircuitExpression '?' AssignmentExpression ':' AssignmentExpression
 fn conditionalExpression(self: *Self) ParseError!Node.Index {
     const cond_expr = try self.shortCircuitExpresion();
     if (!self.isAtToken(.@"?")) return cond_expr;
