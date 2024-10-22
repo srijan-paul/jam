@@ -142,7 +142,85 @@ fn restoreState(self: *Self, state: *const State) void {
 }
 
 pub fn parse(self: *Self) !Node.Index {
-    return try self.expression();
+    return try self.statement();
+}
+
+fn statement(self: *Self) ParseError!Node.Index {
+    var can_end_in_semi = true;
+    const stmt = blk: {
+        switch (self.peek().tag) {
+            .@"{" => {
+                can_end_in_semi = false;
+                break :blk try self.blockStatement();
+            },
+            .@";" => {
+                can_end_in_semi = false;
+                break :blk try self.emptyStatement();
+            },
+            else => break :blk self.expressionStatement(),
+        }
+    };
+
+    if (can_end_in_semi) try self.consume(.@";");
+
+    return stmt;
+}
+
+fn emptyStatement(self: *Self) ParseError!Node.Index {
+    const semicolon = try self.next();
+    std.debug.assert(semicolon.tag == .@";");
+
+    return addNode(
+        self,
+        .{ .empty_statement = {} },
+        semicolon.start,
+        semicolon.start + semicolon.len,
+    );
+}
+
+fn expressionStatement(self: *Self) ParseError!Node.Index {
+    const expr = try self.expression();
+    try self.consume(.@";");
+    const expr_node = self.getNode(expr);
+    return addNode(
+        self,
+        .{ .expression_statement = expr },
+        expr_node.start,
+        expr_node.end,
+    );
+}
+
+fn blockStatement(self: *Self) !Node.Index {
+    const start_pos = self.peek().start;
+
+    try self.consume(.@"{");
+
+    var statements = std.ArrayList(Node.Index).init(self.allocator);
+    defer statements.deinit();
+
+    while (self.peek().tag != .@"}" and self.peek().tag != .eof) {
+        const stmt = try self.statement();
+        try statements.append(stmt);
+    }
+
+    const rbrace = try self.expect(.@"}");
+    const end_pos = rbrace.start + rbrace.len;
+
+    if (statements.items.len == 0) {
+        return addNode(
+            self,
+            .{ .block_statement = null },
+            start_pos,
+            end_pos,
+        );
+    }
+
+    const stmt_list_node = try self.addNodeList(statements.items);
+    return self.addNode(
+        .{ .block_statement = stmt_list_node },
+        start_pos,
+        end_pos,
+    );
 }
 
 // ------------------------
@@ -179,6 +257,13 @@ fn emitDiagnostic(
         .coord = coord,
         .message = message,
     });
+}
+
+/// Eat the current token if it matches `tag`.
+fn consume(self: *Self, tag: Token.Tag) ParseError!void {
+    if (self.peek().tag == tag) {
+        _ = try self.next();
+    }
 }
 
 /// Emit a parse error if the current token does not match `tag`.

@@ -195,6 +195,18 @@ fn toPretty(
                 },
             };
         },
+
+        .expression_statement => |expr| {
+            const expression = try copy(allocator, try toPretty(self, allocator, expr));
+            return .{ .expression_statement = expression };
+        },
+
+        .block_statement => |block| {
+            const body = try prettyNodeList(allocator, self, block);
+            return .{ .block_statement = body };
+        },
+
+        .empty_statement => return .{ .empty_statement = {} },
     }
 }
 
