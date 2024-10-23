@@ -176,6 +176,12 @@ fn toPretty(
             .object_property = .{
                 .key = try copy(allocator, try toPretty(self, allocator, prop.key)),
                 .value = try copy(allocator, try toPretty(self, allocator, prop.value)),
+                .flags = .{
+                    .is_computed = prop.flags.is_computed,
+                    .is_shorthand = prop.flags.is_shorthand,
+                    .is_method = prop.flags.is_method,
+                    ._ = 0,
+                },
             },
         },
         .spread_element => |payload| {
@@ -215,6 +221,11 @@ fn toPretty(
             return .{ .program = body };
         },
 
+        .parameters => |params| {
+            const p_list = try prettyNodeList(allocator, self, params);
+            return .{ .parameters = p_list };
+        },
+
         .empty_statement => return .{ .empty_statement = {} },
         .debugger_statement => return .{ .debugger_statement = {} },
 
@@ -238,6 +249,24 @@ fn toPretty(
                 .variable_declaration = .{
                     .declarators = decls,
                     .kind = d.kind,
+                },
+            };
+        },
+
+        .function_expr => |f| {
+            const body = try copy(allocator, try toPretty(self, allocator, f.body));
+            const params = try copy(allocator, try toPretty(self, allocator, f.parameters));
+            const flags = .{
+                .is_async = f.flags.is_async,
+                .is_generator = f.flags.is_generator,
+                .is_arrow = f.flags.is_arrow,
+            };
+
+            return .{
+                .function_expression = .{
+                    .body = body,
+                    .parameters = params,
+                    .flags = flags,
                 },
             };
         },

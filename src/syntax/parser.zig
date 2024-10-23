@@ -1271,17 +1271,42 @@ fn propertyDefinitionList(self: *Self) ParseError!?ast.NodeList {
                     key_end_pos,
                 );
 
-                const maybe_colon = self.peek();
-                if (maybe_colon.tag != .@":") {
-                    const kv_node = ast.PropertyDefinition{ .key = key, .value = key };
-                    try property_defs.append(try self.addNode(
-                        .{ .object_property = kv_node },
-                        key_token.start,
-                        key_end_pos,
-                    ));
-                } else {
-                    _ = try self.next();
-                    try property_defs.append(try self.completePropertyDef(key));
+                switch (self.peek().tag) {
+                    .@":" => {
+                        _ = try self.next(); // eat ':'
+                        try property_defs.append(try self.completePropertyDef(key, .{}));
+                    },
+
+                    .@"(" => {
+                        const start_pos = self.peek().start;
+                        const func_expr = try self.parseFunctionBody(start_pos, .{});
+                        const end_pos = self.nodeSpan(func_expr).end;
+
+                        const kv_node = ast.PropertyDefinition{
+                            .key = key,
+                            .value = func_expr,
+                            .flags = .{ .is_method = true },
+                        };
+
+                        try property_defs.append(try self.addNode(
+                            .{ .object_property = kv_node },
+                            key_token.start,
+                            end_pos,
+                        ));
+                    },
+
+                    else => {
+                        const kv_node = ast.PropertyDefinition{
+                            .key = key,
+                            .value = key,
+                            .flags = .{ .is_shorthand = true },
+                        };
+                        try property_defs.append(try self.addNode(
+                            .{ .object_property = kv_node },
+                            key_token.start,
+                            key_end_pos,
+                        ));
+                    },
                 }
             },
 
@@ -1290,7 +1315,7 @@ fn propertyDefinitionList(self: *Self) ParseError!?ast.NodeList {
                 const key = try self.assignmentExpression();
                 _ = try self.expect(.@"]");
                 _ = try self.expect(.@":");
-                try property_defs.append(try self.completePropertyDef(key));
+                try property_defs.append(try self.completePropertyDef(key, .{ .is_computed = true }));
             },
 
             .numeric_literal, .string_literal => {
@@ -1301,7 +1326,7 @@ fn propertyDefinitionList(self: *Self) ParseError!?ast.NodeList {
                     key_token.start + key_token.len,
                 );
                 _ = try self.expect(.@":");
-                try property_defs.append(try self.completePropertyDef(key));
+                try property_defs.append(try self.completePropertyDef(key, .{}));
             },
 
             .@"..." => {
@@ -1326,13 +1351,18 @@ fn propertyDefinitionList(self: *Self) ParseError!?ast.NodeList {
     return try self.addNodeList(property_defs.items);
 }
 
-fn completePropertyDef(self: *Self, key: Node.Index) ParseError!Node.Index {
+fn completePropertyDef(
+    self: *Self,
+    key: Node.Index,
+    flags: ast.PropertyDefinitionFlags,
+) ParseError!Node.Index {
     const value = try self.assignmentExpression();
     const start_pos = self.nodes.items[@intFromEnum(key)].start;
     const end_pos = self.nodes.items[@intFromEnum(value)].end;
     const kv_node = ast.PropertyDefinition{
         .key = key,
         .value = value,
+        .flags = flags,
     };
     return self.addNode(.{ .object_property = kv_node }, start_pos, end_pos);
 }
@@ -1361,16 +1391,20 @@ fn arrayLiteral(self: *Self, start_pos: u32) ParseError!Node.Index {
             break;
         }
 
-        // Spread element
-        if (self.isAtToken(.@"...")) {
-            const ellipsis_tok = try self.next();
-            const expr = try self.assignmentExpression();
-            const start = ellipsis_tok.start;
-            const end = self.nodes.items[@intFromEnum(expr)].end;
-            try elements.append(try self.addNode(.{ .spread_element = expr }, start, end));
-        } else {
-            const item = try self.assignmentExpression();
-            try elements.append(item);
+        switch (self.peek().tag) {
+            // Spread element
+            .@"..." => {
+                const ellipsis_tok = try self.next();
+                const expr = try self.assignmentExpression();
+                const start = ellipsis_tok.start;
+                const end = self.nodes.items[@intFromEnum(expr)].end;
+                try elements.append(try self.addNode(.{ .spread_element = expr }, start, end));
+            },
+
+            else => {
+                const item = try self.assignmentExpression();
+                try elements.append(item);
+            },
         }
 
         const next_token = try self.expect2(.@",", .@"]");
@@ -1382,6 +1416,60 @@ fn arrayLiteral(self: *Self, start_pos: u32) ParseError!Node.Index {
 
     const nodes = try self.addNodeList(elements.items);
     return self.addNode(.{ .array_literal = nodes }, start_pos, end_pos);
+}
+
+/// Assuming the parser is at the `function` keyword,
+/// parse a function expression.
+fn functionExpression(self: *Self, flags: ast.FunctionFlags) ParseError!Node.Index {
+    const function_kw = try self.next();
+    std.debug.assert(function_kw.tag == .kw_function);
+    return self.parseFunctionBody(function_kw.start, flags);
+}
+
+/// parses the arguments and body of a function expression (or declaration),
+/// assuming the `function` keyword (and/or the function/method name) has been consumed.
+fn parseFunctionBody(self: *Self, start_pos: u32, flags: ast.FunctionFlags) ParseError!Node.Index {
+    const params = try self.parseFormalParameters();
+    if (flags.is_arrow) unreachable; // not supported yet :)
+
+    const body = try self.blockStatement();
+    const end_pos = self.nodeSpan(body).end;
+
+    return self.addNode(.{
+        .function_expr = .{
+            .parameters = params,
+            .body = body,
+            .flags = flags,
+        },
+    }, start_pos, end_pos);
+}
+
+/// Assuming that the current token is `(`, parse the formal parameters
+/// of a function.
+fn parseFormalParameters(self: *Self) ParseError!Node.Index {
+    const lparen = try self.expect(.@"(");
+    std.debug.assert(lparen.tag == .@"(");
+
+    const start_pos = lparen.start;
+
+    var params = std.ArrayList(Node.Index).init(self.allocator);
+    defer params.deinit();
+
+    var lookahead = self.peek();
+    while (lookahead.tag != .@")" and lookahead.tag != .eof) : (lookahead = self.peek()) {
+        const param = try self.assignmentLhsExpr();
+        try params.append(param);
+    }
+
+    const rparen = try self.expect(.@")");
+    const end_pos = rparen.start + rparen.len;
+
+    const param_list = if (params.items.len > 0)
+        try self.addNodeList(params.items)
+    else
+        null;
+
+    return self.addNode(.{ .parameters = param_list }, start_pos, end_pos);
 }
 
 /// Get a pointer to a node by its index.

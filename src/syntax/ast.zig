@@ -34,9 +34,31 @@ pub const CallExpr = struct {
     arguments: Node.Index,
 };
 
+pub const FunctionFlags = packed struct(u8) {
+    is_generator: bool = false,
+    is_async: bool = false,
+    is_arrow: bool = false,
+    _: u5 = 0,
+};
+
+pub const FunctionExpression = struct {
+    parameters: Node.Index, // points to a `parameters`
+    body: Node.Index, // points to a an expression, or a block statement.
+    flags: FunctionFlags = .{},
+};
+
+/// Flags for property definitions of an object literal.
+pub const PropertyDefinitionFlags = packed struct(u8) {
+    is_method: bool = false,
+    is_shorthand: bool = false,
+    is_computed: bool = false,
+    _: u5 = 0,
+};
+
 pub const PropertyDefinition = struct {
     key: Node.Index,
     value: Node.Index,
+    flags: PropertyDefinitionFlags = .{},
 };
 
 /// Payloads for ternary expressions and if statements.
@@ -79,6 +101,7 @@ pub const NodeData = union(enum(u8)) {
     super_call_expr: ?NodeList,
     // points to  call_expr, member_expr, or computed_member_expr
     optional_expr: Node.Index,
+    function_expr: FunctionExpression,
 
     post_unary_expr: UnaryPayload,
     unary_expr: UnaryPayload,
@@ -108,6 +131,7 @@ pub const NodeData = union(enum(u8)) {
     variable_declarator: VariableDeclarator,
     debugger_statement: void,
     if_statement: Conditional,
+    parameters: ?NodeList,
 
     /// Represents `null` AST node.
     /// This is a sentinel, and always present at index 0 of the `nodes` array.
@@ -173,6 +197,7 @@ pub const NodePretty = union(enum) {
     object_property: Pretty(PropertyDefinition),
     sequence_expression: Pretty(NodeList),
     conditional_expression: Pretty(Conditional),
+    function_expression: Pretty(FunctionExpression),
 
     // statements
     empty_statement: void,
@@ -184,8 +209,10 @@ pub const NodePretty = union(enum) {
     variable_declarator: Pretty(VariableDeclarator),
 
     // declarations
-
     none: void,
+
+    // helpers
+    parameters: Pretty(NodeList),
 };
 
 fn Pretty(T: type) type {
