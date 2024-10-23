@@ -101,7 +101,6 @@ pub const Token = struct {
 
         @"=>",
 
-        // regular keywords
         kw_true,
         kw_false,
         kw_null,

@@ -39,9 +39,13 @@ pub const PropertyDefinition = struct {
     value: Node.Index,
 };
 
-pub const ConditionalExpr = struct {
+/// Payloads for ternary expressions and if statements.
+pub const Conditional = struct {
     condition: Node.Index,
     consequent: Node.Index,
+    /// Index to the "else" branch,
+    /// This can be 0 (i.e pointing to a `.none`)
+    /// for an if-statement without an "else" branch.
     alternate: Node.Index,
 };
 
@@ -61,7 +65,7 @@ pub const VariableDeclaration = struct {
     kind: VarDeclKind,
 };
 
-pub const NodeData = union(enum) {
+pub const NodeData = union(enum(u8)) {
     program: ?NodeList,
 
     // Expressions:
@@ -91,7 +95,7 @@ pub const NodeData = union(enum) {
     object_literal: ?NodeList,
     object_property: PropertyDefinition,
     sequence_expr: NodeList,
-    conditional_expr: ConditionalExpr,
+    conditional_expr: Conditional,
 
     assignment_pattern: BinaryPayload,
     object_pattern: ?NodeList,
@@ -103,6 +107,13 @@ pub const NodeData = union(enum) {
     variable_declaration: VariableDeclaration,
     variable_declarator: VariableDeclarator,
     debugger_statement: void,
+    if_statement: Conditional,
+
+    /// Represents `null` AST node.
+    /// This is a sentinel, and always present at index 0 of the `nodes` array.
+    /// Used to represent nodes like a missing `else` branch (instead of ?Node.Index)
+    /// which would take up more space, and increase the size of this union.
+    none: void,
 
     comptime {
         std.debug.assert(@bitSizeOf(NodeData) <= 128);
@@ -133,6 +144,8 @@ pub const NodePretty = union(enum) {
     const UnaryPayload_ = Pretty(UnaryPayload);
     const Token_ = Pretty(Token.Index);
 
+    program: Pretty(NodeList),
+
     assignment_expression: BinaryPayload_,
     binary_expression: BinaryPayload_,
     member_expression: PropertyAccess_,
@@ -159,17 +172,20 @@ pub const NodePretty = union(enum) {
     object_literal: Pretty(NodeList),
     object_property: Pretty(PropertyDefinition),
     sequence_expression: Pretty(NodeList),
-    conditional_expression: Pretty(ConditionalExpr),
+    conditional_expression: Pretty(Conditional),
 
     // statements
     empty_statement: void,
     debugger_statement: void,
     expression_statement: Pretty(Node.Index),
     block_statement: Pretty(NodeList),
+    if_statement: Pretty(Conditional),
     variable_declaration: Pretty(VariableDeclaration),
     variable_declarator: Pretty(VariableDeclarator),
 
-    program: Pretty(NodeList),
+    // declarations
+
+    none: void,
 };
 
 fn Pretty(T: type) type {
@@ -177,7 +193,6 @@ fn Pretty(T: type) type {
     if (T == ?Node.Index) return ?*NodePretty;
     if (T == NodeList) return []NodePretty;
     if (T == Token.Index) return []const u8;
-    if (T == VarDeclKind) return T;
 
     switch (@typeInfo(T)) {
         .@"struct" => |s| {

@@ -30,6 +30,22 @@ const State = struct {
     current_token: Token,
     next_token: Token,
     tokenizer_state: Tokenizer.State,
+    diagnostics: ?[]Diagnostic,
+
+    pub fn destroy(self: *State, allocator: std.mem.Allocator) void {
+        if (self.diagnostics) |diagnostics| {
+            allocator.free(diagnostics);
+        }
+    }
+};
+
+/// An error or warning raised by the Parser.
+pub const Diagnostic = struct {
+    /// Index into the `diagnostic_messages` slice.
+    const MessageIndex = enum(usize) { _ };
+    /// line/col position where error occurred.
+    coord: types.Coordinate,
+    message: MessageIndex,
 };
 
 // arranged in highest to lowest binding
@@ -75,7 +91,9 @@ tokens: std.ArrayList(Token),
 /// Arguments for function calls, new-expressions, etc.
 node_lists: std.ArrayList(Node.Index),
 /// List of error messages and warnings generated during parsing.
-diagnostics: std.ArrayList(types.Diagnostic),
+diagnostics: std.ArrayList(Diagnostic),
+diagnostic_messages: std.ArrayList([]const u8),
+
 /// The token that we're currently at.
 /// Calling `next()` or `peek()` will return this token.
 current_token: Token,
@@ -94,11 +112,18 @@ pub fn init(
         .tokenizer = try Tokenizer.init(source),
         .current_token = undefined,
         .next_token = undefined,
-        .nodes = std.ArrayList(Node).init(allocator),
-        .tokens = std.ArrayList(Token).init(allocator),
-        .diagnostics = std.ArrayList(types.Diagnostic).init(allocator),
-        .node_lists = std.ArrayList(Node.Index).init(allocator),
+
+        .diagnostics = try std.ArrayList(Diagnostic).initCapacity(allocator, 2),
+        .diagnostic_messages = try std.ArrayList([]const u8).initCapacity(allocator, 2),
+        .nodes = try std.ArrayList(Node).initCapacity(allocator, 32),
+        .node_lists = try std.ArrayList(Node.Index).initCapacity(allocator, 32),
+        .tokens = try std.ArrayList(Token).initCapacity(allocator, 256),
     };
+
+    // the `null` node always lives at index-0.
+    // see: ast.NodeData.none
+    const i = try self.addNode(.{ .none = {} }, 0, 0);
+    std.debug.assert(@intFromEnum(i) == 0);
 
     // these calls will initialize `current_token` and `next_token`.
     _ = try self.next();
@@ -109,16 +134,20 @@ pub fn init(
 pub fn deinit(self: *Self) void {
     self.nodes.deinit();
     self.tokens.deinit();
-    for (self.diagnostics.items) |d| {
-        self.allocator.free(d.message);
-    }
-    self.diagnostics.deinit();
     self.node_lists.deinit();
+    self.diagnostics.deinit();
+    for (self.diagnostic_messages.items) |m| {
+        self.allocator.free(m);
+    }
+    self.diagnostic_messages.deinit();
 }
 
 /// Save the parser and tokenizer state, then return an object
 /// that can be used to restore the state with `restoreState`.
-fn saveState(self: *Self) State {
+/// States must be saved and re-stored in a stack-order.
+/// i.e: `s1 = save() -> s2 = save() -> restore(s2) -> restore(s1)` is valid,
+/// but `s1 = save() -> s2 = save() -> restore(s2) -> restore(s1)` is not.
+fn saveState(self: *Self) error{OutOfMemory}!State {
     return State{
         .current_token = self.current_token,
         .next_token = self.next_token,
@@ -126,19 +155,29 @@ fn saveState(self: *Self) State {
         .tokens_len = self.tokens.items.len,
         .node_lists_len = self.node_lists.items.len,
         .tokenizer_state = self.tokenizer.saveState(),
+        .diagnostics = if (self.diagnostics.items.len > 0)
+            try self.allocator.dupe(Diagnostic, self.diagnostics.items)
+        else
+            null,
     };
 }
 
 /// Restore the parser and tokenizer state to a saved state snapshot.
-fn restoreState(self: *Self, state: *const State) void {
+fn restoreState(self: *Self, state: *State) error{OutOfMemory}!void {
     self.current_token = state.current_token;
     self.next_token = state.next_token;
 
     self.nodes.items = self.nodes.items[0..state.nodes_len];
     self.tokens.items = self.tokens.items[0..state.tokens_len];
     self.node_lists.items = self.node_lists.items[0..state.node_lists_len];
-
     self.tokenizer.restoreState(state.tokenizer_state);
+
+    if (state.diagnostics) |saved_diagnostics| {
+        // "Steal" the diagnostics from the state, and unset them
+        // on the state object so they're not freed when the state object is destroyed.
+        self.diagnostics.items = saved_diagnostics;
+        state.diagnostics = null;
+    }
 }
 
 pub fn parse(self: *Self) !Node.Index {
@@ -337,9 +376,10 @@ fn emitDiagnostic(
     fmt_args: anytype,
 ) error{OutOfMemory}!void {
     const message = try std.fmt.allocPrint(self.allocator, fmt, fmt_args);
-    try self.diagnostics.append(types.Diagnostic{
+    try self.diagnostic_messages.append(message);
+    try self.diagnostics.append(Diagnostic{
         .coord = coord,
-        .message = message,
+        .message = @enumFromInt(self.diagnostic_messages.items.len - 1),
     });
 }
 
@@ -467,22 +507,38 @@ fn isSimpleAssignmentTarget(self: *const Self, node: Node.Index) bool {
     };
 }
 
-fn assignmentExpression(self: *Self) !Node.Index {
-    const snapshot = self.saveState(); // to re-parse LHS if its destrucuted.
+fn assignmentExpression(self: *Self) ParseError!Node.Index {
+    var snapshot = try self.saveState(); // to re-parse LHS if its destrucuted.
+    defer snapshot.destroy(self.allocator);
 
     var is_assignment_pattern = false;
 
-    var lhs = conditionalExpression(self) catch blk: {
-        // if parsing as a conditional expression fails,
+    // todo: can I make fewer allocations here?
+    var lhs = conditionalExpression(self) catch |err| blk: {
+        // If parsing as a conditional expression fails,
         // try to parse as an assignment target.
         // This is necessary for cases like: {a, b = c} = { a: 1, b: 2 }
         // Where the LHS isn't valid assignment expr, but a valid destructuring pattern.
-        self.restoreState(&snapshot);
+        const parse_diagnostics = try self.allocator.dupe(
+            Diagnostic,
+            self.diagnostics.items,
+        );
+        defer self.allocator.free(parse_diagnostics);
+
+        // go back to where the assignment expression started.
+        try self.restoreState(&snapshot);
         is_assignment_pattern = true;
-        break :blk try self.assignmentLhsExpr();
-        // TODO: if the parsing fails here too, we will now have two error messages:
-        // one for the conditional expression, and one for the assignment target.
-        // I should remove the diagnostic for the latter.
+        // then, re-parse as a LeftHandSideExpressions
+        const lhs_pattern = self.assignmentLhsExpr() catch {
+            // If this parse fails too
+            // restore the diagnsotics from the original parse attempt (i.e
+            // expression, not assignment target).
+            self.diagnostics.items.len = 0;
+            try self.diagnostics.appendSlice(parse_diagnostics);
+            return err;
+        };
+
+        break :blk lhs_pattern;
     };
 
     if (!self.peek().isAssignmentOperator()) {
@@ -493,7 +549,7 @@ fn assignmentExpression(self: *Self) !Node.Index {
     // go back and re-parse the LHS as an assignment target.
     // (AssignmentPattern).
     if (!is_assignment_pattern and !self.isSimpleAssignmentTarget(lhs)) {
-        self.restoreState(&snapshot);
+        try self.restoreState(&snapshot);
         lhs = try self.assignmentLhsExpr();
     }
 

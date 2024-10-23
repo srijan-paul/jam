@@ -34,10 +34,11 @@ pub fn main() !void {
 
     const node_idx = parser.parse() catch {
         for (parser.diagnostics.items) |d| {
-            std.log.err("{s}", .{d.message});
+            std.log.err("{s}", .{parser.diagnostic_messages.items[@intFromEnum(d.message)]});
         }
 
-        std.log.err("\nfound {d} errors.\n", .{parser.diagnostics.items.len});
+        const n_errors = parser.diagnostics.items.len;
+        std.log.err("found {d} error{c}", .{ n_errors, @as(u8, if (n_errors == 1) ' ' else 's') });
         return;
     };
 

@@ -183,16 +183,20 @@ fn toPretty(
             return .{ .spread_element = expr };
         },
 
-        .conditional_expr => |cond_expr| {
+        .conditional_expr, .if_statement => |cond_expr| {
             const cond = try copy(allocator, try toPretty(self, allocator, cond_expr.condition));
             const consequent = try copy(allocator, try toPretty(self, allocator, cond_expr.consequent));
             const alternate = try copy(allocator, try toPretty(self, allocator, cond_expr.alternate));
-            return ast.NodePretty{
-                .conditional_expression = .{
-                    .condition = cond,
-                    .consequent = consequent,
-                    .alternate = alternate,
-                },
+            const conditional = .{
+                .condition = cond,
+                .consequent = consequent,
+                .alternate = alternate,
+            };
+
+            return if (checkActiveField(node.data, "conditional_expr")) .{
+                .conditional_expression = conditional,
+            } else .{
+                .if_statement = conditional,
             };
         },
 
@@ -236,6 +240,10 @@ fn toPretty(
                     .kind = d.kind,
                 },
             };
+        },
+
+        .none => {
+            return .{ .none = {} };
         },
     }
 }
