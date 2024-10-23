@@ -1,0 +1,11 @@
+name: Run unit tests
+run-name: Run all unit tests in the project
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: Build and Test
+    steps:
+      - uses: actions/checkout@v3
+      - uses: mlugg/setup-zig@v1
+      - run: zig build test
