@@ -32,14 +32,14 @@ pub fn main() !void {
     var parser = try Parser.init(allocator, source, file_name);
     defer parser.deinit();
 
-    const node_idx = parser.parse() catch {
+    const node_idx = parser.parse() catch |err| {
         for (parser.diagnostics.items) |d| {
             std.log.err("{s}", .{parser.diagnostic_messages.items[@intFromEnum(d.message)]});
         }
 
         const n_errors = parser.diagnostics.items.len;
         std.log.err("found {d} error{c}", .{ n_errors, @as(u8, if (n_errors == 1) ' ' else 's') });
-        return;
+        return err;
     };
 
     const s = try syntax.pretty.toJsonString(allocator, &parser, node_idx);

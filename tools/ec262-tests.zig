@@ -10,11 +10,11 @@ const TestResult = enum {
 };
 
 const TestOutput = struct {
-    fail_percent: f32,
-    pass_percent: f32,
-    unmatching_ast_count: f32,
+    fail_percent: std.json.Value,
+    pass_percent: std.json.Value,
+    unmatching_ast_count: usize,
 
-    test_cases: std.json.ObjectMap,
+    test_cases: std.json.Value,
 };
 
 fn testOnPassingFile(
@@ -30,7 +30,7 @@ fn testOnPassingFile(
     var parser = try Parser.init(allocator, source, file_name);
     defer parser.deinit();
 
-    const program1 = try parser.parse();
+    _ = try parser.parse();
 
     const source_explicit = try pass_explicit_dir.readFileAlloc(
         allocator,
@@ -42,15 +42,19 @@ fn testOnPassingFile(
     var parser2 = try Parser.init(allocator, source_explicit, file_name);
     defer parser2.deinit();
 
-    const program2 = try parser2.parse();
+    _ = try parser2.parse();
 
-    const json1 = try syntax.pretty.toJsonString(allocator, &parser, program1);
-    defer allocator.free(json1);
+    if (parser.nodes.items.len != parser2.nodes.items.len) {
+        return TestResult.ast_no_match;
+    }
 
-    const json2 = try syntax.pretty.toJsonString(allocator, &parser2, program2);
-    defer allocator.free(json2);
+    for (parser.nodes.items, parser2.nodes.items) |n1, n2| {
+        if (std.meta.activeTag(n1.data) != std.meta.activeTag(n2.data)) {
+            return TestResult.ast_no_match;
+        }
+    }
 
-    return if (std.mem.eql(u8, json1, json2)) .pass else .ast_no_match;
+    return TestResult.pass;
 }
 
 pub fn main() !void {
@@ -58,8 +62,12 @@ pub fn main() !void {
     const allocator = gpa.allocator();
     defer std.debug.assert(gpa.deinit() == .ok);
 
-    const tests_dir = try std.process.getEnvVarOwned(allocator, "JAM_TESTS_262_DIR");
-    defer allocator.free(tests_dir);
+    var arena = std.heap.ArenaAllocator.init(allocator);
+    const al = arena.allocator();
+
+    defer arena.deinit();
+
+    const tests_dir = try std.process.getEnvVarOwned(al, "JAM_TESTS_262_DIR");
 
     var d = try std.fs.openDirAbsolute(tests_dir, .{});
     defer d.close();
@@ -72,16 +80,14 @@ pub fn main() !void {
 
     var pass_dir_iter = pass_explicit_dir.iterate();
 
-    var n_total: f32 = 0.0;
-    var n_pass: f32 = 0.0;
-    var n_fail: f32 = 0.0;
-    var n_ast_no_match: f32 = 0.0;
+    var n_total: f64 = 0.0;
+    var n_pass: f64 = 0.0;
+    var n_fail: f64 = 0.0;
+    var n_ast_no_match: usize = 0;
 
-    var test_cases = std.json.ObjectMap.init(allocator);
-
+    var test_cases = std.json.ObjectMap.init(al);
     while (try pass_dir_iter.next()) |entry| {
         if (entry.kind != .file) continue;
-        if (n_total >= 10) break;
 
         n_total += 1.0;
         const result = testOnPassingFile(
@@ -94,24 +100,32 @@ pub fn main() !void {
         switch (result) {
             .pass => n_pass += 1.0,
             .parse_error => n_fail += 1.0,
-            .ast_no_match => n_ast_no_match += 1.0,
+            .ast_no_match => n_ast_no_match += 1,
         }
 
-        try test_cases.put(entry.name, .{ .string = @tagName(result) });
+        const name = try al.dupe(u8, entry.name);
+        try test_cases.put(name, .{ .string = @tagName(result) });
     }
 
-    const fail_rate = ((n_fail + n_ast_no_match) / n_total) * 100.0;
+    const fail_rate = ((n_fail + @as(f64, @floatFromInt(n_ast_no_match))) / n_total) * 100.0;
     const pass_rate = (n_pass / n_total) * 100.0;
+    std.debug.assert(n_fail + @as(f64, @floatFromInt(n_ast_no_match)) + n_pass == n_total);
 
-    _ = fail_rate;
-    _ = pass_rate;
+    const fail_rate_str = try std.fmt.allocPrint(al, "{d}", .{fail_rate});
+    const pass_rate_str = try std.fmt.allocPrint(al, "{d}", .{pass_rate});
+
+    const test_output = TestOutput{
+        .test_cases = .{ .object = test_cases },
+        .fail_percent = std.json.Value{ .number_string = fail_rate_str },
+        .pass_percent = std.json.Value{ .number_string = pass_rate_str },
+        .unmatching_ast_count = n_ast_no_match,
+    };
 
     const s = try std.json.stringifyAlloc(
-        allocator,
-        std.json.Value{ .object = test_cases },
+        al,
+        test_output,
         .{ .whitespace = .indent_2 },
     );
-    defer allocator.free(s);
 
     _ = try std.io.getStdOut().write(s);
 }

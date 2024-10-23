@@ -120,10 +120,12 @@ pub fn init(
         .tokens = try std.ArrayList(Token).initCapacity(allocator, 256),
     };
 
+    errdefer self.deinit();
+
     // the `null` node always lives at index-0.
     // see: ast.NodeData.none
     const i = try self.addNode(.{ .none = {} }, 0, 0);
-    std.debug.assert(@intFromEnum(i) == 0);
+    std.debug.assert(i == Node.Index.empty);
 
     // these calls will initialize `current_token` and `next_token`.
     _ = try self.next();
@@ -927,7 +929,7 @@ fn updateExpression(self: *Self) ParseError!Node.Index {
         return self.addNode(.{
             .update_expr = ast.UnaryPayload{
                 .operand = expr,
-                .operator = try self.addToken(token),
+                .operator = try self.addToken(op_token),
             },
         }, op_token.start, expr_end_pos);
     }
