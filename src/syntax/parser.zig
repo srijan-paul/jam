@@ -173,9 +173,9 @@ fn restoreState(self: *Self, state: *State) error{OutOfMemory}!void {
     self.tokenizer.restoreState(state.tokenizer_state);
 
     if (state.diagnostics) |saved_diagnostics| {
-        // "Steal" the diagnostics from the state, and unset them
-        // on the state object so they're not freed when the state object is destroyed.
-        self.diagnostics.items = saved_diagnostics;
+        // "Steal" the diagnostics from the state.
+        self.diagnostics.deinit();
+        self.diagnostics = std.ArrayList(Diagnostic).fromOwnedSlice(self.allocator, saved_diagnostics);
         state.diagnostics = null;
     }
 }
@@ -215,6 +215,10 @@ fn statement(self: *Self) ParseError!Node.Index {
                 can_end_in_semi = false;
                 break :blk try self.emptyStatement();
             },
+            .kw_if => {
+                can_end_in_semi = false;
+                break :blk try self.ifStatement();
+            },
             .kw_debugger => {
                 const token = try self.next();
                 break :blk try self.addNode(
@@ -231,6 +235,39 @@ fn statement(self: *Self) ParseError!Node.Index {
     if (can_end_in_semi) try self.consume(.@";");
 
     return stmt;
+}
+
+fn ifStatement(self: *Self) ParseError!Node.Index {
+    const if_kw = try self.next();
+    std.debug.assert(if_kw.tag == .kw_if);
+
+    _ = try self.expect(.@"(");
+    const cond = try self.expression();
+    _ = try self.expect(.@")");
+
+    std.debug.print("{s}\n", .{@tagName(self.peek().tag)});
+
+    const consequent = try self.statement();
+    var end_pos = self.nodeSpan(consequent).end;
+
+    var alternate = Node.Index.empty;
+    if (self.peek().tag == .kw_else) {
+        _ = try self.next();
+        alternate = try self.statement();
+        end_pos = self.nodeSpan(alternate).end;
+    }
+
+    return self.addNode(
+        .{
+            .if_statement = .{
+                .condition = cond,
+                .consequent = consequent,
+                .alternate = alternate,
+            },
+        },
+        if_kw.start,
+        end_pos,
+    );
 }
 
 fn variableStatement(self: *Self) ParseError!Node.Index {
@@ -523,7 +560,6 @@ fn assignmentExpression(self: *Self) ParseError!Node.Index {
             Diagnostic,
             self.diagnostics.items,
         );
-        defer self.allocator.free(parse_diagnostics);
 
         // go back to where the assignment expression started.
         try self.restoreState(&snapshot);
@@ -533,11 +569,15 @@ fn assignmentExpression(self: *Self) ParseError!Node.Index {
             // If this parse fails too
             // restore the diagnsotics from the original parse attempt (i.e
             // expression, not assignment target).
-            self.diagnostics.items.len = 0;
-            try self.diagnostics.appendSlice(parse_diagnostics);
+            self.diagnostics.deinit();
+            self.diagnostics = std.ArrayList(Diagnostic).fromOwnedSlice(
+                self.allocator,
+                parse_diagnostics,
+            );
             return err;
         };
 
+        self.allocator.free(parse_diagnostics);
         break :blk lhs_pattern;
     };
 
@@ -914,6 +954,10 @@ fn updateExpression(self: *Self) ParseError!Node.Index {
 
 fn lhsExpression(self: *Self) ParseError!Node.Index {
     if (try self.tryNewExpression()) |expr| return expr;
+    if (self.peek().tag == .kw_super) {
+        return try self.superExpression();
+    }
+
     var lhs_expr = try self.memberExpression();
     if (try self.tryCallExpression(lhs_expr)) |call_expr| {
         lhs_expr = call_expr;
@@ -923,6 +967,17 @@ fn lhsExpression(self: *Self) ParseError!Node.Index {
         lhs_expr = try self.optionalExpression(lhs_expr);
     }
     return lhs_expr;
+}
+
+fn superExpression(self: *Self) ParseError!Node.Index {
+    const super_token = try self.next();
+    std.debug.assert(super_token.tag == .kw_super);
+
+    const super_args, const start, const end = try self.parseArgs();
+
+    return self.addNode(.{
+        .super_call_expr = super_args,
+    }, start, end);
 }
 
 fn tryNewExpression(self: *Self) ParseError!?Node.Index {
@@ -952,13 +1007,6 @@ fn tryNewExpression(self: *Self) ParseError!?Node.Index {
 /// https://262.ecma-international.org/15.0/index.html#prod-CallExpression
 fn tryCallExpression(self: *Self, callee: Node.Index) ParseError!?Node.Index {
     const token = self.peek();
-    if (token.tag == .kw_super) {
-        const super_call_args, const start, const end = try self.parseArgs();
-        return try self.addNode(.{
-            .super_call_expr = super_call_args,
-        }, start, end);
-    }
-
     if (token.tag != .@"(") return null;
 
     var call_expr = try self.coverCallAndAsyncArrowHead(callee);
@@ -995,7 +1043,7 @@ fn coverCallAndAsyncArrowHead(self: *Self, callee: Node.Index) ParseError!Node.I
     return self.addNode(.{
         .call_expr = .{
             .callee = callee,
-            .arguments = try self.args(),
+            .arguments = call_args,
         },
     }, start_pos, end_pos);
 }
@@ -1181,7 +1229,6 @@ fn primaryExpression(self: *Self) ParseError!Node.Index {
         ),
         .@"[" => return self.arrayLiteral(token.start),
         .@"{" => return self.objectLiteral(token.start),
-        .@"(" => return self.coverParenExprAndArrowParams(token.start),
         else => {
             try self.emitDiagnostic(
                 token.startCoord(self.source),
@@ -1461,7 +1508,7 @@ fn runTestOnFile(tests_dir: std.fs.Dir, file_path: []const u8) !void {
     var parser = try Self.init(t.allocator, source_code, file_path);
     defer parser.deinit();
 
-    const root_node = try parser.parse();
+    const root_node = try parser.expression();
     const pretty_ast = try pretty.toJsonString(t.allocator, &parser, root_node);
     defer t.allocator.free(pretty_ast);
 

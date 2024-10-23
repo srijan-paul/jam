@@ -124,7 +124,7 @@ const Type = std.builtin.Type;
 
 pub const Node = struct {
     /// An index into the AST's `nodes` array list.
-    pub const Index = enum(u32) { _ };
+    pub const Index = enum(u32) { empty = 0, _ };
     /// Byte offset into the source file where this node begins.
     start: u32,
     /// Byte offset into the source file where this node ends.
