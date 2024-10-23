@@ -242,22 +242,31 @@ pub const Tokenizer = struct {
         };
     }
 
-    fn parseEscape(str: []const u8) ?usize {
-        if (str.len < 2 or str[0] != '\\') return null;
+    fn parseEscape(self: *Self, iter: *std.unicode.Utf8Iterator) !void {
+        const str = iter.bytes[iter.i..];
+        if (str.len < 2 or str[0] != '\\')
+            return TokenizeError.BadEscapeSequence;
+
         switch (str[1]) {
             'x' => {
                 // \xXX
-                if (str.len >= 4 and std.ascii.isHex(str[2]) and std.ascii.isHex(str[3]))
-                    return 4
-                else
-                    return null;
+                if (str.len >= 4 and std.ascii.isHex(str[2]) and std.ascii.isHex(str[3])) {
+                    iter.i += 4;
+                } else {
+                    return TokenizeError.BadEscapeSequence;
+                }
             },
             'u' => {
                 // \uXXXX or \u{X} - \u{XXXXXX}
-                const parsed = parseUnicodeEscape(str) orelse return null;
-                return parsed.len;
+                const parsed = parseUnicodeEscape(str) orelse
+                    return TokenizeError.BadEscapeSequence;
+                iter.i += parsed.len;
             },
-            else => return 2,
+            else => {
+                iter.i += 1; // skip /
+                const cp = iter.nextCodepoint() orelse return TokenizeError.InvalidUtf8;
+                if (isNewline(cp)) self.line += 1;
+            },
         }
     }
 
@@ -271,8 +280,7 @@ pub const Tokenizer = struct {
         var found_end_quote = false;
         while (iter.i < str.len) {
             if (str[iter.i] == '\\') {
-                iter.i += parseEscape(str[iter.i..]) orelse
-                    return TokenizeError.BadEscapeSequence;
+                try self.parseEscape(&iter);
                 continue;
             }
 
@@ -999,5 +1007,12 @@ test Tokenizer {
         try t.expectEqual(Token.Tag.numeric_literal, (try tokenizer.next()).tag);
         try t.expectEqual(Token.Tag.@"]", (try tokenizer.next()).tag);
         try t.expectEqual(Token.Tag.@")", (try tokenizer.next()).tag);
+    }
+    {
+        var tokenizer = try Tokenizer.init(&.{ 40, 39, 92, 226, 128, 169, 39, 41 });
+        try t.expectEqual(Token.Tag.@"(", (try tokenizer.next()).tag);
+        try t.expectEqual(Token.Tag.string_literal, (try tokenizer.next()).tag);
+        try t.expectEqual(Token.Tag.@")", (try tokenizer.next()).tag);
+        try t.expectEqual(Token.Tag.eof, (try tokenizer.next()).tag);
     }
 }

@@ -37,6 +37,21 @@ pub fn build(b: *std.Build) !void {
         .optimize = optimize,
     });
 
+    {
+        const test262 = b.addExecutable(.{
+            .name = "test262",
+            .root_source_file = b.path("tools/ec262-tests.zig"),
+            .target = target,
+            .optimize = optimize,
+        });
+
+        test262.root_module.addImport("jam-syntax", jam_syntax_module);
+        const tests_262_cmd = b.addRunArtifact(test262);
+
+        const test_runner_step = b.step("test-262", "Run the EC262 parser tests");
+        test_runner_step.dependOn(&tests_262_cmd.step);
+    }
+
     b.installArtifact(exe);
     exe.root_module.addImport("util", util_module);
 

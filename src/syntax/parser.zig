@@ -245,8 +245,6 @@ fn ifStatement(self: *Self) ParseError!Node.Index {
     const cond = try self.expression();
     _ = try self.expect(.@")");
 
-    std.debug.print("{s}\n", .{@tagName(self.peek().tag)});
-
     const consequent = try self.statement();
     var end_pos = self.nodeSpan(consequent).end;
 
@@ -593,8 +591,7 @@ fn assignmentExpression(self: *Self) ParseError!Node.Index {
         lhs = try self.assignmentLhsExpr();
     }
 
-    const op_token = try self.next(); // eat '='
-    std.debug.assert(op_token.isAssignmentOperator());
+    const op_token = try self.expect(.@"="); // eat '='
 
     const rhs = try self.assignmentExpression();
     const start = self.nodes.items[@intFromEnum(rhs)].end;
@@ -1229,6 +1226,7 @@ fn primaryExpression(self: *Self) ParseError!Node.Index {
         ),
         .@"[" => return self.arrayLiteral(token.start),
         .@"{" => return self.objectLiteral(token.start),
+        .@"(" => return self.coverParenExprAndArrowParams(),
         else => {
             try self.emitDiagnostic(
                 token.startCoord(self.source),
@@ -1240,8 +1238,10 @@ fn primaryExpression(self: *Self) ParseError!Node.Index {
     }
 }
 
-fn coverParenExprAndArrowParams(_: *Self, _: u32) ParseError!Node.Index {
-    unreachable;
+fn coverParenExprAndArrowParams(self: *Self) ParseError!Node.Index {
+    const expr = try self.expression();
+    _ = try self.expect(.@")");
+    return expr;
 }
 
 /// Parse an object literal, assuming the `{` has already been consumed.
