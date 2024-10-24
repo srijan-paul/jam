@@ -1273,6 +1273,9 @@ fn objectLiteral(self: *Self, start_pos: u32) ParseError!Node.Index {
     return try self.addNode(.{ .object_literal = properties }, start_pos, end_pos);
 }
 
+/// https://tc39.es/ecma262/#prod-PropertyDefinitionList
+/// Parse a comma-separated list of properties.
+/// Returns `null` if there's 0 properties in the object.
 fn propertyDefinitionList(self: *Self) ParseError!?ast.NodeList {
     var property_defs = std.ArrayList(Node.Index).init(self.allocator);
     defer property_defs.deinit();
@@ -1281,32 +1284,7 @@ fn propertyDefinitionList(self: *Self) ParseError!?ast.NodeList {
     while (lookahead.tag != .eof) {
         switch (lookahead.tag) {
             .identifier => {
-                const key_token = try self.next();
-                const key_end_pos = key_token.start + key_token.len;
-                const key = try self.addNode(
-                    .{ .identifier = try self.addToken(key_token) },
-                    key_token.start,
-                    key_end_pos,
-                );
-
-                switch (self.peek().tag) {
-                    .@":", .@"(" => {
-                        try property_defs.append(try self.completePropertyDef(key, .{}));
-                    },
-
-                    else => {
-                        const kv_node = ast.PropertyDefinition{
-                            .key = key,
-                            .value = key,
-                            .flags = .{ .is_shorthand = true },
-                        };
-                        try property_defs.append(try self.addNode(
-                            .{ .object_property = kv_node },
-                            key_token.start,
-                            key_end_pos,
-                        ));
-                    },
-                }
+                try property_defs.append(try self.identifierKey());
             },
 
             .@"[" => {
@@ -1355,8 +1333,118 @@ fn propertyDefinitionList(self: *Self) ParseError!?ast.NodeList {
     return try self.addNodeList(property_defs.items);
 }
 
-fn parseMethodBody(self: *Self, key: Node.Index, is_key_computed: bool) ParseError!Node.Index {
-    std.debug.assert(self.current_token.tag == .@"(");
+/// Parse an object key that starts with an identifier (that may be "get" or "set").
+fn identifierKey(self: *Self) ParseError!Node.Index {
+    const key_token = try self.next();
+    std.debug.assert(key_token.tag == .identifier);
+
+    const lookahead = self.peek();
+    if (lookahead.tag != .@":" and lookahead.tag != .@"(" and
+        lookahead.tag != .@"," and lookahead.tag != .@"}")
+    {
+        const maybe_getter_or_setter = try self.getterOrSetter(key_token);
+        if (maybe_getter_or_setter) |getter_or_setter| {
+            return getter_or_setter;
+        }
+
+        try self.emitDiagnostic(
+            self.current_token.startCoord(self.source),
+            "Unexpected '{s}' in property definition",
+            .{self.current_token.toByteSlice(self.source)},
+        );
+        return ParseError.UnexpectedToken;
+    }
+
+    const key_end_pos = key_token.start + key_token.len;
+    const key = try self.addNode(
+        .{ .identifier = try self.addToken(key_token) },
+        key_token.start,
+        key_end_pos,
+    );
+
+    const lookahead_tag = self.peek().tag;
+    switch (lookahead_tag) {
+        .@":", .@"(" => {
+            return self.completePropertyDef(key, .{
+                .is_method = lookahead_tag == .@"(",
+            });
+        },
+
+        else => {
+            const kv_node = ast.PropertyDefinition{
+                .key = key,
+                .value = key,
+                .flags = .{ .is_shorthand = true },
+            };
+            return self.addNode(
+                .{ .object_property = kv_node },
+                key_token.start,
+                key_end_pos,
+            );
+        },
+    }
+}
+
+/// Tries to parse a getter or setter, assuming `token` is an identifier.
+/// If no getter or setter is found, returns `null`.
+/// If there is a parse error, emits a diagnostic and returns the error.
+fn getterOrSetter(self: *Self, token: Token) ParseError!?Node.Index {
+    const kind: ast.PropertyDefinitionKind = blk: {
+        const token_str = token.toByteSlice(self.source);
+        if (std.mem.eql(u8, token_str, "get")) {
+            break :blk .get;
+        }
+
+        if (std.mem.eql(u8, token_str, "set")) {
+            break :blk .set;
+        }
+
+        return null;
+    };
+
+    const key = try self.classElementName();
+    return try self.parseMethodBody(
+        key,
+        .{ .is_method = true, .kind = kind },
+    );
+}
+
+/// https://tc39.es/ecma262/#prod-ClassElementName
+fn classElementName(self: *Self) ParseError!Node.Index {
+    const token = try self.next();
+    switch (token.tag) {
+        .identifier, .private_identifier => {
+            return self.addNode(
+                .{ .identifier = try self.addToken(token) },
+                token.start,
+                token.start + token.len,
+            );
+        },
+        .@"[" => {
+            const expr = try self.assignmentExpression();
+            _ = try self.expect(.@"]");
+            return expr;
+        },
+        else => {
+            try self.emitDiagnostic(
+                token.startCoord(self.source),
+                "Expected property name, got '{s}'",
+                .{token.toByteSlice(self.source)},
+            );
+            return ParseError.UnexpectedToken;
+        },
+    }
+}
+
+/// Parse a method body, assuming we're at the '(' node.
+/// Returns an `object_property` Node.
+fn parseMethodBody(
+    self: *Self,
+    key: Node.Index,
+    flags: ast.PropertyDefinitionFlags,
+) ParseError!Node.Index {
+    std.debug.assert(self.current_token.tag == .@"(" and flags.is_method);
+
     const start_pos = self.peek().start;
     const func_expr = try self.parseFunctionBody(start_pos, .{});
     const end_pos = self.nodeSpan(func_expr).end;
@@ -1364,7 +1452,7 @@ fn parseMethodBody(self: *Self, key: Node.Index, is_key_computed: bool) ParseErr
     const kv_node = ast.PropertyDefinition{
         .key = key,
         .value = func_expr,
-        .flags = .{ .is_method = true, .is_computed = is_key_computed },
+        .flags = flags,
     };
 
     const key_start = self.nodes.items[@intFromEnum(key)].start;
@@ -1375,13 +1463,19 @@ fn parseMethodBody(self: *Self, key: Node.Index, is_key_computed: bool) ParseErr
     );
 }
 
+/// Assuming that the key has been parsed, complete the property definition.
 fn completePropertyDef(
     self: *Self,
     key: Node.Index,
     flags: ast.PropertyDefinitionFlags,
 ) ParseError!Node.Index {
     if (self.current_token.tag == .@"(") {
-        return self.parseMethodBody(key, flags.is_computed);
+        return self.parseMethodBody(key, .{
+            .is_method = true,
+            .is_computed = flags.is_computed,
+            .is_shorthand = flags.is_shorthand,
+            .kind = flags.kind,
+        });
     }
 
     _ = try self.expect(.@":");

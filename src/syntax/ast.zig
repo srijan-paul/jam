@@ -46,12 +46,18 @@ pub const FunctionExpression = struct {
     flags: FunctionFlags = .{},
 };
 
+pub const PropertyDefinitionKind = enum(u5) {
+    get,
+    set,
+    init,
+};
+
 /// Flags for property definitions of an object literal.
 pub const PropertyDefinitionFlags = packed struct(u8) {
     is_method: bool = false,
     is_shorthand: bool = false,
     is_computed: bool = false,
-    _: u5 = 0,
+    kind: PropertyDefinitionKind = .init,
 };
 
 pub const PropertyDefinition = struct {

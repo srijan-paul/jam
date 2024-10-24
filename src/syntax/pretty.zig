@@ -180,7 +180,7 @@ fn toPretty(
                     .is_computed = prop.flags.is_computed,
                     .is_shorthand = prop.flags.is_shorthand,
                     .is_method = prop.flags.is_method,
-                    ._ = 0,
+                    .kind = prop.flags.kind,
                 },
             },
         },
