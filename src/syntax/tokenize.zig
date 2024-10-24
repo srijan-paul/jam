@@ -4,7 +4,6 @@ const Token = @import("token.zig").Token;
 
 const util = @import("util");
 
-const offset = util.offsets;
 const types = util.types;
 
 pub const Coordinate = types.Coordinate;
@@ -107,6 +106,7 @@ pub const Tokenizer = struct {
                 .tag = Token.Tag.eof,
                 .start = self.index,
                 .len = 0,
+                .line = self.line,
             };
         };
 
@@ -177,6 +177,7 @@ pub const Tokenizer = struct {
             .tag = tag,
             .start = start,
             .len = len,
+            .line = self.line,
         };
     }
 
@@ -207,6 +208,7 @@ pub const Tokenizer = struct {
     fn comment(self: *Self) TokenizeError!?Token {
         const start = self.index;
         const str = self.source[start..];
+        const start_line = self.index;
         if (str.len < 2) return null;
 
         var iter = std.unicode.Utf8Iterator{ .bytes = str, .i = 2 };
@@ -239,6 +241,7 @@ pub const Tokenizer = struct {
             .start = start,
             .len = @intCast(iter.i),
             .tag = .comment,
+            .line = start_line,
         };
     }
 
@@ -258,7 +261,7 @@ pub const Tokenizer = struct {
             },
             'u' => {
                 // \uXXXX or \u{X} - \u{XXXXXX}
-                const parsed = parseUnicodeEscape(str) orelse
+                const parsed = util.parseUnicodeEscape(str) orelse
                     return TokenizeError.BadEscapeSequence;
                 iter.i += parsed.len;
             },
@@ -272,6 +275,7 @@ pub const Tokenizer = struct {
 
     fn stringLiteral(self: *Self) TokenizeError!Token {
         const start = self.index;
+        const start_line = self.line;
         const str = self.source[start..];
 
         const quote_char: u21 = if (str[0] == '\'') '\'' else '"';
@@ -302,33 +306,8 @@ pub const Tokenizer = struct {
             .tag = .string_literal,
             .start = start,
             .len = len,
+            .line = start_line,
         };
-    }
-
-    /// Parse a unicode escape sequence and return the codepoint along with the
-    /// length of the sequence in bytes.
-    fn parseUnicodeEscape(str: []const u8) ?struct { codepoint: u21, len: u32 } {
-        if (str.len < 3 or !std.mem.startsWith(u8, str, "\\u")) {
-            return null;
-        }
-
-        if (str[2] == '{') {
-            const len = std.mem.indexOfScalar(u8, str[3..], '}') orelse return null;
-            if (len < 1 or len > 6) return null;
-            for (str[3..][0..len]) |ch| {
-                if (!std.ascii.isHex(ch)) return null;
-            }
-            const code_point = std.fmt.parseInt(u24, str[3..][0..len], 16) catch unreachable;
-            if (code_point > 0x10FFFF) return null;
-            return .{ .codepoint = @intCast(code_point), .len = @intCast(len + 4) };
-        }
-
-        if (str.len < 6) return null;
-        for (str[2..6]) |ch| {
-            if (!std.ascii.isHex(ch)) return null;
-        }
-        const code_point = std.fmt.parseInt(u16, str[2..6], 16) catch unreachable;
-        return .{ .codepoint = code_point, .len = 6 };
     }
 
     fn canCodepointStartId(cp: u21) bool {
@@ -346,7 +325,7 @@ pub const Tokenizer = struct {
         self: *Self,
         it: *std.unicode.Utf8Iterator,
     ) TokenizeError!bool {
-        if (parseUnicodeEscape(it.bytes[it.i..])) |parsed| {
+        if (util.parseUnicodeEscape(it.bytes[it.i..])) |parsed| {
             if (canCodepointStartId(parsed.codepoint)) {
                 self.index += parsed.len;
                 return true;
@@ -364,7 +343,7 @@ pub const Tokenizer = struct {
     /// and check if the code point(s) form a valid identifier part.
     /// https://tc39.es/ecma262/#prod-IdentifierPartChar
     fn matchIdentifierContt(it: *std.unicode.Utf8Iterator) TokenizeError!bool {
-        if (parseUnicodeEscape(it.bytes[it.i..])) |parsed| {
+        if (util.parseUnicodeEscape(it.bytes[it.i..])) |parsed| {
             if (canCodepointContinueId(parsed.codepoint)) {
                 it.i += parsed.len;
                 return true;
@@ -401,14 +380,17 @@ pub const Tokenizer = struct {
         };
 
         const id_str = str[0..len];
-        for (0.., all_keywords) |i, kw| {
-            if (std.mem.eql(u8, id_str, kw)) {
-                self.index += @intCast(len);
-                return Token{
-                    .start = start,
-                    .len = @intCast(len),
-                    .tag = all_kw_tags[i],
-                };
+        if (len >= 2 and len <= 12) {
+            for (0.., all_keywords) |i, kw| {
+                if (std.mem.eql(u8, id_str, kw)) {
+                    self.index += @intCast(len);
+                    return Token{
+                        .start = start,
+                        .len = @intCast(len),
+                        .tag = all_kw_tags[i],
+                        .line = self.line,
+                    };
+                }
             }
         }
 
@@ -417,6 +399,7 @@ pub const Tokenizer = struct {
             .start = start,
             .len = @intCast(len),
             .tag = Token.Tag.identifier,
+            .line = self.line,
         };
     }
 
@@ -429,6 +412,7 @@ pub const Tokenizer = struct {
             .start = start,
             .len = id.len + 1,
             .tag = .private_identifier,
+            .line = self.line,
         };
     }
 
@@ -663,6 +647,7 @@ pub const Tokenizer = struct {
             .start = start,
             .len = len,
             .tag = tag,
+            .line = self.line,
         };
     }
 
@@ -789,6 +774,7 @@ pub const Tokenizer = struct {
             .tag = .numeric_literal,
             .start = start,
             .len = len,
+            .line = self.line,
         };
     }
 
@@ -833,6 +819,7 @@ fn testToken(src: []const u8, tag: Token.Tag) !void {
             .tag = tag,
             .start = 0,
             .len = @intCast(src.len),
+            .line = 0,
         }, token);
     }
 
@@ -854,6 +841,7 @@ fn testToken(src: []const u8, tag: Token.Tag) !void {
             .tag = tag,
             .start = 2,
             .len = @intCast(src.len),
+            .line = 1,
         }, token);
     }
 }
@@ -957,6 +945,7 @@ test Tokenizer {
             .tag = .eof,
             .start = 0,
             .len = 0,
+            .line = 0,
         }, try tokenizer.next());
     }
 

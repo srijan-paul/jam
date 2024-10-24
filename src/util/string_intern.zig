@@ -18,7 +18,7 @@ allocator: std.mem.Allocator,
 chars: []u8,
 /// The number of bytes used in `chars`.
 n_bytes_used: u32 = 0,
-/// Maps a string to its corresponding span in chars.
+/// Maps a string to its corresponding (start, end) span.
 index_of_str: std.StringHashMap(String),
 
 pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!Self {

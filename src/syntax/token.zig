@@ -165,6 +165,9 @@ pub const Token = struct {
     start: u32,
     /// Size of the token's text in bytes
     len: u32,
+    /// 0-indexed line location of the token.
+    /// For multi-line tokens like template literals, this only stores the start line.
+    line: u32,
 
     /// Return the token's text as a byte slice.
     pub fn toByteSlice(self: Token, source: []const u8) []const u8 {
@@ -183,6 +186,8 @@ pub const Token = struct {
 
     /// (line, column) range for the end of this token.
     pub fn toRange(self: Token, source: []const u8) Range {
+        // TODO: end-coord can be inferred from start-coord.
+        // optimize this.
         return Range{
             .start = self.startCoord(source),
             .end = self.endCoord(source),

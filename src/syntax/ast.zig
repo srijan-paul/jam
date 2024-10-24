@@ -1,6 +1,5 @@
 const std = @import("std");
 const Token = @import("token.zig").Token;
-const types = @import("util").types;
 
 pub const BinaryPayload = struct {
     lhs: Node.Index,

@@ -4,11 +4,10 @@ const Self = @This();
 const Tokenizer = @import("./tokenize.zig").Tokenizer;
 const Token = @import("./token.zig").Token;
 const ast = @import("./ast.zig");
+const StringHelper = @import("./strings.zig");
 
 const util = @import("util");
-
 const types = util.types;
-const offsets = util.offsets;
 
 const Node = ast.Node;
 const NodeData = ast.NodeData;
@@ -45,6 +44,7 @@ pub const Diagnostic = struct {
     const MessageIndex = enum(usize) { _ };
     /// line/col position where error occurred.
     coord: types.Coordinate,
+    /// Message reported by the parser.
     message: MessageIndex,
 };
 
@@ -99,6 +99,8 @@ diagnostic_messages: std.ArrayList([]const u8),
 current_token: Token,
 /// The next token that we're going to read.
 next_token: Token,
+/// Helper struct to manage, escape, and compare strings in source code.
+strings: StringHelper,
 
 pub fn init(
     allocator: std.mem.Allocator,
@@ -118,6 +120,8 @@ pub fn init(
         .nodes = try std.ArrayList(Node).initCapacity(allocator, 32),
         .node_lists = try std.ArrayList(Node.Index).initCapacity(allocator, 32),
         .tokens = try std.ArrayList(Token).initCapacity(allocator, 256),
+
+        .strings = try StringHelper.init(allocator, source),
     };
 
     errdefer self.deinit();
@@ -142,6 +146,7 @@ pub fn deinit(self: *Self) void {
         self.allocator.free(m);
     }
     self.diagnostic_messages.deinit();
+    self.strings.deinit();
 }
 
 /// Save the parser and tokenizer state, then return an object
@@ -920,6 +925,13 @@ fn unaryExpression(self: *Self) ParseError!Node.Index {
     }
 }
 
+/// The ECMASCript262 standard describes a syntax directed operation
+/// called `AssignmentTargetType`, which determines if a given expression
+/// is "SIMPLE", a.k.a, valid in contexts like the operand of `<expr>++`.
+fn isExprSimple(self: *Self) ParseError!Node.Index {
+    _ = self;
+}
+
 fn updateExpression(self: *Self) ParseError!Node.Index {
     const token = self.peek();
     if (token.tag == .@"++" or token.tag == .@"--") {
@@ -1607,6 +1619,14 @@ fn runTestOnFile(tests_dir: std.fs.Dir, file_path: []const u8) !void {
     const expected_json_str = source_code[2..first_line_len];
 
     try t.expectEqualDeep(expected_json_str, pretty_ast);
+}
+
+// -----
+// Tests
+// -----
+
+test StringHelper {
+    _ = StringHelper;
 }
 
 test parse {
