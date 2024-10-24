@@ -30,7 +30,7 @@ const all_keywords = [_][]const u8{
   "default",  "delete", "do", "else", "enum",
   "export", "extends", "false", "finally",
   "for", "function", "if", "import", "in",
-  "instanceof", "new", "null", "return",
+  "instanceof", "let", "new", "null", "return",
   "super", "switch", "this", "throw", "true",
   "try", "typeof", "var", "void", "while",
   "with", "yield"
@@ -917,6 +917,7 @@ test Tokenizer {
         .{ "?.", .@"?." },
         .{ ",", .@"," },
         .{ "'hello, world!'", .string_literal },
+        .{ "'\u{00000000078}'", .string_literal },
         .{ "'\\u{95}world!'", .string_literal },
         .{ "'\\u{95}world\\{105}'", .string_literal },
         .{ "'\\xFFworld\\{105}'", .string_literal },

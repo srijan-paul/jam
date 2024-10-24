@@ -38,8 +38,27 @@ const pass_exceptions = [_][]const u8{
     "6e5fe0c2bb20b016.js",
     "ff215f966bed2b85.js",
     "23869c020fc2cb0f.js",
+    "0da4b57d03d33129.js",
+    "4deb8938d7b36024.js",
+    "ae9667ad0d837abc.js",
+    "5665da18579dd006.js",
+    "0da4b57d03d33129.js",
+    "d4c979f1a92a8cac.js",
+    "d57a361bc638f38c.js",
+    "366585381e4610b4.js",
+    "ae700e3f8ff82c6c.js",
+    "93cac77bbf2242ab.js",
+    "5f1e0eff7ac775ee.js",
+    "e877f5e6753dc7e4.js",
+    "7da12349ac9f51f2.js",
+    "47094fe8a994b7de.js",
+    "1c055d256ec34f17.js",
+    "0b2804600405dbf6.js",
+    "7ebaa39b4a9b5b5b.js",
 };
 
+/// For a given file name, check whether `pass/<file>` and `pass-explicit/<file>`
+/// have the same parse trees.
 fn testOnPassingFile(
     allocator: std.mem.Allocator,
     pass_dir: *std.fs.Dir,

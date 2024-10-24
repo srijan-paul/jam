@@ -12,22 +12,23 @@ pub fn parseUnicodeEscape(str: []const u8) ?struct { codepoint: u21, len: u32 } 
     }
 
     if (str[2] == '{') {
-        const len = std.mem.indexOfScalar(u8, str[3..], '}') orelse return null;
-        if (len < 1 or len > 6) return null;
-        for (str[3..][0..len]) |ch| {
+        const len = std.mem.indexOfScalar(u8, str, '}') orelse return null;
+        if (len < 1) return null;
+        for (str[3..len]) |ch| {
             if (!std.ascii.isHex(ch)) return null;
         }
-        const code_point = std.fmt.parseInt(u24, str[3..][0..len], 16) catch unreachable;
+        const code_point = std.fmt.parseInt(u24, str[3..len], 16) catch unreachable;
         if (code_point > 0x10FFFF) return null;
-        return .{ .codepoint = @intCast(code_point), .len = @intCast(len + 4) };
+        return .{ .codepoint = @intCast(code_point), .len = @intCast(len + 1) };
     }
 
-    if (str.len < 6) return null;
-    for (str[2..6]) |ch| {
-        if (!std.ascii.isHex(ch)) return null;
-    }
-    const code_point = std.fmt.parseInt(u16, str[2..6], 16) catch unreachable;
-    return .{ .codepoint = code_point, .len = 6 };
+    var i: u32 = 2;
+    while (i < str.len and std.ascii.isHex(str[i])) : (i += 1) {}
+    if (i < 6) return null;
+
+    const code_point = std.fmt.parseInt(u21, str[2..i], 16) catch
+        return null;
+    return .{ .codepoint = code_point, .len = i };
 }
 
 test {

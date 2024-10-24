@@ -724,6 +724,7 @@ fn arrayAssignmentPattern(self: *Self) ParseError!Node.Index {
         switch (token.tag) {
             .@"," => {
                 _ = try self.next(); // eat ','
+                if (self.isAtToken(.@"]")) break;
                 try items.append(try self.addNode(
                     .{ .empty_array_item = {} },
                     token.start,
@@ -1226,11 +1227,13 @@ fn primaryExpression(self: *Self) ParseError!Node.Index {
             token.start,
             token.start + token.len,
         ),
-        .identifier => return self.addNode(
-            .{ .identifier = try self.addToken(token) },
-            token.start,
-            token.start + token.len,
-        ),
+        .identifier => {
+            return self.addNode(
+                .{ .identifier = try self.addToken(token) },
+                token.start,
+                token.start + token.len,
+            );
+        },
         .numeric_literal,
         .string_literal,
         .kw_true,
@@ -1287,27 +1290,8 @@ fn propertyDefinitionList(self: *Self) ParseError!?ast.NodeList {
                 );
 
                 switch (self.peek().tag) {
-                    .@":" => {
-                        _ = try self.next(); // eat ':'
+                    .@":", .@"(" => {
                         try property_defs.append(try self.completePropertyDef(key, .{}));
-                    },
-
-                    .@"(" => {
-                        const start_pos = self.peek().start;
-                        const func_expr = try self.parseFunctionBody(start_pos, .{});
-                        const end_pos = self.nodeSpan(func_expr).end;
-
-                        const kv_node = ast.PropertyDefinition{
-                            .key = key,
-                            .value = func_expr,
-                            .flags = .{ .is_method = true },
-                        };
-
-                        try property_defs.append(try self.addNode(
-                            .{ .object_property = kv_node },
-                            key_token.start,
-                            end_pos,
-                        ));
                     },
 
                     else => {
@@ -1329,8 +1313,12 @@ fn propertyDefinitionList(self: *Self) ParseError!?ast.NodeList {
                 _ = try self.next();
                 const key = try self.assignmentExpression();
                 _ = try self.expect(.@"]");
-                _ = try self.expect(.@":");
-                try property_defs.append(try self.completePropertyDef(key, .{ .is_computed = true }));
+
+                const property = try self.completePropertyDef(
+                    key,
+                    .{ .is_computed = true },
+                );
+                try property_defs.append(property);
             },
 
             .numeric_literal, .string_literal => {
@@ -1340,8 +1328,9 @@ fn propertyDefinitionList(self: *Self) ParseError!?ast.NodeList {
                     key_token.start,
                     key_token.start + key_token.len,
                 );
-                _ = try self.expect(.@":");
-                try property_defs.append(try self.completePropertyDef(key, .{}));
+
+                const property_expr = try self.completePropertyDef(key, .{});
+                try property_defs.append(property_expr);
             },
 
             .@"..." => {
@@ -1366,11 +1355,37 @@ fn propertyDefinitionList(self: *Self) ParseError!?ast.NodeList {
     return try self.addNodeList(property_defs.items);
 }
 
+fn parseMethodBody(self: *Self, key: Node.Index, is_key_computed: bool) ParseError!Node.Index {
+    std.debug.assert(self.current_token.tag == .@"(");
+    const start_pos = self.peek().start;
+    const func_expr = try self.parseFunctionBody(start_pos, .{});
+    const end_pos = self.nodeSpan(func_expr).end;
+
+    const kv_node = ast.PropertyDefinition{
+        .key = key,
+        .value = func_expr,
+        .flags = .{ .is_method = true, .is_computed = is_key_computed },
+    };
+
+    const key_start = self.nodes.items[@intFromEnum(key)].start;
+    return self.addNode(
+        .{ .object_property = kv_node },
+        key_start,
+        end_pos,
+    );
+}
+
 fn completePropertyDef(
     self: *Self,
     key: Node.Index,
     flags: ast.PropertyDefinitionFlags,
 ) ParseError!Node.Index {
+    if (self.current_token.tag == .@"(") {
+        return self.parseMethodBody(key, flags.is_computed);
+    }
+
+    _ = try self.expect(.@":");
+
     const value = try self.assignmentExpression();
     const start_pos = self.nodes.items[@intFromEnum(key)].start;
     const end_pos = self.nodes.items[@intFromEnum(value)].end;
@@ -1621,7 +1636,7 @@ fn runTestOnFile(tests_dir: std.fs.Dir, file_path: []const u8) !void {
     const first_line_len = std.mem.indexOfScalar(u8, source_code, '\n') orelse unreachable;
     const expected_json_str = source_code[2..first_line_len];
 
-    try t.expectEqualDeep(expected_json_str, pretty_ast);
+    try t.expectEqualStrings(expected_json_str, pretty_ast);
 }
 
 // -----
