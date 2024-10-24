@@ -191,7 +191,7 @@ pub fn parse(self: *Self) !Node.Index {
     var statements = std.ArrayList(Node.Index).init(self.allocator);
     defer statements.deinit();
 
-    while (!self.tokenizer.eof()) {
+    while (self.current_token.tag != .eof) {
         const stmt = try self.statement();
         try statements.append(stmt);
     }
@@ -917,7 +917,7 @@ fn unaryExpression(self: *Self) ParseError!Node.Index {
             return try self.addNode(.{
                 .unary_expr = ast.UnaryPayload{
                     .operand = expr,
-                    .operator = try self.addToken(token),
+                    .operator = try self.addToken(op_token),
                 },
             }, op_token.start, expr_end_pos);
         },
@@ -947,15 +947,18 @@ fn updateExpression(self: *Self) ParseError!Node.Index {
     }
 
     // post increment / decrement
+    const expr_start_line = self.peek().line;
     const expr = try self.lhsExpression();
     const lookahead = self.peek();
-    if (lookahead.tag == .@"++" or lookahead.tag == .@"--") {
+    if ((lookahead.tag == .@"++" or lookahead.tag == .@"--") and
+        lookahead.line == expr_start_line)
+    {
         const op_token = try self.next();
         const expr_end_pos = self.nodes.items[@intFromEnum(expr)].end;
         return self.addNode(.{
             .post_unary_expr = .{
                 .operand = expr,
-                .operator = try self.addToken(lookahead),
+                .operator = try self.addToken(op_token),
             },
         }, op_token.start, expr_end_pos);
     }
