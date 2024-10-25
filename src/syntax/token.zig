@@ -137,6 +137,8 @@ pub const Token = struct {
         kw_delete,
 
         // strict mode keywords
+        strict_mode_kw_start,
+
         kw_implements,
         kw_interface,
         kw_package,
@@ -145,6 +147,8 @@ pub const Token = struct {
         kw_public,
         kw_static,
         kw_yield,
+
+        strict_mode_kw_end,
 
         // contextual keywords.
         kw_as,

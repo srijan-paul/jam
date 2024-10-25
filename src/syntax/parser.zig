@@ -18,6 +18,7 @@ const ParseError = error{
     NotSupported,
     IllegalReturn,
     InvalidAssignmentTarget,
+    LetInStrictMode,
 } || Tokenizer.Error;
 const ParseFn = fn (self: *Self) ParseError!Node.Index;
 
@@ -277,7 +278,8 @@ fn statement(self: *Self) ParseError!Node.Index {
             },
 
             .kw_return => break :blk self.returnStatement(),
-            .kw_let, .kw_var, .kw_const => break :blk self.variableStatement(),
+            .kw_let => break :blk self.letStatement(),
+            .kw_var, .kw_const => break :blk self.variableStatement(try self.next()),
             else => break :blk self.expressionStatement(),
         }
     };
@@ -318,8 +320,8 @@ fn ifStatement(self: *Self) ParseError!Node.Index {
     );
 }
 
-fn variableStatement(self: *Self) ParseError!Node.Index {
-    const kw = try self.next();
+/// parse a VariableStatement, where `kw` is the keyword used to declare the variable (let, var, or const).
+fn variableStatement(self: *Self, kw: Token) ParseError!Node.Index {
     std.debug.assert(kw.tag == .kw_let or kw.tag == .kw_var or kw.tag == .kw_const);
 
     // TODO: fast path for single variable declaration?
@@ -351,6 +353,29 @@ fn variableStatement(self: *Self) ParseError!Node.Index {
         kw.start,
         self.getNode(last_decl).end,
     );
+}
+
+/// Parse a statement that starts with the `let` keyword.
+/// This may not necessarily be a variable declaration, as `let`
+/// is also a valid identifier.
+fn letStatement(self: *Self) ParseError!Node.Index {
+    std.debug.assert(self.current_token.tag == .kw_let);
+    if (isDeclaratorStart(self.next_token.tag)) {
+        const let_kw = try self.next();
+        return self.variableStatement(let_kw);
+    }
+
+    if (self.isInStrictMode()) {
+        try self.emitDiagnostic(
+            self.current_token.startCoord(self.source),
+            "'let' can only be used to declare variables in strict mode",
+            .{},
+        );
+        return ParseError.LetInStrictMode;
+    }
+
+    // TODO: also support labelled statements where the label is `let`
+    return self.expressionStatement();
 }
 
 fn variableDeclarator(self: *Self) ParseError!Node.Index {
@@ -476,9 +501,34 @@ fn returnStatement(self: *Self) ParseError!Node.Index {
 // Common helper functions
 // ------------------------
 
+/// Returns whether a token with the tag `tag` can start a variable declarator
+/// ({, or [, or an identifier).
+fn isDeclaratorStart(tag: Token.Tag) bool {
+    return tag == .@"[" or tag == .@"{" or tag == .identifier;
+}
+
 fn setContext(self: *Self, context: ParseContext) void {
     self.context = context;
     self.tokenizer.context = context;
+}
+
+/// Returns whether the parser is currently parsing strict mode code.
+fn isInStrictMode(self: *const Self) bool {
+    return self.context.strict or self.context.module;
+}
+
+/// Returns `true` of `tag` is a keyword that can be allowed as an identifier
+/// in the current context.
+fn isNonStrictIdentifier(self: *const Self, tag: Token.Tag) bool {
+    const in_strict_mode = self.isInStrictMode();
+    if (in_strict_mode) return false;
+
+    // check if tag is a keyword, but that keyword can be used as an identifier in non-strict mode.
+    const strict_kw_start: u32 = @intFromEnum(Token.Tag.strict_mode_kw_start);
+    const strict_kw_end: u32 = @intFromEnum(Token.Tag.strict_mode_kw_end);
+    const itag: u32 = @intFromEnum(tag);
+    return ((itag > strict_kw_start and
+        itag < strict_kw_end) or tag == .kw_let);
 }
 
 fn addNodeList(self: *Self, nodes: []Node.Index) error{OutOfMemory}!ast.NodeList {
@@ -618,15 +668,16 @@ fn assignmentLhsExpr(self: *Self) ParseError!Node.Index {
     switch (token.tag) {
         .@"{" => return self.objectAssignmentPattern(),
         .@"[" => return self.arrayAssignmentPattern(),
-        .identifier => {
+        .identifier => { // 'let' is a valid identifier (in non-strict mode)
             const id_token = try self.next();
-            const start = token.start;
-            const end = token.start + token.len;
-            return self.addNode(.{
-                .identifier = try self.addToken(id_token),
-            }, start, end);
+            return self.identifier(id_token);
         },
         else => {
+            if (self.isNonStrictIdentifier(token.tag)) {
+                const id_token = try self.next();
+                return self.identifier(id_token);
+            }
+
             try self.emitDiagnostic(
                 token.startCoord(self.source),
                 "Expected assignment target, got: {s}",
@@ -1275,7 +1326,7 @@ fn completeMemberExpression(self: *Self, object: Node.Index) ParseError!Node.Ind
 
     const property_token_idx: Token.Index = blk: {
         const tok = try self.next();
-        if (tok.tag == .identifier or tok.tag == .private_identifier) {
+        if (tok.tag == .identifier or self.isNonStrictIdentifier(tok.tag)) {
             break :blk try self.addToken(tok);
         }
 
@@ -1322,13 +1373,7 @@ fn primaryExpression(self: *Self) ParseError!Node.Index {
             token.start,
             token.start + token.len,
         ),
-        .identifier => {
-            return self.addNode(
-                .{ .identifier = try self.addToken(token) },
-                token.start,
-                token.start + token.len,
-            );
-        },
+        .identifier => return self.identifier(token),
         .numeric_literal,
         .string_literal,
         .kw_true,
@@ -1344,6 +1389,10 @@ fn primaryExpression(self: *Self) ParseError!Node.Index {
         .@"(" => return self.coverParenExprAndArrowParams(),
         .kw_function => return self.functionExpression(token.start, .{}),
         else => {
+            if (self.isNonStrictIdentifier(token.tag)) {
+                return self.identifier(token);
+            }
+
             try self.emitDiagnostic(
                 token.startCoord(self.source),
                 "expected an expression, found '{s}'",
@@ -1352,6 +1401,14 @@ fn primaryExpression(self: *Self) ParseError!Node.Index {
             return ParseError.UnexpectedToken;
         },
     }
+}
+
+fn identifier(self: *Self, token: Token) ParseError!Node.Index {
+    return self.addNode(
+        .{ .identifier = try self.addToken(token) },
+        token.start,
+        token.start + token.len,
+    );
 }
 
 fn coverParenExprAndArrowParams(self: *Self) ParseError!Node.Index {
@@ -1379,7 +1436,9 @@ fn propertyDefinitionList(self: *Self) ParseError!?ast.NodeList {
     const lookahead = self.peek();
     while (lookahead.tag != .eof) {
         switch (lookahead.tag) {
-            .identifier => {
+            .identifier,
+            .kw_let,
+            => {
                 try property_defs.append(try self.identifierProperty());
             },
 
@@ -1432,7 +1491,7 @@ fn propertyDefinitionList(self: *Self) ParseError!?ast.NodeList {
 /// Parse an object property that starts with an identifier (that may be "get" or "set").
 fn identifierProperty(self: *Self) ParseError!Node.Index {
     const key_token = try self.next();
-    std.debug.assert(key_token.tag == .identifier);
+    std.debug.assert(key_token.tag == .identifier or key_token.tag == .kw_let);
 
     const lookahead = self.peek();
     if (lookahead.tag != .@":" and lookahead.tag != .@"(" and
@@ -1452,11 +1511,7 @@ fn identifierProperty(self: *Self) ParseError!Node.Index {
     }
 
     const key_end_pos = key_token.start + key_token.len;
-    const key = try self.addNode(
-        .{ .identifier = try self.addToken(key_token) },
-        key_token.start,
-        key_end_pos,
-    );
+    const key = try self.identifier(key_token);
 
     const lookahead_tag = self.peek().tag;
     switch (lookahead_tag) {
