@@ -43,7 +43,7 @@ pub const FunctionFlags = packed struct(u8) {
 pub const FunctionExpression = struct {
     parameters: Node.Index, // points to a `parameters`
     body: Node.Index, // points to a an expression, or a block statement.
-    flags: FunctionFlags = .{},
+    info: ExtraData.Index, // name + flags
 };
 
 pub const PropertyDefinitionKind = enum(u5) {
@@ -90,6 +90,19 @@ pub const VarDeclKind = enum {
 pub const VariableDeclaration = struct {
     declarators: NodeList,
     kind: VarDeclKind,
+};
+
+/// Extra metadata about a node.
+/// The specific type of meta-data is determined by the node's
+/// tag (i.e the active field of NodeData).
+pub const ExtraData = union {
+    pub const Index = enum(u32) { none = 0, _ };
+    function: struct {
+        /// Name of the function, if present (identifier).
+        name: ?Token.Index,
+        /// Flags: generator, async, arrow, etc.
+        flags: FunctionFlags,
+    },
 };
 
 pub const NodeData = union(enum(u8)) {
@@ -222,11 +235,17 @@ pub const NodePretty = union(enum) {
     parameters: Pretty(NodeList),
 };
 
+pub const ExtraPretty = union(enum) {
+    function: Pretty(std.meta.FieldType(ExtraData, .function)),
+};
+
 fn Pretty(T: type) type {
     if (T == Node.Index) return *NodePretty;
     if (T == ?Node.Index) return ?*NodePretty;
-    if (T == NodeList) return []NodePretty;
     if (T == Token.Index) return []const u8;
+    if (T == ?Token.Index) return ?[]const u8;
+    if (T == NodeList) return []NodePretty;
+    if (T == ExtraData.Index) return ExtraPretty;
 
     switch (@typeInfo(T)) {
         .@"struct" => |s| {

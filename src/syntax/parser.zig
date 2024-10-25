@@ -27,6 +27,7 @@ const State = struct {
     nodes_len: usize,
     tokens_len: usize,
     node_lists_len: usize,
+    extra_data_len: usize,
 
     current_token: Token,
     next_token: Token,
@@ -103,22 +104,22 @@ allocator: std.mem.Allocator,
 source: []const u8,
 file_name: []const u8,
 tokenizer: Tokenizer,
-
 /// All AST nodes are stored in this flat list and reference
 /// each other using their indices.
 /// This is an *append only* list.
 /// No function other than `saveState`, and `restoreState` should modify
 /// the existing items in this list.
 nodes: std.ArrayList(Node),
+/// Extra information about a node, if any.
+extra_data: std.ArrayList(ast.ExtraData),
 /// List of tokens that are necessary to keep around
-/// e.g - identifiers, literals, node start and end nodes, etc.
+/// e.g - identifiers, literals, function names, etc.
 tokens: std.ArrayList(Token),
 /// Arguments for function calls, new-expressions, etc.
 node_lists: std.ArrayList(Node.Index),
 /// List of error messages and warnings generated during parsing.
 diagnostics: std.ArrayList(Diagnostic),
 diagnostic_messages: std.ArrayList([]const u8),
-
 /// The token that we're currently at.
 /// Calling `next()` or `peek()` will return this token.
 current_token: Token,
@@ -146,6 +147,7 @@ pub fn init(
         .diagnostic_messages = try std.ArrayList([]const u8).initCapacity(allocator, 2),
         .nodes = try std.ArrayList(Node).initCapacity(allocator, 32),
         .node_lists = try std.ArrayList(Node.Index).initCapacity(allocator, 32),
+        .extra_data = try std.ArrayList(ast.ExtraData).initCapacity(allocator, 32),
         .tokens = try std.ArrayList(Token).initCapacity(allocator, 256),
 
         .strings = try StringHelper.init(allocator, source),
@@ -168,6 +170,7 @@ pub fn deinit(self: *Self) void {
     self.nodes.deinit();
     self.tokens.deinit();
     self.node_lists.deinit();
+    self.extra_data.deinit();
     self.diagnostics.deinit();
     for (self.diagnostic_messages.items) |m| {
         self.allocator.free(m);
@@ -188,6 +191,7 @@ fn saveState(self: *Self) error{OutOfMemory}!State {
         .next_token = self.next_token,
         .nodes_len = self.nodes.items.len,
         .tokens_len = self.tokens.items.len,
+        .extra_data_len = self.extra_data.items.len,
         .node_lists_len = self.node_lists.items.len,
         .tokenizer_state = self.tokenizer.saveState(),
         .diagnostics = if (self.diagnostics.items.len > 0)
@@ -205,6 +209,7 @@ fn restoreState(self: *Self, state: *State) error{OutOfMemory}!void {
     self.nodes.items = self.nodes.items[0..state.nodes_len];
     self.tokens.items = self.tokens.items[0..state.tokens_len];
     self.node_lists.items = self.node_lists.items[0..state.node_lists_len];
+    self.extra_data.items = self.extra_data.items[0..state.extra_data_len];
     self.tokenizer.restoreState(state.tokenizer_state);
 
     self.context = state.context;
@@ -263,6 +268,12 @@ fn statement(self: *Self) ParseError!Node.Index {
                     token.start,
                     token.start + token.len,
                 );
+            },
+
+            .kw_function => {
+                can_end_in_semi = false;
+                const fn_token = try self.next();
+                break :blk self.functionDeclaration(fn_token.start, .{});
             },
 
             .kw_return => break :blk self.returnStatement(),
@@ -420,6 +431,17 @@ fn blockStatement(self: *Self) !Node.Index {
     );
 }
 
+/// Assuming the parser is at the `function` keyword,
+/// parse a function declaration statement.
+fn functionDeclaration(
+    self: *Self,
+    start_pos: u32,
+    flags: ast.FunctionFlags,
+) ParseError!Node.Index {
+    const name_token = try self.addToken(try self.expect(.identifier));
+    return self.parseFunctionBody(start_pos, name_token, flags);
+}
+
 /// ReturnStatement:
 ///    'return' [no LineTerminator here] Expression? ';'
 fn returnStatement(self: *Self) ParseError!Node.Index {
@@ -475,6 +497,12 @@ fn addToken(self: *Self, token: Token) error{OutOfMemory}!Token.Index {
 fn addNode(self: *Self, node: NodeData, start: u32, end: u32) error{OutOfMemory}!Node.Index {
     try self.nodes.append(.{ .data = node, .start = start, .end = end });
     return @enumFromInt(self.nodes.items.len - 1);
+}
+
+/// Append an ExtraData item to the list, and return its index.
+fn addExtraData(self: *Self, data: ast.ExtraData) error{OutOfMemory}!ast.ExtraData.Index {
+    try self.extra_data.append(data);
+    return @enumFromInt(self.extra_data.items.len - 1);
 }
 
 /// Push an error essage to the list of diagnostics.
@@ -1314,6 +1342,7 @@ fn primaryExpression(self: *Self) ParseError!Node.Index {
         .@"[" => return self.arrayLiteral(token.start),
         .@"{" => return self.objectLiteral(token.start),
         .@"(" => return self.coverParenExprAndArrowParams(),
+        .kw_function => return self.functionExpression(token.start, .{}),
         else => {
             try self.emitDiagnostic(
                 token.startCoord(self.source),
@@ -1513,7 +1542,7 @@ fn parseMethodBody(
     std.debug.assert(self.current_token.tag == .@"(" and flags.is_method);
 
     const start_pos = self.peek().start;
-    const func_expr = try self.parseFunctionBody(start_pos, .{});
+    const func_expr = try self.parseFunctionBody(start_pos, null, .{});
     const end_pos = self.nodeSpan(func_expr).end;
 
     const kv_node = ast.PropertyDefinition{
@@ -1611,15 +1640,27 @@ fn arrayLiteral(self: *Self, start_pos: u32) ParseError!Node.Index {
 
 /// Assuming the parser is at the `function` keyword,
 /// parse a function expression.
-fn functionExpression(self: *Self, flags: ast.FunctionFlags) ParseError!Node.Index {
-    const function_kw = try self.next();
-    std.debug.assert(function_kw.tag == .kw_function);
-    return self.parseFunctionBody(function_kw.start, flags);
+fn functionExpression(
+    self: *Self,
+    start_pos: u32,
+    flags: ast.FunctionFlags,
+) ParseError!Node.Index {
+    const name_token: ?Token.Index =
+        if (self.current_token.tag == .identifier)
+        try self.addToken(try self.next())
+    else
+        null;
+    return self.parseFunctionBody(start_pos, name_token, flags);
 }
 
 /// parses the arguments and body of a function expression (or declaration),
 /// assuming the `function` keyword (and/or the function/method name) has been consumed.
-fn parseFunctionBody(self: *Self, start_pos: u32, flags: ast.FunctionFlags) ParseError!Node.Index {
+fn parseFunctionBody(
+    self: *Self,
+    start_pos: u32,
+    name_token: ?Token.Index,
+    flags: ast.FunctionFlags,
+) ParseError!Node.Index {
     const params = try self.parseFormalParameters();
     if (flags.is_arrow) unreachable; // not supported yet :)
 
@@ -1631,11 +1672,20 @@ fn parseFunctionBody(self: *Self, start_pos: u32, flags: ast.FunctionFlags) Pars
     const body = try self.blockStatement();
     const end_pos = self.nodeSpan(body).end;
 
+    const function_data = try self.addExtraData(
+        ast.ExtraData{
+            .function = .{
+                .name = name_token,
+                .flags = flags,
+            },
+        },
+    );
+
     return self.addNode(.{
         .function_expr = .{
             .parameters = params,
             .body = body,
-            .flags = flags,
+            .info = function_data,
         },
     }, start_pos, end_pos);
 }
@@ -1670,6 +1720,10 @@ fn parseFormalParameters(self: *Self) ParseError!Node.Index {
 fn getNode(self: *const Self, index: Node.Index) *const ast.Node {
     // TODO: should this return a non-pointer instead?
     return &self.nodes.items[@intFromEnum(index)];
+}
+
+pub fn getToken(self: *const Self, index: Token.Index) Token {
+    return self.tokens.items[@intFromEnum(index)];
 }
 
 fn nodeSpan(self: *const Self, index: Node.Index) types.Span {

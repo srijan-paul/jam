@@ -266,17 +266,29 @@ fn toPretty(
         .function_expr => |f| {
             const body = try copy(allocator, try toPretty(self, allocator, f.body));
             const params = try copy(allocator, try toPretty(self, allocator, f.parameters));
+            const info = self.extra_data.items[@intFromEnum(f.info)];
+            const func_flags = info.function.flags;
+            const func_name = if (info.function.name) |tok|
+                self.getToken(tok).toByteSlice(self.source)
+            else
+                null;
+
             const flags = .{
-                .is_async = f.flags.is_async,
-                .is_generator = f.flags.is_generator,
-                .is_arrow = f.flags.is_arrow,
+                .is_async = func_flags.is_async,
+                .is_generator = func_flags.is_generator,
+                .is_arrow = func_flags.is_arrow,
             };
 
             return .{
                 .function_expression = .{
                     .body = body,
                     .parameters = params,
-                    .flags = flags,
+                    .info = .{
+                        .function = .{
+                            .flags = flags,
+                            .name = func_name,
+                        },
+                    },
                 },
             };
         },
