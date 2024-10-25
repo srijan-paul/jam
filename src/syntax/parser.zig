@@ -20,6 +20,8 @@ const ParseError = error{
     IllegalAwait,
     InvalidAssignmentTarget,
     LetInStrictMode,
+    InvalidSetter,
+    InvalidGetter,
 } || Tokenizer.Error;
 const ParseFn = fn (self: *Self) ParseError!Node.Index;
 
@@ -1723,12 +1725,46 @@ fn parseMethodBody(
         .flags = flags,
     };
 
+    if (flags.kind == .get or flags.kind == .set) {
+        // verify the number of parameters for getters and setters.
+        try self.checkGetterOrSetterParams(func_expr, flags.kind);
+    }
+
     const key_start = self.nodes.items[@intFromEnum(key)].start;
     return self.addNode(
         .{ .object_property = kv_node },
         key_start,
         end_pos,
     );
+}
+
+/// Verify the number of parameters in a getter or setter.
+/// Emit a diagnostic, then return an error if the number is invalid.
+/// A Getter must have exaclty 0 parameters, and a setter only one.
+fn checkGetterOrSetterParams(
+    self: *Self,
+    func_expr: Node.Index,
+    kind: ast.PropertyDefinitionKind,
+) ParseError!void {
+    const func = &self.getNode(func_expr).data.function_expr;
+    const n_params = func.getParameterCount(self);
+    if (kind == .get and n_params != 0) {
+        try self.emitDiagnostic(
+            self.current_token.startCoord(self.source),
+            "A 'get' accessor should have no parameter, but got {d}",
+            .{n_params},
+        );
+        return ParseError.InvalidGetter;
+    }
+
+    if (kind == .set and n_params != 1) {
+        try self.emitDiagnostic(
+            self.current_token.startCoord(self.source),
+            "A 'set' accessor should have exaclty one parameters, but got {d}",
+            .{n_params},
+        );
+        return ParseError.InvalidSetter;
+    }
 }
 
 /// Assuming that the key has been parsed, complete the property definition.
@@ -1903,9 +1939,21 @@ fn parseFormalParameters(self: *Self) ParseError!Node.Index {
 
 /// Get a pointer to a node by its index.
 /// The returned value can be invalidated by any call to `addNode`, `restoreState`, `addNodeList`.
-fn getNode(self: *const Self, index: Node.Index) *const ast.Node {
+pub fn getNode(self: *const Self, index: Node.Index) *const ast.Node {
     // TODO: should this return a non-pointer instead?
     return &self.nodes.items[@intFromEnum(index)];
+}
+
+/// From a `NodeList` object, get a slice that contains the ID for each node
+/// in that list.
+pub fn getNodeList(
+    self: *const Self,
+    from: ast.NodeList.Index,
+    to: ast.NodeList.Index,
+) []const Node.Index {
+    const from_: usize = @intFromEnum(from);
+    const to_: usize = @intFromEnum(to);
+    return self.node_lists.items[from_..to_];
 }
 
 pub fn getToken(self: *const Self, index: Token.Index) Token {

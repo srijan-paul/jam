@@ -1,5 +1,6 @@
 const std = @import("std");
 const Token = @import("token.zig").Token;
+const Parser = @import("parser.zig");
 
 pub const BinaryPayload = struct {
     lhs: Node.Index,
@@ -46,14 +47,46 @@ pub const FunctionFlags = packed struct(u8) {
 };
 
 pub const FunctionExpression = struct {
-    parameters: Node.Index, // points to a `parameters`
+    /// points to a `ast.NodeData.parameters` (?NodeList)
+    parameters: Node.Index,
     body: Node.Index, // points to a an expression, or a block statement.
     info: ExtraData.Index, // name + flags
+
+    /// Returns a slice containing all the parameter nodes in the function.
+    pub fn getParameterSlice(
+        self: *const FunctionExpression,
+        parser: *const Parser,
+    ) []const Node.Index {
+        const params_node = parser.getNode(self.parameters);
+        const maybe_params_range = params_node.data.parameters;
+        if (maybe_params_range) |params_range| {
+            return parser.getNodeList(params_range.from, params_range.to);
+        }
+        return &[_]Node.Index{};
+    }
+
+    /// Returns the number of parameters in the function.
+    pub fn getParameterCount(
+        self: *const FunctionExpression,
+        parser: *const Parser,
+    ) usize {
+        const params_node = parser.getNode(self.parameters);
+        const maybe_params_range = params_node.data.parameters;
+        if (maybe_params_range) |params_range| {
+            const to: usize = @intFromEnum(params_range.to);
+            const from: usize = @intFromEnum(params_range.from);
+            return to - from;
+        }
+        return 0;
+    }
 };
 
 pub const PropertyDefinitionKind = enum(u5) {
+    /// Getter
     get,
+    /// Setter
     set,
+    /// Regular property or method
     init,
 };
 
@@ -187,6 +220,7 @@ pub const Node = struct {
     }
 };
 
+/// Used for pretty printing and debugging.
 pub const NodePretty = union(enum) {
     const BinaryPayload_ = Pretty(BinaryPayload);
     const PropertyAccess_ = Pretty(PropertyAccess);
@@ -225,7 +259,11 @@ pub const NodePretty = union(enum) {
     object_property: Pretty(PropertyDefinition),
     sequence_expression: Pretty(NodeList),
     conditional_expression: Pretty(Conditional),
-    function_expression: Pretty(FunctionExpression),
+    function_expression: struct {
+        parameters: Pretty(Node.Index),
+        body: Pretty(Node.Index),
+        info: Pretty(ExtraData.Index),
+    },
 
     // statements
     empty_statement: void,
