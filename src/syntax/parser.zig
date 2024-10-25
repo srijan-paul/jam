@@ -1785,7 +1785,7 @@ fn functionExpression(
         try self.addToken(try self.next())
     else
         null;
-    return self.parseFunctionBody(start_pos, name_token, flags);
+    return self.parseFunctionBody(start_pos, name_token, fn_flags);
 }
 
 /// parses the arguments and body of a function expression (or declaration),
