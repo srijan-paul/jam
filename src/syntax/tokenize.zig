@@ -119,7 +119,7 @@ pub const Tokenizer = struct {
                 self.skipWhiteSpaces();
                 return self.next();
             },
-            '\n' => {
+            '\n', '\r' => {
                 self.skipNewlines();
                 return self.next();
             },
@@ -189,15 +189,14 @@ pub const Tokenizer = struct {
     fn skipNewlines(self: *Self) void {
         while (!self.eof()) : (self.index += 1) {
             const ch = self.source[self.index];
-            if (isNewline(ch) and ch != '\r') {
+            if (isNewline(ch)) {
                 self.line += 1;
-            } else if (ch == '\r') {
-                if (self.index + 1 < self.source.len and
+                if (ch == '\r' and
+                    self.index + 1 < self.source.len and
                     self.source[self.index + 1] == '\n')
                 {
-                    self.index += 1; // skip \r
-                } else {
-                    break;
+                    // skip /r/n
+                    self.index += 1;
                 }
             } else {
                 break;
@@ -392,26 +391,6 @@ pub const Tokenizer = struct {
                         .start = start,
                         .len = @intCast(len),
                         .tag = all_kw_tags[i],
-                        .line = self.line,
-                    };
-                }
-
-                if (self.context.is_await_reserved and std.mem.eql(u8, id_str, "await")) {
-                    self.index += @intCast(len);
-                    return Token{
-                        .start = start,
-                        .len = @intCast(len),
-                        .tag = .kw_await,
-                        .line = self.line,
-                    };
-                }
-
-                if (self.context.is_yield_reserved and std.mem.eql(u8, id_str, "yield")) {
-                    self.index += @intCast(len);
-                    return Token{
-                        .start = start,
-                        .len = @intCast(len),
-                        .tag = .kw_yield,
                         .line = self.line,
                     };
                 }
@@ -823,11 +802,39 @@ pub const Tokenizer = struct {
         return self.source[self.index];
     }
 
+    fn isSimpleWhitespace(ch: u8) bool {
+        switch (ch) {
+            ' ',
+            '\t',
+            '\u{000B}',
+            '\u{000C}',
+            => return true,
+            else => return false,
+        }
+    }
+
     /// Skip all consecutive white space characters.
     fn skipWhiteSpaces(self: *Self) void {
-        while (!self.eof() and
-            std.ascii.isWhitespace(self.source[self.index])) : (self.index += 1)
-        {}
+        while (!self.eof()) {
+            const ch = self.source[self.index];
+            // Whitespaces that are single byte UTF-8 code-points
+            if (isSimpleWhitespace(ch)) {
+                self.index += 1;
+                continue;
+            }
+
+            // <ZWNSBP> (Zero Width No Break Space... yeah)
+            if (ch == 0xEF and
+                self.index + 2 < self.source.len and
+                self.source[self.index + 1] == 0xBB and
+                self.source[self.index + 2] == 0xBF)
+            {
+                self.index += 3;
+                continue;
+            }
+
+            break;
+        }
     }
 };
 

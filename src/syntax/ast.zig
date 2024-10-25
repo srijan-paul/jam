@@ -28,6 +28,11 @@ pub const NodeList = struct {
     to: Index,
 };
 
+pub const YieldPayload = struct {
+    value: ?Node.Index,
+    is_delegated: bool,
+};
+
 pub const CallExpr = struct {
     callee: Node.Index,
     arguments: Node.Index,
@@ -123,6 +128,8 @@ pub const NodeData = union(enum(u8)) {
 
     post_unary_expr: UnaryPayload,
     unary_expr: UnaryPayload,
+    await_expr: UnaryPayload,
+    yield_expr: YieldPayload,
     update_expr: UnaryPayload,
 
     identifier: Token.Index,
@@ -202,6 +209,8 @@ pub const NodePretty = union(enum) {
 
     post_unary_expression: UnaryPayload_,
     unary_expression: UnaryPayload_,
+    await_expression: UnaryPayload_,
+    yield_expression: Pretty(YieldPayload),
     update_expression: UnaryPayload_,
 
     identifier: Token_,

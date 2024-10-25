@@ -17,6 +17,7 @@ const ParseError = error{
     OutOfMemory,
     NotSupported,
     IllegalReturn,
+    IllegalAwait,
     InvalidAssignmentTarget,
     LetInStrictMode,
 } || Tokenizer.Error;
@@ -712,7 +713,7 @@ fn assignmentExpression(self: *Self) ParseError!Node.Index {
     var is_assignment_pattern = false;
 
     // todo: can I make fewer allocations here?
-    var lhs = conditionalExpression(self) catch |err| blk: {
+    var lhs = yieldOrConditionalExpression(self) catch |err| blk: {
         // If parsing as a conditional expression fails,
         // try to parse as an assignment target.
         // This is necessary for cases like: {a, b = c} = { a: 1, b: 2 }
@@ -815,6 +816,39 @@ fn shortCircuitExpresion(self: *Self) ParseError!Node.Index {
             return self.coalesceExpression(expr);
         },
     }
+}
+
+fn yieldOrConditionalExpression(self: *Self) ParseError!Node.Index {
+    if (!(self.current_token.tag == .kw_yield and self.context.is_yield_reserved)) {
+        return self.conditionalExpression();
+    }
+
+    return self.yieldExpression();
+}
+
+fn yieldExpression(self: *Self) ParseError!Node.Index {
+    const yield_kw = try self.next();
+    std.debug.assert(yield_kw.tag == .kw_yield and self.context.is_yield_reserved);
+
+    const has_operand = self.current_token.line == yield_kw.line;
+    const is_delegated = self.isAtToken(.@"*") and has_operand;
+    // TODO: the error message here can be improved, when yield* is followed by a non-expression.
+    if (is_delegated) {
+        _ = try self.next(); // eat '*'
+    }
+
+    var operand: ?Node.Index = null;
+    var end_pos = yield_kw.start + yield_kw.len;
+    if (has_operand) {
+        const operand_expr = try self.assignmentExpression();
+        end_pos = self.nodes.items[@intFromEnum(operand_expr)].end;
+        operand = operand_expr;
+    }
+
+    return self.addNode(.{ .yield_expr = .{
+        .value = operand,
+        .is_delegated = is_delegated,
+    } }, yield_kw.start, end_pos);
 }
 
 /// ConditionalExpression:
@@ -1078,8 +1112,38 @@ fn unaryExpression(self: *Self) ParseError!Node.Index {
                 },
             }, op_token.start, expr_end_pos);
         },
-        else => return self.updateExpression(),
+        else => {
+            if (self.isAtToken(.kw_await)) {
+                return self.awaitExpression();
+            }
+
+            return self.updateExpression();
+        },
     }
+}
+
+fn awaitExpression(self: *Self) ParseError!Node.Index {
+    const await_token = try self.next();
+    std.debug.assert(await_token.tag == .kw_await);
+
+    if (!self.context.is_await_reserved) {
+        try self.emitDiagnostic(
+            await_token.startCoord(self.source),
+            "'await' expressions are only permitted inside async functions",
+            .{},
+        );
+        return ParseError.IllegalAwait;
+    }
+
+    const operand = try self.unaryExpression();
+    const end_pos = self.nodeSpan(operand).end;
+
+    return self.addNode(.{
+        .await_expr = ast.UnaryPayload{
+            .operator = try self.addToken(await_token),
+            .operand = operand,
+        },
+    }, await_token.start, end_pos);
 }
 
 /// The ECMASCript262 standard describes a syntax directed operation

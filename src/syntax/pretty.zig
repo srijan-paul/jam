@@ -102,26 +102,36 @@ fn toPretty(
             };
         },
 
-        .update_expr, .post_unary_expr, .unary_expr => |payload| {
+        .update_expr, .post_unary_expr, .unary_expr, .await_expr => |payload| {
             const operand = try copy(
                 allocator,
                 try toPretty(self, allocator, payload.operand),
             );
             const token = self.tokens.items[@intFromEnum(payload.operator)];
+            const unary_pl = .{
+                .operand = operand,
+                .operator = token.toByteSlice(self.source),
+            };
+
             return if (checkActiveField(node.data, "post_unary_expr"))
-                .{
-                    .post_unary_expression = .{
-                        .operand = operand,
-                        .operator = token.toByteSlice(self.source),
-                    },
-                }
+                .{ .post_unary_expression = unary_pl }
+            else if (checkActiveField(node.data, "await_expr"))
+                .{ .await_expression = unary_pl }
             else
-                .{
-                    .unary_expression = .{
-                        .operand = operand,
-                        .operator = token.toByteSlice(self.source),
-                    },
-                };
+                .{ .unary_expression = unary_pl };
+        },
+
+        .yield_expr => |pl| {
+            const value = if (pl.value) |v|
+                try copy(allocator, try toPretty(self, allocator, v))
+            else
+                null;
+            return ast.NodePretty{
+                .yield_expression = .{
+                    .value = value,
+                    .is_delegated = pl.is_delegated,
+                },
+            };
         },
 
         .super_call_expr, .arguments => |maybe_args| return .{
