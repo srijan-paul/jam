@@ -64,9 +64,9 @@ pub const ParseContext = packed struct(u8) {
     /// Is a BreakStatement allowed in the current context?
     @"break": bool = false,
     /// Is an `await` parsed as an identifier or as a keyword?
-    @"await": bool = false,
+    is_await_reserved: bool = false,
     /// Is `yield` parsed as an identifier or as a keyword?
-    yield: bool = false,
+    is_yield_reserved: bool = false,
     /// Are we parsing a module? (alternative is a script).
     module: bool = false,
     /// Are we in strict mode?
@@ -214,6 +214,7 @@ fn restoreState(self: *Self, state: *State) error{OutOfMemory}!void {
     self.tokenizer.restoreState(state.tokenizer_state);
 
     self.context = state.context;
+    self.tokenizer.context = state.context;
 
     if (state.diagnostics) |saved_diagnostics| {
         // "Steal" the diagnostics from the state.
@@ -270,13 +271,11 @@ fn statement(self: *Self) ParseError!Node.Index {
                     token.start + token.len,
                 );
             },
-
             .kw_function => {
                 can_end_in_semi = false;
                 const fn_token = try self.next();
                 break :blk self.functionDeclaration(fn_token.start, .{});
             },
-
             .kw_return => break :blk self.returnStatement(),
             .kw_let => break :blk self.letStatement(),
             .kw_var, .kw_const => break :blk self.variableStatement(try self.next()),
@@ -463,8 +462,13 @@ fn functionDeclaration(
     start_pos: u32,
     flags: ast.FunctionFlags,
 ) ParseError!Node.Index {
+    var fn_flags = flags;
+    if (self.isAtToken(.@"*")) {
+        _ = try self.next();
+        fn_flags.is_generator = true;
+    }
     const name_token = try self.addToken(try self.expect(.identifier));
-    return self.parseFunctionBody(start_pos, name_token, flags);
+    return self.parseFunctionBody(start_pos, name_token, fn_flags);
 }
 
 /// ReturnStatement:
@@ -519,16 +523,22 @@ fn isInStrictMode(self: *const Self) bool {
 
 /// Returns `true` of `tag` is a keyword that can be allowed as an identifier
 /// in the current context.
-fn isNonStrictIdentifier(self: *const Self, tag: Token.Tag) bool {
-    const in_strict_mode = self.isInStrictMode();
-    if (in_strict_mode) return false;
+fn isKeywordIdentifier(self: *const Self, tag: Token.Tag) bool {
+    switch (tag) {
+        .kw_await => return !self.context.is_await_reserved,
+        .kw_yield => return !self.context.is_yield_reserved,
+        else => {
+            const in_strict_mode = self.isInStrictMode();
+            if (in_strict_mode) return false;
 
-    // check if tag is a keyword, but that keyword can be used as an identifier in non-strict mode.
-    const strict_kw_start: u32 = @intFromEnum(Token.Tag.strict_mode_kw_start);
-    const strict_kw_end: u32 = @intFromEnum(Token.Tag.strict_mode_kw_end);
-    const itag: u32 = @intFromEnum(tag);
-    return ((itag > strict_kw_start and
-        itag < strict_kw_end) or tag == .kw_let);
+            // check if tag is a keyword, but that keyword can be used as an identifier in non-strict mode.
+            const strict_kw_start: u32 = @intFromEnum(Token.Tag.strict_mode_kw_start);
+            const strict_kw_end: u32 = @intFromEnum(Token.Tag.strict_mode_kw_end);
+            const itag: u32 = @intFromEnum(tag);
+            return ((itag > strict_kw_start and
+                itag < strict_kw_end) or tag == .kw_let);
+        },
+    }
 }
 
 fn addNodeList(self: *Self, nodes: []Node.Index) error{OutOfMemory}!ast.NodeList {
@@ -673,7 +683,7 @@ fn assignmentLhsExpr(self: *Self) ParseError!Node.Index {
             return self.identifier(id_token);
         },
         else => {
-            if (self.isNonStrictIdentifier(token.tag)) {
+            if (self.isKeywordIdentifier(token.tag)) {
                 const id_token = try self.next();
                 return self.identifier(id_token);
             }
@@ -736,7 +746,7 @@ fn assignmentExpression(self: *Self) ParseError!Node.Index {
         return lhs;
     }
 
-    // If we see a '=' token, and lhs is not an identifier or member-expression
+    // If we see a '=' token, and lhs is not an identifier or member-expression,
     // go back and re-parse the LHS as an assignment target.
     // (AssignmentPattern).
     if (!is_assignment_pattern and !self.isSimpleAssignmentTarget(lhs)) {
@@ -1326,7 +1336,7 @@ fn completeMemberExpression(self: *Self, object: Node.Index) ParseError!Node.Ind
 
     const property_token_idx: Token.Index = blk: {
         const tok = try self.next();
-        if (tok.tag == .identifier or self.isNonStrictIdentifier(tok.tag)) {
+        if (tok.tag == .identifier or self.isKeywordIdentifier(tok.tag)) {
             break :blk try self.addToken(tok);
         }
 
@@ -1389,7 +1399,7 @@ fn primaryExpression(self: *Self) ParseError!Node.Index {
         .@"(" => return self.coverParenExprAndArrowParams(),
         .kw_function => return self.functionExpression(token.start, .{}),
         else => {
-            if (self.isNonStrictIdentifier(token.tag)) {
+            if (self.isKeywordIdentifier(token.tag)) {
                 return self.identifier(token);
             }
 
@@ -1700,6 +1710,12 @@ fn functionExpression(
     start_pos: u32,
     flags: ast.FunctionFlags,
 ) ParseError!Node.Index {
+    var fn_flags = flags;
+    if (self.isAtToken(.@"*")) {
+        _ = try self.next(); // eat '*'
+        fn_flags.is_generator = true;
+    }
+
     const name_token: ?Token.Index =
         if (self.current_token.tag == .identifier)
         try self.addToken(try self.next())
@@ -1716,6 +1732,14 @@ fn parseFunctionBody(
     name_token: ?Token.Index,
     flags: ast.FunctionFlags,
 ) ParseError!Node.Index {
+    const saved_context = self.context;
+    defer self.setContext(saved_context);
+
+    if (flags.is_generator)
+        self.context.is_yield_reserved = true;
+    if (flags.is_async)
+        self.context.is_await_reserved = true;
+
     const params = try self.parseFormalParameters();
     if (flags.is_arrow) unreachable; // not supported yet :)
 

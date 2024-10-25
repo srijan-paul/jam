@@ -396,12 +396,22 @@ pub const Tokenizer = struct {
                     };
                 }
 
-                if (self.context.@"await" and std.mem.eql(u8, id_str, "await")) {
+                if (self.context.is_await_reserved and std.mem.eql(u8, id_str, "await")) {
                     self.index += @intCast(len);
                     return Token{
                         .start = start,
                         .len = @intCast(len),
                         .tag = .kw_await,
+                        .line = self.line,
+                    };
+                }
+
+                if (self.context.is_yield_reserved and std.mem.eql(u8, id_str, "yield")) {
+                    self.index += @intCast(len);
+                    return Token{
+                        .start = start,
+                        .len = @intCast(len),
+                        .tag = .kw_yield,
                         .line = self.line,
                     };
                 }
