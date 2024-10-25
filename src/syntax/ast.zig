@@ -137,6 +137,7 @@ pub const NodeData = union(enum(u8)) {
     debugger_statement: void,
     if_statement: Conditional,
     parameters: ?NodeList,
+    return_statement: ?Node.Index,
 
     /// Represents `null` AST node.
     /// This is a sentinel, and always present at index 0 of the `nodes` array.
@@ -212,6 +213,7 @@ pub const NodePretty = union(enum) {
     if_statement: Pretty(Conditional),
     variable_declaration: Pretty(VariableDeclaration),
     variable_declarator: Pretty(VariableDeclarator),
+    return_statement: Pretty(?Node.Index),
 
     // declarations
     none: void,

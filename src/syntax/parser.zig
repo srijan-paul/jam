@@ -16,6 +16,7 @@ const ParseError = error{
     UnexpectedToken,
     OutOfMemory,
     NotSupported,
+    IllegalReturn,
     InvalidAssignmentTarget,
 } || Tokenizer.Error;
 const ParseFn = fn (self: *Self) ParseError!Node.Index;
@@ -26,9 +27,12 @@ const State = struct {
     nodes_len: usize,
     tokens_len: usize,
     node_lists_len: usize,
+
     current_token: Token,
     next_token: Token,
     tokenizer_state: Tokenizer.State,
+
+    context: ParseContext,
     diagnostics: ?[]Diagnostic,
 
     pub fn destroy(self: *State, allocator: std.mem.Allocator) void {
@@ -46,6 +50,27 @@ pub const Diagnostic = struct {
     coord: types.Coordinate,
     /// Message reported by the parser.
     message: MessageIndex,
+};
+
+/// Represents the currently active set of grammatical parameters
+/// in the parser state.
+/// https://tc39.es/ecma262/#sec-grammatical-parameters
+pub const ParseContext = packed struct(u8) {
+    /// Is a ReturnStatement allowed in the current context?
+    /// Unlike `await`, `return` is always parsed as a keyword, regardles of context.
+    @"return": bool = false,
+    /// Is a BreakStatement allowed in the current context?
+    @"break": bool = false,
+    /// Is an `await` parsed as an identifier or as a keyword?
+    @"await": bool = false,
+    /// Is `yield` parsed as an identifier or as a keyword?
+    yield: bool = false,
+    /// Are we parsing a module? (alternative is a script).
+    module: bool = false,
+    /// Are we in strict mode?
+    strict: bool = false,
+    in: bool = false,
+    _: bool = false,
 };
 
 // arranged in highest to lowest binding
@@ -101,6 +126,8 @@ current_token: Token,
 next_token: Token,
 /// Helper struct to manage, escape, and compare strings in source code.
 strings: StringHelper,
+/// The current grammatical context of the parser. See struct `ParseContext`.
+context: ParseContext = .{},
 
 pub fn init(
     allocator: std.mem.Allocator,
@@ -156,6 +183,7 @@ pub fn deinit(self: *Self) void {
 /// but `s1 = save() -> s2 = save() -> restore(s2) -> restore(s1)` is not.
 fn saveState(self: *Self) error{OutOfMemory}!State {
     return State{
+        .context = self.context,
         .current_token = self.current_token,
         .next_token = self.next_token,
         .nodes_len = self.nodes.items.len,
@@ -178,6 +206,8 @@ fn restoreState(self: *Self, state: *State) error{OutOfMemory}!void {
     self.tokens.items = self.tokens.items[0..state.tokens_len];
     self.node_lists.items = self.node_lists.items[0..state.node_lists_len];
     self.tokenizer.restoreState(state.tokenizer_state);
+
+    self.context = state.context;
 
     if (state.diagnostics) |saved_diagnostics| {
         // "Steal" the diagnostics from the state.
@@ -216,24 +246,26 @@ fn statement(self: *Self) ParseError!Node.Index {
         switch (self.peek().tag) {
             .@"{" => {
                 can_end_in_semi = false;
-                break :blk try self.blockStatement();
+                break :blk self.blockStatement();
             },
             .@";" => {
                 can_end_in_semi = false;
-                break :blk try self.emptyStatement();
+                break :blk self.emptyStatement();
             },
             .kw_if => {
                 can_end_in_semi = false;
-                break :blk try self.ifStatement();
+                break :blk self.ifStatement();
             },
             .kw_debugger => {
                 const token = try self.next();
-                break :blk try self.addNode(
+                break :blk self.addNode(
                     .{ .debugger_statement = {} },
                     token.start,
                     token.start + token.len,
                 );
             },
+
+            .kw_return => break :blk self.returnStatement(),
             .kw_let, .kw_var, .kw_const => break :blk self.variableStatement(),
             else => break :blk self.expressionStatement(),
         }
@@ -388,9 +420,44 @@ fn blockStatement(self: *Self) !Node.Index {
     );
 }
 
+/// ReturnStatement:
+///    'return' [no LineTerminator here] Expression? ';'
+fn returnStatement(self: *Self) ParseError!Node.Index {
+    const return_kw = try self.next();
+    std.debug.assert(return_kw.tag == .kw_return);
+
+    if (!self.context.@"return") {
+        // todo: maybe we should just emit a diagnostic here and continue parsing?
+        // that way we can catch more parse errors than just this.
+        try self.emitDiagnostic(
+            return_kw.startCoord(self.source),
+            "Return statement is not allowed outside of a function",
+            .{},
+        );
+        return ParseError.IllegalReturn;
+    }
+
+    if (self.current_token.line != return_kw.line or self.current_token.tag == .@";") {
+        return self.addNode(
+            .{ .return_statement = null },
+            return_kw.start,
+            return_kw.start + return_kw.len,
+        );
+    }
+
+    const operand = try self.expression();
+    const end_pos = self.nodeSpan(operand).end;
+    return self.addNode(.{ .return_statement = operand }, return_kw.start, end_pos);
+}
+
 // ------------------------
 // Common helper functions
 // ------------------------
+
+fn setContext(self: *Self, context: ParseContext) void {
+    self.context = context;
+    self.tokenizer.context = context;
+}
 
 fn addNodeList(self: *Self, nodes: []Node.Index) error{OutOfMemory}!ast.NodeList {
     const from: ast.NodeList.Index = @enumFromInt(self.node_lists.items.len);
@@ -1284,7 +1351,7 @@ fn propertyDefinitionList(self: *Self) ParseError!?ast.NodeList {
     while (lookahead.tag != .eof) {
         switch (lookahead.tag) {
             .identifier => {
-                try property_defs.append(try self.identifierKey());
+                try property_defs.append(try self.identifierProperty());
             },
 
             .@"[" => {
@@ -1333,8 +1400,8 @@ fn propertyDefinitionList(self: *Self) ParseError!?ast.NodeList {
     return try self.addNodeList(property_defs.items);
 }
 
-/// Parse an object key that starts with an identifier (that may be "get" or "set").
-fn identifierKey(self: *Self) ParseError!Node.Index {
+/// Parse an object property that starts with an identifier (that may be "get" or "set").
+fn identifierProperty(self: *Self) ParseError!Node.Index {
     const key_token = try self.next();
     std.debug.assert(key_token.tag == .identifier);
 
@@ -1556,6 +1623,11 @@ fn parseFunctionBody(self: *Self, start_pos: u32, flags: ast.FunctionFlags) Pars
     const params = try self.parseFormalParameters();
     if (flags.is_arrow) unreachable; // not supported yet :)
 
+    // Allow return statements inside function
+    const ctx = self.context;
+    defer self.setContext(ctx);
+    self.context.@"return" = true;
+
     const body = try self.blockStatement();
     const end_pos = self.nodeSpan(body).end;
 
@@ -1568,12 +1640,9 @@ fn parseFunctionBody(self: *Self, start_pos: u32, flags: ast.FunctionFlags) Pars
     }, start_pos, end_pos);
 }
 
-/// Assuming that the current token is `(`, parse the formal parameters
-/// of a function.
+/// Starting with the '(' token , parse formal parameters of a function.
 fn parseFormalParameters(self: *Self) ParseError!Node.Index {
     const lparen = try self.expect(.@"(");
-    std.debug.assert(lparen.tag == .@"(");
-
     const start_pos = lparen.start;
 
     var params = std.ArrayList(Node.Index).init(self.allocator);

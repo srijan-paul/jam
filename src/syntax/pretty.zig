@@ -189,6 +189,16 @@ fn toPretty(
             return .{ .spread_element = expr };
         },
 
+        .return_statement => |operand| {
+            const ret_operand = if (operand) |arg|
+                try copy(allocator, try toPretty(self, allocator, arg))
+            else
+                null;
+            return .{
+                .return_statement = ret_operand,
+            };
+        },
+
         .conditional_expr, .if_statement => |cond_expr| {
             const cond = try copy(allocator, try toPretty(self, allocator, cond_expr.condition));
             const consequent = try copy(allocator, try toPretty(self, allocator, cond_expr.consequent));

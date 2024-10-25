@@ -1,6 +1,7 @@
 const std = @import("std");
 const unicode_id = @import("unicode-id");
 const Token = @import("token.zig").Token;
+const Context = @import("parser.zig").ParseContext;
 
 const util = @import("util");
 
@@ -69,6 +70,9 @@ pub const Tokenizer = struct {
     line: u32 = 0,
     /// Current column number (0 indexed)
     col: u32 = 0,
+    /// The current context that is controlled by the parser (or caller).
+    /// This controls how certain tokens are parsed (e.g: whether `await` is a keyword or an identifier).
+    context: Context = .{},
 
     /// Can be used to restore the state of the tokenizer to a previous
     /// location in the input.
@@ -388,6 +392,16 @@ pub const Tokenizer = struct {
                         .start = start,
                         .len = @intCast(len),
                         .tag = all_kw_tags[i],
+                        .line = self.line,
+                    };
+                }
+
+                if (self.context.@"await" and std.mem.eql(u8, id_str, "await")) {
+                    self.index += @intCast(len);
+                    return Token{
+                        .start = start,
+                        .len = @intCast(len),
+                        .tag = .kw_await,
                         .line = self.line,
                     };
                 }
