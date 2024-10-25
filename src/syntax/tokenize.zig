@@ -34,7 +34,7 @@ const all_keywords = [_][]const u8{
   "instanceof", "let", "new", "null", "return",
   "super", "switch", "this", "throw", "true",
   "try", "typeof", "var", "void", "while",
-  "with", "yield"
+  "with", "yield", "async"
 };
 // zig fmt: on
 

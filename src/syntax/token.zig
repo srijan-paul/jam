@@ -101,6 +101,8 @@ pub const Token = struct {
 
         @"=>",
 
+        keywords_start,
+
         kw_true,
         kw_false,
         kw_null,
@@ -161,6 +163,8 @@ pub const Token = struct {
         kw_of,
         kw_enum,
 
+        keywords_end,
+
         eof,
     };
 
@@ -202,5 +206,11 @@ pub const Token = struct {
         const tag_u32: u32 = @intFromEnum(self.tag);
         return tag_u32 >= @intFromEnum(Tag.assignment_op_start) and
             tag_u32 <= @intFromEnum(Tag.assignment_op_end);
+    }
+
+    pub fn isKeyword(self: *const Token) bool {
+        const tag_u32: u32 = @intFromEnum(self.tag);
+        return tag_u32 >= @intFromEnum(Tag.keywords_start) and
+            tag_u32 <= @intFromEnum(Tag.keywords_end);
     }
 };

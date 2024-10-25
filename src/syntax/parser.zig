@@ -272,6 +272,15 @@ fn statement(self: *Self) ParseError!Node.Index {
                     token.start + token.len,
                 );
             },
+            .kw_async => {
+                if (self.next_token.tag == .kw_function) {
+                    can_end_in_semi = false;
+                    const async_token = try self.next(); // eat 'async'
+                    _ = try self.next(); // eat 'function'
+                    break :blk self.functionDeclaration(async_token.start, .{ .is_async = true });
+                }
+                break :blk self.expressionStatement();
+            },
             .kw_function => {
                 can_end_in_semi = false;
                 const fn_token = try self.next();
@@ -1400,7 +1409,8 @@ fn completeMemberExpression(self: *Self, object: Node.Index) ParseError!Node.Ind
 
     const property_token_idx: Token.Index = blk: {
         const tok = try self.next();
-        if (tok.tag == .identifier or self.isKeywordIdentifier(tok.tag)) {
+        // Yes, keywords are valid property names...
+        if (tok.tag == .identifier or tok.isKeyword()) {
             break :blk try self.addToken(tok);
         }
 
@@ -1461,20 +1471,27 @@ fn primaryExpression(self: *Self) ParseError!Node.Index {
         .@"[" => return self.arrayLiteral(token.start),
         .@"{" => return self.objectLiteral(token.start),
         .@"(" => return self.coverParenExprAndArrowParams(),
-        .kw_function => return self.functionExpression(token.start, .{}),
-        else => {
-            if (self.isKeywordIdentifier(token.tag)) {
-                return self.identifier(token);
+        .kw_async => {
+            if (self.current_token.tag == .kw_function) {
+                _ = try self.next(); // eat 'function'
+                return self.functionExpression(token.start, .{ .is_async = true });
             }
-
-            try self.emitDiagnostic(
-                token.startCoord(self.source),
-                "expected an expression, found '{s}'",
-                .{token.toByteSlice(self.source)},
-            );
-            return ParseError.UnexpectedToken;
+            // fall through to the default case.
         },
+        .kw_function => return self.functionExpression(token.start, .{}),
+        else => {},
     }
+
+    if (self.isKeywordIdentifier(token.tag)) {
+        return self.identifier(token);
+    }
+
+    try self.emitDiagnostic(
+        token.startCoord(self.source),
+        "expected an expression, found '{s}'",
+        .{token.toByteSlice(self.source)},
+    );
+    return ParseError.UnexpectedToken;
 }
 
 fn identifier(self: *Self, token: Token) ParseError!Node.Index {
@@ -1511,7 +1528,6 @@ fn propertyDefinitionList(self: *Self) ParseError!?ast.NodeList {
     while (lookahead.tag != .eof) {
         switch (lookahead.tag) {
             .identifier,
-            .kw_let,
             => {
                 try property_defs.append(try self.identifierProperty());
             },
@@ -1547,7 +1563,13 @@ fn propertyDefinitionList(self: *Self) ParseError!?ast.NodeList {
                 const end = self.nodes.items[@intFromEnum(expr)].end;
                 try property_defs.append(try self.addNode(.{ .spread_element = expr }, start, end));
             },
-            else => break,
+            else => {
+                if (self.current_token.isKeyword()) {
+                    try property_defs.append(try self.identifierProperty());
+                } else {
+                    break;
+                }
+            },
         }
 
         const maybe_comma = self.peek();
@@ -1565,12 +1587,31 @@ fn propertyDefinitionList(self: *Self) ParseError!?ast.NodeList {
 /// Parse an object property that starts with an identifier (that may be "get" or "set").
 fn identifierProperty(self: *Self) ParseError!Node.Index {
     const key_token = try self.next();
-    std.debug.assert(key_token.tag == .identifier or key_token.tag == .kw_let);
+    std.debug.assert(key_token.tag == .identifier or key_token.isKeyword());
 
     const lookahead = self.peek();
     if (lookahead.tag != .@":" and lookahead.tag != .@"(" and
         lookahead.tag != .@"," and lookahead.tag != .@"}")
     {
+        if (key_token.tag == .kw_async and // handle `async f() { ... }`
+            (lookahead.tag == .identifier or lookahead.isKeyword()))
+        {
+            const property_key = try self.identifier(try self.next());
+            const property_val = try self.parseMethodBody(
+                property_key,
+                .{ .is_method = true },
+                .{ .is_async = true },
+            );
+
+            const end_pos = self.nodes.items[@intFromEnum(property_val)].end;
+            return self.addNode(.{
+                .object_property = .{
+                    .key = property_key,
+                    .value = property_val,
+                },
+            }, key_token.start, end_pos);
+        }
+
         const maybe_getter_or_setter = try self.getterOrSetter(key_token);
         if (maybe_getter_or_setter) |getter_or_setter| {
             return getter_or_setter;
@@ -1631,6 +1672,7 @@ fn getterOrSetter(self: *Self, token: Token) ParseError!?Node.Index {
     return try self.parseMethodBody(
         key,
         .{ .is_method = true, .kind = kind },
+        .{},
     );
 }
 
@@ -1667,11 +1709,12 @@ fn parseMethodBody(
     self: *Self,
     key: Node.Index,
     flags: ast.PropertyDefinitionFlags,
+    fn_flags: ast.FunctionFlags,
 ) ParseError!Node.Index {
     std.debug.assert(self.current_token.tag == .@"(" and flags.is_method);
 
     const start_pos = self.peek().start;
-    const func_expr = try self.parseFunctionBody(start_pos, null, .{});
+    const func_expr = try self.parseFunctionBody(start_pos, null, fn_flags);
     const end_pos = self.nodeSpan(func_expr).end;
 
     const kv_node = ast.PropertyDefinition{
@@ -1700,7 +1743,7 @@ fn completePropertyDef(
             .is_computed = flags.is_computed,
             .is_shorthand = flags.is_shorthand,
             .kind = flags.kind,
-        });
+        }, .{});
     }
 
     _ = try self.expect(.@":");
