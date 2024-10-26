@@ -8,10 +8,12 @@ see the [tests262 runner](./tools/README.md).
 
 ## Goals
 
-- Faster than existing tools. 
-- 100% Spec compliant 
-- Supports JS, TS, JSX, TSX, and CSS3 out of the box.
-- Can perform data flow analysis.
-- Linter extensible with JS plugins 
+- 100% Spec compliant
+- Faster than (or close to) existing tools. 
+- Low memory footprint.
+- Support JS, TS, JSX, TSX out of the box.
+- Support data flow analysis and call-graphs with an accessible API. 
+- API for writing linting rules in Zig.
+- Custom JS plugins.
     (I plan to embed the [Kiesel](https://kiesel.dev) JS engine).
 
