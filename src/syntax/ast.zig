@@ -46,15 +46,28 @@ pub const FunctionFlags = packed struct(u8) {
     _: u5 = 0,
 };
 
-pub const FunctionExpression = struct {
+/// Represents the payload for a function expression or declaration.
+pub const Function = struct {
     /// points to a `ast.NodeData.parameters` (?NodeList)
     parameters: Node.Index,
-    body: Node.Index, // points to a an expression, or a block statement.
-    info: ExtraData.Index, // name + flags
+    /// points to an expression or a block statement
+    body: Node.Index,
+    /// Function name and flags.
+    info: ExtraData.Index,
+    /// Get the name of this function, if it has one,
+    /// directly from the source buffer.
+    pub fn getName(self: *const Function, parser: *const Parser) ?[]const u8 {
+        const maybe_name_token = parser.getExtraData(self.info).function.name;
+        if (maybe_name_token) |name_token| {
+            const token = parser.getToken(name_token);
+            return token.toByteSlice(parser.source);
+        }
+        return null;
+    }
 
     /// Returns a slice containing all the parameter nodes in the function.
     pub fn getParameterSlice(
-        self: *const FunctionExpression,
+        self: *const Function,
         parser: *const Parser,
     ) []const Node.Index {
         const params_node = parser.getNode(self.parameters);
@@ -67,7 +80,7 @@ pub const FunctionExpression = struct {
 
     /// Returns the number of parameters in the function.
     pub fn getParameterCount(
-        self: *const FunctionExpression,
+        self: *const Function,
         parser: *const Parser,
     ) usize {
         const params_node = parser.getNode(self.parameters);
@@ -81,6 +94,8 @@ pub const FunctionExpression = struct {
     }
 };
 
+/// Describes the kind of property in an object literal.
+/// Differentiates getters and setters from regular property definitions.
 pub const PropertyDefinitionKind = enum(u5) {
     /// Getter
     get,
@@ -157,7 +172,7 @@ pub const NodeData = union(enum(u8)) {
     super_call_expr: ?NodeList,
     // points to  call_expr, member_expr, or computed_member_expr
     optional_expr: Node.Index,
-    function_expr: FunctionExpression,
+    function_expr: Function,
 
     post_unary_expr: UnaryPayload,
     unary_expr: UnaryPayload,
@@ -187,6 +202,7 @@ pub const NodeData = union(enum(u8)) {
     expression_statement: Node.Index,
     variable_declaration: VariableDeclaration,
     variable_declarator: VariableDeclarator,
+    function_declaration: Function,
     debugger_statement: void,
     if_statement: Conditional,
     parameters: ?NodeList,
@@ -259,7 +275,7 @@ pub const NodePretty = union(enum) {
     object_property: Pretty(PropertyDefinition),
     sequence_expression: Pretty(NodeList),
     conditional_expression: Pretty(Conditional),
-    function_expression: struct {
+    function: struct {
         parameters: Pretty(Node.Index),
         body: Pretty(Node.Index),
         info: Pretty(ExtraData.Index),

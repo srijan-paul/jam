@@ -480,7 +480,7 @@ fn functionDeclaration(
         fn_flags.is_generator = true;
     }
     const name_token = try self.addToken(try self.expect(.identifier));
-    return self.parseFunctionBody(start_pos, name_token, fn_flags);
+    return self.parseFunctionBody(start_pos, name_token, fn_flags, true);
 }
 
 /// ReturnStatement:
@@ -1716,7 +1716,12 @@ fn parseMethodBody(
     std.debug.assert(self.current_token.tag == .@"(" and flags.is_method);
 
     const start_pos = self.peek().start;
-    const func_expr = try self.parseFunctionBody(start_pos, null, fn_flags);
+    const func_expr = try self.parseFunctionBody(
+        start_pos,
+        null,
+        fn_flags,
+        false,
+    );
     const end_pos = self.nodeSpan(func_expr).end;
 
     const kv_node = ast.PropertyDefinition{
@@ -1864,7 +1869,7 @@ fn functionExpression(
         try self.addToken(try self.next())
     else
         null;
-    return self.parseFunctionBody(start_pos, name_token, fn_flags);
+    return self.parseFunctionBody(start_pos, name_token, fn_flags, false);
 }
 
 /// parses the arguments and body of a function expression (or declaration),
@@ -1874,6 +1879,7 @@ fn parseFunctionBody(
     start_pos: u32,
     name_token: ?Token.Index,
     flags: ast.FunctionFlags,
+    is_decl: bool,
 ) ParseError!Node.Index {
     const saved_context = self.context;
     defer self.setContext(saved_context);
@@ -1903,13 +1909,17 @@ fn parseFunctionBody(
         },
     );
 
-    return self.addNode(.{
-        .function_expr = .{
-            .parameters = params,
-            .body = body,
-            .info = function_data,
-        },
-    }, start_pos, end_pos);
+    const function = ast.Function{
+        .parameters = params,
+        .body = body,
+        .info = function_data,
+    };
+
+    const node_data: ast.NodeData = if (is_decl)
+        .{ .function_declaration = function }
+    else
+        .{ .function_expr = function };
+    return self.addNode(node_data, start_pos, end_pos);
 }
 
 /// Starting with the '(' token , parse formal parameters of a function.
@@ -1942,6 +1952,13 @@ fn parseFormalParameters(self: *Self) ParseError!Node.Index {
 pub fn getNode(self: *const Self, index: Node.Index) *const ast.Node {
     // TODO: should this return a non-pointer instead?
     return &self.nodes.items[@intFromEnum(index)];
+}
+
+pub fn getExtraData(
+    self: *const Self,
+    index: ast.ExtraData.Index,
+) *const ast.ExtraData {
+    return &self.extra_data.items[@intFromEnum(index)];
 }
 
 /// From a `NodeList` object, get a slice that contains the ID for each node
