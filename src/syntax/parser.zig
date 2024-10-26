@@ -22,6 +22,7 @@ const ParseError = error{
     LetInStrictMode,
     InvalidSetter,
     InvalidGetter,
+    InvalidPropertyName,
 } || Tokenizer.Error;
 const ParseFn = fn (self: *Self) ParseError!Node.Index;
 
@@ -1558,6 +1559,18 @@ fn propertyDefinitionList(self: *Self) ParseError!?ast.NodeList {
                 try property_defs.append(property_expr);
             },
 
+            // generator method
+            .@"*" => {
+                _ = try self.next(); // eat '*'
+                const key = try self.propertyName();
+                const generator_method = try self.parseMethodBody(
+                    key,
+                    .{ .is_method = true },
+                    .{ .is_generator = true },
+                );
+                try property_defs.append(generator_method);
+            },
+
             .@"..." => {
                 const ellipsis_tok = try self.next();
                 const expr = try self.assignmentExpression();
@@ -1584,6 +1597,21 @@ fn propertyDefinitionList(self: *Self) ParseError!?ast.NodeList {
 
     if (property_defs.items.len == 0) return null;
     return try self.addNodeList(property_defs.items);
+}
+
+/// Parse an object property name, which can be an identifier or a keyword.
+fn propertyName(self: *Self) ParseError!Node.Index {
+    if (self.current_token.tag == .identifier or self.current_token.isKeyword()) {
+        return self.identifier(try self.next());
+    }
+
+    try self.emitDiagnostic(
+        self.current_token.startCoord(self.source),
+        "Expected a property name, got '{s}'",
+        .{self.current_token.toByteSlice(self.source)},
+    );
+
+    return ParseError.InvalidPropertyName;
 }
 
 /// Parse an object property that starts with an identifier (that may be "get" or "set").
