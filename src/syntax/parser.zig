@@ -1040,8 +1040,8 @@ fn destructuredPropertyDefinition(self: *Self) ParseError!Node.Index {
                 key_token.start + key_token.len,
             );
 
-            const lookahead = self.peek();
-            if (lookahead.tag == .@"=") {
+            const cur_token = self.peek();
+            if (cur_token.tag == .@"=") {
                 const eq_token = try self.next(); // eat '='
                 const rhs = try self.assignmentExpression();
                 const end_pos = self.getNode(rhs).end;
@@ -1063,7 +1063,7 @@ fn destructuredPropertyDefinition(self: *Self) ParseError!Node.Index {
                 );
             }
 
-            if (lookahead.tag == .@":") {
+            if (cur_token.tag == .@":") {
                 return self.completePropertyPatternDef(key);
             }
 
@@ -1095,12 +1095,12 @@ fn objectAssignmentPattern(self: *Self) ParseError!Node.Index {
 
     var end_pos = lbrace.start + lbrace.len;
 
-    var lookahead = self.peek();
-    while (lookahead.tag != .@"}") : (lookahead = self.peek()) {
-        switch (lookahead.tag) {
+    var cur_token = self.peek();
+    while (cur_token.tag != .@"}") : (cur_token = self.peek()) {
+        switch (cur_token.tag) {
             .@"..." => {
                 _ = try self.next(); // eat '...'
-                const start_pos = lookahead.start;
+                const start_pos = cur_token.start;
                 const expr = try self.lhsExpression();
                 const end = self.nodes.items[@intFromEnum(expr)].end;
                 const spread_expr = try self.addNode(.{ .spread_element = expr }, start_pos, end);
@@ -1115,9 +1115,9 @@ fn objectAssignmentPattern(self: *Self) ParseError!Node.Index {
 
             else => {
                 try self.emitDiagnostic(
-                    lookahead.startCoord(self.source),
+                    cur_token.startCoord(self.source),
                     "Unexpected '{s}' while parsing destructured object pattern",
-                    .{lookahead.toByteSlice(self.source)},
+                    .{cur_token.toByteSlice(self.source)},
                 );
 
                 return ParseError.InvalidAssignmentTarget;
@@ -1218,9 +1218,9 @@ fn updateExpression(self: *Self) ParseError!Node.Index {
     // post increment / decrement
     const expr_start_line = self.peek().line;
     const expr = try self.lhsExpression();
-    const lookahead = self.peek();
-    if ((lookahead.tag == .@"++" or lookahead.tag == .@"--") and
-        lookahead.line == expr_start_line)
+    const cur_token = self.peek();
+    if ((cur_token.tag == .@"++" or cur_token.tag == .@"--") and
+        cur_token.line == expr_start_line)
     {
         const op_token = try self.next();
         const expr_end_pos = self.nodes.items[@intFromEnum(expr)].end;
@@ -1293,9 +1293,9 @@ fn tryCallExpression(self: *Self, callee: Node.Index) ParseError!?Node.Index {
     if (token.tag != .@"(") return null;
 
     var call_expr = try self.coverCallAndAsyncArrowHead(callee);
-    var lookahead = self.peek();
-    while (lookahead.tag != .eof) : (lookahead = self.peek()) {
-        switch (lookahead.tag) {
+    var cur_token = self.peek();
+    while (cur_token.tag != .eof) : (cur_token = self.peek()) {
+        switch (cur_token.tag) {
             .@"(" => call_expr = try self.completeCallExpression(call_expr),
             .@"[" => call_expr = try self.completeComputedMemberExpression(call_expr),
             .@"." => call_expr = try self.completeMemberExpression(call_expr),
@@ -1334,9 +1334,9 @@ fn coverCallAndAsyncArrowHead(self: *Self, callee: Node.Index) ParseError!Node.I
 /// https://262.ecma-international.org/15.0/index.html#prod-OptionalExpression
 fn optionalExpression(self: *Self, object: Node.Index) ParseError!Node.Index {
     var expr = object;
-    var lookahead = self.peek();
-    while (lookahead.tag != .eof) : (lookahead = self.peek()) {
-        switch (lookahead.tag) {
+    var cur_token = self.peek();
+    while (cur_token.tag != .eof) : (cur_token = self.peek()) {
+        switch (cur_token.tag) {
             .@"?." => expr = try self.completeOptionalChain(expr),
             else => return expr,
         }
@@ -1353,9 +1353,9 @@ fn completeOptionalChain(self: *Self, prev_expr: Node.Index) ParseError!Node.Ind
     var expr = try self.optionalChain(prev_expr);
     const start_pos = self.nodes.items[@intFromEnum(expr)].start;
 
-    var lookahead = self.peek();
-    while (lookahead.tag != .eof) : (lookahead = self.peek()) {
-        switch (lookahead.tag) {
+    var cur_token = self.peek();
+    while (cur_token.tag != .eof) : (cur_token = self.peek()) {
+        switch (cur_token.tag) {
             .@"[" => {
                 const member_expr = try self.completeComputedMemberExpression(expr);
                 const end_pos = self.nodes.items[@intFromEnum(member_expr)].end;
@@ -1388,9 +1388,9 @@ fn optionalChain(self: *Self, object: Node.Index) ParseError!Node.Index {
     const chain_op = try self.next();
     std.debug.assert(chain_op.tag == .@"?.");
 
-    const lookahead = self.peek();
+    const cur_token = self.peek();
 
-    switch (lookahead.tag) {
+    switch (cur_token.tag) {
         .@"(" => {
             const call_args = try self.args();
             const end_pos = self.nodes.items[@intFromEnum(call_args)].end;
@@ -1419,9 +1419,9 @@ fn optionalChain(self: *Self, object: Node.Index) ParseError!Node.Index {
             }
 
             try self.emitDiagnostic(
-                lookahead.startCoord(self.source),
+                cur_token.startCoord(self.source),
                 "Expected property access or function call after ?., but got {s}",
-                .{lookahead.toByteSlice(self.source)},
+                .{cur_token.toByteSlice(self.source)},
             );
             return ParseError.UnexpectedToken;
         },
@@ -1564,9 +1564,9 @@ fn propertyDefinitionList(self: *Self) ParseError!?ast.NodeList {
     var property_defs = std.ArrayList(Node.Index).init(self.allocator);
     defer property_defs.deinit();
 
-    const lookahead = self.peek();
-    while (lookahead.tag != .eof) {
-        switch (lookahead.tag) {
+    const cur_token = self.peek();
+    while (cur_token.tag != .eof) {
+        switch (cur_token.tag) {
             .identifier,
             => {
                 try property_defs.append(try self.identifierProperty());
@@ -1656,12 +1656,12 @@ fn identifierProperty(self: *Self) ParseError!Node.Index {
     const key_token = try self.next();
     std.debug.assert(key_token.tag == .identifier or key_token.isKeyword());
 
-    const lookahead = self.peek();
-    if (lookahead.tag != .@":" and lookahead.tag != .@"(" and
-        lookahead.tag != .@"," and lookahead.tag != .@"}")
+    const cur_token = self.peek();
+    if (cur_token.tag != .@":" and cur_token.tag != .@"(" and
+        cur_token.tag != .@"," and cur_token.tag != .@"}")
     {
         if (key_token.tag == .kw_async and // handle `async f() { ... }`
-            (lookahead.tag == .identifier or lookahead.isKeyword()))
+            (cur_token.tag == .identifier or cur_token.isKeyword()))
         {
             const property_key = try self.identifier(try self.next());
             const property_val = try self.parseMethodBody(
@@ -1695,11 +1695,11 @@ fn identifierProperty(self: *Self) ParseError!Node.Index {
     const key_end_pos = key_token.start + key_token.len;
     const key = try self.identifier(key_token);
 
-    const lookahead_tag = self.peek().tag;
-    switch (lookahead_tag) {
+    const cur_token_tag = self.peek().tag;
+    switch (cur_token_tag) {
         .@":", .@"(" => {
             return self.completePropertyDef(key, .{
-                .is_method = lookahead_tag == .@"(",
+                .is_method = cur_token_tag == .@"(",
             });
         },
 
@@ -1995,8 +1995,8 @@ fn parseFormalParameters(self: *Self) ParseError!Node.Index {
     var params = std.ArrayList(Node.Index).init(self.allocator);
     defer params.deinit();
 
-    var lookahead = self.peek();
-    while (lookahead.tag != .@")" and lookahead.tag != .eof) : (lookahead = self.peek()) {
+    var cur_token = self.peek();
+    while (cur_token.tag != .@")" and cur_token.tag != .eof) : (cur_token = self.peek()) {
         const param = try self.assignmentLhsExpr();
         try params.append(param);
     }

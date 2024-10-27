@@ -3,17 +3,20 @@ const syntax = @import("jam-syntax");
 
 const Parser = syntax.Parser;
 
-const TestResult = enum {
+const ParseResult = enum {
     pass,
     parse_error,
     ast_no_match,
 };
 
-const TestOutput = struct {
+/// Structured representation of the `tools/results.json` file.
+const TestResult = struct {
     fail_percent: std.json.Value,
     pass_percent: std.json.Value,
     unmatching_ast_count: usize,
 
+    /// string -> string map.
+    /// key is a filename like "12ea3bf0653f8409.js", and value is `TestResult`.
     test_cases: std.json.Value,
 };
 
@@ -64,7 +67,7 @@ fn testOnPassingFile(
     pass_dir: *std.fs.Dir,
     pass_explicit_dir: *std.fs.Dir,
     file_name: []const u8,
-) !TestResult {
+) !ParseResult {
     const source = try pass_dir.readFileAlloc(allocator, file_name, std.math.maxInt(u32));
     defer allocator.free(source);
 
@@ -87,7 +90,7 @@ fn testOnPassingFile(
     _ = try parser2.parse();
 
     if (parser.nodes.items.len != parser2.nodes.items.len) {
-        return TestResult.ast_no_match;
+        return ParseResult.ast_no_match;
     }
 
     for (parser.nodes.items, parser2.nodes.items) |n1, n2| {
@@ -95,26 +98,39 @@ fn testOnPassingFile(
             // see `pass_exceptions` array.
             for (pass_exceptions) |exception_filename| {
                 if (std.mem.eql(u8, file_name, exception_filename)) {
-                    return TestResult.pass;
+                    return ParseResult.pass;
                 }
             }
-            return TestResult.ast_no_match;
+            return ParseResult.ast_no_match;
         }
     }
 
-    return TestResult.pass;
+    return ParseResult.pass;
 }
 
-pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    const allocator = gpa.allocator();
-    defer std.debug.assert(gpa.deinit() == .ok);
+/// Read an existing `tools/results.json` file.
+pub fn readResultsFile(allocator: std.mem.Allocator) !TestResult {
+    const results_file_path = "tools" ++ std.fs.path.sep_str.* ++ "results.json";
+    const previous_results_str = try std.fs.cwd().readFileAlloc(
+        allocator,
+        results_file_path,
+        std.math.maxInt(u32),
+    );
 
-    var arena = std.heap.ArenaAllocator.init(allocator);
-    const al = arena.allocator();
+    const parsed = try std.json.parseFromSlice(
+        TestResult,
+        allocator,
+        previous_results_str,
+        .{},
+    );
+    defer parsed.deinit();
+    return parsed.value;
+}
 
-    defer arena.deinit();
-
+/// Runs the JS parser on all files in `pass` and `pass-explicit` directories,
+/// compares the ASTs for every file `<file>.js` in `pass/<file>.js` and `pass-explicit/<file>.js`.
+/// Returns a TestResult containing all comparison results.
+pub fn runValidSyntaxTests(al: std.mem.Allocator) !TestResult {
     const tests_dir = try std.process.getEnvVarOwned(al, "JAM_TESTS_262_DIR");
 
     var d = try std.fs.openDirAbsolute(tests_dir, .{});
@@ -139,7 +155,7 @@ pub fn main() !void {
 
         n_total += 1.0;
         const result = testOnPassingFile(
-            allocator,
+            al,
             &pass_dir,
             &pass_explicit_dir,
             entry.name,
@@ -162,18 +178,99 @@ pub fn main() !void {
     const fail_rate_str = try std.fmt.allocPrint(al, "{d}", .{fail_rate});
     const pass_rate_str = try std.fmt.allocPrint(al, "{d}", .{pass_rate});
 
-    const test_output = TestOutput{
+    return TestResult{
         .test_cases = .{ .object = test_cases },
         .fail_percent = std.json.Value{ .number_string = fail_rate_str },
         .pass_percent = std.json.Value{ .number_string = pass_rate_str },
         .unmatching_ast_count = n_ast_no_match,
     };
+}
+
+/// Compare an old test run (from results.json) with a freshly run
+/// test result, and ensure that there are no cases where the parser succeeded previously
+/// but fails now.
+pub fn compareTestResults(
+    new_result: *const TestResult,
+    old_result: *const TestResult,
+) !bool {
+    var passing = true;
+
+    const old_pass_rate: f64 = old_result.pass_percent.float;
+    const new_pass_rate: f64 = try std.fmt.parseFloat(f64, new_result.pass_percent.number_string);
+
+    if (new_pass_rate < old_pass_rate) {
+        passing = false;
+        std.log.err("Passing tests dropped from {d}% to {d}%", .{
+            old_pass_rate,
+            new_pass_rate,
+        });
+    } else if (old_pass_rate > new_pass_rate) {
+        std.log.err("Passing test score went up from {d}% to {d}%!", .{
+            old_pass_rate,
+            new_pass_rate,
+        });
+    }
+
+    const old_file_results = old_result.test_cases.object;
+    const new_file_results = new_result.test_cases.object;
+
+    var n_regressions: usize = 0;
+    var old_iter = old_file_results.iterator();
+    while (old_iter.next()) |entry| {
+        const test_file_name = entry.key_ptr.*;
+        const new_value: std.json.Value = new_file_results.get(test_file_name) orelse {
+            passing = false;
+            std.log.err("Missing entry for fiel {s} in new result file.", .{test_file_name});
+            break;
+        };
+
+        const old_value: std.json.Value = entry.value_ptr.*;
+        if (std.mem.eql(u8, old_value.string, @tagName(ParseResult.pass)) and
+            !std.mem.eql(u8, new_value.string, @tagName(ParseResult.pass)))
+        {
+            n_regressions += 1;
+            std.log.err("Test {s} went from passing to failing.", .{test_file_name});
+        }
+    }
+
+    if (n_regressions > 0) {
+        std.debug.print("{d} tests that were previously passing are now failing", .{n_regressions});
+        passing = false;
+    }
+    return passing;
+}
+
+pub fn main() !void {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    const allocator = gpa.allocator();
+    defer std.debug.assert(gpa.deinit() == .ok);
+
+    var arena = std.heap.ArenaAllocator.init(allocator);
+    const al = arena.allocator();
+    defer arena.deinit();
+
+    const test_results = try runValidSyntaxTests(al);
+
+    var args = std.process.args();
+    _ = args.next();
+
+    // When the `--compare` flag is passed, compare the new test results
+    // with the existing results in `results.json` and ensure there are no regressions.
+    const compare_with_old = if (args.next()) |s|
+        std.mem.eql(u8, s, "--compare")
+    else
+        false;
+
+    if (compare_with_old) {
+        const old_results = try readResultsFile(al);
+        const is_passing = try compareTestResults(&test_results, &old_results);
+        std.process.exit(if (is_passing) 0 else 1);
+    }
 
     const s = try std.json.stringifyAlloc(
         al,
-        test_output,
+        test_results,
         .{ .whitespace = .indent_2 },
     );
-
     _ = try std.io.getStdOut().write(s);
 }

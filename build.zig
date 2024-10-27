@@ -50,6 +50,11 @@ pub fn build(b: *std.Build) !void {
 
         const test_runner_step = b.step("test-262", "Run the EC262 parser tests");
         test_runner_step.dependOn(&tests_262_cmd.step);
+
+        // forward all CLI arguments from build.zig to the test runner.
+        if (b.args) |args| {
+            tests_262_cmd.addArgs(args);
+        }
     }
 
     b.installArtifact(exe);
