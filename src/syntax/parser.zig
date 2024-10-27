@@ -256,10 +256,11 @@ fn statement(self: *Self) ParseError!Node.Index {
             },
             .kw_debugger => {
                 const token = try self.next();
+                const end_pos = try self.semiColon(token.start + token.len);
                 break :blk self.addNode(
                     .{ .debugger_statement = {} },
                     token.start,
-                    token.start + token.len,
+                    end_pos,
                 );
             },
             .kw_async => {
@@ -544,7 +545,9 @@ fn eatSemiAsi(self: *Self) ParseError!?types.Span {
         };
     }
 
-    if (self.current_token.line != self.prev_token_line or self.current_token.tag == .@"}")
+    if (self.current_token.line != self.prev_token_line or
+        self.current_token.tag == .@"}" or
+        self.current_token.tag == .eof)
         return null;
 
     try self.emitBadTokenDiagnostic("a ';' or a newline", self.current_token);

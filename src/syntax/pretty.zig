@@ -3,6 +3,7 @@ const std = @import("std");
 const Parser = @import("parser.zig");
 const ast = @import("ast.zig");
 const Node = ast.Node;
+const util = @import("util");
 
 fn copy(al: std.mem.Allocator, value: anytype) !*@TypeOf(value) {
     const ptr = try al.create(@TypeOf(value));
@@ -32,6 +33,32 @@ fn prettyNodeList(
         return try new_args.toOwnedSlice();
     }
     return try allocator.alloc(ast.NodePretty, 0);
+}
+
+fn escapeUtf8(allocator: std.mem.Allocator, str: []const u8) ![]const u8 {
+    var iter = std.unicode.Utf8Iterator{ .bytes = str, .i = 0 };
+    var buf = std.ArrayList(u8).init(allocator);
+    defer buf.deinit();
+
+    while (iter.i < str.len) {
+        if (str[iter.i] == '\\') {
+            const parsed_cp = util.parseUnicodeEscape(str[iter.i..]) orelse
+                unreachable; // validated during tokenization.
+            const cp = parsed_cp.codepoint;
+            var cp_slice: [4]u8 = undefined;
+            const cp_len = std.unicode.utf8Encode(cp, &cp_slice) catch
+                unreachable;
+            try buf.appendSlice(cp_slice[0..cp_len]);
+            iter.i += parsed_cp.len;
+            continue;
+        }
+
+        const cp_slice = iter.nextCodepointSlice() orelse
+            unreachable; // already validated UTF-8 during tokenization
+        try buf.appendSlice(cp_slice);
+    }
+
+    return buf.toOwnedSlice();
 }
 
 /// Convert an AST Node to a struct that can be JSON serialized
@@ -75,7 +102,9 @@ fn toPretty(
         => |tok_id| {
             const token = self.tokens.items[@intFromEnum(tok_id)];
             if (checkActiveField(node.data, "identifier")) {
-                return .{ .identifier = token.toByteSlice(self.source) };
+                const id = token.toByteSlice(self.source);
+                const escaped = try escapeUtf8(allocator, id);
+                return .{ .identifier = escaped };
             } else {
                 return .{ .literal = token.toByteSlice(self.source) };
             }
