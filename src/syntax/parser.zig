@@ -23,6 +23,7 @@ const ParseError = error{
     InvalidSetter,
     InvalidGetter,
     InvalidPropertyName,
+    ExpectedSemicolon,
 } || Tokenizer.Error;
 const ParseFn = fn (self: *Self) ParseError!Node.Index;
 
@@ -36,16 +37,10 @@ const State = struct {
 
     current_token: Token,
     next_token: Token,
+    prev_token_line: u32,
     tokenizer_state: Tokenizer.State,
 
     context: ParseContext,
-    diagnostics: ?[]Diagnostic,
-
-    pub fn destroy(self: *State, allocator: std.mem.Allocator) void {
-        if (self.diagnostics) |diagnostics| {
-            allocator.free(diagnostics);
-        }
-    }
 };
 
 /// An error or warning raised by the Parser.
@@ -71,7 +66,7 @@ pub const ParseContext = packed struct(u8) {
     is_await_reserved: bool = false,
     /// Is `yield` parsed as an identifier or as a keyword?
     is_yield_reserved: bool = false,
-    /// Are we parsing a module? (alternative is a script).
+    /// Are we parsing a module? (`false` = parsing a script).
     module: bool = false,
     /// Are we in strict mode?
     strict: bool = false,
@@ -79,7 +74,7 @@ pub const ParseContext = packed struct(u8) {
     _: bool = false,
 };
 
-// arranged in highest to lowest binding
+// arranged in highest to lowest binding order
 
 // TODO: Officially, exponentiation operator is defined as:
 // ExponentiationExpression :
@@ -130,6 +125,11 @@ diagnostic_messages: std.ArrayList([]const u8),
 current_token: Token,
 /// The next token that we're going to read.
 next_token: Token,
+/// Line number of the token that was consumed previously.
+/// When being accessed, this property can be thought of as the starting line
+/// of the first token in the expression/statement that was last parsed.
+/// Useful for Automatic Semicolon Insertion.
+prev_token_line: u32 = 0,
 /// Helper struct to manage, escape, and compare strings in source code.
 strings: StringHelper,
 /// The current grammatical context of the parser. See struct `ParseContext`.
@@ -197,12 +197,9 @@ fn saveState(self: *Self) error{OutOfMemory}!State {
         .nodes_len = self.nodes.items.len,
         .tokens_len = self.tokens.items.len,
         .extra_data_len = self.extra_data.items.len,
+        .prev_token_line = self.prev_token_line,
         .node_lists_len = self.node_lists.items.len,
         .tokenizer_state = self.tokenizer.saveState(),
-        .diagnostics = if (self.diagnostics.items.len > 0)
-            try self.allocator.dupe(Diagnostic, self.diagnostics.items)
-        else
-            null,
     };
 }
 
@@ -210,6 +207,7 @@ fn saveState(self: *Self) error{OutOfMemory}!State {
 fn restoreState(self: *Self, state: *State) error{OutOfMemory}!void {
     self.current_token = state.current_token;
     self.next_token = state.next_token;
+    self.prev_token_line = state.prev_token_line;
 
     self.nodes.items = self.nodes.items[0..state.nodes_len];
     self.tokens.items = self.tokens.items[0..state.tokens_len];
@@ -219,13 +217,6 @@ fn restoreState(self: *Self, state: *State) error{OutOfMemory}!void {
 
     self.context = state.context;
     self.tokenizer.context = state.context;
-
-    if (state.diagnostics) |saved_diagnostics| {
-        // "Steal" the diagnostics from the state.
-        self.diagnostics.deinit();
-        self.diagnostics = std.ArrayList(Diagnostic).fromOwnedSlice(self.allocator, saved_diagnostics);
-        state.diagnostics = null;
-    }
 }
 
 pub fn parse(self: *Self) !Node.Index {
@@ -252,19 +243,15 @@ pub fn parse(self: *Self) !Node.Index {
 
 /// https://tc39.es/ecma262/#prod-Statement
 fn statement(self: *Self) ParseError!Node.Index {
-    var can_end_in_semi = true;
     const stmt = blk: {
         switch (self.peek().tag) {
             .@"{" => {
-                can_end_in_semi = false;
                 break :blk self.blockStatement();
             },
             .@";" => {
-                can_end_in_semi = false;
                 break :blk self.emptyStatement();
             },
             .kw_if => {
-                can_end_in_semi = false;
                 break :blk self.ifStatement();
             },
             .kw_debugger => {
@@ -277,7 +264,6 @@ fn statement(self: *Self) ParseError!Node.Index {
             },
             .kw_async => {
                 if (self.next_token.tag == .kw_function) {
-                    can_end_in_semi = false;
                     const async_token = try self.next(); // eat 'async'
                     _ = try self.next(); // eat 'function'
                     break :blk self.functionDeclaration(async_token.start, .{ .is_async = true });
@@ -285,7 +271,6 @@ fn statement(self: *Self) ParseError!Node.Index {
                 break :blk self.expressionStatement();
             },
             .kw_function => {
-                can_end_in_semi = false;
                 const fn_token = try self.next();
                 break :blk self.functionDeclaration(fn_token.start, .{});
             },
@@ -295,8 +280,6 @@ fn statement(self: *Self) ParseError!Node.Index {
             else => break :blk self.expressionStatement(),
         }
     };
-
-    if (can_end_in_semi) try self.consume(.@";");
 
     return stmt;
 }
@@ -344,13 +327,17 @@ fn variableStatement(self: *Self, kw: Token) ParseError!Node.Index {
     while (true) {
         const decl = try self.variableDeclarator();
         try declarators.append(decl);
-        const token = self.peek();
-        if (token.tag != .@",") break;
-        _ = try self.next();
+        if (self.current_token.tag == .@",") {
+            _ = try self.next();
+        } else {
+            break;
+        }
     }
 
     const decls = try self.addNodeList(declarators.items);
-    const last_decl = self.node_lists.items[@intFromEnum(decls.to) - 1];
+    const last_decl = self.getNode(self.node_lists.items[@intFromEnum(decls.to) - 1]);
+
+    const end_pos = try self.semiColon(last_decl.end);
 
     return self.addNode(
         .{ .variable_declaration = .{
@@ -363,7 +350,7 @@ fn variableStatement(self: *Self, kw: Token) ParseError!Node.Index {
             .declarators = decls,
         } },
         kw.start,
-        self.getNode(last_decl).end,
+        end_pos,
     );
 }
 
@@ -372,7 +359,7 @@ fn variableStatement(self: *Self, kw: Token) ParseError!Node.Index {
 /// is also a valid identifier.
 fn letStatement(self: *Self) ParseError!Node.Index {
     std.debug.assert(self.current_token.tag == .kw_let);
-    if (isDeclaratorStart(self.next_token.tag)) {
+    if (self.isDeclaratorStart(self.next_token.tag)) {
         const let_kw = try self.next();
         return self.variableStatement(let_kw);
     }
@@ -425,20 +412,22 @@ fn emptyStatement(self: *Self) ParseError!Node.Index {
 
 fn expressionStatement(self: *Self) ParseError!Node.Index {
     const expr = try self.expression();
-    try self.consume(.@";");
     const expr_node = self.getNode(expr);
+
+    const end_pos = try self.semiColon(expr_node.end);
+
     return addNode(
         self,
         .{ .expression_statement = expr },
         expr_node.start,
-        expr_node.end,
+        end_pos,
     );
 }
 
 fn blockStatement(self: *Self) !Node.Index {
     const start_pos = self.peek().start;
 
-    try self.consume(.@"{");
+    _ = try self.expect(.@"{");
 
     var statements = std.ArrayList(Node.Index).init(self.allocator);
     defer statements.deinit();
@@ -480,11 +469,22 @@ fn functionDeclaration(
         _ = try self.next();
         fn_flags.is_generator = true;
     }
-    const name_token = try self.addToken(try self.expect(.identifier));
+
+    const name_token = blk: {
+        const token = try self.next();
+        if (token.tag == .identifier or self.isKeywordIdentifier(token.tag)) {
+            break :blk try self.addToken(token);
+        }
+
+        try self.emitBadTokenDiagnostic("function name", token);
+        return ParseError.UnexpectedToken;
+    };
+
     return self.parseFunctionBody(start_pos, name_token, fn_flags, true);
 }
 
 /// ReturnStatement:
+///    'return' ';'
 ///    'return' [no LineTerminator here] Expression? ';'
 fn returnStatement(self: *Self) ParseError!Node.Index {
     const return_kw = try self.next();
@@ -501,16 +501,16 @@ fn returnStatement(self: *Self) ParseError!Node.Index {
         return ParseError.IllegalReturn;
     }
 
-    if (self.current_token.line != return_kw.line or self.current_token.tag == .@";") {
-        return self.addNode(
-            .{ .return_statement = null },
-            return_kw.start,
-            return_kw.start + return_kw.len,
-        );
+    if (self.current_token.line != return_kw.line or
+        self.current_token.tag == .@";" or
+        self.current_token.tag == .@"}")
+    {
+        const end_pos = try self.semiColon(return_kw.start + return_kw.len);
+        return self.addNode(.{ .return_statement = null }, return_kw.start, end_pos);
     }
 
     const operand = try self.expression();
-    const end_pos = self.nodeSpan(operand).end;
+    const end_pos = try self.semiColon(self.nodeSpan(operand).end);
     return self.addNode(.{ .return_statement = operand }, return_kw.start, end_pos);
 }
 
@@ -518,10 +518,44 @@ fn returnStatement(self: *Self) ParseError!Node.Index {
 // Common helper functions
 // ------------------------
 
+/// Helper function to finish a statement with a semi-colon.
+/// `end_pos` is the end-position of the statement node,
+/// if a semi-colon is found, returns the end position of the semi-colon,
+/// otherwise returns `end_pos`.
+/// If the ASI rules cannot be applied, returns a parse error.
+fn semiColon(self: *Self, end_pos: u32) ParseError!u32 {
+    return if (try self.eatSemiAsi()) |semi|
+        semi.end
+    else
+        end_pos;
+}
+
+/// Eat a semicolon token and return its span.
+/// If there if there is no semi-colon token, it will attempt to perform
+/// Automatic Semicolon Insertion (ASI):
+/// https://tc39.es/ecma262/multipage/ecmascript-language-lexical-grammar.html#sec-automatic-semicolon-insertion
+/// If no semi-colon can be inserted, a parse error is returned instead.
+fn eatSemiAsi(self: *Self) ParseError!?types.Span {
+    if (self.current_token.tag == .@";") {
+        const semicolon = try self.next();
+        return .{
+            .start = semicolon.start,
+            .end = semicolon.start + semicolon.len,
+        };
+    }
+
+    if (self.current_token.line != self.prev_token_line or self.current_token.tag == .@"}")
+        return null;
+
+    try self.emitBadTokenDiagnostic("a ';' or a newline", self.current_token);
+    return ParseError.ExpectedSemicolon;
+}
+
 /// Returns whether a token with the tag `tag` can start a variable declarator
 /// ({, or [, or an identifier).
-fn isDeclaratorStart(tag: Token.Tag) bool {
-    return tag == .@"[" or tag == .@"{" or tag == .identifier;
+fn isDeclaratorStart(self: *Self, tag: Token.Tag) bool {
+    return tag == .@"[" or tag == .@"{" or
+        tag == .identifier or self.isKeywordIdentifier(tag);
 }
 
 fn setContext(self: *Self, context: ParseContext) void {
@@ -541,15 +575,10 @@ fn isKeywordIdentifier(self: *const Self, tag: Token.Tag) bool {
         .kw_await => return !self.context.is_await_reserved,
         .kw_yield => return !self.context.is_yield_reserved,
         else => {
-            const in_strict_mode = self.isInStrictMode();
-            if (in_strict_mode) return false;
-
+            if (tag.isContextualKeyword()) return true;
+            if (self.isInStrictMode()) return false;
             // check if tag is a keyword, but that keyword can be used as an identifier in non-strict mode.
-            const strict_kw_start: u32 = @intFromEnum(Token.Tag.strict_mode_kw_start);
-            const strict_kw_end: u32 = @intFromEnum(Token.Tag.strict_mode_kw_end);
-            const itag: u32 = @intFromEnum(tag);
-            return ((itag > strict_kw_start and
-                itag < strict_kw_end) or tag == .kw_let);
+            return tag.isStrictModeKeyword() or tag == .kw_let;
         },
     }
 }
@@ -578,6 +607,19 @@ fn addExtraData(self: *Self, data: ast.ExtraData) error{OutOfMemory}!ast.ExtraDa
     return @enumFromInt(self.extra_data.items.len - 1);
 }
 
+/// Emit a diagnostic about an un-expected token.
+fn emitBadTokenDiagnostic(
+    self: *Self,
+    comptime expected: []const u8,
+    got: Token,
+) error{OutOfMemory}!void {
+    try self.emitDiagnostic(
+        got.startCoord(self.source),
+        "Expected function " ++ expected ++ ", got {s}",
+        .{got.toByteSlice(self.source)},
+    );
+}
+
 /// Push an error essage to the list of diagnostics.
 fn emitDiagnostic(
     self: *Self,
@@ -591,13 +633,6 @@ fn emitDiagnostic(
         .coord = coord,
         .message = @enumFromInt(self.diagnostic_messages.items.len - 1),
     });
-}
-
-/// Eat the current token if it matches `tag`.
-fn consume(self: *Self, tag: Token.Tag) ParseError!void {
-    if (self.peek().tag == tag) {
-        _ = try self.next();
-    }
 }
 
 /// Emit a parse error if the current token does not match `tag`.
@@ -644,6 +679,7 @@ fn next(self: *Self) ParseError!Token {
     const ret_token = self.current_token;
     self.current_token = self.next_token;
     self.next_token = next_token;
+    self.prev_token_line = ret_token.line;
     return ret_token;
 }
 
@@ -652,7 +688,7 @@ inline fn peek(self: *Self) Token {
 }
 
 fn isAtToken(self: *Self, tag: Token.Tag) bool {
-    return self.peek().tag == tag;
+    return self.current_token.tag == tag;
 }
 
 // --------------------------------------------------------------------------------------
@@ -691,21 +727,15 @@ fn assignmentLhsExpr(self: *Self) ParseError!Node.Index {
     switch (token.tag) {
         .@"{" => return self.objectAssignmentPattern(),
         .@"[" => return self.arrayAssignmentPattern(),
-        .identifier => { // 'let' is a valid identifier (in non-strict mode)
-            const id_token = try self.next();
-            return self.identifier(id_token);
+        .identifier => {
+            return self.identifier(try self.next());
         },
         else => {
             if (self.isKeywordIdentifier(token.tag)) {
-                const id_token = try self.next();
-                return self.identifier(id_token);
+                return self.identifier(try self.next());
             }
 
-            try self.emitDiagnostic(
-                token.startCoord(self.source),
-                "Expected assignment target, got: {s}",
-                .{token.toByteSlice(self.source)},
-            );
+            try self.emitBadTokenDiagnostic("assignment target", token);
             return ParseError.InvalidAssignmentTarget;
         },
     }
@@ -719,9 +749,12 @@ fn isSimpleAssignmentTarget(self: *const Self, node: Node.Index) bool {
 }
 
 fn assignmentExpression(self: *Self) ParseError!Node.Index {
+    // TODO: At some point, I want to come back here and do this *without*
+    // saving the state. it should be possible, if I do not dis-allow
+    // `=` in destructuring patterns, and re-interpret object literals as destructures
+    // like Meriyah does:
+    // https://github.com/meriyah/meriyah/blob/f056e3d6e8c729d77f8af3eafbcb777930506bf5/src/common.ts#L354
     var snapshot = try self.saveState(); // to re-parse LHS if its destrucuted.
-    defer snapshot.destroy(self.allocator);
-
     var is_assignment_pattern = false;
 
     // todo: can I make fewer allocations here?
@@ -755,7 +788,7 @@ fn assignmentExpression(self: *Self) ParseError!Node.Index {
         break :blk lhs_pattern;
     };
 
-    if (!self.peek().isAssignmentOperator()) {
+    if (!self.current_token.isAssignmentOperator()) {
         return lhs;
     }
 
@@ -1364,26 +1397,27 @@ fn optionalChain(self: *Self, object: Node.Index) ParseError!Node.Index {
                     .callee = object,
                 },
             }, start_pos, end_pos);
-            return self.addNode(ast.NodeData{ .optional_expr = call_expr }, start_pos, end_pos);
+            return self.addNode(.{ .optional_expr = call_expr }, start_pos, end_pos);
         },
         .@"[" => {
             const expr = try self.completeComputedMemberExpression(object);
             const end_pos = self.nodes.items[@intFromEnum(expr)].end;
             return self.addNode(.{ .optional_expr = expr }, start_pos, end_pos);
         },
-        .identifier, .private_identifier => {
-            const property_name_token = try self.next(); // eat the property name
-            const end_pos = property_name_token.start + property_name_token.len;
-            const expr = try self.addNode(.{ .member_expr = .{
-                .object = object,
-                .property = try self.addToken(lookahead),
-            } }, start_pos, end_pos);
-            return self.addNode(.{ .optional_expr = expr }, start_pos, end_pos);
-        },
         else => {
+            if (self.current_token.tag == .identifier or self.current_token.isKeyword()) {
+                const property_name_token = try self.next(); // eat the property name
+                const end_pos = property_name_token.start + property_name_token.len;
+                const expr = try self.addNode(.{ .member_expr = .{
+                    .object = object,
+                    .property = try self.addToken(property_name_token),
+                } }, start_pos, end_pos);
+                return self.addNode(.{ .optional_expr = expr }, start_pos, end_pos);
+            }
+
             try self.emitDiagnostic(
                 lookahead.startCoord(self.source),
-                "Expected a property access or all after ?., but got {s}\n",
+                "Expected property access or function call after ?., but got {s}",
                 .{lookahead.toByteSlice(self.source)},
             );
             return ParseError.UnexpectedToken;
@@ -1978,7 +2012,6 @@ fn parseFormalParameters(self: *Self) ParseError!Node.Index {
 /// Get a pointer to a node by its index.
 /// The returned value can be invalidated by any call to `addNode`, `restoreState`, `addNodeList`.
 pub fn getNode(self: *const Self, index: Node.Index) *const ast.Node {
-    // TODO: should this return a non-pointer instead?
     return &self.nodes.items[@intFromEnum(index)];
 }
 
@@ -2110,6 +2143,10 @@ fn makeLeftAssoc(
     return &S.parseFn;
 }
 
+// -----
+// Tests
+// -----
+
 const t = std.testing;
 
 const pretty = @import("./pretty.zig");
@@ -2124,20 +2161,44 @@ fn runTestOnFile(tests_dir: std.fs.Dir, file_path: []const u8) !void {
     var parser = try Self.init(t.allocator, source_code, file_path);
     defer parser.deinit();
 
-    const root_node = try parser.expression();
-    const pretty_ast = try pretty.toJsonString(t.allocator, &parser, root_node);
-    defer t.allocator.free(pretty_ast);
+    const root_node = parser.parse() catch |err| {
+        for (parser.diagnostics.items) |diagnostic| {
+            std.debug.print("({d}:{d}): {s}\n", .{
+                diagnostic.coord.line,
+                diagnostic.coord.column,
+                parser.diagnostic_messages.items[@intFromEnum(diagnostic.message)],
+            });
+        }
+        return err;
+    };
 
-    // The first line is a comment that has the expected JSON stringified AST.
-    const first_line_len = std.mem.indexOfScalar(u8, source_code, '\n') orelse unreachable;
-    const expected_json_str = source_code[2..first_line_len];
+    // 1. prettify the AST as a JSON string
+    const ast_json = try pretty.toJsonString(t.allocator, &parser, root_node);
+    defer t.allocator.free(ast_json);
 
-    try t.expectEqualStrings(expected_json_str, pretty_ast);
+    // 2. For every `<filename>.js`, read the corresponding `<filename>.json` file
+    const json_file_path = try std.mem.concat(
+        t.allocator,
+        u8,
+        &.{ file_path[0 .. file_path.len - 3], ".json" },
+    );
+    defer t.allocator.free(json_file_path);
+
+    const expected_ast_json = tests_dir.readFileAlloc(
+        t.allocator,
+        json_file_path,
+        std.math.maxInt(u32),
+    ) catch |err| {
+        std.debug.print("failed to read file: {s}\n", .{json_file_path});
+        return err;
+    };
+    defer t.allocator.free(expected_ast_json);
+
+    const expected_ast_json_trimmed = std.mem.trim(u8, expected_ast_json, "\n\t ");
+
+    // 3. ensure the AST JSON is equal to the expected JSON
+    try t.expectEqualStrings(expected_ast_json_trimmed, ast_json);
 }
-
-// -----
-// Tests
-// -----
 
 test StringHelper {
     _ = StringHelper;
@@ -2145,18 +2206,26 @@ test StringHelper {
 
 test parse {
     var root_dir = std.fs.cwd();
-    var tests_dir = try root_dir.openDir("expression-tests", .{});
+    var tests_dir = try root_dir.openDir("parser-tests", .{});
     defer tests_dir.close();
 
     var iter = tests_dir.iterate();
     while (try iter.next()) |entry| {
-        if (!std.mem.eql(u8, std.fs.path.extension(entry.name), ".js")) {
+        if (entry.kind != .directory) {
             continue;
         }
 
-        runTestOnFile(tests_dir, entry.name) catch |err| {
-            std.debug.print("Error comparing ASTs for file: {s}\n", .{entry.name});
-            return err;
-        };
+        var dir = try tests_dir.openDir(entry.name, .{});
+        defer dir.close();
+
+        var d_iter = dir.iterate();
+        while (try d_iter.next()) |test_case_entry| {
+            std.debug.assert(test_case_entry.kind == .file);
+            if (!std.mem.endsWith(u8, test_case_entry.name, ".js")) continue;
+            runTestOnFile(dir, test_case_entry.name) catch |err| {
+                std.debug.print("Error comparing ASTs for file: {s}\n", .{test_case_entry.name});
+                return err;
+            };
+        }
     }
 }

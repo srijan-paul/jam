@@ -5,11 +5,6 @@ const Context = @import("parser.zig").ParseContext;
 
 const util = @import("util");
 
-const types = util.types;
-
-pub const Coordinate = types.Coordinate;
-pub const Range = types.Range;
-
 const TokenizeError = error{
     UnexpectedEof,
     InvalidUtf8,

@@ -311,5 +311,8 @@ pub fn toJsonString(allocator: std.mem.Allocator, parser: *const Parser, node: a
     defer arena.deinit();
 
     const pretty_node = try toPretty(parser, al, node);
-    return try std.json.stringifyAlloc(allocator, pretty_node, .{});
+    return try std.json.stringifyAlloc(allocator, pretty_node, .{
+        .whitespace = .indent_2,
+        .emit_null_optional_fields = false,
+    });
 }

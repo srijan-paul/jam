@@ -1,2 +1,0 @@
-//{"object_literal":[{"object_property":{"key":{"identifier":"a"},"value":{"identifier":"a"},"flags":{"is_method":false,"is_shorthand":true,"is_computed":false,"kind":"init"}}},{"object_property":{"key":{"identifier":"b"},"value":{"identifier":"b"},"flags":{"is_method":false,"is_shorthand":true,"is_computed":false,"kind":"init"}}},{"spread_element":{"object_literal":[{"object_property":{"key":{"identifier":"x"},"value":{"literal":"1"},"flags":{"is_method":false,"is_shorthand":false,"is_computed":false,"kind":"init"}}}]}}]}
-({ a, b, ...{ x: 1 } })

@@ -1,0 +1,86 @@
+{
+  "program": [
+    {
+      "function": {
+        "parameters": {
+          "parameters": []
+        },
+        "body": {
+          "block_statement": [
+            {
+              "return_statement": {
+                "literal": "123"
+              }
+            }
+          ]
+        },
+        "info": {
+          "function": {
+            "name": "f1",
+            "flags": {
+              "is_generator": false,
+              "is_async": false,
+              "is_arrow": false,
+              "_": 0
+            }
+          }
+        }
+      }
+    },
+    {
+      "function": {
+        "parameters": {
+          "parameters": []
+        },
+        "body": {
+          "block_statement": [
+            {
+              "return_statement": null
+            },
+            {
+              "expression_statement": {
+                "literal": "123"
+              }
+            }
+          ]
+        },
+        "info": {
+          "function": {
+            "name": "f2",
+            "flags": {
+              "is_generator": false,
+              "is_async": false,
+              "is_arrow": false,
+              "_": 0
+            }
+          }
+        }
+      }
+    },
+    {
+      "function": {
+        "parameters": {
+          "parameters": []
+        },
+        "body": {
+          "block_statement": [
+            {
+              "return_statement": null
+            }
+          ]
+        },
+        "info": {
+          "function": {
+            "name": "f3",
+            "flags": {
+              "is_generator": false,
+              "is_async": false,
+              "is_arrow": false,
+              "_": 0
+            }
+          }
+        }
+      }
+    }
+  ]
+}

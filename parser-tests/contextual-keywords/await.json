@@ -1,0 +1,80 @@
+{
+  "program": [
+    {
+      "function": {
+        "parameters": {
+          "parameters": []
+        },
+        "body": {
+          "block_statement": [
+            {
+              "variable_declaration": {
+                "declarators": [
+                  {
+                    "variable_declarator": {
+                      "lhs": {
+                        "identifier": "await"
+                      },
+                      "init": {
+                        "literal": "123"
+                      }
+                    }
+                  }
+                ],
+                "kind": "let"
+              }
+            },
+            {
+              "return_statement": {
+                "identifier": "await"
+              }
+            }
+          ]
+        },
+        "info": {
+          "function": {
+            "name": "async",
+            "flags": {
+              "is_generator": false,
+              "is_async": false,
+              "is_arrow": false,
+              "_": 0
+            }
+          }
+        }
+      }
+    },
+    {
+      "function": {
+        "parameters": {
+          "parameters": []
+        },
+        "body": {
+          "block_statement": [
+            {
+              "return_statement": {
+                "await_expression": {
+                  "operand": {
+                    "literal": "123"
+                  },
+                  "operator": "await"
+                }
+              }
+            }
+          ]
+        },
+        "info": {
+          "function": {
+            "name": "async",
+            "flags": {
+              "is_generator": false,
+              "is_async": true,
+              "is_arrow": false,
+              "_": 0
+            }
+          }
+        }
+      }
+    }
+  ]
+}

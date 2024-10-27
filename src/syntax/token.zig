@@ -1,7 +1,6 @@
 const offsets = @import("util").offsets;
 const types = @import("util").types;
 
-pub const Range = types.Range;
 pub const Coordinate = types.Coordinate;
 
 pub const Token = struct {
@@ -153,19 +152,33 @@ pub const Token = struct {
         strict_mode_kw_end,
 
         // contextual keywords.
+        contextual_keywords_start,
         kw_as,
-        kw_async,
         kw_await,
+        kw_async,
         kw_constructor,
         kw_get,
         kw_set,
         kw_from,
         kw_of,
         kw_enum,
+        contextual_keywords_end,
 
         keywords_end,
 
         eof,
+
+        pub fn isContextualKeyword(self: Tag) bool {
+            const tag_u32: u32 = @intFromEnum(self);
+            return tag_u32 > @intFromEnum(Tag.contextual_keywords_start) and
+                tag_u32 < @intFromEnum(Tag.contextual_keywords_end);
+        }
+
+        pub fn isStrictModeKeyword(self: Tag) bool {
+            const tag_u32: u32 = @intFromEnum(self);
+            return tag_u32 > @intFromEnum(Tag.strict_mode_kw_start) and
+                tag_u32 < @intFromEnum(Tag.strict_mode_kw_end);
+        }
     };
 
     tag: Tag,
@@ -193,10 +206,10 @@ pub const Token = struct {
     }
 
     /// (line, column) range for the end of this token.
-    pub fn toRange(self: Token, source: []const u8) Range {
+    pub fn toRange(self: Token, source: []const u8) types.Range {
         // TODO: end-coord can be inferred from start-coord.
         // optimize this.
-        return Range{
+        return types.Range{
             .start = self.startCoord(source),
             .end = self.endCoord(source),
         };

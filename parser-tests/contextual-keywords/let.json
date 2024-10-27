@@ -1,0 +1,100 @@
+{
+  "program": [
+    {
+      "variable_declaration": {
+        "declarators": [
+          {
+            "variable_declarator": {
+              "lhs": {
+                "identifier": "a"
+              }
+            }
+          }
+        ],
+        "kind": "let"
+      }
+    },
+    {
+      "variable_declaration": {
+        "declarators": [
+          {
+            "variable_declarator": {
+              "lhs": {
+                "identifier": "let"
+              },
+              "init": {
+                "literal": "1"
+              }
+            }
+          }
+        ],
+        "kind": "var"
+      }
+    },
+    {
+      "expression_statement": {
+        "assignment_expression": {
+          "lhs": {
+            "identifier": "let"
+          },
+          "rhs": {
+            "object_literal": [
+              {
+                "object_property": {
+                  "key": {
+                    "identifier": "let"
+                  },
+                  "value": {
+                    "literal": "1"
+                  },
+                  "flags": {
+                    "is_method": false,
+                    "is_shorthand": false,
+                    "is_computed": false,
+                    "kind": "init"
+                  }
+                }
+              }
+            ]
+          },
+          "operator": "="
+        }
+      }
+    },
+    {
+      "expression_statement": {
+        "assignment_expression": {
+          "lhs": {
+            "member_expression": {
+              "object": {
+                "identifier": "let"
+              },
+              "property": "let"
+            }
+          },
+          "rhs": {
+            "literal": "1"
+          },
+          "operator": "="
+        }
+      }
+    },
+    {
+      "variable_declaration": {
+        "declarators": [
+          {
+            "variable_declarator": {
+              "lhs": {
+                "identifier": "_let"
+              },
+              "init": {
+                "identifier": "let"
+              }
+            }
+          }
+        ],
+        "kind": "let"
+      }
+    }
+  ]
+}
