@@ -1,6 +1,8 @@
 ## Handwritten expression parsing tests
 
-For more complete tests of the grammar, we use the ECMAScript tests262.
+> [!IMPORTANT]
+> For more complete tests of the grammar, we use the ECMAScript tests262.
+> This test suite is for some rough manual testing of edge cases.
 
 The tests in this directory are handwritten to verify the shape of a parse tree.
 The ASTs have been manually verified by comparing the output with parsers like ESpree and Meriyah.

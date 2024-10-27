@@ -1,0 +1,106 @@
+{
+  "program": [
+    {
+      "expression_statement": {
+        "conditional_expression": {
+          "condition": {
+            "binary_expression": {
+              "lhs": {
+                "binary_expression": {
+                  "lhs": {
+                    "binary_expression": {
+                      "lhs": {
+                        "identifier": "x"
+                      },
+                      "rhs": {
+                        "binary_expression": {
+                          "lhs": {
+                            "binary_expression": {
+                              "lhs": {
+                                "identifier": "o"
+                              },
+                              "rhs": {
+                                "binary_expression": {
+                                  "lhs": {
+                                    "identifier": "y"
+                                  },
+                                  "rhs": {
+                                    "identifier": "z"
+                                  },
+                                  "operator": "*"
+                                }
+                              },
+                              "operator": "+"
+                            }
+                          },
+                          "rhs": {
+                            "literal": "10"
+                          },
+                          "operator": "-"
+                        }
+                      },
+                      "operator": "|"
+                    }
+                  },
+                  "rhs": {
+                    "binary_expression": {
+                      "lhs": {
+                        "literal": "12"
+                      },
+                      "rhs": {
+                        "literal": "15"
+                      },
+                      "operator": "&"
+                    }
+                  },
+                  "operator": "|"
+                }
+              },
+              "rhs": {
+                "binary_expression": {
+                  "lhs": {
+                    "identifier": "b"
+                  },
+                  "rhs": {
+                    "identifier": "foo"
+                  },
+                  "operator": "/"
+                }
+              },
+              "operator": "&&"
+            }
+          },
+          "consequent": {
+            "identifier": "bar"
+          },
+          "alternate": {
+            "binary_expression": {
+              "lhs": {
+                "binary_expression": {
+                  "lhs": {
+                    "optional_expression": {
+                      "member_expression": {
+                        "object": {
+                          "identifier": "bar"
+                        },
+                        "property": "baz"
+                      }
+                    }
+                  },
+                  "rhs": {
+                    "identifier": "b"
+                  },
+                  "operator": "^"
+                }
+              },
+              "rhs": {
+                "identifier": "c"
+              },
+              "operator": "||"
+            }
+          }
+        }
+      }
+    }
+  ]
+}
