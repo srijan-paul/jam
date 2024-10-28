@@ -109,8 +109,7 @@ fn testOnPassingFile(
 }
 
 /// Read an existing `tools/results.json` file.
-pub fn readResultsFile(allocator: std.mem.Allocator) !TestResult {
-    const results_file_path = "tools" ++ std.fs.path.sep_str.* ++ "results.json";
+pub fn readResultsFile(allocator: std.mem.Allocator, results_file_path: []const u8) !std.json.Parsed(TestResult) {
     const previous_results_str = try std.fs.cwd().readFileAlloc(
         allocator,
         results_file_path,
@@ -123,8 +122,7 @@ pub fn readResultsFile(allocator: std.mem.Allocator) !TestResult {
         previous_results_str,
         .{},
     );
-    defer parsed.deinit();
-    return parsed.value;
+    return parsed;
 }
 
 /// Runs the JS parser on all files in `pass` and `pass-explicit` directories,
@@ -249,20 +247,33 @@ pub fn main() !void {
     const al = arena.allocator();
     defer arena.deinit();
 
+    // Run the current parser on all the files in `pass` and `pass-explicit`, then prepare results.
     const test_results = try runValidSyntaxTests(al);
 
     var args = std.process.args();
     _ = args.next();
 
     // When the `--compare` flag is passed, compare the new test results
-    // with the existing results in `results.json` and ensure there are no regressions.
-    const compare_with_old = if (args.next()) |s|
-        std.mem.eql(u8, s, "--compare")
-    else
-        false;
+    // with an existing `results.json` (in CI, its from the main branch),
+    // and ensure there are no regressions.
+    const existing_results_file_path: ?[]const u8 = blk: {
+        const arg_name = args.next() orelse break :blk null;
+        if (!std.mem.eql(u8, arg_name, "--compare")) {
+            std.log.err("unknown argument '{s}'; --compare is the only supported flag", .{arg_name});
+            break :blk null;
+        }
 
-    if (compare_with_old) {
-        const old_results = try readResultsFile(al);
+        if (args.next()) |file_path| {
+            break :blk file_path;
+        }
+        std.log.err("missing argument for --compare flag. Need a file path for results.json", .{});
+        std.process.exit(1);
+    };
+
+    if (existing_results_file_path) |results_json_path| {
+        const old_results_parsed = try readResultsFile(al, results_json_path);
+        defer old_results_parsed.deinit();
+        const old_results = old_results_parsed.value;
         const is_passing = try compareTestResults(&test_results, &old_results);
         std.process.exit(if (is_passing) 0 else 1);
     }

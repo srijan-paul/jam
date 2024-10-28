@@ -1,0 +1,25 @@
+name: tc39/test262-parser-tests 
+run-name: Run all the test262-parser-tests, and ensure there is no regression 
+on:
+  push:
+    branches:
+      - '**' 
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: Build and Test
+    steps:
+      - uses: actions/checkout@v3
+      - name: Clone tc39 parser tests
+        uses: tc39/test262-parser-tests
+      - name: Setup tc39 parser tests
+        run: | 
+          export JAM_TESTS_262_DIR=$(pwd)/test262-parser-tests
+      - name: Install zig 
+        uses: mlugg/setup-zig@v1
+        with:
+          version: master 
+      - name: Run the tests
+        run: zig build test-262
+
