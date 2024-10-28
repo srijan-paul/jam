@@ -22,5 +22,5 @@ jobs:
         with:
           version: master 
       - name: Run the tests
-        run: zig build test-262
+        run: zig build test-262 -- --compare ./tools/results.json
 
