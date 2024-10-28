@@ -2055,11 +2055,13 @@ pub fn getToken(self: *const Self, index: Token.Index) Token {
     return self.tokens.items[@intFromEnum(index)];
 }
 
+/// Get the start and end byte offset of a node in the source file.
 fn nodeSpan(self: *const Self, index: Node.Index) types.Span {
     const node = &self.nodes.items[@intFromEnum(index)];
     return .{ .start = node.start, .end = node.end };
 }
 
+/// Parses arguments for a function call, assuming the current_token is '('
 fn args(self: *Self) ParseError!Node.Index {
     const args_node, const start, const end = try self.parseArgs();
     return self.addNode(.{ .arguments = args_node }, start, end);

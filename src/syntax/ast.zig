@@ -124,7 +124,7 @@ pub const Conditional = struct {
     condition: Node.Index,
     consequent: Node.Index,
     /// Index to the "else" branch,
-    /// This can be 0 (i.e pointing to a `.none`)
+    /// This can be 0 (i.e point to a `.none` AST node)
     /// for an if-statement without an "else" branch.
     alternate: Node.Index,
 };
