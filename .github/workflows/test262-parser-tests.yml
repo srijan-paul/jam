@@ -5,6 +5,9 @@ on:
     branches:
       - '**' 
 
+env:
+  JAM_TESTS_262_DIR: ${{ github.workspace }}/test262-parser-tests
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -12,10 +15,8 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Clone tc39 parser tests
-        uses: tc39/test262-parser-tests
-      - name: Setup tc39 parser tests
-        run: | 
-          export JAM_TESTS_262_DIR=$(pwd)/test262-parser-tests
+        run: |
+          git clone --depth 1 https://github.com/tc39/test262-parser-tests
       - name: Install zig 
         uses: mlugg/setup-zig@v1
         with:
