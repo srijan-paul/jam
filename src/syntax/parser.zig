@@ -109,7 +109,7 @@ tokenizer: Tokenizer,
 /// This is an *append only* list.
 /// No function other than `saveState`, and `restoreState` should modify
 /// the existing items in this list.
-nodes: std.ArrayList(Node),
+nodes: std.MultiArrayList(Node),
 /// Extra information about a node, if any.
 extra_data: std.ArrayList(ast.ExtraData),
 /// List of tokens that are necessary to keep around
@@ -150,7 +150,7 @@ pub fn init(
 
         .diagnostics = try std.ArrayList(Diagnostic).initCapacity(allocator, 2),
         .diagnostic_messages = try std.ArrayList([]const u8).initCapacity(allocator, 2),
-        .nodes = try std.ArrayList(Node).initCapacity(allocator, 32),
+        .nodes = .{},
         .node_lists = try std.ArrayList(Node.Index).initCapacity(allocator, 32),
         .extra_data = try std.ArrayList(ast.ExtraData).initCapacity(allocator, 32),
         .tokens = try std.ArrayList(Token).initCapacity(allocator, 256),
@@ -172,7 +172,7 @@ pub fn init(
 }
 
 pub fn deinit(self: *Self) void {
-    self.nodes.deinit();
+    self.nodes.deinit(self.allocator);
     self.tokens.deinit();
     self.node_lists.deinit();
     self.extra_data.deinit();
@@ -194,7 +194,7 @@ fn saveState(self: *Self) error{OutOfMemory}!State {
         .context = self.context,
         .current_token = self.current_token,
         .next_token = self.next_token,
-        .nodes_len = self.nodes.items.len,
+        .nodes_len = self.nodes.len,
         .tokens_len = self.tokens.items.len,
         .extra_data_len = self.extra_data.items.len,
         .prev_token_line = self.prev_token_line,
@@ -209,7 +209,7 @@ fn restoreState(self: *Self, state: *State) error{OutOfMemory}!void {
     self.next_token = state.next_token;
     self.prev_token_line = state.prev_token_line;
 
-    self.nodes.items = self.nodes.items[0..state.nodes_len];
+    try self.nodes.resize(self.allocator, state.nodes_len);
     self.tokens.items = self.tokens.items[0..state.tokens_len];
     self.node_lists.items = self.node_lists.items[0..state.node_lists_len];
     self.extra_data.items = self.extra_data.items[0..state.extra_data_len];
@@ -319,7 +319,7 @@ fn whileStatement(self: *Self) ParseError!Node.Index {
     const cond = try self.expression();
     _ = try self.expect(.@")");
 
-    // todo: perform a labelled staement check here.
+    // todo: perform a labelled statement check here.
     const body = try self.statement();
     const end_pos = self.nodeSpan(body).end;
 
@@ -600,6 +600,12 @@ fn isKeywordIdentifier(self: *const Self, tag: Token.Tag) bool {
     }
 }
 
+/// Reserve a slot for node, then return the index of the reserved slot.
+fn reserveSlot(self: *Self) Node.Index {
+    try self.nodes.append(self.allocator, undefined);
+    return @enumFromInt(self.nodes.len - 1);
+}
+
 fn addNodeList(self: *Self, nodes: []Node.Index) error{OutOfMemory}!ast.NodeList {
     const from: ast.NodeList.Index = @enumFromInt(self.node_lists.items.len);
     try self.node_lists.appendSlice(nodes);
@@ -614,8 +620,11 @@ fn addToken(self: *Self, token: Token) error{OutOfMemory}!Token.Index {
 
 /// Append a node to the flat node list.
 fn addNode(self: *Self, node: NodeData, start: u32, end: u32) error{OutOfMemory}!Node.Index {
-    try self.nodes.append(.{ .data = node, .start = start, .end = end });
-    return @enumFromInt(self.nodes.items.len - 1);
+    try self.nodes.append(
+        self.allocator,
+        .{ .data = node, .start = start, .end = end },
+    );
+    return @enumFromInt(self.nodes.len - 1);
 }
 
 /// Append an ExtraData item to the list, and return its index.
@@ -724,12 +733,13 @@ fn expression(self: *Self) !Node.Index {
 
     _ = try nodes.append(expr);
 
-    const start_pos = self.nodes.items[@intFromEnum(expr)].start;
-    var end_pos = self.nodes.items[@intFromEnum(expr)].end;
+    const start_pos = self.nodes.items(.start)[@intFromEnum(expr)];
+    var end_pos = self.nodes.items(.start)[@intFromEnum(expr)];
+
     while (self.isAtToken(.@",")) {
         _ = try self.next(); // eat ','
         const rhs = try self.assignmentExpression();
-        end_pos = self.nodes.items[@intFromEnum(rhs)].end;
+        end_pos = self.nodes.items(.start)[@intFromEnum(rhs)];
         try nodes.append(rhs);
     }
 
@@ -820,8 +830,8 @@ fn assignmentExpression(self: *Self) ParseError!Node.Index {
     const op_token = try self.expect(.@"="); // eat '='
 
     const rhs = try self.assignmentExpression();
-    const start = self.nodes.items[@intFromEnum(rhs)].end;
-    const end = self.nodes.items[@intFromEnum(lhs)].start;
+    const start = self.nodeSpan(lhs).start;
+    const end = self.nodeSpan(rhs).end;
 
     return self.addNode(
         .{
@@ -837,14 +847,15 @@ fn assignmentExpression(self: *Self) ParseError!Node.Index {
 }
 
 fn coalesceExpression(self: *Self, start_expr: Node.Index) ParseError!Node.Index {
-    const start_pos = self.nodes.items[@intFromEnum(start_expr)].start;
-    var end_pos = self.nodes.items[@intFromEnum(start_expr)].end;
+    const start_expr_span = self.nodeSpan(start_expr);
+    const start_pos = start_expr_span.start;
+    var end_pos = start_expr_span.end;
 
     var expr: Node.Index = start_expr;
     while (self.isAtToken(.@"??")) {
         const op = try self.next(); // eat '??'
         const rhs = try bOrExpr(self);
-        end_pos = self.nodes.items[@intFromEnum(rhs)].end;
+        end_pos = self.nodeSpan(rhs).end;
         expr = try self.addNode(
             .{
                 .binary_expr = .{
@@ -866,7 +877,7 @@ fn coalesceExpression(self: *Self, start_expr: Node.Index) ParseError!Node.Index
 ///    CoalesceExpression
 fn shortCircuitExpresion(self: *Self) ParseError!Node.Index {
     const expr = try lOrExpr(self);
-    switch (self.nodes.items[@intFromEnum(expr)].data) {
+    switch (self.nodes.items(.data)[@intFromEnum(expr)]) {
         .binary_expr => |pl| {
             const op_tag = self.tokens.items[@intFromEnum(pl.operator)].tag;
             if (op_tag == .@"||" or op_tag == .@"&&") {
@@ -903,7 +914,7 @@ fn yieldExpression(self: *Self) ParseError!Node.Index {
     var end_pos = yield_kw.start + yield_kw.len;
     if (has_operand) {
         const operand_expr = try self.assignmentExpression();
-        end_pos = self.nodes.items[@intFromEnum(operand_expr)].end;
+        end_pos = self.nodes.items(.end)[@intFromEnum(operand_expr)];
         operand = operand_expr;
     }
 
@@ -925,8 +936,8 @@ fn conditionalExpression(self: *Self) ParseError!Node.Index {
     _ = try self.expect(.@":");
     const false_expr = try self.assignmentExpression();
 
-    const start_pos = self.nodes.items[@intFromEnum(cond_expr)].start;
-    const end_pos = self.nodes.items[@intFromEnum(false_expr)].end;
+    const start_pos = self.nodes.items(.start)[@intFromEnum(cond_expr)];
+    const end_pos = self.nodes.items(.end)[@intFromEnum(false_expr)];
 
     return try self.addNode(
         .{
@@ -948,8 +959,8 @@ fn assignmentPattern(self: *Self) ParseError!Node.Index {
 
     const op_token = try self.next(); // eat '='
     const rhs = try self.assignmentExpression();
-    const lhs_start_pos = self.nodes.items[@intFromEnum(lhs)].start;
-    const rhs_end_pos = self.nodes.items[@intFromEnum(rhs)].end;
+    const lhs_start_pos = self.nodes.items(.start)[@intFromEnum(lhs)];
+    const rhs_end_pos = self.nodes.items(.end)[@intFromEnum(rhs)];
     return try self.addNode(
         .{
             .assignment_pattern = .{
@@ -988,7 +999,7 @@ fn arrayAssignmentPattern(self: *Self) ParseError!Node.Index {
                 _ = try self.next(); // eat '...'
                 const start_pos = token.start;
                 const spread_elem = try self.lhsExpression();
-                const end_pos = self.nodes.items[@intFromEnum(spread_elem)].end;
+                const end_pos = self.nodes.items(.end)[@intFromEnum(spread_elem)];
                 try items.append(
                     try self.addNode(.{ .spread_element = spread_elem }, start_pos, end_pos),
                 );
@@ -1025,8 +1036,8 @@ fn completePropertyPatternDef(self: *Self, key: Node.Index) ParseError!Node.Inde
     _ = try self.expect(.@":");
 
     const value = try self.assignmentPattern();
-    const start_pos = self.nodes.items[@intFromEnum(key)].start;
-    const end_pos = self.nodes.items[@intFromEnum(value)].end;
+    const start_pos = self.nodes.items(.start)[@intFromEnum(key)];
+    const end_pos = self.nodes.items(.end)[@intFromEnum(value)];
 
     return self.addNode(
         .{ .object_property = .{ .key = key, .value = value } },
@@ -1116,7 +1127,7 @@ fn objectAssignmentPattern(self: *Self) ParseError!Node.Index {
                 _ = try self.next(); // eat '...'
                 const start_pos = cur_token.start;
                 const expr = try self.lhsExpression();
-                const end = self.nodes.items[@intFromEnum(expr)].end;
+                const end = self.nodes.items(.end)[@intFromEnum(expr)];
                 const spread_expr = try self.addNode(.{ .spread_element = expr }, start_pos, end);
                 try props.append(spread_expr);
                 break; // spread element must be the last element
@@ -1166,7 +1177,7 @@ fn unaryExpression(self: *Self) ParseError!Node.Index {
         => {
             const op_token = try self.next();
             const expr = try self.unaryExpression();
-            const expr_end_pos = self.nodes.items[@intFromEnum(expr)].end;
+            const expr_end_pos = self.nodes.items(.end)[@intFromEnum(expr)];
             return try self.addNode(.{
                 .unary_expr = ast.UnaryPayload{
                     .operand = expr,
@@ -1220,7 +1231,7 @@ fn updateExpression(self: *Self) ParseError!Node.Index {
     if (token.tag == .@"++" or token.tag == .@"--") {
         const op_token = try self.next();
         const expr = try self.unaryExpression();
-        const expr_end_pos = self.nodes.items[@intFromEnum(expr)].end;
+        const expr_end_pos = self.nodes.items(.end)[@intFromEnum(expr)];
         return self.addNode(.{
             .update_expr = ast.UnaryPayload{
                 .operand = expr,
@@ -1237,7 +1248,7 @@ fn updateExpression(self: *Self) ParseError!Node.Index {
         cur_token.line == expr_start_line)
     {
         const op_token = try self.next();
-        const expr_end_pos = self.nodes.items[@intFromEnum(expr)].end;
+        const expr_end_pos = self.nodes.items(.end)[@intFromEnum(expr)];
         return self.addNode(.{
             .post_unary_expr = .{
                 .operand = expr,
@@ -1281,7 +1292,7 @@ fn tryNewExpression(self: *Self) ParseError!?Node.Index {
     if (self.isAtToken(.kw_new)) {
         const new_token = try self.next(); // eat "new"
         const expr = try self.memberExpression();
-        const expr_end_pos = self.nodes.items[@intFromEnum(expr)].end;
+        const expr_end_pos = self.nodes.items(.end)[@intFromEnum(expr)];
         return try self.addNode(.{
             .new_expr = .{
                 .callee = expr,
@@ -1321,21 +1332,21 @@ fn tryCallExpression(self: *Self, callee: Node.Index) ParseError!?Node.Index {
 }
 
 fn completeCallExpression(self: *Self, callee: Node.Index) ParseError!Node.Index {
-    const start_pos = self.nodes.items[@intFromEnum(callee)].start;
+    const start_pos = self.nodes.items(.start)[@intFromEnum(callee)];
     const call_args = try self.args();
     const call_expr = ast.CallExpr{
         .arguments = call_args,
         .callee = callee,
     };
-    const end_pos = self.nodes.items[@intFromEnum(call_args)].end;
+    const end_pos = self.nodes.items(.end)[@intFromEnum(call_args)];
     return self.addNode(.{ .call_expr = call_expr }, start_pos, end_pos);
 }
 
 // CoverCallAndAsyncArrowHead:  MemberExpression Arguments
 fn coverCallAndAsyncArrowHead(self: *Self, callee: Node.Index) ParseError!Node.Index {
     const call_args = try self.args();
-    const start_pos = self.nodes.items[@intFromEnum(callee)].start;
-    const end_pos = self.nodes.items[@intFromEnum(call_args)].end;
+    const start_pos = self.nodes.items(.start)[@intFromEnum(callee)];
+    const end_pos = self.nodes.items(.end)[@intFromEnum(call_args)];
 
     return self.addNode(.{
         .call_expr = .{
@@ -1365,24 +1376,24 @@ fn optionalExpression(self: *Self, object: Node.Index) ParseError!Node.Index {
 /// see: `Self.optionalChain`.
 fn completeOptionalChain(self: *Self, prev_expr: Node.Index) ParseError!Node.Index {
     var expr = try self.optionalChain(prev_expr);
-    const start_pos = self.nodes.items[@intFromEnum(expr)].start;
+    const start_pos = self.nodes.items(.start)[@intFromEnum(expr)];
 
     var cur_token = self.peek();
     while (cur_token.tag != .eof) : (cur_token = self.peek()) {
         switch (cur_token.tag) {
             .@"[" => {
                 const member_expr = try self.completeComputedMemberExpression(expr);
-                const end_pos = self.nodes.items[@intFromEnum(member_expr)].end;
+                const end_pos = self.nodes.items(.end)[@intFromEnum(member_expr)];
                 expr = try self.addNode(.{ .optional_expr = member_expr }, start_pos, end_pos);
             },
             .@"." => {
                 const member_expr = try self.completeMemberExpression(expr);
-                const end_pos = self.nodes.items[@intFromEnum(member_expr)].end;
+                const end_pos = self.nodes.items(.end)[@intFromEnum(member_expr)];
                 expr = try self.addNode(.{ .optional_expr = member_expr }, start_pos, end_pos);
             },
             .@"(" => {
                 const call_expr = try self.completeCallExpression(expr);
-                const end_pos = self.nodes.items[@intFromEnum(call_expr)].end;
+                const end_pos = self.nodes.items(.end)[@intFromEnum(call_expr)];
                 expr = try self.addNode(.{ .optional_expr = call_expr }, start_pos, end_pos);
             },
             else => return expr,
@@ -1397,7 +1408,7 @@ fn completeOptionalChain(self: *Self, prev_expr: Node.Index) ParseError!Node.Ind
 ///
 /// See: https://262.ecma-international.org/15.0/index.html#prod-OptionalExpression
 fn optionalChain(self: *Self, object: Node.Index) ParseError!Node.Index {
-    const start_pos = self.nodes.items[@intFromEnum(object)].start;
+    const start_pos = self.nodes.items(.start)[@intFromEnum(object)];
 
     const chain_op = try self.next();
     std.debug.assert(chain_op.tag == .@"?.");
@@ -1407,7 +1418,7 @@ fn optionalChain(self: *Self, object: Node.Index) ParseError!Node.Index {
     switch (cur_token.tag) {
         .@"(" => {
             const call_args = try self.args();
-            const end_pos = self.nodes.items[@intFromEnum(call_args)].end;
+            const end_pos = self.nodes.items(.end)[@intFromEnum(call_args)];
             const call_expr = try self.addNode(.{
                 .call_expr = .{
                     .arguments = call_args,
@@ -1418,7 +1429,7 @@ fn optionalChain(self: *Self, object: Node.Index) ParseError!Node.Index {
         },
         .@"[" => {
             const expr = try self.completeComputedMemberExpression(object);
-            const end_pos = self.nodes.items[@intFromEnum(expr)].end;
+            const end_pos = self.nodes.items(.end)[@intFromEnum(expr)];
             return self.addNode(.{ .optional_expr = expr }, start_pos, end_pos);
         },
         else => {
@@ -1459,7 +1470,7 @@ fn completeMemberExpression(self: *Self, object: Node.Index) ParseError!Node.Ind
     const dot = try self.next(); // eat "."
     std.debug.assert(dot.tag == .@".");
 
-    const start_pos = self.nodes.items[@intFromEnum(object)].start;
+    const start_pos = self.nodes.items(.start)[@intFromEnum(object)];
 
     const property_token_idx: Token.Index = blk: {
         const tok = try self.next();
@@ -1498,8 +1509,8 @@ fn completeComputedMemberExpression(self: *Self, object: Node.Index) ParseError!
         .property = property,
     };
 
-    const start_pos = self.nodes.items[@intFromEnum(object)].start;
-    const end_pos = self.nodes.items[@intFromEnum(property)].end;
+    const start_pos = self.nodes.items(.start)[@intFromEnum(object)];
+    const end_pos = self.nodes.items(.end)[@intFromEnum(property)];
     return self.addNode(.{ .computed_member_expr = property_access }, start_pos, end_pos);
 }
 
@@ -1626,7 +1637,7 @@ fn propertyDefinitionList(self: *Self) ParseError!?ast.NodeList {
                 const ellipsis_tok = try self.next();
                 const expr = try self.assignmentExpression();
                 const start = ellipsis_tok.start;
-                const end = self.nodes.items[@intFromEnum(expr)].end;
+                const end = self.nodes.items(.end)[@intFromEnum(expr)];
                 try property_defs.append(try self.addNode(.{ .spread_element = expr }, start, end));
             },
             else => {
@@ -1684,7 +1695,7 @@ fn identifierProperty(self: *Self) ParseError!Node.Index {
                 .{ .is_async = true },
             );
 
-            const end_pos = self.nodes.items[@intFromEnum(property_val)].end;
+            const end_pos = self.nodes.items(.end)[@intFromEnum(property_val)];
             return self.addNode(.{
                 .object_property = .{
                     .key = property_key,
@@ -1814,7 +1825,7 @@ fn parseMethodBody(
         try self.checkGetterOrSetterParams(func_expr, flags.kind);
     }
 
-    const key_start = self.nodes.items[@intFromEnum(key)].start;
+    const key_start = self.nodes.items(.start)[@intFromEnum(key)];
     return self.addNode(
         .{ .object_property = kv_node },
         key_start,
@@ -1869,8 +1880,8 @@ fn completePropertyDef(
     _ = try self.expect(.@":");
 
     const value = try self.assignmentExpression();
-    const start_pos = self.nodes.items[@intFromEnum(key)].start;
-    const end_pos = self.nodes.items[@intFromEnum(value)].end;
+    const start_pos = self.nodes.items(.start)[@intFromEnum(key)];
+    const end_pos = self.nodes.items(.end)[@intFromEnum(value)];
     const kv_node = ast.PropertyDefinition{
         .key = key,
         .value = value,
@@ -1909,7 +1920,7 @@ fn arrayLiteral(self: *Self, start_pos: u32) ParseError!Node.Index {
                 const ellipsis_tok = try self.next();
                 const expr = try self.assignmentExpression();
                 const start = ellipsis_tok.start;
-                const end = self.nodes.items[@intFromEnum(expr)].end;
+                const end = self.nodes.items(.end)[@intFromEnum(expr)];
                 try elements.append(try self.addNode(.{ .spread_element = expr }, start, end));
             },
 
@@ -2028,8 +2039,8 @@ fn parseFormalParameters(self: *Self) ParseError!Node.Index {
 
 /// Get a pointer to a node by its index.
 /// The returned value can be invalidated by any call to `addNode`, `restoreState`, `addNodeList`.
-pub fn getNode(self: *const Self, index: Node.Index) *const ast.Node {
-    return &self.nodes.items[@intFromEnum(index)];
+pub fn getNode(self: *const Self, index: Node.Index) ast.Node {
+    return self.nodes.get(@intFromEnum(index));
 }
 
 pub fn getExtraData(
@@ -2057,8 +2068,9 @@ pub fn getToken(self: *const Self, index: Token.Index) Token {
 
 /// Get the start and end byte offset of a node in the source file.
 fn nodeSpan(self: *const Self, index: Node.Index) types.Span {
-    const node = &self.nodes.items[@intFromEnum(index)];
-    return .{ .start = node.start, .end = node.end };
+    const start = self.nodes.items(.start)[@intFromEnum(index)];
+    const end = self.nodes.items(.end)[@intFromEnum(index)];
+    return .{ .start = start, .end = end };
 }
 
 /// Parses arguments for a function call, assuming the current_token is '('
@@ -2103,8 +2115,8 @@ fn makeRightAssoc(
                 _ = try self.next();
 
                 const rhs = try parseFn(self);
-                const start_pos = self.nodes.items[@intFromEnum(node)].start;
-                const end_pos = self.nodes.items[@intFromEnum(rhs)].end;
+                const start_pos = self.nodes.items(.start)[@intFromEnum(node)];
+                const end_pos = self.nodes.items(.end)[@intFromEnum(rhs)];
                 node = try self.addNode(.{
                     .binary_expr = .{
                         .lhs = node,
@@ -2141,8 +2153,8 @@ fn makeLeftAssoc(
                     _ = try self.next();
                     const rhs = try nextFn(self);
 
-                    const start_pos = self.nodes.items[@intFromEnum(node)].start;
-                    const end_pos = self.nodes.items[@intFromEnum(rhs)].end;
+                    const start_pos = self.nodes.items(.start)[@intFromEnum(node)];
+                    const end_pos = self.nodes.items(.end)[@intFromEnum(rhs)];
                     node = try self.addNode(.{
                         .binary_expr = .{
                             .lhs = node,

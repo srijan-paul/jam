@@ -42,6 +42,14 @@ pub fn main() !void {
         return err;
     };
 
+    // for (0.., parser.nodes.items) |i, value| {
+    //     std.debug.print("{d}: {s}\n", .{ i, @tagName(value.data) });
+    // }
+    //
+    // for (parser.node_lists.items) |idx| {
+    //     std.debug.print("{d}\n", .{ idx });
+    // }
+
     const s = try syntax.pretty.toJsonString(allocator, &parser, node_idx);
     defer allocator.free(s);
 

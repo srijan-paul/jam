@@ -68,7 +68,7 @@ fn toPretty(
     al: std.mem.Allocator,
     node_id: Node.Index,
 ) !ast.NodePretty {
-    const node = self.nodes.items[@intFromEnum(node_id)];
+    const node = self.nodes.get(@intFromEnum(node_id));
     switch (node.data) {
         .binary_expr,
         .assignment_expr,
