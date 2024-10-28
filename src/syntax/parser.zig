@@ -245,15 +245,10 @@ pub fn parse(self: *Self) !Node.Index {
 fn statement(self: *Self) ParseError!Node.Index {
     const stmt = blk: {
         switch (self.peek().tag) {
-            .@"{" => {
-                break :blk self.blockStatement();
-            },
-            .@";" => {
-                break :blk self.emptyStatement();
-            },
-            .kw_if => {
-                break :blk self.ifStatement();
-            },
+            .@"{" => break :blk self.blockStatement(),
+            .@";" => break :blk self.emptyStatement(),
+            .kw_if => break :blk self.ifStatement(),
+            .kw_while => break :blk self.whileStatement(),
             .kw_debugger => {
                 const token = try self.next();
                 const end_pos = try self.semiColon(token.start + token.len);
@@ -312,6 +307,25 @@ fn ifStatement(self: *Self) ParseError!Node.Index {
             },
         },
         if_kw.start,
+        end_pos,
+    );
+}
+
+fn whileStatement(self: *Self) ParseError!Node.Index {
+    const while_kw = try self.next();
+    std.debug.assert(while_kw.tag == .kw_while);
+
+    _ = try self.expect(.@"(");
+    const cond = try self.expression();
+    _ = try self.expect(.@")");
+
+    // todo: perform a labelled staement check here.
+    const body = try self.statement();
+    const end_pos = self.nodeSpan(body).end;
+
+    return self.addNode(
+        .{ .while_statement = .{ .condition = cond, .body = body } },
+        while_kw.start,
         end_pos,
     );
 }

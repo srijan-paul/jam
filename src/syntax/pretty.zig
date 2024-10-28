@@ -65,7 +65,7 @@ fn escapeUtf8(allocator: std.mem.Allocator, str: []const u8) ![]const u8 {
 /// in a human readable form.
 fn toPretty(
     self: *const Parser,
-    allocator: std.mem.Allocator,
+    al: std.mem.Allocator,
     node_id: Node.Index,
 ) !ast.NodePretty {
     const node = self.nodes.items[@intFromEnum(node_id)];
@@ -74,8 +74,8 @@ fn toPretty(
         .assignment_expr,
         .assignment_pattern,
         => |payload| {
-            const lhs = try copy(allocator, try toPretty(self, allocator, payload.lhs));
-            const rhs = try copy(allocator, try toPretty(self, allocator, payload.rhs));
+            const lhs = try copy(al, try toPretty(self, al, payload.lhs));
+            const rhs = try copy(al, try toPretty(self, al, payload.rhs));
             const token = self.tokens.items[@intFromEnum(payload.operator)];
 
             const operator = token.toByteSlice(self.source);
@@ -103,7 +103,7 @@ fn toPretty(
             const token = self.tokens.items[@intFromEnum(tok_id)];
             if (checkActiveField(node.data, "identifier")) {
                 const id = token.toByteSlice(self.source);
-                const escaped = try escapeUtf8(allocator, id);
+                const escaped = try escapeUtf8(al, id);
                 return .{ .identifier = escaped };
             } else {
                 return .{ .literal = token.toByteSlice(self.source) };
@@ -112,7 +112,7 @@ fn toPretty(
 
         .this => return .{ .this = {} },
         .member_expr => |payload| {
-            const obj = try copy(allocator, try toPretty(self, allocator, payload.object));
+            const obj = try copy(al, try toPretty(self, al, payload.object));
             const member = self.tokens.items[@intFromEnum(payload.property)];
             return .{ .member_expression = .{
                 .object = obj,
@@ -121,8 +121,8 @@ fn toPretty(
         },
 
         .computed_member_expr => |payload| {
-            const obj = try copy(allocator, try toPretty(self, allocator, payload.object));
-            const member = try copy(allocator, try toPretty(self, allocator, payload.property));
+            const obj = try copy(al, try toPretty(self, al, payload.object));
+            const member = try copy(al, try toPretty(self, al, payload.property));
             return .{
                 .computed_member_expression = .{
                     .object = obj,
@@ -133,8 +133,8 @@ fn toPretty(
 
         .update_expr, .post_unary_expr, .unary_expr, .await_expr => |payload| {
             const operand = try copy(
-                allocator,
-                try toPretty(self, allocator, payload.operand),
+                al,
+                try toPretty(self, al, payload.operand),
             );
             const token = self.tokens.items[@intFromEnum(payload.operator)];
             const unary_pl = .{
@@ -152,7 +152,7 @@ fn toPretty(
 
         .yield_expr => |pl| {
             const value = if (pl.value) |v|
-                try copy(allocator, try toPretty(self, allocator, v))
+                try copy(al, try toPretty(self, al, v))
             else
                 null;
             return ast.NodePretty{
@@ -164,12 +164,12 @@ fn toPretty(
         },
 
         .super_call_expr, .arguments => |maybe_args| return .{
-            .arguments = try prettyNodeList(allocator, self, maybe_args),
+            .arguments = try prettyNodeList(al, self, maybe_args),
         },
 
         .call_expr, .new_expr => |payload| {
-            const callee = try copy(allocator, try toPretty(self, allocator, payload.callee));
-            const arguments = try copy(allocator, try toPretty(self, allocator, payload.arguments));
+            const callee = try copy(al, try toPretty(self, al, payload.callee));
+            const arguments = try copy(al, try toPretty(self, al, payload.arguments));
             return if (checkActiveField(node.data, "call_expr")) .{
                 .call_expression = .{
                     .callee = callee,
@@ -185,36 +185,36 @@ fn toPretty(
 
         .sequence_expr => |nodes| {
             return .{
-                .sequence_expression = try prettyNodeList(allocator, self, nodes),
+                .sequence_expression = try prettyNodeList(al, self, nodes),
             };
         },
 
         .optional_expr => |payload| {
-            const expr = try copy(allocator, try toPretty(self, allocator, payload));
+            const expr = try copy(al, try toPretty(self, al, payload));
             return .{ .optional_expression = expr };
         },
 
         .empty_array_item => return .{ .empty_array_item = {} },
         .array_literal => |items| return .{
-            .array = try prettyNodeList(allocator, self, items),
+            .array = try prettyNodeList(al, self, items),
         },
 
         .array_pattern => |items| return .{
-            .array_pattern = try prettyNodeList(allocator, self, items),
+            .array_pattern = try prettyNodeList(al, self, items),
         },
 
         .object_literal => |properties| return .{
-            .object_literal = try prettyNodeList(allocator, self, properties),
+            .object_literal = try prettyNodeList(al, self, properties),
         },
 
         .object_pattern => |properties| return .{
-            .object_pattern = try prettyNodeList(allocator, self, properties),
+            .object_pattern = try prettyNodeList(al, self, properties),
         },
 
         .object_property => |prop| return ast.NodePretty{
             .object_property = .{
-                .key = try copy(allocator, try toPretty(self, allocator, prop.key)),
-                .value = try copy(allocator, try toPretty(self, allocator, prop.value)),
+                .key = try copy(al, try toPretty(self, al, prop.key)),
+                .value = try copy(al, try toPretty(self, al, prop.value)),
                 .flags = .{
                     .is_computed = prop.flags.is_computed,
                     .is_shorthand = prop.flags.is_shorthand,
@@ -224,13 +224,13 @@ fn toPretty(
             },
         },
         .spread_element => |payload| {
-            const expr = try copy(allocator, try toPretty(self, allocator, payload));
+            const expr = try copy(al, try toPretty(self, al, payload));
             return .{ .spread_element = expr };
         },
 
         .return_statement => |operand| {
             const ret_operand = if (operand) |arg|
-                try copy(allocator, try toPretty(self, allocator, arg))
+                try copy(al, try toPretty(self, al, arg))
             else
                 null;
             return .{
@@ -239,9 +239,9 @@ fn toPretty(
         },
 
         .conditional_expr, .if_statement => |cond_expr| {
-            const cond = try copy(allocator, try toPretty(self, allocator, cond_expr.condition));
-            const consequent = try copy(allocator, try toPretty(self, allocator, cond_expr.consequent));
-            const alternate = try copy(allocator, try toPretty(self, allocator, cond_expr.alternate));
+            const cond = try copy(al, try toPretty(self, al, cond_expr.condition));
+            const consequent = try copy(al, try toPretty(self, al, cond_expr.consequent));
+            const alternate = try copy(al, try toPretty(self, al, cond_expr.alternate));
             const conditional = .{
                 .condition = cond,
                 .consequent = consequent,
@@ -255,23 +255,35 @@ fn toPretty(
             };
         },
 
+        .while_statement => |stmt| {
+            const cond = try copy(al, try toPretty(self, al, stmt.condition));
+            const body = try copy(al, try toPretty(self, al, stmt.body));
+
+            return .{
+                .while_statement = .{
+                    .condition = cond,
+                    .body = body,
+                },
+            };
+        },
+
         .expression_statement => |expr| {
-            const expression = try copy(allocator, try toPretty(self, allocator, expr));
+            const expression = try copy(al, try toPretty(self, al, expr));
             return .{ .expression_statement = expression };
         },
 
         .block_statement => |block| {
-            const body = try prettyNodeList(allocator, self, block);
+            const body = try prettyNodeList(al, self, block);
             return .{ .block_statement = body };
         },
 
         .program => |block| {
-            const body = try prettyNodeList(allocator, self, block);
+            const body = try prettyNodeList(al, self, block);
             return .{ .program = body };
         },
 
         .parameters => |params| {
-            const p_list = try prettyNodeList(allocator, self, params);
+            const p_list = try prettyNodeList(al, self, params);
             return .{ .parameters = p_list };
         },
 
@@ -279,9 +291,9 @@ fn toPretty(
         .debugger_statement => return .{ .debugger_statement = {} },
 
         .variable_declarator => |decl| {
-            const lhs = try copy(allocator, try toPretty(self, allocator, decl.lhs));
+            const lhs = try copy(al, try toPretty(self, al, decl.lhs));
             const init = if (decl.init) |init|
-                try copy(allocator, try toPretty(self, allocator, init))
+                try copy(al, try toPretty(self, al, init))
             else
                 null;
             return .{
@@ -293,7 +305,7 @@ fn toPretty(
         },
 
         .variable_declaration => |d| {
-            const decls = try prettyNodeList(allocator, self, d.declarators);
+            const decls = try prettyNodeList(al, self, d.declarators);
             return .{
                 .variable_declaration = .{
                     .declarators = decls,
@@ -303,8 +315,8 @@ fn toPretty(
         },
 
         .function_expr, .function_declaration => |f| {
-            const body = try copy(allocator, try toPretty(self, allocator, f.body));
-            const params = try copy(allocator, try toPretty(self, allocator, f.parameters));
+            const body = try copy(al, try toPretty(self, al, f.body));
+            const params = try copy(al, try toPretty(self, al, f.parameters));
             const info = self.extra_data.items[@intFromEnum(f.info)];
             const func_flags = info.function.flags;
             const func_name = f.getName(self);

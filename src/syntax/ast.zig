@@ -129,6 +129,11 @@ pub const Conditional = struct {
     alternate: Node.Index,
 };
 
+pub const WhileStatement = struct {
+    condition: Node.Index,
+    body: Node.Index,
+};
+
 pub const VariableDeclarator = struct {
     lhs: Node.Index,
     init: ?Node.Index,
@@ -205,6 +210,7 @@ pub const NodeData = union(enum(u8)) {
     function_declaration: Function,
     debugger_statement: void,
     if_statement: Conditional,
+    while_statement: WhileStatement,
     parameters: ?NodeList,
     return_statement: ?Node.Index,
 
@@ -287,6 +293,7 @@ pub const NodePretty = union(enum) {
     expression_statement: Pretty(Node.Index),
     block_statement: Pretty(NodeList),
     if_statement: Pretty(Conditional),
+    while_statement: Pretty(WhileStatement),
     variable_declaration: Pretty(VariableDeclaration),
     variable_declarator: Pretty(VariableDeclarator),
     return_statement: Pretty(?Node.Index),
