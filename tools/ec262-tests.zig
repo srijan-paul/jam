@@ -133,13 +133,13 @@ pub fn readResultsFile(allocator: std.mem.Allocator) !TestResult {
 pub fn runValidSyntaxTests(al: std.mem.Allocator) !TestResult {
     const tests_dir = try std.process.getEnvVarOwned(al, "JAM_TESTS_262_DIR");
 
-    var d = try std.fs.openDirAbsolute(tests_dir, .{});
+    var d = try std.fs.openDirAbsolute(tests_dir, .{ .iterate = true });
     defer d.close();
 
-    var pass_dir = try d.openDir("pass", .{});
+    var pass_dir = try d.openDir("pass", .{ .iterate = true });
     defer pass_dir.close();
 
-    var pass_explicit_dir = try d.openDir("pass-explicit", .{});
+    var pass_explicit_dir = try d.openDir("pass-explicit", .{ .iterate = true });
     defer pass_explicit_dir.close();
 
     var pass_dir_iter = pass_explicit_dir.iterate();

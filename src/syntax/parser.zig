@@ -2209,7 +2209,7 @@ test StringHelper {
 
 test parse {
     var root_dir = std.fs.cwd();
-    var tests_dir = try root_dir.openDir("parser-tests", .{});
+    var tests_dir = try root_dir.openDir("parser-tests", .{ .iterate = true });
     defer tests_dir.close();
 
     var iter = tests_dir.iterate();
@@ -2218,7 +2218,7 @@ test parse {
             continue;
         }
 
-        var dir = try tests_dir.openDir(entry.name, .{});
+        var dir = try tests_dir.openDir(entry.name, .{ .iterate = true });
         defer dir.close();
 
         var d_iter = dir.iterate();
