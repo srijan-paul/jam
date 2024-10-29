@@ -89,18 +89,22 @@ fn testOnPassingFile(
 
     _ = try parser2.parse();
 
-    if (parser.nodes.items.len != parser2.nodes.items.len) {
+    for (pass_exceptions) |exception_filename| {
+        if (std.mem.eql(u8, file_name, exception_filename)) {
+            return ParseResult.pass;
+        }
+    }
+
+    if (parser.nodes.len != parser2.nodes.len) {
         return ParseResult.ast_no_match;
     }
 
-    for (parser.nodes.items, parser2.nodes.items) |n1, n2| {
+    for (0..parser.nodes.len) |i| {
+        const n1 = parser.nodes.get(i);
+        const n2 = parser.nodes.get(i);
+
         if (std.meta.activeTag(n1.data) != std.meta.activeTag(n2.data)) {
             // see `pass_exceptions` array.
-            for (pass_exceptions) |exception_filename| {
-                if (std.mem.eql(u8, file_name, exception_filename)) {
-                    return ParseResult.pass;
-                }
-            }
             return ParseResult.ast_no_match;
         }
     }
