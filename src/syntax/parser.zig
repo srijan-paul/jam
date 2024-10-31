@@ -22,7 +22,9 @@ const ParseError = error{
     LetInStrictMode,
     InvalidSetter,
     InvalidGetter,
+    InvalidObject,
     InvalidPropertyName,
+    UnexpectedPattern,
     ExpectedSemicolon,
 } || Tokenizer.Error;
 const ParseFn = fn (self: *Self) ParseError!Node.Index;
@@ -71,7 +73,8 @@ pub const ParseContext = packed struct(u8) {
     /// Are we in strict mode?
     strict: bool = false,
     in: bool = false,
-    _: bool = false,
+    /// Is an assignment pattern allowed in the current context?
+    is_pattern_allowed: bool = false,
 };
 
 // arranged in highest to lowest binding order
@@ -134,6 +137,20 @@ prev_token_line: u32 = 0,
 strings: StringHelper,
 /// The current grammatical context of the parser. See struct `ParseContext`.
 context: ParseContext = .{},
+/// The kind of destructuring that is allowed for the expression
+/// that was just parsed by the parser.
+current_destructure_kind: DestructureKind = .can_destruct,
+
+const DestructureKind = enum(u8) {
+    can_destruct = 0b00,
+    must_destruct = 0b01,
+    cannot_destruct = 0b10,
+    bad_object_or_pattern = 0b11,
+
+    inline fn asU8(self: DestructureKind) u8 {
+        return @intFromEnum(self);
+    }
+};
 
 pub fn init(
     allocator: std.mem.Allocator,
@@ -774,73 +791,93 @@ fn isSimpleAssignmentTarget(self: *const Self, node: Node.Index) bool {
 }
 
 /// Mutate existing nodes to convert a PrimaryExpression to an
-/// AssignmentPattern (e.g, .object_literal => .object_pattern)
-fn reinterpretAssignmentPattern(self: *Self, node_id: Node.Index) ParseError!void {
+/// AssignmentPattern (or Identifier) (e.g, .object_literal => .object_pattern)
+fn reinterpretAssignmentPattern(self: *Self, node_id: Node.Index) void {
     const node: *ast.NodeData = &self.nodes.items(.data)[@intFromEnum(node_id)];
     switch (node.*) {
-        .identifier => return,
-        .member_expr => return,
-        .object_literal => |_| {},
+        .identifier,
+        .member_expr,
+        .assignment_pattern,
+        .empty_array_item,
+        .computed_member_expr,
+        => return,
+        .object_literal => |object_pl| {
+            node.* = .{ .object_pattern = object_pl };
+            const elems_idx = object_pl orelse return;
+            const elems = elems_idx.asSlice(self);
+            for (elems) |elem_id| {
+                self.reinterpretAssignmentPattern(elem_id);
+            }
+        },
+        .array_literal => |array_pl| {
+            node.* = .{ .array_pattern = array_pl };
+            const elems_idx = array_pl orelse return;
+            const elems = elems_idx.asSlice(self);
+            for (elems) |elem_id| {
+                self.reinterpretAssignmentPattern(elem_id);
+            }
+        },
+        .object_property => |property_definiton| {
+            self.reinterpretAssignmentPattern(property_definiton.value);
+        },
+        .assignment_expr => |assign_pl| {
+            node.* = .{ .assignment_pattern = assign_pl };
+        },
+        .spread_element => |spread_pl| {
+            self.reinterpretAssignmentPattern(spread_pl);
+            // TODO: change enum tag to a `rest_element`.
+        },
+        else => unreachable,
     }
 }
 
 fn assignmentExpression(self: *Self) ParseError!Node.Index {
-    // TODO: At some point, I want to come back here and do this *without*
-    // saving the state. it should be possible, if I do not dis-allow
-    // `=` in destructuring patterns, and re-interpret object literals as destructures
-    // like Meriyah does:
-    // https://github.com/meriyah/meriyah/blob/f056e3d6e8c729d77f8af3eafbcb777930506bf5/src/common.ts#L354
-    var snapshot = try self.saveState(); // to re-parse LHS if its destrucuted.
-    var is_assignment_pattern = false;
-
-    // todo: can I make fewer allocations here?
-    var lhs = yieldOrConditionalExpression(self) catch |err| blk: {
-        // If parsing as a conditional expression fails,
-        // try to parse as an assignment target.
-        // This is necessary for cases like: {a, b = c} = { a: 1, b: 2 }
-        // Where the LHS isn't valid assignment expr, but a valid destructuring pattern.
-        const parse_diagnostics = try self.allocator.dupe(
-            Diagnostic,
-            self.diagnostics.items,
-        );
-
-        // go back to where the assignment expression started.
-        try self.restoreState(&snapshot);
-        is_assignment_pattern = true;
-        // then, re-parse as a LeftHandSideExpressions
-        const lhs_pattern = self.assignmentLhsExpr() catch {
-            // If this parse fails too
-            // restore the diagnsotics from the original parse attempt (i.e
-            // expression, not assignment target).
-            self.diagnostics.deinit();
-            self.diagnostics = std.ArrayList(Diagnostic).fromOwnedSlice(
-                self.allocator,
-                parse_diagnostics,
-            );
-            return err;
-        };
-
-        self.allocator.free(parse_diagnostics);
-        break :blk lhs_pattern;
-    };
+    // Start with the assumption that we're parsing a valid destructurable expression.
+    // Subsequent parsing functions will update this to refect the actual destructure-kind
+    // of `lhs`.
+    self.current_destructure_kind = .can_destruct;
+    const lhs = try yieldOrConditionalExpression(self);
 
     if (!self.current_token.isAssignmentOperator()) {
+        // We saw something like `{ x = y }`, which must be an assignment pattern.
+        // It doesn't make sense to *not* assign to a pattern like that.
+        if (self.current_destructure_kind == .must_destruct) {
+            try self.emitDiagnostic(
+                self.current_token.startCoord(self.source),
+                "Unexpected assignment pattern {s}", // TODO: better error message here
+                .{@tagName(self.getNode(lhs).data)},
+            );
+
+            return ParseError.InvalidAssignmentTarget;
+        }
+
         return lhs;
     }
 
-    // If we see a '=' token, and lhs is not an identifier or member-expression,
-    // go back and re-parse the LHS as an assignment target.
-    // (AssignmentPattern).
-    if (!is_assignment_pattern and !self.isSimpleAssignmentTarget(lhs)) {
-        try self.restoreState(&snapshot);
-        lhs = try self.assignmentLhsExpr();
+    if (self.current_destructure_kind == .cannot_destruct) {
+        try self.emitDiagnostic(
+            self.current_token.startCoord(self.source),
+            "Invalid assignment target",
+            .{},
+        );
+        return ParseError.InvalidAssignmentTarget;
     }
 
-    const op_token = try self.expect(.@"="); // eat '='
+    self.reinterpretAssignmentPattern(lhs);
+
+    const op_token = try self.next(); // eat assignment operator
+
+    self.current_destructure_kind = .can_destruct;
 
     const rhs = try self.assignmentExpression();
-    const start = self.nodeSpan(lhs).start;
-    const end = self.nodeSpan(rhs).end;
+    const start = self.nodes.items(.start)[@intFromEnum(lhs)];
+    const end = self.nodes.items(.end)[@intFromEnum(rhs)];
+
+    // An assignment expression is a valid destructuring target.
+    // `[x = 1] = [2]` is valid.
+    // assignment patterns inside object literals are handled separately
+    // in `Parser.identifierProperty`
+    self.current_destructure_kind = .can_destruct;
 
     return self.addNode(
         .{
@@ -865,6 +902,9 @@ fn coalesceExpression(self: *Self, start_expr: Node.Index) ParseError!Node.Index
         const op = try self.next(); // eat '??'
         const rhs = try bOrExpr(self);
         end_pos = self.nodeSpan(rhs).end;
+
+        self.current_destructure_kind = .cannot_destruct;
+
         expr = try self.addNode(
             .{
                 .binary_expr = .{
@@ -905,6 +945,7 @@ fn yieldOrConditionalExpression(self: *Self) ParseError!Node.Index {
         return self.conditionalExpression();
     }
 
+    self.current_destructure_kind = .cannot_destruct;
     return self.yieldExpression();
 }
 
@@ -940,6 +981,8 @@ fn conditionalExpression(self: *Self) ParseError!Node.Index {
     const cond_expr = try self.shortCircuitExpresion();
     if (!self.isAtToken(.@"?")) return cond_expr;
 
+    self.current_destructure_kind = .cannot_destruct;
+
     _ = try self.next(); // eat '?'
     const true_expr = try self.assignmentExpression();
     _ = try self.expect(.@":");
@@ -970,7 +1013,7 @@ fn assignmentPattern(self: *Self) ParseError!Node.Index {
     const rhs = try self.assignmentExpression();
     const lhs_start_pos = self.nodes.items(.start)[@intFromEnum(lhs)];
     const rhs_end_pos = self.nodes.items(.end)[@intFromEnum(rhs)];
-    return try self.addNode(
+    return self.addNode(
         .{
             .assignment_pattern = .{
                 .lhs = lhs,
@@ -1080,18 +1123,14 @@ fn destructuredPropertyDefinition(self: *Self) ParseError!Node.Index {
                 const rhs = try self.assignmentExpression();
                 const end_pos = self.getNode(rhs).end;
 
-                const assign_pattern = try self.addNode(
-                    .{ .assignment_pattern = .{
-                        .lhs = key,
-                        .rhs = rhs,
-                        .operator = try self.addToken(eq_token),
-                    } },
-                    key_token.start,
-                    end_pos,
-                );
-
                 return self.addNode(
-                    .{ .object_property = .{ .key = key, .value = assign_pattern } },
+                    .{
+                        .assignment_pattern = .{
+                            .lhs = key,
+                            .rhs = rhs,
+                            .operator = try self.addToken(eq_token),
+                        },
+                    },
                     key_token.start,
                     end_pos,
                 );
@@ -1187,6 +1226,7 @@ fn unaryExpression(self: *Self) ParseError!Node.Index {
             const op_token = try self.next();
             const expr = try self.unaryExpression();
             const expr_end_pos = self.nodes.items(.end)[@intFromEnum(expr)];
+            self.current_destructure_kind = .cannot_destruct;
             return try self.addNode(.{
                 .unary_expr = ast.UnaryPayload{
                     .operand = expr,
@@ -1220,6 +1260,7 @@ fn awaitExpression(self: *Self) ParseError!Node.Index {
     const operand = try self.unaryExpression();
     const end_pos = self.nodeSpan(operand).end;
 
+    self.current_destructure_kind = .cannot_destruct;
     return self.addNode(.{
         .await_expr = ast.UnaryPayload{
             .operator = try self.addToken(await_token),
@@ -1241,6 +1282,7 @@ fn updateExpression(self: *Self) ParseError!Node.Index {
         const op_token = try self.next();
         const expr = try self.unaryExpression();
         const expr_end_pos = self.nodes.items(.end)[@intFromEnum(expr)];
+        self.current_destructure_kind = .cannot_destruct;
         return self.addNode(.{
             .update_expr = ast.UnaryPayload{
                 .operand = expr,
@@ -1256,6 +1298,7 @@ fn updateExpression(self: *Self) ParseError!Node.Index {
     if ((cur_token.tag == .@"++" or cur_token.tag == .@"--") and
         cur_token.line == expr_start_line)
     {
+        self.current_destructure_kind = .cannot_destruct;
         const op_token = try self.next();
         const expr_end_pos = self.nodes.items(.end)[@intFromEnum(expr)];
         return self.addNode(.{
@@ -1442,7 +1485,7 @@ fn optionalChain(self: *Self, object: Node.Index) ParseError!Node.Index {
             return self.addNode(.{ .optional_expr = expr }, start_pos, end_pos);
         },
         else => {
-            if (self.current_token.tag == .identifier or self.current_token.isKeyword()) {
+            if (self.current_token.tag == .identifier or self.current_token.tag.isKeyword()) {
                 const property_name_token = try self.next(); // eat the property name
                 const end_pos = property_name_token.start + property_name_token.len;
                 const expr = try self.addNode(.{ .member_expr = .{
@@ -1484,7 +1527,7 @@ fn completeMemberExpression(self: *Self, object: Node.Index) ParseError!Node.Ind
     const property_token_idx: Token.Index = blk: {
         const tok = try self.next();
         // Yes, keywords are valid property names...
-        if (tok.tag == .identifier or tok.isKeyword()) {
+        if (tok.tag == .identifier or tok.tag.isKeyword()) {
             break :blk try self.addToken(tok);
         }
 
@@ -1537,11 +1580,14 @@ fn primaryExpression(self: *Self) ParseError!Node.Index {
         .kw_true,
         .kw_false,
         .kw_null,
-        => return self.addNode(
-            .{ .literal = try self.addToken(token) },
-            token.start,
-            token.start + token.len,
-        ),
+        => {
+            self.current_destructure_kind = .cannot_destruct;
+            return self.addNode(
+                .{ .literal = try self.addToken(token) },
+                token.start,
+                token.start + token.len,
+            );
+        },
         .@"[" => return self.arrayLiteral(token.start),
         .@"{" => return self.objectLiteral(token.start),
         .@"(" => return self.coverParenExprAndArrowParams(),
@@ -1588,7 +1634,7 @@ fn objectLiteral(self: *Self, start_pos: u32) ParseError!Node.Index {
     const properties = try self.propertyDefinitionList();
     const closing_brace = try self.expect(.@"}");
     const end_pos = closing_brace.start + closing_brace.len;
-    return try self.addNode(.{ .object_literal = properties }, start_pos, end_pos);
+    return self.addNode(.{ .object_literal = properties }, start_pos, end_pos);
 }
 
 /// https://tc39.es/ecma262/#prod-PropertyDefinitionList
@@ -1598,12 +1644,14 @@ fn propertyDefinitionList(self: *Self) ParseError!?ast.SubRange {
     var property_defs = std.ArrayList(Node.Index).init(self.allocator);
     defer property_defs.deinit();
 
+    var destructure_kind: u8 = @intFromEnum(self.current_destructure_kind);
+
     const cur_token = self.peek();
     while (cur_token.tag != .eof) {
         switch (cur_token.tag) {
-            .identifier,
-            => {
+            .identifier => {
                 try property_defs.append(try self.identifierProperty());
+                destructure_kind |= self.current_destructure_kind.asU8();
             },
 
             .@"[" => {
@@ -1615,6 +1663,7 @@ fn propertyDefinitionList(self: *Self) ParseError!?ast.SubRange {
                     key,
                     .{ .is_computed = true },
                 );
+                destructure_kind |= self.current_destructure_kind.asU8();
                 try property_defs.append(property);
             },
 
@@ -1627,6 +1676,7 @@ fn propertyDefinitionList(self: *Self) ParseError!?ast.SubRange {
                 );
 
                 const property_expr = try self.completePropertyDef(key, .{});
+                destructure_kind |= self.current_destructure_kind.asU8();
                 try property_defs.append(property_expr);
             },
 
@@ -1639,19 +1689,30 @@ fn propertyDefinitionList(self: *Self) ParseError!?ast.SubRange {
                     .{ .is_method = true },
                     .{ .is_generator = true },
                 );
+                destructure_kind |= DestructureKind.cannot_destruct.asU8();
                 try property_defs.append(generator_method);
             },
 
             .@"..." => {
                 const ellipsis_tok = try self.next();
                 const expr = try self.assignmentExpression();
+
+                destructure_kind |= self.current_destructure_kind.asU8();
+
                 const start = ellipsis_tok.start;
                 const end = self.nodes.items(.end)[@intFromEnum(expr)];
                 try property_defs.append(try self.addNode(.{ .spread_element = expr }, start, end));
+
+                if (self.isAtToken(.@",")) {
+                    // comma is not allowed after rest element in object patterns
+                    destructure_kind |= DestructureKind.cannot_destruct.asU8();
+                }
             },
             else => {
-                if (self.current_token.isKeyword()) {
-                    try property_defs.append(try self.identifierProperty());
+                if (self.current_token.tag.isKeyword()) {
+                    const id_property = try self.identifierProperty();
+                    try property_defs.append(id_property);
+                    destructure_kind |= self.current_destructure_kind.asU8();
                 } else {
                     break;
                 }
@@ -1666,13 +1727,21 @@ fn propertyDefinitionList(self: *Self) ParseError!?ast.SubRange {
         }
     }
 
+    if (destructure_kind == @intFromEnum(DestructureKind.bad_object_or_pattern)) {
+        // TODO: emit a diagnostic.
+        return ParseError.InvalidObject;
+    }
+
+    self.current_destructure_kind = @enumFromInt(destructure_kind);
+
     if (property_defs.items.len == 0) return null;
     return try self.addSubRange(property_defs.items);
 }
 
 /// Parse an object property name, which can be an identifier or a keyword.
 fn propertyName(self: *Self) ParseError!Node.Index {
-    if (self.current_token.tag == .identifier or self.current_token.isKeyword()) {
+    if (self.current_token.tag == .identifier or self.current_token.tag.isKeyword()) {
+        self.current_destructure_kind = .can_destruct;
         return self.identifier(try self.next());
     }
 
@@ -1685,18 +1754,18 @@ fn propertyName(self: *Self) ParseError!Node.Index {
     return ParseError.InvalidPropertyName;
 }
 
-/// Parse an object property that starts with an identifier (that may be "get" or "set").
+/// Parse an the property of an object literal or object pattern that starts with an identifier.
 fn identifierProperty(self: *Self) ParseError!Node.Index {
     const key_token = try self.next();
-    std.debug.assert(key_token.tag == .identifier or key_token.isKeyword());
+    std.debug.assert(key_token.tag == .identifier or key_token.tag.isKeyword());
 
-    const cur_token = self.peek();
+    const cur_token = self.current_token;
     if (cur_token.tag != .@":" and cur_token.tag != .@"(" and
-        cur_token.tag != .@"," and cur_token.tag != .@"}")
+        cur_token.tag != .@"," and cur_token.tag != .@"}" and
+        cur_token.tag != .@"=")
     {
-        if (key_token.tag == .kw_async and // handle `async f() { ... }`
-            (cur_token.tag == .identifier or cur_token.isKeyword()))
-        {
+        if (key_token.tag == .kw_async and key_token.tag.isValidPropertyName()) {
+            // handle `async f() { ... }`
             const property_key = try self.identifier(try self.next());
             const property_val = try self.parseMethodBody(
                 property_key,
@@ -1705,6 +1774,9 @@ fn identifierProperty(self: *Self) ParseError!Node.Index {
             );
 
             const end_pos = self.nodes.items(.end)[@intFromEnum(property_val)];
+
+            // object literals with async methods are not valid object patterns.
+            self.current_destructure_kind = .cannot_destruct;
             return self.addNode(.{
                 .object_property = .{
                     .key = property_key,
@@ -1715,6 +1787,8 @@ fn identifierProperty(self: *Self) ParseError!Node.Index {
 
         const maybe_getter_or_setter = try self.getterOrSetter(key_token);
         if (maybe_getter_or_setter) |getter_or_setter| {
+            // object literals with getters or setters are not valid object patterns.
+            self.current_destructure_kind = .cannot_destruct;
             return getter_or_setter;
         }
 
@@ -1729,12 +1803,36 @@ fn identifierProperty(self: *Self) ParseError!Node.Index {
     const key_end_pos = key_token.start + key_token.len;
     const key = try self.identifier(key_token);
 
-    const cur_token_tag = self.peek().tag;
+    const cur_token_tag = self.current_token.tag;
     switch (cur_token_tag) {
         .@":", .@"(" => {
             return self.completePropertyDef(key, .{
                 .is_method = cur_token_tag == .@"(",
             });
+        },
+
+        .@"=" => {
+            const op_token = try self.next(); // eat '='
+            if (key_token.tag != .identifier) {
+                try self.emitBadTokenDiagnostic("property name", key_token);
+                return ParseError.InvalidPropertyName;
+            }
+
+            const value = try self.assignmentExpression();
+            const start_pos = self.nodes.items(.start)[@intFromEnum(key)];
+            const end_pos = self.nodes.items(.end)[@intFromEnum(value)];
+
+            const assignment_pattern = ast.NodeData{
+                .assignment_pattern = .{
+                    .lhs = key,
+                    .rhs = value,
+                    .operator = try self.addToken(op_token),
+                },
+            };
+
+            // 'Identifier = ...' is allowed in object patterns but not in object literals
+            self.current_destructure_kind = .must_destruct;
+            return self.addNode(assignment_pattern, start_pos, end_pos);
         },
 
         else => {
@@ -1743,6 +1841,10 @@ fn identifierProperty(self: *Self) ParseError!Node.Index {
                 .value = key,
                 .flags = .{ .is_shorthand = true },
             };
+
+            // { k }
+            //   ^-- Is a valid property in a destructuring pattern
+            self.current_destructure_kind = .can_destruct;
             return self.addNode(
                 .{ .object_property = kv_node },
                 key_token.start,
@@ -1878,6 +1980,7 @@ fn completePropertyDef(
     flags: ast.PropertyDefinitionFlags,
 ) ParseError!Node.Index {
     if (self.current_token.tag == .@"(") {
+        self.current_destructure_kind = .cannot_destruct;
         return self.parseMethodBody(key, .{
             .is_method = true,
             .is_computed = flags.is_computed,
@@ -1889,6 +1992,8 @@ fn completePropertyDef(
     _ = try self.expect(.@":");
 
     const value = try self.assignmentExpression();
+    // the assignmentExpression() will have updated self.current_destructure_kind
+
     const start_pos = self.nodes.items(.start)[@intFromEnum(key)];
     const end_pos = self.nodes.items(.end)[@intFromEnum(value)];
     const kv_node = ast.PropertyDefinition{
@@ -1904,6 +2009,8 @@ fn completePropertyDef(
 fn arrayLiteral(self: *Self, start_pos: u32) ParseError!Node.Index {
     var elements = std.ArrayList(Node.Index).init(self.allocator);
     defer elements.deinit();
+
+    var destructuring_kind: u8 = @intFromEnum(self.current_destructure_kind);
 
     var end_pos = start_pos;
     while (true) {
@@ -1930,11 +2037,17 @@ fn arrayLiteral(self: *Self, start_pos: u32) ParseError!Node.Index {
                 const expr = try self.assignmentExpression();
                 const start = ellipsis_tok.start;
                 const end = self.nodes.items(.end)[@intFromEnum(expr)];
+                if (self.isAtToken(.@",")) {
+                    // "," is not allowed after rest element in array patterns
+                    destructuring_kind |= DestructureKind.cannot_destruct.asU8();
+                }
+
                 try elements.append(try self.addNode(.{ .spread_element = expr }, start, end));
             },
 
             else => {
                 const item = try self.assignmentExpression();
+                destructuring_kind |= self.current_destructure_kind.asU8();
                 try elements.append(item);
             },
         }
@@ -1947,6 +2060,7 @@ fn arrayLiteral(self: *Self, start_pos: u32) ParseError!Node.Index {
     }
 
     const nodes = try self.addSubRange(elements.items);
+    self.current_destructure_kind = @enumFromInt(destructuring_kind);
     return self.addNode(.{ .array_literal = nodes }, start_pos, end_pos);
 }
 
@@ -2158,10 +2272,14 @@ fn makeLeftAssoc(
 
             var token = self.peek();
             while (true) : (token = self.peek()) {
-                if (@intFromEnum(token.tag) >= min and @intFromEnum(token.tag) <= max) {
+                const itag: u32 = @intFromEnum(token.tag);
+                if (itag >= min and itag <= max) {
+                    self.current_destructure_kind =
+                        @enumFromInt(self.current_destructure_kind.asU8() |
+                        DestructureKind.cannot_destruct.asU8());
+
                     _ = try self.next();
                     const rhs = try nextFn(self);
-
                     const start_pos = self.nodes.items(.start)[@intFromEnum(node)];
                     const end_pos = self.nodes.items(.end)[@intFromEnum(rhs)];
                     node = try self.addNode(.{
@@ -2203,7 +2321,7 @@ fn runTestOnFile(tests_dir: std.fs.Dir, file_path: []const u8) !void {
 
     const root_node = parser.parse() catch |err| {
         for (parser.diagnostics.items) |diagnostic| {
-            std.debug.print("({d}:{d}): {s}\n", .{
+            std.log.err("({d}:{d}): {s}\n", .{
                 diagnostic.coord.line,
                 diagnostic.coord.column,
                 parser.diagnostic_messages.items[@intFromEnum(diagnostic.message)],
@@ -2263,7 +2381,7 @@ test parse {
             std.debug.assert(test_case_entry.kind == .file);
             if (!std.mem.endsWith(u8, test_case_entry.name, ".js")) continue;
             runTestOnFile(dir, test_case_entry.name) catch |err| {
-                std.debug.print("Error comparing ASTs for file: {s}\n", .{test_case_entry.name});
+                std.log.err("Error comparing ASTs for file: {s}\n", .{test_case_entry.name});
                 return err;
             };
         }

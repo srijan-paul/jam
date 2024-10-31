@@ -27,6 +27,13 @@ pub const SubRange = struct {
     pub const Index = enum(u32) { _ };
     from: Index,
     to: Index,
+
+    /// Return a slice of `Node.Index`es that represents the sub-range.
+    pub fn asSlice(self: *const SubRange, parser: *const Parser) []const Node.Index {
+        const from: usize = @intFromEnum(self.from);
+        const to: usize = @intFromEnum(self.to);
+        return parser.node_lists.items[from..to];
+    }
 };
 
 pub const YieldPayload = struct {
@@ -161,15 +168,6 @@ pub const ExtraData = union {
         /// Flags: generator, async, arrow, etc.
         flags: FunctionFlags,
     },
-};
-
-pub const ObjectLiteral = struct {
-    /// Sub range of `.object_proeprty` nodes.
-    /// For an empty object literal, this is `null`.
-    properties: ?SubRange,
-    /// Whether this object literal can be re-interpreted
-    /// as a destructuring pattern.
-    is_valid_destructuring_pattern: bool,
 };
 
 pub const NodeData = union(enum(u8)) {

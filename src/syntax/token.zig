@@ -179,6 +179,16 @@ pub const Token = struct {
             return tag_u32 > @intFromEnum(Tag.strict_mode_kw_start) and
                 tag_u32 < @intFromEnum(Tag.strict_mode_kw_end);
         }
+
+        pub fn isKeyword(self: Tag) bool {
+            const tag_u32: u32 = @intFromEnum(self);
+            return tag_u32 >= @intFromEnum(Tag.keywords_start) and
+                tag_u32 <= @intFromEnum(Tag.keywords_end);
+        }
+
+        pub fn isValidPropertyName(self: Tag) bool {
+            return self == .identifier or self.isKeyword();
+        }
     };
 
     tag: Tag,
@@ -219,11 +229,5 @@ pub const Token = struct {
         const tag_u32: u32 = @intFromEnum(self.tag);
         return tag_u32 >= @intFromEnum(Tag.assignment_op_start) and
             tag_u32 <= @intFromEnum(Tag.assignment_op_end);
-    }
-
-    pub fn isKeyword(self: *const Token) bool {
-        const tag_u32: u32 = @intFromEnum(self.tag);
-        return tag_u32 >= @intFromEnum(Tag.keywords_start) and
-            tag_u32 <= @intFromEnum(Tag.keywords_end);
     }
 };
