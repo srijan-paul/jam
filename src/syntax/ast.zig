@@ -48,7 +48,7 @@ pub const FunctionFlags = packed struct(u8) {
 
 /// Represents the payload for a function expression or declaration.
 pub const Function = struct {
-    /// points to a `ast.NodeData.parameters` (?NodeList)
+    /// points to a `ast.NodeData.parameters` (?SubRange)
     parameters: Node.Index,
     /// points to an expression or a block statement
     body: Node.Index,
@@ -73,7 +73,7 @@ pub const Function = struct {
         const params_node = parser.getNode(self.parameters);
         const maybe_params_range = params_node.data.parameters;
         if (maybe_params_range) |params_range| {
-            return parser.getNodeList(params_range.from, params_range.to);
+            return parser.getSubRange(params_range.from, params_range.to);
         }
         return &[_]Node.Index{};
     }
