@@ -23,7 +23,7 @@ pub const ComputedPropertyAccess = struct {
     property: Node.Index,
 };
 
-pub const NodeList = struct {
+pub const SubRange = struct {
     pub const Index = enum(u32) { _ };
     from: Index,
     to: Index,
@@ -146,7 +146,7 @@ pub const VarDeclKind = enum {
 };
 
 pub const VariableDeclaration = struct {
-    declarators: NodeList,
+    declarators: SubRange,
     kind: VarDeclKind,
 };
 
@@ -163,18 +163,27 @@ pub const ExtraData = union {
     },
 };
 
+pub const ObjectLiteral = struct {
+    /// Sub range of `.object_proeprty` nodes.
+    /// For an empty object literal, this is `null`.
+    properties: ?SubRange,
+    /// Whether this object literal can be re-interpreted
+    /// as a destructuring pattern.
+    is_valid_destructuring_pattern: bool,
+};
+
 pub const NodeData = union(enum(u8)) {
-    program: ?NodeList,
+    program: ?SubRange,
 
     // Expressions:
     assignment_expr: BinaryPayload,
     binary_expr: BinaryPayload,
     member_expr: PropertyAccess,
     computed_member_expr: ComputedPropertyAccess,
-    arguments: ?NodeList,
+    arguments: ?SubRange,
     new_expr: CallExpr,
     call_expr: CallExpr,
-    super_call_expr: ?NodeList,
+    super_call_expr: ?SubRange,
     // points to  call_expr, member_expr, or computed_member_expr
     optional_expr: Node.Index,
     function_expr: Function,
@@ -189,21 +198,21 @@ pub const NodeData = union(enum(u8)) {
     literal: Token.Index,
     this: Token.Index,
     empty_array_item: void,
-    array_literal: ?NodeList,
-    array_pattern: ?NodeList,
+    array_literal: ?SubRange,
+    array_pattern: ?SubRange,
     spread_element: Node.Index,
 
-    object_literal: ?NodeList,
+    object_literal: ?SubRange,
     object_property: PropertyDefinition,
-    sequence_expr: NodeList,
+    sequence_expr: SubRange,
     conditional_expr: Conditional,
 
     assignment_pattern: BinaryPayload,
-    object_pattern: ?NodeList,
+    object_pattern: ?SubRange,
 
     // Statements:
     empty_statement: void,
-    block_statement: ?NodeList,
+    block_statement: ?SubRange,
     expression_statement: Node.Index,
     variable_declaration: VariableDeclaration,
     variable_declarator: VariableDeclarator,
@@ -211,7 +220,7 @@ pub const NodeData = union(enum(u8)) {
     debugger_statement: void,
     if_statement: Conditional,
     while_statement: WhileStatement,
-    parameters: ?NodeList,
+    parameters: ?SubRange,
     return_statement: ?Node.Index,
 
     /// Represents `null` AST node.
@@ -250,17 +259,17 @@ pub const NodePretty = union(enum) {
     const UnaryPayload_ = Pretty(UnaryPayload);
     const Token_ = Pretty(Token.Index);
 
-    program: Pretty(NodeList),
+    program: Pretty(SubRange),
 
     assignment_expression: BinaryPayload_,
     binary_expression: BinaryPayload_,
     member_expression: PropertyAccess_,
     computed_member_expression: ComputedPropertyAccess_,
     optional_expression: Pretty(Node.Index),
-    arguments: Pretty(NodeList),
+    arguments: Pretty(SubRange),
     new_expression: Pretty(CallExpr),
     call_expression: Pretty(CallExpr),
-    super_call_expression: Pretty(NodeList),
+    super_call_expression: Pretty(SubRange),
     spread_element: Pretty(Node.Index),
 
     post_unary_expression: UnaryPayload_,
@@ -273,13 +282,13 @@ pub const NodePretty = union(enum) {
     literal: Token_,
     this: void,
     empty_array_item: void,
-    array: Pretty(NodeList),
-    array_pattern: Pretty(NodeList),
-    object_pattern: Pretty(NodeList),
+    array: Pretty(SubRange),
+    array_pattern: Pretty(SubRange),
+    object_pattern: Pretty(SubRange),
     assignment_pattern: BinaryPayload_,
-    object_literal: Pretty(NodeList),
+    object_literal: Pretty(SubRange),
     object_property: Pretty(PropertyDefinition),
-    sequence_expression: Pretty(NodeList),
+    sequence_expression: Pretty(SubRange),
     conditional_expression: Pretty(Conditional),
     function: struct {
         parameters: Pretty(Node.Index),
@@ -291,7 +300,7 @@ pub const NodePretty = union(enum) {
     empty_statement: void,
     debugger_statement: void,
     expression_statement: Pretty(Node.Index),
-    block_statement: Pretty(NodeList),
+    block_statement: Pretty(SubRange),
     if_statement: Pretty(Conditional),
     while_statement: Pretty(WhileStatement),
     variable_declaration: Pretty(VariableDeclaration),
@@ -302,7 +311,7 @@ pub const NodePretty = union(enum) {
     none: void,
 
     // helpers
-    parameters: Pretty(NodeList),
+    parameters: Pretty(SubRange),
 };
 
 pub const ExtraPretty = union(enum) {
@@ -314,7 +323,7 @@ fn Pretty(T: type) type {
     if (T == ?Node.Index) return ?*NodePretty;
     if (T == Token.Index) return []const u8;
     if (T == ?Token.Index) return ?[]const u8;
-    if (T == NodeList) return []NodePretty;
+    if (T == SubRange) return []NodePretty;
     if (T == ExtraData.Index) return ExtraPretty;
 
     switch (@typeInfo(T)) {

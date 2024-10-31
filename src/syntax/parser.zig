@@ -228,7 +228,7 @@ pub fn parse(self: *Self) !Node.Index {
         try statements.append(stmt);
     }
 
-    const stmt_list = try self.addNodeList(statements.items);
+    const stmt_list = try self.addSubRange(statements.items);
     return try self.addNode(
         .{ .program = stmt_list },
         0,
@@ -349,7 +349,7 @@ fn variableStatement(self: *Self, kw: Token) ParseError!Node.Index {
         }
     }
 
-    const decls = try self.addNodeList(declarators.items);
+    const decls = try self.addSubRange(declarators.items);
     const last_decl = self.getNode(self.node_lists.items[@intFromEnum(decls.to) - 1]);
 
     const end_pos = try self.semiColon(last_decl.end);
@@ -456,15 +456,14 @@ fn blockStatement(self: *Self) !Node.Index {
     const end_pos = rbrace.start + rbrace.len;
 
     if (statements.items.len == 0) {
-        return addNode(
-            self,
+        return self.addNode(
             .{ .block_statement = null },
             start_pos,
             end_pos,
         );
     }
 
-    const stmt_list_node = try self.addNodeList(statements.items);
+    const stmt_list_node = try self.addSubRange(statements.items);
     return self.addNode(
         .{ .block_statement = stmt_list_node },
         start_pos,
@@ -546,8 +545,7 @@ fn semiColon(self: *Self, end_pos: u32) ParseError!u32 {
 }
 
 /// Eat a semicolon token and return its span.
-/// If there if there is no semi-colon token, it will attempt to perform
-/// Automatic Semicolon Insertion (ASI):
+/// If there if there is no semi-colon token, it will check if we're allowed to assume an implicit ';' exists
 /// https://tc39.es/ecma262/multipage/ecmascript-language-lexical-grammar.html#sec-automatic-semicolon-insertion
 /// If no semi-colon can be inserted, a parse error is returned instead.
 fn eatSemiAsi(self: *Self) ParseError!?types.Span {
@@ -606,11 +604,11 @@ fn reserveSlot(self: *Self) Node.Index {
     return @enumFromInt(self.nodes.len - 1);
 }
 
-fn addNodeList(self: *Self, nodes: []Node.Index) error{OutOfMemory}!ast.NodeList {
-    const from: ast.NodeList.Index = @enumFromInt(self.node_lists.items.len);
+fn addSubRange(self: *Self, nodes: []Node.Index) error{OutOfMemory}!ast.SubRange {
+    const from: ast.SubRange.Index = @enumFromInt(self.node_lists.items.len);
     try self.node_lists.appendSlice(nodes);
-    const to: ast.NodeList.Index = @enumFromInt(self.node_lists.items.len);
-    return ast.NodeList{ .from = from, .to = to };
+    const to: ast.SubRange.Index = @enumFromInt(self.node_lists.items.len);
+    return ast.SubRange{ .from = from, .to = to };
 }
 
 fn addToken(self: *Self, token: Token) error{OutOfMemory}!Token.Index {
@@ -743,7 +741,7 @@ fn expression(self: *Self) !Node.Index {
         try nodes.append(rhs);
     }
 
-    const expr_list = try self.addNodeList(nodes.items);
+    const expr_list = try self.addSubRange(nodes.items);
     return try self.addNode(ast.NodeData{
         .sequence_expr = expr_list,
     }, start_pos, end_pos);
@@ -773,6 +771,17 @@ fn isSimpleAssignmentTarget(self: *const Self, node: Node.Index) bool {
         .identifier, .member_expr, .computed_member_expr => true,
         else => false,
     };
+}
+
+/// Mutate existing nodes to convert a PrimaryExpression to an
+/// AssignmentPattern (e.g, .object_literal => .object_pattern)
+fn reinterpretAssignmentPattern(self: *Self, node_id: Node.Index) ParseError!void {
+    const node: *ast.NodeData = &self.nodes.items(.data)[@intFromEnum(node_id)];
+    switch (node.*) {
+        .identifier => return,
+        .member_expr => return,
+        .object_literal => |_| {},
+    }
 }
 
 fn assignmentExpression(self: *Self) ParseError!Node.Index {
@@ -1024,7 +1033,7 @@ fn arrayAssignmentPattern(self: *Self) ParseError!Node.Index {
     }
 
     const rbrac = try self.next(); // eat ']'
-    const array_items = try self.addNodeList(items.items);
+    const array_items = try self.addSubRange(items.items);
     return try self.addNode(
         .{ .array_pattern = array_items },
         lbrac.start,
@@ -1156,7 +1165,7 @@ fn objectAssignmentPattern(self: *Self) ParseError!Node.Index {
         }
     }
 
-    const destructured_props = try self.addNodeList(props.items);
+    const destructured_props = try self.addSubRange(props.items);
     return self.addNode(
         .{ .object_pattern = destructured_props },
         lbrace.start,
@@ -1585,7 +1594,7 @@ fn objectLiteral(self: *Self, start_pos: u32) ParseError!Node.Index {
 /// https://tc39.es/ecma262/#prod-PropertyDefinitionList
 /// Parse a comma-separated list of properties.
 /// Returns `null` if there's 0 properties in the object.
-fn propertyDefinitionList(self: *Self) ParseError!?ast.NodeList {
+fn propertyDefinitionList(self: *Self) ParseError!?ast.SubRange {
     var property_defs = std.ArrayList(Node.Index).init(self.allocator);
     defer property_defs.deinit();
 
@@ -1658,7 +1667,7 @@ fn propertyDefinitionList(self: *Self) ParseError!?ast.NodeList {
     }
 
     if (property_defs.items.len == 0) return null;
-    return try self.addNodeList(property_defs.items);
+    return try self.addSubRange(property_defs.items);
 }
 
 /// Parse an object property name, which can be an identifier or a keyword.
@@ -1937,7 +1946,7 @@ fn arrayLiteral(self: *Self, start_pos: u32) ParseError!Node.Index {
         }
     }
 
-    const nodes = try self.addNodeList(elements.items);
+    const nodes = try self.addSubRange(elements.items);
     return self.addNode(.{ .array_literal = nodes }, start_pos, end_pos);
 }
 
@@ -2030,7 +2039,7 @@ fn parseFormalParameters(self: *Self) ParseError!Node.Index {
     const end_pos = rparen.start + rparen.len;
 
     const param_list = if (params.items.len > 0)
-        try self.addNodeList(params.items)
+        try self.addSubRange(params.items)
     else
         null;
 
@@ -2038,7 +2047,7 @@ fn parseFormalParameters(self: *Self) ParseError!Node.Index {
 }
 
 /// Get a pointer to a node by its index.
-/// The returned value can be invalidated by any call to `addNode`, `restoreState`, `addNodeList`.
+/// The returned value can be invalidated by any call to `addNode`, `restoreState`, `addSubRange`.
 pub fn getNode(self: *const Self, index: Node.Index) ast.Node {
     return self.nodes.get(@intFromEnum(index));
 }
@@ -2050,12 +2059,12 @@ pub fn getExtraData(
     return &self.extra_data.items[@intFromEnum(index)];
 }
 
-/// From a `NodeList` object, get a slice that contains the ID for each node
+/// From a `SubRange` object, get a slice that contains the ID for each node
 /// in that list.
-pub fn getNodeList(
+pub fn getSubRange(
     self: *const Self,
-    from: ast.NodeList.Index,
-    to: ast.NodeList.Index,
+    from: ast.SubRange.Index,
+    to: ast.SubRange.Index,
 ) []const Node.Index {
     const from_: usize = @intFromEnum(from);
     const to_: usize = @intFromEnum(to);
@@ -2079,7 +2088,7 @@ fn args(self: *Self) ParseError!Node.Index {
     return self.addNode(.{ .arguments = args_node }, start, end);
 }
 
-fn parseArgs(self: *Self) ParseError!struct { ast.NodeList, u32, u32 } {
+fn parseArgs(self: *Self) ParseError!struct { ast.SubRange, u32, u32 } {
     const start_pos = (try self.expect(.@"(")).start;
 
     var arg_list = std.ArrayList(Node.Index).init(self.allocator);
@@ -2096,7 +2105,7 @@ fn parseArgs(self: *Self) ParseError!struct { ast.NodeList, u32, u32 } {
     const close_paren = try self.expect(.@")"); // eat closing ')'
     const end_pos = close_paren.start + close_paren.len;
 
-    return .{ try self.addNodeList(arg_list.items), start_pos, end_pos };
+    return .{ try self.addSubRange(arg_list.items), start_pos, end_pos };
 }
 
 /// make a right associative parse function for an infix operator represented

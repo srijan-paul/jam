@@ -16,10 +16,10 @@ fn checkActiveField(v: anytype, want: []const u8) bool {
     return std.mem.eql(u8, tag_name, want);
 }
 
-fn prettyNodeList(
+fn prettySubRange(
     allocator: std.mem.Allocator,
     self: *const Parser,
-    maybe_args: ?ast.NodeList,
+    maybe_args: ?ast.SubRange,
 ) error{OutOfMemory}![]ast.NodePretty {
     if (maybe_args) |arguments| {
         var new_args = std.ArrayList(ast.NodePretty).init(allocator);
@@ -164,7 +164,7 @@ fn toPretty(
         },
 
         .super_call_expr, .arguments => |maybe_args| return .{
-            .arguments = try prettyNodeList(al, self, maybe_args),
+            .arguments = try prettySubRange(al, self, maybe_args),
         },
 
         .call_expr, .new_expr => |payload| {
@@ -185,7 +185,7 @@ fn toPretty(
 
         .sequence_expr => |nodes| {
             return .{
-                .sequence_expression = try prettyNodeList(al, self, nodes),
+                .sequence_expression = try prettySubRange(al, self, nodes),
             };
         },
 
@@ -196,19 +196,19 @@ fn toPretty(
 
         .empty_array_item => return .{ .empty_array_item = {} },
         .array_literal => |items| return .{
-            .array = try prettyNodeList(al, self, items),
+            .array = try prettySubRange(al, self, items),
         },
 
         .array_pattern => |items| return .{
-            .array_pattern = try prettyNodeList(al, self, items),
+            .array_pattern = try prettySubRange(al, self, items),
         },
 
         .object_literal => |properties| return .{
-            .object_literal = try prettyNodeList(al, self, properties),
+            .object_literal = try prettySubRange(al, self, properties),
         },
 
         .object_pattern => |properties| return .{
-            .object_pattern = try prettyNodeList(al, self, properties),
+            .object_pattern = try prettySubRange(al, self, properties),
         },
 
         .object_property => |prop| return ast.NodePretty{
@@ -273,17 +273,17 @@ fn toPretty(
         },
 
         .block_statement => |block| {
-            const body = try prettyNodeList(al, self, block);
+            const body = try prettySubRange(al, self, block);
             return .{ .block_statement = body };
         },
 
         .program => |block| {
-            const body = try prettyNodeList(al, self, block);
+            const body = try prettySubRange(al, self, block);
             return .{ .program = body };
         },
 
         .parameters => |params| {
-            const p_list = try prettyNodeList(al, self, params);
+            const p_list = try prettySubRange(al, self, params);
             return .{ .parameters = p_list };
         },
 
@@ -305,7 +305,7 @@ fn toPretty(
         },
 
         .variable_declaration => |d| {
-            const decls = try prettyNodeList(al, self, d.declarators);
+            const decls = try prettySubRange(al, self, d.declarators);
             return .{
                 .variable_declaration = .{
                     .declarators = decls,
