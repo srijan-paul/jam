@@ -1183,7 +1183,7 @@ fn unaryExpression(self: *Self) ParseError!Node.Index {
             }, op_token.start, expr_end_pos);
         },
         else => {
-            if (self.isAtToken(.kw_await)) {
+            if (self.isAtToken(.kw_await) and self.context.is_await_reserved) {
                 return self.awaitExpression();
             }
 

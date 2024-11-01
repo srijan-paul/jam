@@ -9,7 +9,7 @@
       "request": "launch",
       "name": "Debug",
       "program": "${workspaceFolder}/zig-out/bin/jsickle",
-      "args": [],
+      "args": ["./test.js"],
       "cwd": "${workspaceFolder}"
     }
   ]
