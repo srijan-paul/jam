@@ -31,12 +31,10 @@ const ParseFn = fn (self: *Self) ParseError!Node.Index;
 
 /// An error or warning raised by the Parser.
 pub const Diagnostic = struct {
-    /// Index into the `diagnostic_messages` slice.
-    const MessageIndex = enum(usize) { _ };
     /// line/col position where error occurred.
     coord: types.Coordinate,
     /// Message reported by the parser.
-    message: MessageIndex,
+    message: []const u8,
 };
 
 /// Represents the currently active set of grammatical parameters
@@ -104,7 +102,6 @@ tokens: std.ArrayList(Token),
 node_lists: std.ArrayList(Node.Index),
 /// List of error messages and warnings generated during parsing.
 diagnostics: std.ArrayList(Diagnostic),
-diagnostic_messages: std.ArrayList([]const u8),
 /// The token that we're currently at.
 /// Calling `next()` or `peek()` will return this token.
 current_token: Token,
@@ -148,7 +145,6 @@ pub fn init(
         .next_token = undefined,
 
         .diagnostics = try std.ArrayList(Diagnostic).initCapacity(allocator, 2),
-        .diagnostic_messages = try std.ArrayList([]const u8).initCapacity(allocator, 2),
         .nodes = .{},
         .node_lists = try std.ArrayList(Node.Index).initCapacity(allocator, 32),
         .extra_data = try std.ArrayList(ast.ExtraData).initCapacity(allocator, 32),
@@ -175,11 +171,10 @@ pub fn deinit(self: *Self) void {
     self.tokens.deinit();
     self.node_lists.deinit();
     self.extra_data.deinit();
-    self.diagnostics.deinit();
-    for (self.diagnostic_messages.items) |m| {
-        self.allocator.free(m);
+    for (self.diagnostics.items) |d| {
+        self.allocator.free(d.message);
     }
-    self.diagnostic_messages.deinit();
+    self.diagnostics.deinit();
     self.strings.deinit();
 }
 
@@ -207,41 +202,40 @@ pub fn parse(self: *Self) !Node.Index {
 
 /// https://tc39.es/ecma262/#prod-Statement
 fn statement(self: *Self) ParseError!Node.Index {
-    const stmt = blk: {
-        switch (self.peek().tag) {
-            .@"{" => break :blk self.blockStatement(),
-            .@";" => break :blk self.emptyStatement(),
-            .kw_if => break :blk self.ifStatement(),
-            .kw_while => break :blk self.whileStatement(),
-            .kw_debugger => {
-                const token = try self.next();
-                const end_pos = try self.semiColon(token.start + token.len);
-                break :blk self.addNode(
-                    .{ .debugger_statement = {} },
-                    token.start,
-                    end_pos,
-                );
-            },
-            .kw_async => {
-                if (self.next_token.tag == .kw_function) {
-                    const async_token = try self.next(); // eat 'async'
-                    _ = try self.next(); // eat 'function'
-                    break :blk self.functionDeclaration(async_token.start, .{ .is_async = true });
-                }
-                break :blk self.expressionStatement();
-            },
-            .kw_function => {
-                const fn_token = try self.next();
-                break :blk self.functionDeclaration(fn_token.start, .{});
-            },
-            .kw_return => break :blk self.returnStatement(),
-            .kw_let => break :blk self.letStatement(),
-            .kw_var, .kw_const => break :blk self.variableStatement(try self.next()),
-            else => break :blk self.expressionStatement(),
-        }
+    return switch (self.peek().tag) {
+        .@"{" => self.blockStatement(),
+        .@";" => self.emptyStatement(),
+        .kw_if => self.ifStatement(),
+        .kw_while => self.whileStatement(),
+        .kw_debugger => {
+            const token = try self.next();
+            const end_pos = try self.semiColon(token.start + token.len);
+            return self.addNode(
+                .{ .debugger_statement = {} },
+                token.start,
+                end_pos,
+            );
+        },
+        .kw_async => {
+            if (self.next_token.tag == .kw_function) {
+                const async_token = try self.next(); // eat 'async'
+                _ = try self.next(); // eat 'function'
+                return self.functionDeclaration(async_token.start, .{ .is_async = true });
+            }
+            return self.expressionStatement();
+        },
+        .kw_function => {
+            const fn_token = try self.next();
+            return self.functionDeclaration(fn_token.start, .{});
+        },
+        .kw_return => self.returnStatement(),
+        .kw_let => self.letStatement(),
+        .kw_var, .kw_const => self.variableStatement(try self.next()),
+        // TODO: right now, if expression parsing fails, the error message we get is:
+        // "Expected an expression, found '<token>'."
+        // This error message should be improved.
+        else => self.expressionStatement(),
     };
-
-    return stmt;
 }
 
 fn ifStatement(self: *Self) ParseError!Node.Index {
@@ -628,10 +622,9 @@ fn emitDiagnostic(
     fmt_args: anytype,
 ) error{OutOfMemory}!void {
     const message = try std.fmt.allocPrint(self.allocator, fmt, fmt_args);
-    try self.diagnostic_messages.append(message);
     try self.diagnostics.append(Diagnostic{
         .coord = coord,
-        .message = @enumFromInt(self.diagnostic_messages.items.len - 1),
+        .message = message,
     });
 }
 
@@ -2287,7 +2280,7 @@ fn runTestOnFile(tests_dir: std.fs.Dir, file_path: []const u8) !void {
             std.log.err("({d}:{d}): {s}\n", .{
                 diagnostic.coord.line,
                 diagnostic.coord.column,
-                parser.diagnostic_messages.items[@intFromEnum(diagnostic.message)],
+                diagnostic.message,
             });
         }
         return err;

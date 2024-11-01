@@ -198,7 +198,12 @@ pub const NodeData = union(enum(u8)) {
     empty_array_item: void,
     array_literal: ?SubRange,
     array_pattern: ?SubRange,
+    /// A SpreadElement is used in expressions to splat arrays/objects.
+    /// `const arr = [1, 2, ...[3, 4]];`
     spread_element: Node.Index,
+    /// A RestElement is used in patterns to represent destructured bindings like:
+    /// `const [a, ...rest] = [1, 2, 3];`
+    rest_element: Node.Index,
 
     object_literal: ?SubRange,
     object_property: PropertyDefinition,
@@ -269,6 +274,7 @@ pub const NodePretty = union(enum) {
     call_expression: Pretty(CallExpr),
     super_call_expression: Pretty(SubRange),
     spread_element: Pretty(Node.Index),
+    rest_element: Pretty(Node.Index),
 
     post_unary_expression: UnaryPayload_,
     unary_expression: UnaryPayload_,

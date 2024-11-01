@@ -1,0 +1,123 @@
+{
+  "program": [
+    {
+      "expression_statement": {
+        "assignment_expression": {
+          "lhs": {
+            "object_pattern": [
+              {
+                "object_property": {
+                  "key": {
+                    "identifier": "a"
+                  },
+                  "value": {
+                    "identifier": "a"
+                  },
+                  "flags": {
+                    "is_method": false,
+                    "is_shorthand": true,
+                    "is_computed": false,
+                    "kind": "init"
+                  }
+                }
+              },
+              {
+                "object_property": {
+                  "key": {
+                    "identifier": "b"
+                  },
+                  "value": {
+                    "identifier": "b"
+                  },
+                  "flags": {
+                    "is_method": false,
+                    "is_shorthand": true,
+                    "is_computed": false,
+                    "kind": "init"
+                  }
+                }
+              }
+            ]
+          },
+          "rhs": {
+            "object_literal": [
+              {
+                "object_property": {
+                  "key": {
+                    "identifier": "a"
+                  },
+                  "value": {
+                    "literal": "1"
+                  },
+                  "flags": {
+                    "is_method": false,
+                    "is_shorthand": false,
+                    "is_computed": false,
+                    "kind": "init"
+                  }
+                }
+              },
+              {
+                "object_property": {
+                  "key": {
+                    "identifier": "b"
+                  },
+                  "value": {
+                    "literal": "2"
+                  },
+                  "flags": {
+                    "is_method": false,
+                    "is_shorthand": false,
+                    "is_computed": false,
+                    "kind": "init"
+                  }
+                }
+              }
+            ]
+          },
+          "operator": "="
+        }
+      }
+    },
+    {
+      "expression_statement": {
+        "assignment_expression": {
+          "lhs": {
+            "array_pattern": [
+              {
+                "object_pattern": [
+                  {
+                    "assignment_pattern": {
+                      "lhs": {
+                        "identifier": "a"
+                      },
+                      "rhs": {
+                        "literal": "1"
+                      },
+                      "operator": "="
+                    }
+                  },
+                  {
+                    "assignment_pattern": {
+                      "lhs": {
+                        "identifier": "b"
+                      },
+                      "rhs": {
+                        "literal": "1"
+                      },
+                      "operator": "="
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "rhs": {
+            "array": []
+          },
+          "operator": "="
+        }
+      }
+    }
+  ]
+}

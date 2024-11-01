@@ -228,6 +228,11 @@ fn toPretty(
             return .{ .spread_element = expr };
         },
 
+        .rest_element => |payload| {
+            const expr = try copy(al, try toPretty(self, al, payload));
+            return .{ .rest_element = expr };
+        },
+
         .return_statement => |operand| {
             const ret_operand = if (operand) |arg|
                 try copy(al, try toPretty(self, al, arg))
