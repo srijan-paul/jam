@@ -1,0 +1,118 @@
+{
+  "program": [
+    {
+      "variable_declaration": {
+        "declarators": [
+          {
+            "variable_declarator": {
+              "lhs": {
+                "identifier": "f"
+              },
+              "init": {
+                "function": {
+                  "parameters": {
+                    "parameters": []
+                  },
+                  "body": {
+                    "literal": "1"
+                  },
+                  "info": {
+                    "function": {
+                      "flags": {
+                        "is_generator": false,
+                        "is_async": false,
+                        "is_arrow": true,
+                        "_": 0
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "kind": "const"
+      }
+    },
+    {
+      "variable_declaration": {
+        "declarators": [
+          {
+            "variable_declarator": {
+              "lhs": {
+                "identifier": "f2"
+              },
+              "init": {
+                "function": {
+                  "parameters": {
+                    "parameters": []
+                  },
+                  "body": {
+                    "block_statement": [
+                      {
+                        "variable_declaration": {
+                          "declarators": [
+                            {
+                              "variable_declarator": {
+                                "lhs": {
+                                  "identifier": "f3"
+                                },
+                                "init": {
+                                  "function": {
+                                    "parameters": {
+                                      "parameters": []
+                                    },
+                                    "body": {
+                                      "block_statement": [
+                                        {
+                                          "return_statement": {
+                                            "literal": "456"
+                                          }
+                                        }
+                                      ]
+                                    },
+                                    "info": {
+                                      "function": {
+                                        "flags": {
+                                          "is_generator": false,
+                                          "is_async": false,
+                                          "is_arrow": true,
+                                          "_": 0
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          ],
+                          "kind": "const"
+                        }
+                      },
+                      {
+                        "return_statement": {
+                          "identifier": "f3"
+                        }
+                      }
+                    ]
+                  },
+                  "info": {
+                    "function": {
+                      "flags": {
+                        "is_generator": false,
+                        "is_async": false,
+                        "is_arrow": true,
+                        "_": 0
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "kind": "const"
+      }
+    }
+  ]
+}

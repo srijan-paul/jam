@@ -18,12 +18,14 @@ const ParseError = error{
     NotSupported,
     IllegalReturn,
     IllegalAwait,
+    IllegalFatArrow,
     InvalidAssignmentTarget,
-    LetInStrictMode,
+    InvalidArrowFunction,
     InvalidSetter,
     InvalidGetter,
     InvalidObject,
     InvalidPropertyName,
+    LetInStrictMode,
     UnexpectedPattern,
     ExpectedSemicolon,
 } || Tokenizer.Error;
@@ -1546,7 +1548,7 @@ fn primaryExpression(self: *Self) ParseError!Node.Index {
         },
         .@"[" => return self.arrayLiteral(token.start),
         .@"{" => return self.objectLiteral(token.start),
-        .@"(" => return self.coverParenExprAndArrowParams(),
+        .@"(" => return self.coverParenExprAndArrowParams(&token),
         .kw_async => {
             if (self.current_token.tag == .kw_function) {
                 _ = try self.next(); // eat 'function'
@@ -1578,7 +1580,85 @@ fn identifier(self: *Self, token: Token) ParseError!Node.Index {
     );
 }
 
-fn coverParenExprAndArrowParams(self: *Self) ParseError!Node.Index {
+/// Assuming the parameter list has been consumed, parse the body of
+/// an arrow function and return the complete arrow function AST node id.
+fn completeArrowFunction(
+    self: *Self,
+    lparen: *const Token,
+    rparen: *const Token,
+    params: Node.Index,
+    flags: ast.FunctionFlags,
+) ParseError!Node.Index {
+    const fat_arrow = try self.next();
+    std.debug.assert(fat_arrow.tag == .@"=>");
+
+    if (rparen.line != fat_arrow.line) {
+        try self.emitDiagnostic(
+            fat_arrow.startCoord(self.source),
+            "'=>' must be on the same line as the arrow function parameters",
+            .{},
+        );
+        return ParseError.IllegalFatArrow;
+    }
+
+    const body = blk: {
+        const token = self.peek();
+        if (token.tag == .@"{") {
+            const context = self.context;
+            defer self.setContext(context);
+            self.context.@"return" = true;
+            break :blk try self.blockStatement();
+        }
+
+        const assignment = try self.assignmentExpression();
+        if (self.current_destructure_kind == .must_destruct) {
+            try self.emitDiagnostic(
+                token.startCoord(self.source),
+                "Invalid arrow function body",
+                .{},
+            );
+            return ParseError.InvalidArrowFunction;
+        }
+
+        break :blk assignment;
+    };
+
+    const end_pos = self.nodes.items(.end)[@intFromEnum(body)];
+    return self.addNode(ast.NodeData{
+        .function_expr = ast.Function{
+            .parameters = params,
+            .body = body,
+            .info = try self.addExtraData(.{
+                .function = .{
+                    .name = null,
+                    .flags = flags,
+                },
+            }),
+        },
+    }, lparen.start, end_pos);
+}
+
+/// Parses either an arrow function or a parenthesized expression.
+fn coverParenExprAndArrowParams(self: *Self, lparen: *const Token) ParseError!Node.Index {
+    if (self.isAtToken(.@")")) {
+        const rparen = try self.next();
+        if (!self.isAtToken(.@"=>")) {
+            try self.emitDiagnostic(
+                lparen.startCoord(self.source),
+                "'()' is not a valid expression. Arrow functions start with '() => '",
+                .{},
+            );
+            return ParseError.InvalidArrowFunction;
+        }
+
+        const params = try self.addNode(
+            .{ .parameters = null },
+            lparen.start,
+            rparen.start + 1,
+        );
+        return self.completeArrowFunction(lparen, &rparen, params, .{ .is_arrow = true });
+    }
+
     const expr = try self.expression();
     _ = try self.expect(.@")");
     return expr;
