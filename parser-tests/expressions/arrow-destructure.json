@@ -1,0 +1,107 @@
+{
+  "program": [
+    {
+      "expression_statement": {
+        "function": {
+          "parameters": {
+            "parameters": [
+              {
+                "identifier": "a"
+              },
+              {
+                "assignment_pattern": {
+                  "lhs": {
+                    "identifier": "b"
+                  },
+                  "rhs": {
+                    "literal": "1"
+                  },
+                  "operator": "="
+                }
+              }
+            ]
+          },
+          "body": {
+            "binary_expression": {
+              "lhs": {
+                "identifier": "a"
+              },
+              "rhs": {
+                "identifier": "b"
+              },
+              "operator": "+"
+            }
+          },
+          "info": {
+            "function": {
+              "flags": {
+                "is_generator": false,
+                "is_async": false,
+                "is_arrow": true,
+                "_": 0
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "expression_statement": {
+        "function": {
+          "parameters": {
+            "parameters": [
+              {
+                "identifier": "a"
+              },
+              {
+                "array_pattern": [
+                  {
+                    "identifier": "b"
+                  },
+                  {
+                    "rest_element": {
+                      "identifier": "_"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "body": {
+            "binary_expression": {
+              "lhs": {
+                "identifier": "a"
+              },
+              "rhs": {
+                "identifier": "b"
+              },
+              "operator": "+"
+            }
+          },
+          "info": {
+            "function": {
+              "flags": {
+                "is_generator": false,
+                "is_async": false,
+                "is_arrow": true,
+                "_": 0
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "expression_statement": {
+        "sequence_expression": [
+          {
+            "identifier": "a"
+          },
+          {
+            "identifier": "b"
+          }
+        ]
+      }
+    }
+  ]
+}

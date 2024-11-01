@@ -1665,9 +1665,20 @@ fn arrowParamsOrExpression(self: *Self, lparen: *const Token) ParseError!Node.In
 
     _ = try nodes.append(first_expr);
 
+    var has_trailing_comma = false;
+
     var destructure_kind: u8 = self.current_destructure_kind.asU8();
     while (self.isAtToken(.@",")) {
         const comma_token = try self.next(); // eat ','
+        // A ')' after comma is allowed in arrow function parameters,
+        // but not in regular comma-separated expressions.
+        if (self.isAtToken(.@")") and
+            destructure_kind & DestructureKind.cannot_destruct.asU8() != 1)
+        {
+            has_trailing_comma = true;
+            break;
+        }
+
         const rhs = try self.assignmentExpression();
         destructure_kind |= self.current_destructure_kind.asU8();
 
@@ -1725,6 +1736,15 @@ fn arrowParamsOrExpression(self: *Self, lparen: *const Token) ParseError!Node.In
             .{},
         );
         return ParseError.UnexpectedPattern;
+    }
+
+    if (has_trailing_comma) {
+        try self.emitDiagnostic(
+            rparen.startCoord(self.source),
+            "Trailing comma is not permitted in parenthesied expressions",
+            .{},
+        );
+        return ParseError.UnexpectedToken;
     }
 
     if (nodes.items.len == 1) {
