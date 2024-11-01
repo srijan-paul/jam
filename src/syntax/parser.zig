@@ -733,11 +733,8 @@ fn assignmentLhsExpr(self: *Self) ParseError!Node.Index {
     switch (token.tag) {
         .@"{" => return self.objectAssignmentPattern(),
         .@"[" => return self.arrayAssignmentPattern(),
-        .identifier => {
-            return self.identifier(try self.next());
-        },
         else => {
-            if (self.isKeywordIdentifier(token.tag)) {
+            if (token.tag == .identifier or self.isKeywordIdentifier(token.tag)) {
                 return self.identifier(try self.next());
             }
 
@@ -1047,7 +1044,7 @@ fn completePropertyPatternDef(self: *Self, key: Node.Index) ParseError!Node.Inde
 }
 
 fn destructuredPropertyDefinition(self: *Self) ParseError!Node.Index {
-    switch (self.peek().tag) {
+    switch (self.current_token.tag) {
         .string_literal, .numeric_literal => {
             const key_token = try self.next();
             const key = try self.addNode(
@@ -1057,43 +1054,6 @@ fn destructuredPropertyDefinition(self: *Self) ParseError!Node.Index {
             );
             return self.completePropertyPatternDef(key);
         },
-        .identifier => {
-            const key_token = try self.next();
-            const key = try self.addNode(
-                .{ .identifier = try self.addToken(key_token) },
-                key_token.start,
-                key_token.start + key_token.len,
-            );
-
-            const cur_token = self.peek();
-            if (cur_token.tag == .@"=") {
-                const eq_token = try self.next(); // eat '='
-                const rhs = try self.assignmentExpression();
-                const end_pos = self.getNode(rhs).end;
-
-                return self.addNode(
-                    .{
-                        .assignment_pattern = .{
-                            .lhs = key,
-                            .rhs = rhs,
-                            .operator = try self.addToken(eq_token),
-                        },
-                    },
-                    key_token.start,
-                    end_pos,
-                );
-            }
-
-            if (cur_token.tag == .@":") {
-                return self.completePropertyPatternDef(key);
-            }
-
-            return self.addNode(
-                .{ .object_property = ast.PropertyDefinition{ .key = key, .value = key } },
-                key_token.start,
-                key_token.start + key_token.len,
-            );
-        },
         .@"[" => {
             _ = try self.next(); // eat '['
             const key = try self.assignmentExpression();
@@ -1101,9 +1061,55 @@ fn destructuredPropertyDefinition(self: *Self) ParseError!Node.Index {
             return self.completePropertyPatternDef(key);
         },
         else => {
+            if (self.current_token.tag == .identifier or
+                self.isKeywordIdentifier(self.current_token.tag))
+            {
+                return self.destructuredIdentifierProperty();
+            }
+
             return try self.assignmentPattern();
         },
     }
+}
+
+/// Parse a destructured objectp proeprty starting with an identifier.
+/// Assumes that self.current_token is the .identifier.
+fn destructuredIdentifierProperty(self: *Self) ParseError!Node.Index {
+    const key_token = try self.next();
+    const key = try self.addNode(
+        .{ .identifier = try self.addToken(key_token) },
+        key_token.start,
+        key_token.start + key_token.len,
+    );
+
+    const cur_token = self.peek();
+    if (cur_token.tag == .@"=") {
+        const eq_token = try self.next(); // eat '='
+        const rhs = try self.assignmentExpression();
+        const end_pos = self.getNode(rhs).end;
+
+        return self.addNode(
+            .{
+                .assignment_pattern = .{
+                    .lhs = key,
+                    .rhs = rhs,
+                    .operator = try self.addToken(eq_token),
+                },
+            },
+            key_token.start,
+            end_pos,
+        );
+    }
+
+    if (cur_token.tag == .@":") {
+        return self.completePropertyPatternDef(key);
+    }
+
+    return self.addNode(
+        .{ .object_property = ast.PropertyDefinition{ .key = key, .value = key } },
+        key_token.start,
+        key_token.start + key_token.len,
+    );
 }
 
 /// https://tc39.es/ecma262/#prod-ObjectAssignmentPattern
@@ -1135,13 +1141,18 @@ fn objectAssignmentPattern(self: *Self) ParseError!Node.Index {
             },
 
             else => {
-                try self.emitDiagnostic(
-                    cur_token.startCoord(self.source),
-                    "Unexpected '{s}' while parsing destructured object pattern",
-                    .{cur_token.toByteSlice(self.source)},
-                );
+                if (self.isKeywordIdentifier(cur_token.tag)) {
+                    const prop = try self.destructuredPropertyDefinition();
+                    try props.append(prop);
+                } else {
+                    try self.emitDiagnostic(
+                        cur_token.startCoord(self.source),
+                        "Unexpected '{s}' while parsing destructured object pattern",
+                        .{cur_token.toByteSlice(self.source)},
+                    );
 
-                return ParseError.InvalidAssignmentTarget;
+                    return ParseError.InvalidAssignmentTarget;
+                }
             },
         }
 
