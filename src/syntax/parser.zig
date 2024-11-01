@@ -29,22 +29,6 @@ const ParseError = error{
 } || Tokenizer.Error;
 const ParseFn = fn (self: *Self) ParseError!Node.Index;
 
-/// Used to save and restore the parser state.
-/// Helpful when backtracking for cover grammars (like arrow functions v/s parenthesized exprs)
-const State = struct {
-    nodes_len: usize,
-    tokens_len: usize,
-    node_lists_len: usize,
-    extra_data_len: usize,
-
-    current_token: Token,
-    next_token: Token,
-    prev_token_line: u32,
-    tokenizer_state: Tokenizer.State,
-
-    context: ParseContext,
-};
-
 /// An error or warning raised by the Parser.
 pub const Diagnostic = struct {
     /// Index into the `diagnostic_messages` slice.
@@ -110,8 +94,6 @@ tokenizer: Tokenizer,
 /// All AST nodes are stored in this flat list and reference
 /// each other using their indices.
 /// This is an *append only* list.
-/// No function other than `saveState`, and `restoreState` should modify
-/// the existing items in this list.
 nodes: std.MultiArrayList(Node),
 /// Extra information about a node, if any.
 extra_data: std.ArrayList(ast.ExtraData),
@@ -199,41 +181,6 @@ pub fn deinit(self: *Self) void {
     }
     self.diagnostic_messages.deinit();
     self.strings.deinit();
-}
-
-/// Save the parser and tokenizer state, then return an object
-/// that can be used to restore the state with `restoreState`.
-/// States must be saved and re-stored in a stack-order.
-/// i.e: `s1 = save() -> s2 = save() -> restore(s2) -> restore(s1)` is valid,
-/// but `s1 = save() -> s2 = save() -> restore(s2) -> restore(s1)` is not.
-fn saveState(self: *Self) error{OutOfMemory}!State {
-    return State{
-        .context = self.context,
-        .current_token = self.current_token,
-        .next_token = self.next_token,
-        .nodes_len = self.nodes.len,
-        .tokens_len = self.tokens.items.len,
-        .extra_data_len = self.extra_data.items.len,
-        .prev_token_line = self.prev_token_line,
-        .node_lists_len = self.node_lists.items.len,
-        .tokenizer_state = self.tokenizer.saveState(),
-    };
-}
-
-/// Restore the parser and tokenizer state to a saved state snapshot.
-fn restoreState(self: *Self, state: *State) error{OutOfMemory}!void {
-    self.current_token = state.current_token;
-    self.next_token = state.next_token;
-    self.prev_token_line = state.prev_token_line;
-
-    try self.nodes.resize(self.allocator, state.nodes_len);
-    self.tokens.items = self.tokens.items[0..state.tokens_len];
-    self.node_lists.items = self.node_lists.items[0..state.node_lists_len];
-    self.extra_data.items = self.extra_data.items[0..state.extra_data_len];
-    self.tokenizer.restoreState(state.tokenizer_state);
-
-    self.context = state.context;
-    self.tokenizer.context = state.context;
 }
 
 pub fn parse(self: *Self) !Node.Index {
@@ -419,6 +366,12 @@ fn variableDeclarator(self: *Self) ParseError!Node.Index {
     if (self.isAtToken(.@"=")) {
         _ = try self.next();
         const init_expr = try self.assignmentExpression();
+
+        if (self.current_destructure_kind == .must_destruct) {
+            try self.emitBadDestructureDiagnostic(init_expr);
+            return ParseError.UnexpectedPattern;
+        }
+
         end_pos = self.nodeSpan(init_expr).end;
         rhs = init_expr;
     }
@@ -648,6 +601,12 @@ fn addExtraData(self: *Self, data: ast.ExtraData) error{OutOfMemory}!ast.ExtraDa
     return @enumFromInt(self.extra_data.items.len - 1);
 }
 
+fn emitBadDestructureDiagnostic(self: *Self, expr: Node.Index) error{OutOfMemory}!void {
+    const start_byte_index = self.nodes.items(.start)[@intFromEnum(expr)];
+    const start_coord = util.offsets.byteIndexToCoordinate(self.source, start_byte_index);
+    return self.emitDiagnostic(start_coord, "Unexpected destructuring pattern", .{});
+}
+
 /// Emit a diagnostic about an un-expected token.
 fn emitBadTokenDiagnostic(
     self: *Self,
@@ -741,6 +700,11 @@ fn isAtToken(self: *Self, tag: Token.Tag) bool {
 //            | Expression, AssignmentExpression
 fn expression(self: *Self) !Node.Index {
     const expr = try self.assignmentExpression();
+    if (self.current_destructure_kind == .must_destruct) {
+        try self.emitBadDestructureDiagnostic(expr);
+        return ParseError.UnexpectedPattern;
+    }
+
     if (!self.isAtToken(.@",")) return expr;
 
     var nodes = std.ArrayList(Node.Index).init(self.allocator);
@@ -817,12 +781,8 @@ fn reinterpretAssignmentPattern(self: *Self, node_id: Node.Index) void {
                 self.reinterpretAssignmentPattern(elem_id);
             }
         },
-        .object_property => |property_definiton| {
-            self.reinterpretAssignmentPattern(property_definiton.value);
-        },
-        .assignment_expr => |assign_pl| {
-            node.* = .{ .assignment_pattern = assign_pl };
-        },
+        .object_property => |property_definiton| self.reinterpretAssignmentPattern(property_definiton.value),
+        .assignment_expr => |assign_pl| node.* = .{ .assignment_pattern = assign_pl },
         .spread_element => |spread_pl| {
             self.reinterpretAssignmentPattern(spread_pl);
             // TODO: change enum tag to a `rest_element`.
@@ -839,18 +799,6 @@ fn assignmentExpression(self: *Self) ParseError!Node.Index {
     const lhs = try yieldOrConditionalExpression(self);
 
     if (!self.current_token.isAssignmentOperator()) {
-        // We saw something like `{ x = y }`, which must be an assignment pattern.
-        // It doesn't make sense to *not* assign to a pattern like that.
-        if (self.current_destructure_kind == .must_destruct) {
-            try self.emitDiagnostic(
-                self.current_token.startCoord(self.source),
-                "Unexpected assignment pattern {s}", // TODO: better error message here
-                .{@tagName(self.getNode(lhs).data)},
-            );
-
-            return ParseError.InvalidAssignmentTarget;
-        }
-
         return lhs;
     }
 
@@ -1391,6 +1339,7 @@ fn completeCallExpression(self: *Self, callee: Node.Index) ParseError!Node.Index
         .callee = callee,
     };
     const end_pos = self.nodes.items(.end)[@intFromEnum(call_args)];
+    self.current_destructure_kind = .cannot_destruct;
     return self.addNode(.{ .call_expr = call_expr }, start_pos, end_pos);
 }
 
@@ -1419,6 +1368,7 @@ fn optionalExpression(self: *Self, object: Node.Index) ParseError!Node.Index {
         }
     }
 
+    self.current_destructure_kind = .cannot_destruct;
     return expr;
 }
 
@@ -1546,6 +1496,7 @@ fn completeMemberExpression(self: *Self, object: Node.Index) ParseError!Node.Ind
 
     const property_token = self.tokens.items[@intFromEnum(property_token_idx)];
     const end_pos = property_token.start + property_token.len;
+    self.current_destructure_kind = .can_destruct;
     return self.addNode(.{ .member_expr = property_access }, start_pos, end_pos);
 }
 
@@ -1563,6 +1514,7 @@ fn completeComputedMemberExpression(self: *Self, object: Node.Index) ParseError!
 
     const start_pos = self.nodes.items(.start)[@intFromEnum(object)];
     const end_pos = self.nodes.items(.end)[@intFromEnum(property)];
+    self.current_destructure_kind = .can_destruct;
     return self.addNode(.{ .computed_member_expr = property_access }, start_pos, end_pos);
 }
 
@@ -1830,7 +1782,7 @@ fn identifierProperty(self: *Self) ParseError!Node.Index {
                 },
             };
 
-            // 'Identifier = ...' is allowed in object patterns but not in object literals
+            // 'Identifier = AssignmentExpression' is allowed in object patterns but not in object literals
             self.current_destructure_kind = .must_destruct;
             return self.addNode(assignment_pattern, start_pos, end_pos);
         },
