@@ -20,6 +20,7 @@ const ParseError = error{
     IllegalAwait,
     IllegalFatArrow,
     InvalidAssignmentTarget,
+    InvalidArrowParameters,
     InvalidArrowFunction,
     InvalidSetter,
     InvalidGetter,
@@ -570,7 +571,7 @@ fn reserveSlot(self: *Self) Node.Index {
     return @enumFromInt(self.nodes.len - 1);
 }
 
-fn addSubRange(self: *Self, nodes: []Node.Index) error{OutOfMemory}!ast.SubRange {
+fn addSubRange(self: *Self, nodes: []const Node.Index) error{OutOfMemory}!ast.SubRange {
     const from: ast.SubRange.Index = @enumFromInt(self.node_lists.items.len);
     try self.node_lists.appendSlice(nodes);
     const to: ast.SubRange.Index = @enumFromInt(self.node_lists.items.len);
@@ -693,22 +694,31 @@ fn isAtToken(self: *Self, tag: Token.Tag) bool {
 
 // Expression : AssignmentExpression
 //            | Expression, AssignmentExpression
-fn expression(self: *Self) !Node.Index {
+fn expression(self: *Self) ParseError!Node.Index {
     const expr = try self.assignmentExpression();
     if (self.current_destructure_kind == .must_destruct) {
         try self.emitBadDestructureDiagnostic(expr);
         return ParseError.UnexpectedPattern;
     }
 
-    if (!self.isAtToken(.@",")) return expr;
+    if (self.isAtToken(.@",")) {
+        return self.completeSequenceExpr(expr);
+    }
+
+    return expr;
+}
+
+/// Parse a comma-separated sequence expression, where the first-expression is already parsed.
+fn completeSequenceExpr(self: *Self, first_expr: Node.Index) ParseError!Node.Index {
+    if (!self.isAtToken(.@",")) return first_expr;
 
     var nodes = std.ArrayList(Node.Index).init(self.allocator);
     defer nodes.deinit();
 
-    _ = try nodes.append(expr);
+    _ = try nodes.append(first_expr);
 
-    const start_pos = self.nodes.items(.start)[@intFromEnum(expr)];
-    var end_pos = self.nodes.items(.start)[@intFromEnum(expr)];
+    const start_pos = self.nodes.items(.start)[@intFromEnum(first_expr)];
+    var end_pos = self.nodes.items(.start)[@intFromEnum(first_expr)];
 
     while (self.isAtToken(.@",")) {
         _ = try self.next(); // eat ','
@@ -748,7 +758,7 @@ fn isSimpleAssignmentTarget(self: *const Self, node: Node.Index) bool {
 
 /// Mutate existing nodes to convert a PrimaryExpression to an
 /// AssignmentPattern (or Identifier) (e.g, .object_literal => .object_pattern)
-fn reinterpretAssignmentPattern(self: *Self, node_id: Node.Index) void {
+fn reinterpretAsPattern(self: *Self, node_id: Node.Index) void {
     const node: *ast.NodeData = &self.nodes.items(.data)[@intFromEnum(node_id)];
     switch (node.*) {
         .identifier,
@@ -762,7 +772,7 @@ fn reinterpretAssignmentPattern(self: *Self, node_id: Node.Index) void {
             const elems_idx = object_pl orelse return;
             const elems = elems_idx.asSlice(self);
             for (elems) |elem_id| {
-                self.reinterpretAssignmentPattern(elem_id);
+                self.reinterpretAsPattern(elem_id);
             }
         },
         .array_literal => |array_pl| {
@@ -770,14 +780,14 @@ fn reinterpretAssignmentPattern(self: *Self, node_id: Node.Index) void {
             const elems_idx = array_pl orelse return;
             const elems = elems_idx.asSlice(self);
             for (elems) |elem_id| {
-                self.reinterpretAssignmentPattern(elem_id);
+                self.reinterpretAsPattern(elem_id);
             }
         },
-        .object_property => |property_definiton| self.reinterpretAssignmentPattern(property_definiton.value),
+        .object_property => |property_definiton| self.reinterpretAsPattern(property_definiton.value),
         .assignment_expr => |assign_pl| node.* = .{ .assignment_pattern = assign_pl },
         .spread_element => |spread_pl| {
-            self.reinterpretAssignmentPattern(spread_pl);
-            // TODO: change enum tag to a `rest_element`.
+            self.reinterpretAsPattern(spread_pl);
+            node.* = .{ .rest_element = spread_pl };
         },
         else => unreachable,
     }
@@ -803,7 +813,7 @@ fn assignmentExpression(self: *Self) ParseError!Node.Index {
         return ParseError.InvalidAssignmentTarget;
     }
 
-    self.reinterpretAssignmentPattern(lhs);
+    self.reinterpretAsPattern(lhs);
 
     const op_token = try self.next(); // eat assignment operator
 
@@ -988,19 +998,12 @@ fn arrayAssignmentPattern(self: *Self) ParseError!Node.Index {
             },
 
             .@"..." => {
-                _ = try self.next(); // eat '...'
-                const start_pos = token.start;
-                const spread_elem = try self.lhsExpression();
-                const end_pos = self.nodes.items(.end)[@intFromEnum(spread_elem)];
-                try items.append(
-                    try self.addNode(.{ .spread_element = spread_elem }, start_pos, end_pos),
-                );
-
+                try items.append(try self.restElement());
                 if (self.isAtToken(.@",")) {
                     const comma_tok = try self.next();
                     try self.emitDiagnostic(
                         comma_tok.startCoord(self.source),
-                        "Comma not permitted after spread element in assignment target",
+                        "Comma not permitted after spread element in array pattern",
                         .{},
                     );
                     return ParseError.InvalidAssignmentTarget;
@@ -1117,16 +1120,11 @@ fn objectAssignmentPattern(self: *Self) ParseError!Node.Index {
 
     var end_pos = lbrace.start + lbrace.len;
 
-    var cur_token = self.peek();
+    var cur_token = self.current_token;
     while (cur_token.tag != .@"}") : (cur_token = self.peek()) {
         switch (cur_token.tag) {
             .@"..." => {
-                _ = try self.next(); // eat '...'
-                const start_pos = cur_token.start;
-                const expr = try self.lhsExpression();
-                const end = self.nodes.items(.end)[@intFromEnum(expr)];
-                const spread_expr = try self.addNode(.{ .spread_element = expr }, start_pos, end);
-                try props.append(spread_expr);
+                try props.append(try self.restElement());
                 break; // spread element must be the last element
             },
 
@@ -1589,9 +1587,16 @@ fn completeArrowFunction(
     params: Node.Index,
     flags: ast.FunctionFlags,
 ) ParseError!Node.Index {
-    const fat_arrow = try self.next();
-    std.debug.assert(fat_arrow.tag == .@"=>");
+    if (!self.isAtToken(.@"=>")) {
+        try self.emitDiagnostic(
+            lparen.startCoord(self.source),
+            "'()' is not a valid expression. Arrow functions start with '() => '",
+            .{},
+        );
+        return ParseError.InvalidArrowFunction;
+    }
 
+    const fat_arrow = try self.next();
     if (rparen.line != fat_arrow.line) {
         try self.emitDiagnostic(
             fat_arrow.startCoord(self.source),
@@ -1638,30 +1643,121 @@ fn completeArrowFunction(
     }, lparen.start, end_pos);
 }
 
+/// Parse a RestElement, assuming we're at the `...` token
+fn restElement(self: *Self) ParseError!Node.Index {
+    const dotdotdot = try self.next();
+    const rest_arg = try self.assignmentLhsExpr();
+    const end_pos = self.nodes.items(.end)[@intFromEnum(rest_arg)];
+    return self.addNode(.{ .rest_element = rest_arg }, dotdotdot.start, end_pos);
+}
+
+/// Once a '(' token has been eaten, parse the either an arrow function or a parenthesized expression.
+fn arrowParamsOrExpression(self: *Self, lparen: *const Token) ParseError!Node.Index {
+    const first_expr = try self.assignmentExpression();
+    if (self.current_destructure_kind == .cannot_destruct) {
+        const expr = try self.completeSequenceExpr(first_expr);
+        _ = try self.expect(.@")");
+        return expr;
+    }
+
+    var nodes = std.ArrayList(Node.Index).init(self.allocator);
+    defer nodes.deinit();
+
+    _ = try nodes.append(first_expr);
+
+    var destructure_kind: u8 = self.current_destructure_kind.asU8();
+    while (self.isAtToken(.@",")) {
+        const comma_token = try self.next(); // eat ','
+        const rhs = try self.assignmentExpression();
+        destructure_kind |= self.current_destructure_kind.asU8();
+
+        if (destructure_kind == DestructureKind.bad_object_or_pattern.asU8()) {
+            // TODO: better location for the diagnostic.
+            try self.emitDiagnostic(
+                comma_token.startCoord(self.source),
+                "Invalid object or destructuring pattern",
+                .{},
+            );
+            return ParseError.InvalidObject;
+        }
+        try nodes.append(rhs);
+    }
+
+    const rparen = try self.expect(.@")");
+
+    if (self.isAtToken(.@"=>")) {
+        if (destructure_kind != DestructureKind.can_destruct.asU8()) {
+            // TODO: improve the location of the diagnostic.
+            // Which part exactly is invalid?
+            try self.emitDiagnostic(
+                lparen.startCoord(self.source),
+                "Invalid arrow function parameters",
+                .{},
+            );
+            return ParseError.InvalidArrowParameters;
+        }
+
+        for (nodes.items) |node| {
+            self.reinterpretAsPattern(node);
+        }
+
+        const params_range = try self.addSubRange(nodes.items);
+        const parameters = try self.addNode(
+            .{ .parameters = params_range },
+            lparen.start,
+            rparen.start + 1,
+        );
+
+        return self.completeArrowFunction(
+            lparen,
+            &rparen,
+            parameters,
+            .{ .is_arrow = true },
+        );
+    }
+
+    if (destructure_kind == DestructureKind.must_destruct.asU8()) {
+        // TODO: improve the location of the diagnostic.
+        // Which part exaclty forces a destructuring pattern?
+        try self.emitDiagnostic(
+            lparen.startCoord(self.source),
+            "Grouping expression contains a destructuring pattern",
+            .{},
+        );
+        return ParseError.UnexpectedPattern;
+    }
+
+    if (nodes.items.len == 1) {
+        return nodes.items[0];
+    }
+
+    const sequence_expr = try self.addSubRange(nodes.items);
+    return self.addNode(.{ .sequence_expr = sequence_expr }, lparen.start, rparen.start + 1);
+}
+
 /// Parses either an arrow function or a parenthesized expression.
 fn coverParenExprAndArrowParams(self: *Self, lparen: *const Token) ParseError!Node.Index {
     if (self.isAtToken(.@")")) {
         const rparen = try self.next();
-        if (!self.isAtToken(.@"=>")) {
-            try self.emitDiagnostic(
-                lparen.startCoord(self.source),
-                "'()' is not a valid expression. Arrow functions start with '() => '",
-                .{},
-            );
-            return ParseError.InvalidArrowFunction;
-        }
-
-        const params = try self.addNode(
-            .{ .parameters = null },
-            lparen.start,
-            rparen.start + 1,
-        );
+        const end_pos = rparen.start + rparen.len;
+        const params = try self.addNode(.{ .parameters = null }, lparen.start, end_pos);
         return self.completeArrowFunction(lparen, &rparen, params, .{ .is_arrow = true });
     }
 
-    const expr = try self.expression();
-    _ = try self.expect(.@")");
-    return expr;
+    if (self.isAtToken(.@"...")) {
+        const rest_elem = try self.restElement();
+        const rparen = try self.expect(.@")");
+        const params = try self.addSubRange(&[_]Node.Index{rest_elem});
+
+        const parameters = try self.addNode(
+            .{ .parameters = params },
+            lparen.start,
+            rparen.start + rparen.len,
+        );
+        return self.completeArrowFunction(lparen, &rparen, parameters, .{ .is_arrow = true });
+    }
+
+    return self.arrowParamsOrExpression(lparen);
 }
 
 /// Parse an object literal, assuming the `{` has already been consumed.
