@@ -34,7 +34,7 @@ pub fn main() !void {
 
     const node_idx = parser.parse() catch |err| {
         for (parser.diagnostics.items) |d| {
-            std.log.err("{s}", .{d.message});
+            std.log.err("{d}:{d} {s}", .{ d.coord.line + 1, d.coord.column, d.message });
         }
 
         const n_errors = parser.diagnostics.items.len;

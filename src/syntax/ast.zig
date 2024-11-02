@@ -101,6 +101,12 @@ pub const Function = struct {
     }
 };
 
+/// A regular old `for (<init>;<condition>;<update>) <body>` statement.
+pub const ForStatement = struct {
+    iterator: ExtraData.Index,
+    body: Node.Index,
+};
+
 /// Describes the kind of property in an object literal.
 /// Differentiates getters and setters from regular property definitions.
 pub const PropertyDefinitionKind = enum(u5) {
@@ -157,17 +163,29 @@ pub const VariableDeclaration = struct {
     kind: VarDeclKind,
 };
 
+/// Iterator for a regular old for-loop
+/// (i.e `for (let i = 0; i < 10; i++) { ... }`).
+/// init: `let i = 0`;
+/// condition: `i < 10`;
+/// update: `i++`
+pub const ForIterator = struct {
+    init: Node.Index,
+    condition: Node.Index,
+    update: Node.Index,
+};
+
 /// Extra metadata about a node.
 /// The specific type of meta-data is determined by the node's
 /// tag (i.e the active field of NodeData).
 pub const ExtraData = union {
     pub const Index = enum(u32) { none = 0, _ };
     function: struct {
-        /// Name of the function, if present (identifier).
+        /// Name of the function, if present (always an identifier).
         name: ?Token.Index,
         /// Flags: generator, async, arrow, etc.
         flags: FunctionFlags,
     },
+    for_iterator: ForIterator,
 };
 
 pub const NodeData = union(enum(u8)) {
@@ -223,6 +241,7 @@ pub const NodeData = union(enum(u8)) {
     debugger_statement: void,
     if_statement: Conditional,
     while_statement: WhileStatement,
+    for_statement: ForStatement,
     parameters: ?SubRange,
     return_statement: ?Node.Index,
 
@@ -306,6 +325,12 @@ pub const NodePretty = union(enum) {
     expression_statement: Pretty(Node.Index),
     block_statement: Pretty(SubRange),
     if_statement: Pretty(Conditional),
+    for_statement: struct {
+        init: ?*NodePretty,
+        condition: ?*NodePretty,
+        update: ?*NodePretty,
+        body: Pretty(Node.Index),
+    },
     while_statement: Pretty(WhileStatement),
     variable_declaration: Pretty(VariableDeclaration),
     variable_declarator: Pretty(VariableDeclarator),
@@ -320,6 +345,7 @@ pub const NodePretty = union(enum) {
 
 pub const ExtraPretty = union(enum) {
     function: Pretty(std.meta.FieldType(ExtraData, .function)),
+    for_iterator: Pretty(ForIterator),
 };
 
 fn Pretty(T: type) type {

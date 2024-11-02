@@ -272,6 +272,34 @@ fn toPretty(
             };
         },
 
+        .for_statement => |stmt| {
+            const extra = self.getExtraData(stmt.iterator).for_iterator;
+            const init = if (extra.init != Node.Index.empty)
+                try copy(al, try toPretty(self, al, extra.init))
+            else
+                null;
+
+            const condition = if (extra.condition != Node.Index.empty)
+                try copy(al, try toPretty(self, al, extra.condition))
+            else
+                null;
+
+            const update = if (extra.update != Node.Index.empty)
+                try copy(al, try toPretty(self, al, extra.update))
+            else
+                null;
+
+            const body = try copy(al, try toPretty(self, al, stmt.body));
+            return .{
+                .for_statement = .{
+                    .init = init,
+                    .condition = condition,
+                    .update = update,
+                    .body = body,
+                },
+            };
+        },
+
         .expression_statement => |expr| {
             const expression = try copy(al, try toPretty(self, al, expr));
             return .{ .expression_statement = expression };

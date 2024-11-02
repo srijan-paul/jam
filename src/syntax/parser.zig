@@ -209,6 +209,7 @@ fn statement(self: *Self) ParseError!Node.Index {
         .@"{" => self.blockStatement(),
         .@";" => self.emptyStatement(),
         .kw_if => self.ifStatement(),
+        .kw_for => self.forStatement(),
         .kw_while => self.whileStatement(),
         .kw_debugger => {
             const token = try self.next();
@@ -272,6 +273,79 @@ fn ifStatement(self: *Self) ParseError!Node.Index {
     );
 }
 
+/// Parse a for loop.
+fn forStatement(self: *Self) ParseError!Node.Index {
+    const for_kw = try self.next();
+    std.debug.assert(for_kw.tag == .kw_for);
+
+    const iterator = try self.forLoopIterator();
+
+    const body = try self.statement();
+    const start_pos = for_kw.start;
+    const end_pos = self.nodes.items(.end)[@intFromEnum(body)];
+
+    return self.addNode(ast.NodeData{
+        .for_statement = ast.ForStatement{
+            .body = body,
+            .iterator = iterator,
+        },
+    }, start_pos, end_pos);
+}
+
+fn forLoopIterator(self: *Self) ParseError!ast.ExtraData.Index {
+    _ = try self.expect(.@"(");
+
+    const for_init = try self.forLoopInitializer();
+    _ = try self.expect(.@";");
+
+    const for_cond = switch (self.current_token.tag) {
+        .@";" => Node.Index.empty,
+        else => try self.expression(),
+    };
+
+    _ = try self.expect(.@";");
+
+    const for_update = switch (self.current_token.tag) {
+        .@")" => Node.Index.empty,
+        else => try self.expression(),
+    };
+
+    _ = try self.expect(.@")");
+
+    return self.addExtraData(ast.ExtraData{
+        .for_iterator = ast.ForIterator{
+            .init = for_init,
+            .condition = for_cond,
+            .update = for_update,
+        },
+    });
+}
+
+/// Once the opening '(' of a for loop as been eaten,
+/// parse the initializer of the for loop.
+fn forLoopInitializer(self: *Self) ParseError!Node.Index {
+    switch (self.current_token.tag) {
+        .kw_let, .kw_var, .kw_const => {
+            const kw = try self.next();
+            const decls = try self.variableDeclaratorList();
+            const last_decl = decls.asSlice(self)[0];
+            const end_pos = self.nodes.items(.end)[@intFromEnum(last_decl)];
+            return self.addNode(
+                .{
+                    .variable_declaration = .{
+                        .kind = varDeclKind(kw.tag),
+                        .declarators = decls,
+                    },
+                },
+                kw.start,
+                end_pos,
+            );
+        },
+        .@";" => return Node.Index.empty,
+        else => return self.expression(),
+    }
+}
+
 fn whileStatement(self: *Self) ParseError!Node.Index {
     const while_kw = try self.next();
     std.debug.assert(while_kw.tag == .kw_while);
@@ -295,11 +369,28 @@ fn whileStatement(self: *Self) ParseError!Node.Index {
 fn variableStatement(self: *Self, kw: Token) ParseError!Node.Index {
     std.debug.assert(kw.tag == .kw_let or kw.tag == .kw_var or kw.tag == .kw_const);
 
-    // TODO: fast path for single variable declaration?
+    const decls = try self.variableDeclaratorList();
+    const last_decl = decls.asSlice(self)[0];
+
+    var end_pos: u32 = self.nodes.items(.end)[@intFromEnum(last_decl)];
+    end_pos = try self.semiColon(end_pos);
+
+    return self.addNode(
+        .{
+            .variable_declaration = .{
+                .kind = varDeclKind(kw.tag),
+                .declarators = decls,
+            },
+        },
+        kw.start,
+        end_pos,
+    );
+}
+
+fn variableDeclaratorList(self: *Self) ParseError!ast.SubRange {
     var declarators = std.ArrayList(Node.Index).init(self.allocator);
     defer declarators.deinit();
 
-    // parse a VariableDeclarationList
     while (true) {
         const decl = try self.variableDeclarator();
         try declarators.append(decl);
@@ -311,23 +402,16 @@ fn variableStatement(self: *Self, kw: Token) ParseError!Node.Index {
     }
 
     const decls = try self.addSubRange(declarators.items);
-    const last_decl = self.getNode(self.node_lists.items[@intFromEnum(decls.to) - 1]);
+    return decls;
+}
 
-    const end_pos = try self.semiColon(last_decl.end);
-
-    return self.addNode(
-        .{ .variable_declaration = .{
-            .kind = switch (kw.tag) {
-                .kw_let => .let,
-                .kw_var => .@"var",
-                .kw_const => .@"const",
-                else => unreachable,
-            },
-            .declarators = decls,
-        } },
-        kw.start,
-        end_pos,
-    );
+fn varDeclKind(tag: Token.Tag) ast.VarDeclKind {
+    return switch (tag) {
+        .kw_let => .let,
+        .kw_var => .@"var",
+        .kw_const => .@"const",
+        else => unreachable,
+    };
 }
 
 /// Parse a statement that starts with the `let` keyword.
@@ -406,10 +490,11 @@ fn expressionStatement(self: *Self) ParseError!Node.Index {
     );
 }
 
-fn blockStatement(self: *Self) !Node.Index {
-    const start_pos = self.peek().start;
-
-    _ = try self.expect(.@"{");
+/// BlockStatement:
+///   '{' StatementList? '}'
+fn blockStatement(self: *Self) ParseError!Node.Index {
+    const lbrac = try self.expect(.@"{");
+    const start_pos = lbrac.start;
 
     var statements = std.ArrayList(Node.Index).init(self.allocator);
     defer statements.deinit();
@@ -423,19 +508,12 @@ fn blockStatement(self: *Self) !Node.Index {
     const end_pos = rbrace.start + rbrace.len;
 
     if (statements.items.len == 0) {
-        return self.addNode(
-            .{ .block_statement = null },
-            start_pos,
-            end_pos,
-        );
+        return self.addNode(.{ .block_statement = null }, start_pos, end_pos);
     }
 
     const stmt_list_node = try self.addSubRange(statements.items);
-    return self.addNode(
-        .{ .block_statement = stmt_list_node },
-        start_pos,
-        end_pos,
-    );
+    const block_node = ast.NodeData{ .block_statement = stmt_list_node };
+    return self.addNode(block_node, start_pos, end_pos);
 }
 
 /// Assuming the parser is at the `function` keyword,
@@ -457,7 +535,7 @@ fn functionDeclaration(
             break :blk try self.addToken(token);
         }
 
-        try self.emitBadTokenDiagnostic("function name", token);
+        try self.emitBadTokenDiagnostic("function name", &token);
         return ParseError.UnexpectedToken;
     };
 
@@ -529,7 +607,7 @@ fn eatSemiAsi(self: *Self) ParseError!?types.Span {
         self.current_token.tag == .eof)
         return null;
 
-    try self.emitBadTokenDiagnostic("a ';' or a newline", self.current_token);
+    try self.emitBadTokenDiagnostic("a ';' or a newline", &self.current_token);
     return ParseError.ExpectedSemicolon;
 }
 
@@ -608,7 +686,7 @@ fn emitBadDestructureDiagnostic(self: *Self, expr: Node.Index) error{OutOfMemory
 fn emitBadTokenDiagnostic(
     self: *Self,
     comptime expected: []const u8,
-    got: Token,
+    got: *const Token,
 ) error{OutOfMemory}!void {
     try self.emitDiagnostic(
         got.startCoord(self.source),
@@ -734,7 +812,7 @@ fn completeSequenceExpr(self: *Self, first_expr: Node.Index) ParseError!Node.Ind
 }
 
 fn assignmentLhsExpr(self: *Self) ParseError!Node.Index {
-    const token = self.peek();
+    const token: *const Token = &self.current_token;
     switch (token.tag) {
         .@"{" => return self.objectAssignmentPattern(),
         .@"[" => return self.arrayAssignmentPattern(),
@@ -1564,7 +1642,7 @@ fn primaryExpression(self: *Self) ParseError!Node.Index {
 
     try self.emitDiagnostic(
         token.startCoord(self.source),
-        "expected an expression, found '{s}'",
+        "Unexpected '{s}'",
         .{token.toByteSlice(self.source)},
     );
     return ParseError.UnexpectedToken;
@@ -1966,7 +2044,7 @@ fn identifierProperty(self: *Self) ParseError!Node.Index {
         .@"=" => {
             const op_token = try self.next(); // eat '='
             if (key_token.tag != .identifier) {
-                try self.emitBadTokenDiagnostic("property name", key_token);
+                try self.emitBadTokenDiagnostic("property name", &key_token);
                 return ParseError.InvalidPropertyName;
             }
 
@@ -2262,6 +2340,7 @@ fn parseFunctionBody(
     defer self.setContext(ctx);
     self.context.@"return" = true;
 
+    // TODO: make the body a statement list.
     const body = try self.blockStatement();
     const end_pos = self.nodeSpan(body).end;
 
