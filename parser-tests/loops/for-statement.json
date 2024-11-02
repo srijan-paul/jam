@@ -1,0 +1,256 @@
+{
+  "program": [
+    {
+      "for_statement": {
+        "init": {
+          "variable_declaration": {
+            "declarators": [
+              {
+                "variable_declarator": {
+                  "lhs": {
+                    "identifier": "x"
+                  },
+                  "init": {
+                    "literal": "1"
+                  }
+                }
+              }
+            ],
+            "kind": "let"
+          }
+        },
+        "condition": {
+          "binary_expression": {
+            "lhs": {
+              "identifier": "x"
+            },
+            "rhs": {
+              "literal": "10"
+            },
+            "operator": "<"
+          }
+        },
+        "update": {
+          "post_unary_expression": {
+            "operand": {
+              "identifier": "x"
+            },
+            "operator": "++"
+          }
+        },
+        "body": {
+          "block_statement": []
+        }
+      }
+    },
+    {
+      "for_statement": {
+        "body": {
+          "empty_statement": {}
+        }
+      }
+    },
+    {
+      "for_statement": {
+        "init": {
+          "variable_declaration": {
+            "declarators": [
+              {
+                "variable_declarator": {
+                  "lhs": {
+                    "identifier": "x"
+                  },
+                  "init": {
+                    "literal": "0"
+                  }
+                }
+              }
+            ],
+            "kind": "var"
+          }
+        },
+        "body": {
+          "empty_statement": {}
+        }
+      }
+    },
+    {
+      "for_statement": {
+        "condition": {
+          "post_unary_expression": {
+            "operand": {
+              "identifier": "x"
+            },
+            "operator": "++"
+          }
+        },
+        "body": {
+          "empty_statement": {}
+        }
+      }
+    },
+    {
+      "for_statement": {
+        "condition": {
+          "identifier": "x"
+        },
+        "update": {
+          "assignment_expression": {
+            "lhs": {
+              "identifier": "x"
+            },
+            "rhs": {
+              "literal": "1"
+            },
+            "operator": "+="
+          }
+        },
+        "body": {
+          "empty_statement": {}
+        }
+      }
+    },
+    {
+      "for_statement": {
+        "update": {
+          "assignment_expression": {
+            "lhs": {
+              "identifier": "x"
+            },
+            "rhs": {
+              "literal": "1"
+            },
+            "operator": "+="
+          }
+        },
+        "body": {
+          "empty_statement": {}
+        }
+      }
+    },
+    {
+      "for_statement": {
+        "condition": {
+          "assignment_expression": {
+            "lhs": {
+              "identifier": "let"
+            },
+            "rhs": {
+              "literal": "1"
+            },
+            "operator": "="
+          }
+        },
+        "body": {
+          "empty_statement": {}
+        }
+      }
+    },
+    {
+      "for_statement": {
+        "init": {
+          "literal": "1"
+        },
+        "body": {
+          "empty_statement": {}
+        }
+      }
+    },
+    {
+      "for_statement": {
+        "init": {
+          "variable_declaration": {
+            "declarators": [
+              {
+                "variable_declarator": {
+                  "lhs": {
+                    "identifier": "x"
+                  },
+                  "init": {
+                    "literal": "1"
+                  }
+                }
+              },
+              {
+                "variable_declarator": {
+                  "lhs": {
+                    "identifier": "y"
+                  },
+                  "init": {
+                    "literal": "2"
+                  }
+                }
+              }
+            ],
+            "kind": "var"
+          }
+        },
+        "condition": {
+          "sequence_expression": [
+            {
+              "binary_expression": {
+                "lhs": {
+                  "identifier": "x"
+                },
+                "rhs": {
+                  "literal": "0"
+                },
+                "operator": "<"
+              }
+            },
+            {
+              "binary_expression": {
+                "lhs": {
+                  "binary_expression": {
+                    "lhs": {
+                      "identifier": "y"
+                    },
+                    "rhs": {
+                      "literal": "2"
+                    },
+                    "operator": "<"
+                  }
+                },
+                "rhs": {
+                  "binary_expression": {
+                    "lhs": {
+                      "identifier": "y"
+                    },
+                    "rhs": {
+                      "literal": "2"
+                    },
+                    "operator": ">"
+                  }
+                },
+                "operator": "&&"
+              }
+            }
+          ]
+        },
+        "update": {
+          "sequence_expression": [
+            {
+              "post_unary_expression": {
+                "operand": {
+                  "identifier": "x"
+                },
+                "operator": "++"
+              }
+            },
+            {
+              "post_unary_expression": {
+                "operand": {
+                  "identifier": "y"
+                },
+                "operator": "++"
+              }
+            }
+          ]
+        },
+        "body": {
+          "empty_statement": {}
+        }
+      }
+    }
+  ]
+}
