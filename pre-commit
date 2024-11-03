@@ -1,0 +1,10 @@
+#!/bin/sh
+
+set -euo pipefail
+
+# Download the results.json file from the main branch on github, and compare with the current results.json file
+echo "Downloading results.json from main branch on GH"
+curl https://raw.githubusercontent.com/srijan-paul/jam/refs/heads/main/tools/results.json -o ./results-old.json
+echo "Comparing results.json files"
+zig build test-262 -- --compare ./results-old.json
+rm ./results-old.json

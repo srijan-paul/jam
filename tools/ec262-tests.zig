@@ -182,8 +182,8 @@ pub fn runValidSyntaxTests(al: std.mem.Allocator) !TestResult {
 
     return TestResult{
         .test_cases = .{ .object = test_cases },
-        .fail_percent = std.json.Value{ .number_string = fail_rate_str },
-        .pass_percent = std.json.Value{ .number_string = pass_rate_str },
+        .fail_percent = .{ .number_string = fail_rate_str },
+        .pass_percent = .{ .number_string = pass_rate_str },
         .unmatching_ast_count = n_ast_no_match,
     };
 }
