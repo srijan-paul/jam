@@ -25,6 +25,7 @@ const ParseError = error{
     InvalidSetter,
     InvalidGetter,
     InvalidObject,
+    InvalidLoopLhs,
     InvalidPropertyName,
     LetInStrictMode,
     UnexpectedPattern,
@@ -43,12 +44,14 @@ pub const Diagnostic = struct {
 /// Represents the currently active set of grammatical parameters
 /// in the parser state.
 /// https://tc39.es/ecma262/#sec-grammatical-parameters
-pub const ParseContext = packed struct(u8) {
+pub const ParseContext = packed struct(u16) {
     /// Is a ReturnStatement allowed in the current context?
     /// Unlike `await`, `return` is always parsed as a keyword, regardles of context.
     @"return": bool = false,
     /// Is a BreakStatement allowed in the current context?
     @"break": bool = false,
+    /// Is a ContinueStatement allowed in the current context?
+    @"continue": bool = false,
     /// Is an `await` parsed as an identifier or as a keyword?
     is_await_reserved: bool = false,
     /// Is `yield` parsed as an identifier or as a keyword?
@@ -57,9 +60,12 @@ pub const ParseContext = packed struct(u8) {
     module: bool = false,
     /// Are we in strict mode?
     strict: bool = false,
-    in: bool = false,
+    /// Are `in` statements allowed?
+    /// Used to parse for-in loops.
+    in: bool = true,
     /// Is an assignment pattern allowed in the current context?
     is_pattern_allowed: bool = false,
+    _: u7 = 0,
 };
 
 // arranged in highest to lowest binding order
@@ -76,7 +82,49 @@ const multiplicativeExpr = makeLeftAssoc(.multiplicative_start, .multiplicative_
 const additiveExpr = makeLeftAssoc(.additive_start, .additive_end, multiplicativeExpr);
 
 const shiftExpr = makeLeftAssoc(.shift_op_start, .shift_op_end, additiveExpr);
-const relationalExpr = makeLeftAssoc(.relational_start, .relational_end, shiftExpr);
+
+// this one has to be hand-written to disallow 'in' inside for-loop iterators.
+// see: forStatement
+fn relationalExpr(self: *Self) ParseError!Node.Index {
+    var node = try shiftExpr(self);
+
+    const rel_op_start: u32 = @intFromEnum(Token.Tag.relational_start);
+    const rel_op_end: u32 = @intFromEnum(Token.Tag.relational_end);
+
+    var token = self.peek();
+    while (true) : (token = self.peek()) {
+        const itag: u32 = @intFromEnum(token.tag);
+        if (itag > rel_op_start and itag < rel_op_end) {
+
+            // `in` expressions are not allowed when parsing the LHS
+            // for `for-loop` iterators.
+            if (token.tag == .kw_in and !self.context.in) {
+                break;
+            }
+
+            self.current_destructure_kind =
+                @enumFromInt(self.current_destructure_kind.asU8() |
+                DestructureKind.cannot_destruct.asU8());
+
+            const op_token = try self.next();
+            const rhs = try shiftExpr(self);
+            const start_pos = self.nodes.items(.start)[@intFromEnum(node)];
+            const end_pos = self.nodes.items(.end)[@intFromEnum(rhs)];
+            const binary_pl: ast.BinaryPayload = .{
+                .lhs = node,
+                .rhs = rhs,
+                .operator = try self.addToken(op_token),
+            };
+
+            node = try self.addNode(.{ .binary_expr = binary_pl }, start_pos, end_pos);
+        } else {
+            break;
+        }
+    }
+
+    return node;
+}
+
 const eqExpr = makeLeftAssoc(.eq_op_start, .eq_op_end, relationalExpr);
 
 const bAndExpr = makeLeftAssoc(.@"&", .@"&", eqExpr);
@@ -233,6 +281,7 @@ fn statement(self: *Self) ParseError!Node.Index {
             return self.functionDeclaration(fn_token.start, .{});
         },
         .kw_return => self.returnStatement(),
+        .kw_break => self.breakStatement(),
         .kw_let => self.letStatement(),
         .kw_var, .kw_const => self.variableStatement(try self.next()),
         // TODO: right now, if expression parsing fails, the error message we get is:
@@ -273,29 +322,233 @@ fn ifStatement(self: *Self) ParseError!Node.Index {
     );
 }
 
-/// Parse a for loop.
+const ForLoopKind = enum {
+    for_in,
+    for_of,
+    basic,
+};
+
+/// Parse a for loop. Returns an index of:
+/// ForOfStatement / ForInStatement / ForStatement
 fn forStatement(self: *Self) ParseError!Node.Index {
     const for_kw = try self.next();
     std.debug.assert(for_kw.tag == .kw_for);
 
-    const iterator = try self.forLoopIterator();
+    const loop_kind, const iterator = try self.forLoopIterator();
+
+    const saved_context = self.context;
+    defer self.setContext(saved_context);
+
+    self.context.@"break" = true;
+    self.context.@"continue" = true;
 
     const body = try self.statement();
     const start_pos = for_kw.start;
     const end_pos = self.nodes.items(.end)[@intFromEnum(body)];
 
-    return self.addNode(ast.NodeData{
-        .for_statement = ast.ForStatement{
-            .body = body,
-            .iterator = iterator,
-        },
-    }, start_pos, end_pos);
+    const for_payload = ast.ForStatement{
+        .body = body,
+        .iterator = iterator,
+    };
+
+    const node_data: ast.NodeData = switch (loop_kind) {
+        .basic => .{ .for_statement = for_payload },
+        .for_of => .{ .for_of_statement = for_payload },
+        .for_in => .{ .for_in_statement = for_payload },
+    };
+
+    return self.addNode(node_data, start_pos, end_pos);
 }
 
-fn forLoopIterator(self: *Self) ParseError!ast.ExtraData.Index {
+/// Once a 'for' keyword has been consumed, this parses the part inside '()', including the parentheses.
+/// Returns a tuple where the first item is the kind of for loop (for-in, for-of, or basic),
+/// and the second item is the iterator (index of an `ast.ExtraData`).
+fn forLoopIterator(self: *Self) ParseError!struct { ForLoopKind, ast.ExtraData.Index } {
     _ = try self.expect(.@"(");
 
-    const for_init = try self.forLoopInitializer();
+    // Forbid for (let let of x) {} / for (let let = ...)
+    if (self.current_token.tag == .kw_let and self.next_token.tag == .kw_let) {
+        try self.emitDiagnostic(
+            self.current_token.startCoord(self.source),
+            "'let' cannot be used as a name in 'let' or 'const' declarations",
+            .{},
+        );
+        return ParseError.UnexpectedToken;
+    }
+
+    // Check for productions that start with a variable declarator.
+    // for (var/let/const x = 0; x < 10; x++)
+    // for (let/let/const x in y)
+    // for (let/let/const x of y)
+    const curr = self.current_token.tag;
+    if ((curr == .kw_let and self.isDeclaratorStart(self.next_token.tag)) or
+        curr == .kw_var or
+        curr == .kw_const)
+    {
+        var loop_kind = ForLoopKind.basic;
+        const iterator = try self.completeLoopIterator(&loop_kind);
+        return .{ loop_kind, iterator };
+    }
+
+    // 'for (;' indicates a basic 3-part for loop with empty initializer.
+    if (curr == .@";") {
+        const iterator = try self.completeBasicLoopIterator(Node.Index.empty);
+        return .{ ForLoopKind.basic, iterator };
+    }
+
+    const context = self.context;
+    defer self.setContext(context);
+
+    // disallow `in` expressions.
+    // The next `in` token is instead the iterator of the for loop.
+    self.context.in = false;
+
+    // for (<LeftHandSideExpression> <in/of> <Expression>)
+    // for (<Expression> <in/of> <Expression>)
+    // for (<Expression>;<Expression>;<Expression>);
+    const expr = try self.forLoopStartExpression();
+
+    switch (self.current_token.tag) {
+        .@";" => {
+            // parse <Expression> ; <Expression> ; <Expression>
+            if (self.current_destructure_kind == .must_destruct) {
+                const expr_start = self.nodes.items(.start)[@intFromEnum(expr)];
+                try self.emitDiagnostic(
+                    util.offsets.byteIndexToCoordinate(self.source, expr_start),
+                    "Unexpected pattern",
+                    .{},
+                );
+
+                return ParseError.UnexpectedPattern;
+            }
+
+            const iterator = try self.completeBasicLoopIterator(expr);
+            return .{ ForLoopKind.basic, iterator };
+        },
+
+        .kw_of, .kw_in => {
+            // parse <Expression> <in/of> <Expression>
+            const cannot_destruct = self.current_destructure_kind.asU8() &
+                DestructureKind.cannot_destruct.asU8();
+
+            if (cannot_destruct == 1) {
+                try self.emitDiagnostic(
+                    // TODO: use the expression's start coordinate instead, use util.offsets
+                    self.current_token.startCoord(self.source),
+                    "left hand side of for-loop must be a name or assignment pattern",
+                    .{},
+                );
+                return ParseError.InvalidLoopLhs;
+            }
+
+            const loop_kind = if (self.isAtToken(.kw_of))
+                ForLoopKind.for_of
+            else
+                ForLoopKind.for_in;
+
+            self.context.in = true;
+
+            _ = try self.next();
+            const rhs = try self.expression();
+            _ = try self.expect(.@")");
+
+            const iterator = try self.addExtraData(.{
+                .for_in_of_iterator = .{
+                    .left = expr,
+                    .right = rhs,
+                },
+            });
+            return .{ loop_kind, iterator };
+        },
+
+        else => {
+            try self.emitBadTokenDiagnostic("'of', 'in' or ';'", &self.current_token);
+            return ParseError.UnexpectedToken;
+        },
+    }
+}
+
+/// Parse the first expression that can appear in a for-loop iterator after
+/// the opening parenthesis.
+/// This expression may be followed a ';' token (indicating a 3-step for loop),
+/// or by 'in' or 'of' (indicating a for-in or for-of loop).
+fn forLoopStartExpression(self: *Self) ParseError!Node.Index {
+    const first_expr = try self.assignmentExpression();
+
+    const must_destruct = self.current_destructure_kind.asU8() &
+        DestructureKind.must_destruct.asU8() == 1;
+    if (self.isAtToken(.@",") and !must_destruct) {
+        return self.completeSequenceExpr(first_expr);
+    }
+
+    return first_expr;
+}
+
+fn completeLoopIterator(self: *Self, loop_kind: *ForLoopKind) ParseError!ast.ExtraData.Index {
+    const decl_kw = try self.next(); // eat 'let', 'var' or 'const'
+    std.debug.assert(decl_kw.tag == .kw_let or
+        decl_kw.tag == .kw_var or
+        decl_kw.tag == .kw_const);
+
+    const lhs = try self.assignmentLhsExpr();
+    const lhs_span = self.nodeSpan(lhs);
+    switch (self.current_token.tag) {
+        .kw_in, .kw_of => {
+            loop_kind.* = if (self.current_token.tag == .kw_in)
+                // TODO: handle the [In] grammar attribute
+                ForLoopKind.for_in
+            else
+                ForLoopKind.for_of;
+
+            const declarator = try self.addNode(
+                .{ .variable_declarator = .{ .lhs = lhs, .init = null } },
+                lhs_span.start,
+                lhs_span.end,
+            );
+
+            const decl_range = try self.addSubRange(&[_]Node.Index{declarator});
+            const declaration = try self.addNode(
+                .{ .variable_declaration = .{ .kind = varDeclKind(decl_kw.tag), .declarators = decl_range } },
+                decl_kw.start,
+                lhs_span.end,
+            );
+
+            _ = try self.next(); // eat 'in' or 'of'
+            const rhs = try self.expression();
+            _ = try self.expect(.@")");
+            return self.addExtraData(.{
+                .for_in_of_iterator = .{ .left = declaration, .right = rhs },
+            });
+        },
+        else => {
+            var end_pos = lhs_span.end;
+            var rhs: ?Node.Index = null;
+            if (self.isAtToken(.@"=")) {
+                _ = try self.next();
+                const init_expr = try self.assignmentExpression();
+
+                if (self.current_destructure_kind == .must_destruct) {
+                    try self.emitBadDestructureDiagnostic(init_expr);
+                    return ParseError.UnexpectedPattern;
+                }
+
+                end_pos = self.nodeSpan(init_expr).end;
+                rhs = init_expr;
+            }
+
+            const first_decl = try self.addNode(
+                .{ .variable_declarator = .{ .lhs = lhs, .init = rhs } },
+                decl_kw.start,
+                end_pos,
+            );
+
+            const for_init = try self.completeLoopInitializer(decl_kw, first_decl);
+            return self.completeBasicLoopIterator(for_init);
+        },
+    }
+}
+
+fn completeBasicLoopIterator(self: *Self, for_init: Node.Index) ParseError!ast.ExtraData.Index {
     _ = try self.expect(.@";");
 
     const for_cond = switch (self.current_token.tag) {
@@ -321,29 +574,43 @@ fn forLoopIterator(self: *Self) ParseError!ast.ExtraData.Index {
     });
 }
 
-/// Once the opening '(' of a for loop as been eaten,
-/// parse the initializer of the for loop.
-fn forLoopInitializer(self: *Self) ParseError!Node.Index {
-    switch (self.current_token.tag) {
-        .kw_let, .kw_var, .kw_const => {
-            const kw = try self.next();
-            const decls = try self.variableDeclaratorList();
-            const last_decl = decls.asSlice(self)[0];
-            const end_pos = self.nodes.items(.end)[@intFromEnum(last_decl)];
-            return self.addNode(
-                .{
-                    .variable_declaration = .{
-                        .kind = varDeclKind(kw.tag),
-                        .declarators = decls,
-                    },
-                },
-                kw.start,
-                end_pos,
-            );
-        },
-        .@";" => return Node.Index.empty,
-        else => return self.expression(),
+/// Parse the rest of the for loop initializer.
+/// Example:
+/// ```js
+/// for (let i = 0, j = 0; i < 10; i++,j++);
+/// //           ^
+/// // already parsed upto here, this function parses the rest
+/// ```
+/// Given the 'var'/'let'/'const' keyword,
+/// and the first declarator, parse the rest of the declarators (if any)
+/// and return a var decl node that represents a loop initializer.
+fn completeLoopInitializer(self: *Self, kw: Token, first_decl: Node.Index) ParseError!Node.Index {
+    var decl_nodes = std.ArrayList(Node.Index).init(self.allocator);
+    defer decl_nodes.deinit();
+
+    try decl_nodes.append(first_decl);
+
+    while (self.current_token.tag == .@",") {
+        _ = try self.next();
+        const decl = try self.variableDeclarator();
+        try decl_nodes.append(decl);
     }
+
+    const decls = try self.addSubRange(decl_nodes.items);
+
+    const last_decl = decl_nodes.items[decl_nodes.items.len - 1];
+    const end_pos = self.nodes.items(.end)[@intFromEnum(last_decl)];
+
+    return self.addNode(
+        .{
+            .variable_declaration = .{
+                .kind = varDeclKind(kw.tag),
+                .declarators = decls,
+            },
+        },
+        kw.start,
+        end_pos,
+    );
 }
 
 fn whileStatement(self: *Self) ParseError!Node.Index {
@@ -353,6 +620,12 @@ fn whileStatement(self: *Self) ParseError!Node.Index {
     _ = try self.expect(.@"(");
     const cond = try self.expression();
     _ = try self.expect(.@")");
+
+    const saved_context = self.context;
+    defer self.setContext(saved_context);
+
+    self.context.@"break" = true;
+    self.context.@"continue" = true;
 
     // todo: perform a labelled statement check here.
     const body = try self.statement();
@@ -573,6 +846,42 @@ fn returnStatement(self: *Self) ParseError!Node.Index {
     return self.addNode(.{ .return_statement = operand }, return_kw.start, end_pos);
 }
 
+fn breakStatement(self: *Self) ParseError!Node.Index {
+    const break_kw = try self.next();
+    std.debug.assert(break_kw.tag == .kw_break);
+
+    if (!self.context.@"break") {
+        try self.emitDiagnostic(
+            break_kw.startCoord(self.source),
+            "'break' is not allowed outside loops and switch statements",
+            .{},
+        );
+        return ParseError.IllegalReturn;
+    }
+
+    const start_pos = break_kw.start;
+    const end_pos = try self.semiColon(break_kw.start + break_kw.len);
+    return self.addNode(.{ .break_statement = {} }, start_pos, end_pos);
+}
+
+fn continueStatement(self: *Self) ParseError!Node.Index {
+    const continue_kw = try self.next();
+    std.debug.assert(continue_kw.tag == .kw_continue);
+
+    if (!self.context.@"continue") {
+        try self.emitDiagnostic(
+            continue_kw.startCoord(self.source),
+            "'continue' is not allowed outside loops",
+            .{},
+        );
+        return ParseError.IllegalReturn;
+    }
+
+    const start_pos = continue_kw.start;
+    const end_pos = try self.semiColon(continue_kw.start + continue_kw.len);
+    return self.addNode(.{ .continue_statement = {} }, start_pos, end_pos);
+}
+
 // ------------------------
 // Common helper functions
 // ------------------------
@@ -690,7 +999,7 @@ fn emitBadTokenDiagnostic(
 ) error{OutOfMemory}!void {
     try self.emitDiagnostic(
         got.startCoord(self.source),
-        "Expected function " ++ expected ++ ", got {s}",
+        "Expected " ++ expected ++ ", got {s}",
         .{got.toByteSlice(self.source)},
     );
 }
@@ -1063,15 +1372,15 @@ fn arrayAssignmentPattern(self: *Self) ParseError!Node.Index {
     defer items.deinit();
 
     var token = self.peek();
-    while (token.tag != .@"]") : (token = self.peek()) {
+    while (true) : (token = self.peek()) {
         switch (token.tag) {
             .@"," => {
-                _ = try self.next(); // eat ','
+                const comma = try self.next(); // eat ','
                 if (self.isAtToken(.@"]")) break;
                 try items.append(try self.addNode(
                     .{ .empty_array_item = {} },
-                    token.start,
-                    token.start + token.len,
+                    comma.start,
+                    comma.start + 1,
                 ));
             },
 
@@ -1090,13 +1399,21 @@ fn arrayAssignmentPattern(self: *Self) ParseError!Node.Index {
                 break;
             },
 
+            .@"]" => break,
+
             else => {
                 try items.append(try self.assignmentPattern());
             },
         }
+
+        if (self.current_token.tag == .@",") {
+            _ = try self.next();
+        } else if (self.current_token.tag == .@"]") {
+            break;
+        }
     }
 
-    const rbrac = try self.next(); // eat ']'
+    const rbrac = try self.expect(.@"]"); // eat ']'
     const array_items = try self.addSubRange(items.items);
     return try self.addNode(
         .{ .array_pattern = array_items },
@@ -1624,7 +1941,7 @@ fn primaryExpression(self: *Self) ParseError!Node.Index {
         },
         .@"[" => return self.arrayLiteral(token.start),
         .@"{" => return self.objectLiteral(token.start),
-        .@"(" => return self.coverParenExprAndArrowParams(&token),
+        .@"(" => return self.groupingExprOrArrowFunction(&token),
         .kw_async => {
             if (self.current_token.tag == .kw_function) {
                 _ = try self.next(); // eat 'function'
@@ -1834,7 +2151,7 @@ fn arrowParamsOrExpression(self: *Self, lparen: *const Token) ParseError!Node.In
 }
 
 /// Parses either an arrow function or a parenthesized expression.
-fn coverParenExprAndArrowParams(self: *Self, lparen: *const Token) ParseError!Node.Index {
+fn groupingExprOrArrowFunction(self: *Self, lparen: *const Token) ParseError!Node.Index {
     if (self.isAtToken(.@")")) {
         const rparen = try self.next();
         const end_pos = rparen.start + rparen.len;

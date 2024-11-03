@@ -80,17 +80,14 @@ fn toPretty(
 
             const operator = token.toByteSlice(self.source);
 
-            const binary = .{
-                .binary_expression = .{ .lhs = lhs, .rhs = rhs, .operator = operator },
-            };
-            const assignment = .{
-                .assignment_expression = .{ .lhs = lhs, .rhs = rhs, .operator = operator },
-            };
-
             return if (checkActiveField(node.data, "binary_expr"))
-                binary
+                .{
+                    .binary_expression = .{ .lhs = lhs, .rhs = rhs, .operator = operator },
+                }
             else if (checkActiveField(node.data, "assignment_expr"))
-                assignment
+                .{
+                    .assignment_expression = .{ .lhs = lhs, .rhs = rhs, .operator = operator },
+                }
             else
                 .{
                     .assignment_pattern = .{ .lhs = lhs, .rhs = rhs, .operator = operator },
@@ -137,7 +134,7 @@ fn toPretty(
                 try toPretty(self, al, payload.operand),
             );
             const token = self.tokens.items[@intFromEnum(payload.operator)];
-            const unary_pl = .{
+            const unary_pl: ast.Pretty(ast.UnaryPayload) = .{
                 .operand = operand,
                 .operator = token.toByteSlice(self.source),
             };
@@ -247,7 +244,7 @@ fn toPretty(
             const cond = try copy(al, try toPretty(self, al, cond_expr.condition));
             const consequent = try copy(al, try toPretty(self, al, cond_expr.consequent));
             const alternate = try copy(al, try toPretty(self, al, cond_expr.alternate));
-            const conditional = .{
+            const conditional: ast.Pretty(ast.Conditional) = .{
                 .condition = cond,
                 .consequent = consequent,
                 .alternate = alternate,
@@ -300,6 +297,22 @@ fn toPretty(
             };
         },
 
+        .for_of_statement, .for_in_statement => |stmt| {
+            const extra = self.getExtraData(stmt.iterator).for_in_of_iterator;
+            const lhs = try copy(al, try toPretty(self, al, extra.left));
+            const rhs = try copy(al, try toPretty(self, al, extra.right));
+            const body = try copy(al, try toPretty(self, al, stmt.body));
+
+            const pl: ast.PrettyForInOfStatement = .{
+                .lhs = lhs,
+                .rhs = rhs,
+                .body = body,
+            };
+            if (std.meta.activeTag(node.data) == .for_of_statement)
+                return ast.NodePretty{ .for_of_statement = pl };
+            return ast.NodePretty{ .for_in_statement = pl };
+        },
+
         .expression_statement => |expr| {
             const expression = try copy(al, try toPretty(self, al, expr));
             return .{ .expression_statement = expression };
@@ -321,6 +334,8 @@ fn toPretty(
         },
 
         .empty_statement => return .{ .empty_statement = {} },
+        .continue_statement => return .{ .continue_statement = {} },
+        .break_statement => return .{ .break_statement = {} },
         .debugger_statement => return .{ .debugger_statement = {} },
 
         .variable_declarator => |decl| {
@@ -350,10 +365,10 @@ fn toPretty(
         .function_expr, .function_declaration => |f| {
             const body = try copy(al, try toPretty(self, al, f.body));
             const params = try copy(al, try toPretty(self, al, f.parameters));
-            const info = self.extra_data.items[@intFromEnum(f.info)];
+            const info = self.getExtraData(f.info);
             const func_flags = info.function.flags;
             const func_name = f.getName(self);
-            const flags = .{
+            const flags: ast.Pretty(ast.FunctionFlags) = .{
                 .is_async = func_flags.is_async,
                 .is_generator = func_flags.is_generator,
                 .is_arrow = func_flags.is_arrow,

@@ -101,7 +101,6 @@ pub const Function = struct {
     }
 };
 
-/// A regular old `for (<init>;<condition>;<update>) <body>` statement.
 pub const ForStatement = struct {
     iterator: ExtraData.Index,
     body: Node.Index,
@@ -174,18 +173,28 @@ pub const ForIterator = struct {
     update: Node.Index,
 };
 
+pub const ForInOfIterator = struct {
+    /// Left side of the 'of' keyword
+    left: Node.Index,
+    /// Right side of the 'of' keyword
+    right: Node.Index,
+    /// Set for for-await loops.
+    is_await: bool = false,
+};
+
 /// Extra metadata about a node.
 /// The specific type of meta-data is determined by the node's
 /// tag (i.e the active field of NodeData).
 pub const ExtraData = union {
     pub const Index = enum(u32) { none = 0, _ };
     function: struct {
-        /// Name of the function, if present (always an identifier).
+        /// Name of the function, if present (always an identifier token).
         name: ?Token.Index,
         /// Flags: generator, async, arrow, etc.
         flags: FunctionFlags,
     },
     for_iterator: ForIterator,
+    for_in_of_iterator: ForInOfIterator,
 };
 
 pub const NodeData = union(enum(u8)) {
@@ -242,6 +251,10 @@ pub const NodeData = union(enum(u8)) {
     if_statement: Conditional,
     while_statement: WhileStatement,
     for_statement: ForStatement,
+    for_of_statement: ForStatement,
+    for_in_statement: ForStatement,
+    break_statement: void,
+    continue_statement: void,
     parameters: ?SubRange,
     return_statement: ?Node.Index,
 
@@ -271,6 +284,12 @@ pub const Node = struct {
     comptime {
         std.debug.assert(@bitSizeOf(Node) <= 196);
     }
+};
+
+pub const PrettyForInOfStatement = struct {
+    lhs: *NodePretty,
+    rhs: *NodePretty,
+    body: *NodePretty,
 };
 
 /// Used for pretty printing and debugging.
@@ -331,7 +350,11 @@ pub const NodePretty = union(enum) {
         update: ?*NodePretty,
         body: Pretty(Node.Index),
     },
+    for_of_statement: PrettyForInOfStatement,
+    for_in_statement: PrettyForInOfStatement,
     while_statement: Pretty(WhileStatement),
+    break_statement: void,
+    continue_statement: void,
     variable_declaration: Pretty(VariableDeclaration),
     variable_declarator: Pretty(VariableDeclarator),
     return_statement: Pretty(?Node.Index),
@@ -348,7 +371,7 @@ pub const ExtraPretty = union(enum) {
     for_iterator: Pretty(ForIterator),
 };
 
-fn Pretty(T: type) type {
+pub fn Pretty(T: type) type {
     if (T == Node.Index) return *NodePretty;
     if (T == ?Node.Index) return ?*NodePretty;
     if (T == Token.Index) return []const u8;
