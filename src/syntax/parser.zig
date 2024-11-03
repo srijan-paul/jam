@@ -27,6 +27,7 @@ const ParseError = error{
     InvalidObject,
     InvalidLoopLhs,
     InvalidPropertyName,
+    InvalidFunctionParameter,
     LetInStrictMode,
     UnexpectedPattern,
     ExpectedSemicolon,
@@ -1592,7 +1593,13 @@ fn destructuredIdentifierProperty(self: *Self) ParseError!Node.Index {
     }
 
     return self.addNode(
-        .{ .object_property = ast.PropertyDefinition{ .key = key, .value = key } },
+        .{
+            .object_property = ast.PropertyDefinition{
+                .key = key,
+                .value = key,
+                .flags = .{ .is_shorthand = true },
+            },
+        },
         key_token.start,
         key_token.start + key_token.len,
     );
@@ -1647,6 +1654,9 @@ fn objectAssignmentPattern(self: *Self) ParseError!Node.Index {
             end_pos = comma_or_rbrace.start + comma_or_rbrace.len;
             break;
         }
+    } else {
+        const rbrace = try self.next();
+        end_pos = rbrace.start + rbrace.len;
     }
 
     const destructured_props = try self.addSubRange(props.items);
@@ -2151,13 +2161,14 @@ fn completeArrowFunction(
 /// Parse a RestElement, assuming we're at the `...` token
 fn restElement(self: *Self) ParseError!Node.Index {
     const dotdotdot = try self.next();
+    std.debug.assert(dotdotdot.tag == .@"...");
     const rest_arg = try self.assignmentLhsExpr();
     const end_pos = self.nodes.items(.end)[@intFromEnum(rest_arg)];
     return self.addNode(.{ .rest_element = rest_arg }, dotdotdot.start, end_pos);
 }
 
 /// Once a '(' token has been eaten, parse the either an arrow function or a parenthesized expression.
-fn arrowParamsOrExpression(self: *Self, lparen: *const Token) ParseError!Node.Index {
+fn completeArrowParamsOrGroupingExpr(self: *Self, lparen: *const Token) ParseError!Node.Index {
     const first_expr = try self.assignmentExpression();
     if (!self.current_destructure_kind.can_destruct) {
         const expr = try self.completeSequenceExpr(first_expr);
@@ -2177,7 +2188,7 @@ fn arrowParamsOrExpression(self: *Self, lparen: *const Token) ParseError!Node.In
         const comma_token = try self.next(); // eat ','
         // A ')' after comma is allowed in arrow function parameters,
         // but not in regular comma-separated expressions.
-        if (self.isAtToken(.@")") and !destructure_kind.can_destruct) {
+        if (self.isAtToken(.@")") and destructure_kind.can_destruct) {
             has_trailing_comma = true;
             break;
         }
@@ -2280,7 +2291,7 @@ fn groupingExprOrArrowFunction(self: *Self, lparen: *const Token) ParseError!Nod
         return self.completeArrowFunction(lparen, &rparen, parameters, .{ .is_arrow = true });
     }
 
-    return self.arrowParamsOrExpression(lparen);
+    return self.completeArrowParamsOrGroupingExpr(lparen);
 }
 
 /// Parse an object literal, assuming the `{` has already been consumed.
@@ -2796,8 +2807,16 @@ fn parseFunctionBody(
 }
 
 fn parseParameter(self: *Self) ParseError!Node.Index {
-    // TODO: ensure this is assignable.
     const param = try self.assignmentLhsExpr();
+    if (!self.current_destructure_kind.can_destruct) {
+        try self.emitDiagnosticOnNode(
+            param,
+            "function parameter must be name, assignment pattern, or rest element",
+        );
+
+        return ParseError.InvalidFunctionParameter;
+    }
+
     if (!self.isAtToken(.@"=")) return param;
 
     const eq_op = try self.next(); // eat '='
@@ -2808,6 +2827,8 @@ fn parseParameter(self: *Self) ParseError!Node.Index {
             defaultValue,
             "Default parameter value cannot be a destructuring pattern",
         );
+
+        return ParseError.InvalidFunctionParameter;
     }
 
     const node_starts: []u32 = self.nodes.items(.start);
@@ -2835,7 +2856,25 @@ fn parseFormalParameters(self: *Self) ParseError!Node.Index {
 
     const rparen = blk: {
         if (self.isAtToken(.@")")) break :blk try self.next();
+
         while (true) {
+            if (self.isAtToken(.@"...")) {
+                const rest_elem = try self.restElement();
+                try params.append(rest_elem);
+
+                if (!self.isAtToken(.@")")) {
+                    try self.emitDiagnostic(
+                        self.current_token.startCoord(self.source),
+                        "A rest parameter must be the last in a parameter list",
+                        .{},
+                    );
+
+                    return ParseError.InvalidFunctionParameter;
+                }
+
+                break :blk try self.next();
+            }
+
             const param = try self.parseParameter();
             try params.append(param);
 
