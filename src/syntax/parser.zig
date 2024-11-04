@@ -698,6 +698,7 @@ fn whileStatement(self: *Self) ParseError!Node.Index {
     );
 }
 
+/// DebuggerStatement: 'debugger' ';'
 fn debuggerStatement(self: *Self) ParseError!Node.Index {
     const token = try self.next();
     const end_pos = try self.semiColon(token.start + token.len);
@@ -748,6 +749,7 @@ fn variableDeclaratorList(self: *Self) ParseError!ast.SubRange {
     return decls;
 }
 
+/// Return the kind of variable declaration based on the keyword used to declare.
 fn varDeclKind(tag: Token.Tag) ast.VarDeclKind {
     return switch (tag) {
         .kw_let => .let,
