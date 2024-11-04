@@ -1,0 +1,170 @@
+{
+  "program": [
+    {
+      "expression_statement": {
+        "function": {
+          "parameters": {
+            "parameters": [
+              {
+                "identifier": "a"
+              },
+              {
+                "identifier": "b"
+              },
+              {
+                "rest_element": {
+                  "identifier": "c"
+                }
+              }
+            ]
+          },
+          "body": {
+            "binary_expression": {
+              "lhs": {
+                "binary_expression": {
+                  "lhs": {
+                    "identifier": "a"
+                  },
+                  "rhs": {
+                    "identifier": "b"
+                  },
+                  "operator": "+"
+                }
+              },
+              "rhs": {
+                "identifier": "c"
+              },
+              "operator": "+"
+            }
+          },
+          "info": {
+            "function": {
+              "flags": {
+                "is_generator": false,
+                "is_async": false,
+                "is_arrow": true,
+                "_": 0
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "expression_statement": {
+        "function": {
+          "parameters": {
+            "parameters": [
+              {
+                "identifier": "a"
+              },
+              {
+                "identifier": "b"
+              },
+              {
+                "identifier": "c"
+              }
+            ]
+          },
+          "body": {
+            "binary_expression": {
+              "lhs": {
+                "binary_expression": {
+                  "lhs": {
+                    "identifier": "a"
+                  },
+                  "rhs": {
+                    "identifier": "b"
+                  },
+                  "operator": "+"
+                }
+              },
+              "rhs": {
+                "identifier": "c"
+              },
+              "operator": "+"
+            }
+          },
+          "info": {
+            "function": {
+              "flags": {
+                "is_generator": false,
+                "is_async": false,
+                "is_arrow": true,
+                "_": 0
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "expression_statement": {
+        "function": {
+          "parameters": {
+            "parameters": [
+              {
+                "rest_element": {
+                  "array_pattern": []
+                }
+              }
+            ]
+          },
+          "body": {
+            "array": []
+          },
+          "info": {
+            "function": {
+              "flags": {
+                "is_generator": false,
+                "is_async": false,
+                "is_arrow": true,
+                "_": 0
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "expression_statement": {
+        "function": {
+          "parameters": {
+            "parameters": [
+              {
+                "rest_element": {
+                  "object_pattern": [
+                    {
+                      "assignment_pattern": {
+                        "lhs": {
+                          "identifier": "x"
+                        },
+                        "rhs": {
+                          "literal": "1"
+                        },
+                        "operator": "="
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "body": {
+            "block_statement": []
+          },
+          "info": {
+            "function": {
+              "flags": {
+                "is_generator": false,
+                "is_async": false,
+                "is_arrow": true,
+                "_": 0
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

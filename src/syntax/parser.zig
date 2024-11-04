@@ -31,6 +31,7 @@ const ParseError = error{
     LetInStrictMode,
     UnexpectedPattern,
     ExpectedSemicolon,
+    SpreadElementMustBeLast,
 } || Tokenizer.Error;
 const ParseFn = fn (self: *Self) ParseError!Node.Index;
 
@@ -224,10 +225,14 @@ const DestructureKind = packed struct(u8) {
         self.can_be_assigned_to = false;
     }
 
+    /// Sets it to a state where that implies an expression
+    /// can neither be destructured, nor be assigned to.
     pub inline fn reset(self: *DestructureKind) void {
-        self.can_destruct = false;
-        self.can_be_assigned_to = false;
-        self.must_destruct = false;
+        self.* = .{
+            .can_destruct = false,
+            .can_be_assigned_to = false,
+            .must_destruct = false,
+        };
     }
 
     /// Merge the properties of two DestructureKinds.
@@ -839,12 +844,13 @@ fn blockStatement(self: *Self) ParseError!Node.Index {
     var statements = std.ArrayList(Node.Index).init(self.allocator);
     defer statements.deinit();
 
-    while (self.peek().tag != .@"}" and self.peek().tag != .eof) {
+    while (self.current_token.tag != .@"}") {
         const stmt = try self.statement();
         try statements.append(stmt);
     }
 
-    const rbrace = try self.expect(.@"}");
+    const rbrace = try self.next();
+    std.debug.assert(rbrace.tag == .@"}");
     const end_pos = rbrace.start + rbrace.len;
 
     if (statements.items.len == 0) {
@@ -1052,6 +1058,18 @@ fn addExtraData(self: *Self, data: ast.ExtraData) error{OutOfMemory}!ast.ExtraDa
     return @enumFromInt(self.extra_data.items.len - 1);
 }
 
+/// Emit a diagnostic that says a rest parameter must be the last in a function's parameter list.
+/// Always returns a parse error.
+fn restParamNotLastError(self: *Self, token: *const Token) ParseError!void {
+    try self.emitDiagnostic(
+        token.startCoord(self.source),
+        "Rest parameter must be the last parameter in a function",
+        .{},
+    );
+
+    return ParseError.InvalidFunctionParameter;
+}
+
 fn emitBadDestructureDiagnostic(self: *Self, expr: Node.Index) error{OutOfMemory}!void {
     const start_byte_index = self.nodes.items(.start)[@intFromEnum(expr)];
     const start_coord = util.offsets.byteIndexToCoordinate(self.source, start_byte_index);
@@ -1231,6 +1249,7 @@ fn reinterpretAsPattern(self: *Self, node_id: Node.Index) void {
         .member_expr,
         .assignment_pattern,
         .empty_array_item,
+        .rest_element,
         .computed_member_expr,
         => return,
         .object_literal => |object_pl| {
@@ -1297,7 +1316,7 @@ fn assignmentExpression(self: *Self) ParseError!Node.Index {
     // assignment patterns inside object literals are handled separately
     // in `Parser.identifierProperty`
     self.current_destructure_kind = .{
-        .can_destruct = true,
+        .can_destruct = true, // TODO: should this be false?
         .can_be_assigned_to = true,
         .must_destruct = false,
     };
@@ -1313,6 +1332,26 @@ fn assignmentExpression(self: *Self) ParseError!Node.Index {
         start,
         end,
     );
+}
+
+/// Parse an assignment expression, and ensure that its not a pattern
+/// that must be destructured (e.g: `{x=1}`).
+fn assignExpressionNoPattern(self: *Self) ParseError!Node.Index {
+    const expr = try self.assignmentExpression();
+    if (self.current_destructure_kind.must_destruct) {
+        const expr_start = self.nodes.items(.start)[@intFromEnum(expr)];
+        const error_coord = util.offsets.byteIndexToCoordinate(self.source, expr_start);
+        // TODO: the location for this error can be improved.
+        try self.emitDiagnostic(
+            error_coord,
+            "Found destructuring pattern instead of an expression",
+            .{},
+        );
+
+        return ParseError.UnexpectedPattern;
+    }
+
+    return expr;
 }
 
 fn coalesceExpression(self: *Self, start_expr: Node.Index) ParseError!Node.Index {
@@ -1840,6 +1879,11 @@ fn tryCallExpression(self: *Self, callee: Node.Index) ParseError!?Node.Index {
     return call_expr;
 }
 
+/// When we're at the '(' token, parse the arguments and return a complete call expression
+/// ```js
+/// myFunc(...
+/////    ^-- already parsed the callee
+/// ```
 fn completeCallExpression(self: *Self, callee: Node.Index) ParseError!Node.Index {
     const start_pos = self.nodes.items(.start)[@intFromEnum(callee)];
     const call_args = try self.args();
@@ -2119,8 +2163,11 @@ fn completeArrowFunction(
     }
 
     const body = blk: {
-        const token = self.peek();
-        if (token.tag == .@"{") {
+        const body_start_token = self.current_token;
+        // If an arrow functin body starts with a '{',
+        // we will attempt to parse it as a block statement,
+        // and not an object literal.
+        if (body_start_token.tag == .@"{") {
             const context = self.context;
             defer self.setContext(context);
             self.context.@"return" = true;
@@ -2130,8 +2177,8 @@ fn completeArrowFunction(
         const assignment = try self.assignmentExpression();
         if (self.current_destructure_kind.must_destruct) {
             try self.emitDiagnostic(
-                token.startCoord(self.source),
-                "Invalid arrow function body",
+                body_start_token.startCoord(self.source),
+                "Unexpected destructuring pattern in arrow function body",
                 .{},
             );
             return ParseError.InvalidArrowFunction;
@@ -2142,7 +2189,8 @@ fn completeArrowFunction(
 
     const end_pos = self.nodes.items(.end)[@intFromEnum(body)];
 
-    self.current_destructure_kind.setNoAssignOrDestruct();
+    // cannot be destructured or assigned to.
+    self.current_destructure_kind.reset();
 
     return self.addNode(ast.NodeData{
         .function_expr = ast.Function{
@@ -2158,6 +2206,14 @@ fn completeArrowFunction(
     }, lparen.start, end_pos);
 }
 
+fn spreadElement(self: *Self) ParseError!Node.Index {
+    const dotdotdot = try self.next();
+    std.debug.assert(dotdotdot.tag == .@"...");
+    const rest_arg = try self.assignExpressionNoPattern();
+    const end_pos = self.nodes.items(.end)[@intFromEnum(rest_arg)];
+    return self.addNode(.{ .spread_element = rest_arg }, dotdotdot.start, end_pos);
+}
+
 /// Parse a RestElement, assuming we're at the `...` token
 fn restElement(self: *Self) ParseError!Node.Index {
     const dotdotdot = try self.next();
@@ -2168,7 +2224,7 @@ fn restElement(self: *Self) ParseError!Node.Index {
 }
 
 /// Once a '(' token has been eaten, parse the either an arrow function or a parenthesized expression.
-fn completeArrowParamsOrGroupingExpr(self: *Self, lparen: *const Token) ParseError!Node.Index {
+fn completeArrowFuncOrGroupingExpr(self: *Self, lparen: *const Token) ParseError!Node.Index {
     const first_expr = try self.assignmentExpression();
     if (!self.current_destructure_kind.can_destruct) {
         const expr = try self.completeSequenceExpr(first_expr);
@@ -2191,6 +2247,24 @@ fn completeArrowParamsOrGroupingExpr(self: *Self, lparen: *const Token) ParseErr
         if (self.isAtToken(.@")") and destructure_kind.can_destruct) {
             has_trailing_comma = true;
             break;
+        }
+
+        // A ... at this point is either a rest parameter or a syntax error.
+        if (self.isAtToken(.@"...")) {
+            if (destructure_kind.can_destruct) {
+                const rest_elem = try self.restElement();
+                try nodes.append(rest_elem);
+
+                if (!self.isAtToken(.@")")) {
+                    try self.restParamNotLastError(&self.current_token);
+                }
+
+                break;
+            }
+
+            // A "..." inside a grouping expression is a syntax error.
+            // The call to `assignmentExpression()` below will error out.
+            // TODO: should I emit a better error message here anyway?
         }
 
         const rhs = try self.assignmentExpression();
@@ -2291,7 +2365,7 @@ fn groupingExprOrArrowFunction(self: *Self, lparen: *const Token) ParseError!Nod
         return self.completeArrowFunction(lparen, &rparen, parameters, .{ .is_arrow = true });
     }
 
-    return self.completeArrowParamsOrGroupingExpr(lparen);
+    return self.completeArrowFuncOrGroupingExpr(lparen);
 }
 
 /// Parse an object literal, assuming the `{` has already been consumed.
@@ -2863,13 +2937,7 @@ fn parseFormalParameters(self: *Self) ParseError!Node.Index {
                 try params.append(rest_elem);
 
                 if (!self.isAtToken(.@")")) {
-                    try self.emitDiagnostic(
-                        self.current_token.startCoord(self.source),
-                        "A rest parameter must be the last in a parameter list",
-                        .{},
-                    );
-
-                    return ParseError.InvalidFunctionParameter;
+                    try self.restParamNotLastError(&self.current_token);
                 }
 
                 break :blk try self.next();
@@ -2943,7 +3011,22 @@ fn parseArgs(self: *Self) ParseError!struct { ast.SubRange, u32, u32 } {
     defer arg_list.deinit();
 
     while (!self.isAtToken(.@")")) {
-        const expr = try self.assignmentExpression();
+        if (self.isAtToken(.@"...")) {
+            // spread element must be the last argument
+            const spread_elem = try self.spreadElement();
+            try arg_list.append(spread_elem);
+            if (!self.isAtToken(.@")")) {
+                try self.emitBadTokenDiagnostic(
+                    "closing ')' after a spread element",
+                    &self.current_token,
+                );
+                return ParseError.SpreadElementMustBeLast;
+            }
+
+            break;
+        }
+
+        const expr = try self.assignExpressionNoPattern();
         try arg_list.append(expr);
         if (!self.isAtToken(.@","))
             break;
