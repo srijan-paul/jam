@@ -5,7 +5,7 @@ These results are stored in `results.json`, and the CI script ensures that we do
 We track three metrics:
   1. Percentage of files that parse correctly.
   2. Percentage of files that fail to parse with an error, or incorrect parse tree. 
-  3. Number of files that parse, but with an incorrect parse tree.
+  3. Number of files that parse without an error, but have an incorrect parse tree.
 
 For more information about how the tests262 test suite works, see [its README](https://github.com/tc39/test262-parser-tests).
 
