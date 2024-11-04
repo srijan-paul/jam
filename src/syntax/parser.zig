@@ -32,6 +32,7 @@ const ParseError = error{
     UnexpectedPattern,
     ExpectedSemicolon,
     SpreadElementMustBeLast,
+    MissingInitializer,
 } || Tokenizer.Error;
 const ParseFn = fn (self: *Self) ParseError!Node.Index;
 
@@ -46,7 +47,7 @@ pub const Diagnostic = struct {
 /// Represents the currently active set of grammatical parameters
 /// in the parser state.
 /// https://tc39.es/ecma262/#sec-grammatical-parameters
-pub const ParseContext = packed struct(u16) {
+pub const ParseContext = packed struct(u8) {
     /// Is a ReturnStatement allowed in the current context?
     /// Unlike `await`, `return` is always parsed as a keyword, regardles of context.
     @"return": bool = false,
@@ -65,9 +66,6 @@ pub const ParseContext = packed struct(u16) {
     /// Are `in` statements allowed?
     /// Used to parse for-in loops.
     in: bool = true,
-    /// Is an assignment pattern allowed in the current context?
-    is_pattern_allowed: bool = false,
-    _: u7 = 0,
 };
 
 // arranged in highest to lowest binding order
@@ -776,6 +774,9 @@ fn letStatement(self: *Self) ParseError!Node.Index {
     return self.expressionStatement();
 }
 
+/// VariableDeclarator:
+///  BindingPattern Initializer?
+///  BindingElement Initializer?
 fn variableDeclarator(self: *Self) ParseError!Node.Index {
     const lhs = try self.assignmentLhsExpr();
     if (!self.current_destructure_kind.can_destruct) {
@@ -784,23 +785,24 @@ fn variableDeclarator(self: *Self) ParseError!Node.Index {
         return ParseError.UnexpectedPattern;
     }
 
-    const start_pos = self.nodeSpan(lhs).start;
-    var end_pos = self.nodeSpan(lhs).end;
+    const lhs_span = self.nodeSpan(lhs);
+    const start_pos = lhs_span.start;
+    var end_pos = lhs_span.end;
 
-    var rhs: ?Node.Index = null;
-    // TODO: = is mandatory for patterns
-    if (self.isAtToken(.@"=")) {
-        _ = try self.next();
-        const init_expr = try self.assignmentExpression();
-
-        if (self.current_destructure_kind.must_destruct) {
-            try self.emitBadDestructureDiagnostic(init_expr);
-            return ParseError.UnexpectedPattern;
+    const rhs: ?Node.Index = blk: {
+        if (self.isAtToken(.@"=")) {
+            _ = try self.next();
+            const init_expr = try self.assignExpressionNoPattern();
+            end_pos = self.nodeSpan(init_expr).end;
+            break :blk init_expr;
+        } else if (self.nodeTag(lhs) != .identifier) {
+            // Assignment patterns must have an initializer.
+            try self.emitDiagnosticOnNode(lhs, "A destructuring declaration must have an initializer");
+            return ParseError.MissingInitializer;
         }
 
-        end_pos = self.nodeSpan(init_expr).end;
-        rhs = init_expr;
-    }
+        break :blk null;
+    };
 
     return self.addNode(
         .{ .variable_declarator = .{ .lhs = lhs, .init = rhs } },
@@ -809,6 +811,7 @@ fn variableDeclarator(self: *Self) ParseError!Node.Index {
     );
 }
 
+/// EmptyStatement: ';'
 fn emptyStatement(self: *Self) ParseError!Node.Index {
     const semicolon = try self.next();
     std.debug.assert(semicolon.tag == .@";");
@@ -821,6 +824,7 @@ fn emptyStatement(self: *Self) ParseError!Node.Index {
     );
 }
 
+/// ExpressionStatement: Expression ';'
 fn expressionStatement(self: *Self) ParseError!Node.Index {
     const expr = try self.expression();
     const expr_node = self.getNode(expr);
@@ -919,6 +923,7 @@ fn returnStatement(self: *Self) ParseError!Node.Index {
     return self.addNode(.{ .return_statement = operand }, return_kw.start, end_pos);
 }
 
+/// BreakStatement: 'break' ';'
 fn breakStatement(self: *Self) ParseError!Node.Index {
     const break_kw = try self.next();
     std.debug.assert(break_kw.tag == .kw_break);
@@ -937,6 +942,7 @@ fn breakStatement(self: *Self) ParseError!Node.Index {
     return self.addNode(.{ .break_statement = {} }, start_pos, end_pos);
 }
 
+/// ContinueStatement: 'continue' ';'
 fn continueStatement(self: *Self) ParseError!Node.Index {
     const continue_kw = try self.next();
     std.debug.assert(continue_kw.tag == .kw_continue);
@@ -2998,12 +3004,18 @@ fn nodeSpan(self: *const Self, index: Node.Index) types.Span {
     return .{ .start = start, .end = end };
 }
 
+/// Return the tag that identifies the type of a node.
+fn nodeTag(self: *const Self, index: Node.Index) std.meta.Tag(NodeData) {
+    return std.meta.activeTag(self.nodes.items(.data)[@intFromEnum(index)]);
+}
+
 /// Parses arguments for a function call, assuming the current_token is '('
 fn args(self: *Self) ParseError!Node.Index {
     const args_node, const start, const end = try self.parseArgs();
     return self.addNode(.{ .arguments = args_node }, start, end);
 }
 
+/// Parse arguments for a function call, then return it alongside the start and end locations.
 fn parseArgs(self: *Self) ParseError!struct { ast.SubRange, u32, u32 } {
     const start_pos = (try self.expect(.@"(")).start;
 
@@ -3135,6 +3147,12 @@ fn runTestOnFile(tests_dir: std.fs.Dir, file_path: []const u8) !void {
     defer parser.deinit();
 
     const root_node = parser.parse() catch |err| {
+        if (std.mem.startsWith(u8, std.mem.trim(u8, source_code, "\n\t "), "// ERROR")) {
+            // error was expected.
+            // TODO: check the error message as well.
+            return;
+        }
+
         for (parser.diagnostics.items) |diagnostic| {
             std.log.err("({d}:{d}): {s}\n", .{
                 diagnostic.coord.line,
