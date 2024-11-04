@@ -138,12 +138,16 @@ allocator: std.mem.Allocator,
 /// Immutable reference to the source code.
 source: []const u8,
 file_name: []const u8,
+/// Tokens are consumed on-demand, instead of being pre-scanned into a list.
+/// This is important because somtimes, tokens are context sensitive.
+/// For instance: a '/' can either be the start of a division-related operator, or
+/// the start of a regular expression literal.
 tokenizer: Tokenizer,
 /// All AST nodes are stored in this flat list and reference
 /// each other using their indices.
 /// This is an *append only* list.
 nodes: std.MultiArrayList(Node),
-/// Extra information about a node, if any.
+/// Extra information about a node, if any. See: `ast.ExtraData`.
 extra_data: std.ArrayList(ast.ExtraData),
 /// List of tokens that are necessary to keep around
 /// e.g - identifiers, literals, function names, etc.
@@ -328,15 +332,7 @@ fn statement(self: *Self) ParseError!Node.Index {
         .kw_if => self.ifStatement(),
         .kw_for => self.forStatement(),
         .kw_while => self.whileStatement(),
-        .kw_debugger => {
-            const token = try self.next();
-            const end_pos = try self.semiColon(token.start + token.len);
-            return self.addNode(
-                .{ .debugger_statement = {} },
-                token.start,
-                end_pos,
-            );
-        },
+        .kw_debugger => self.debuggerStatement(),
         .kw_async => {
             if (self.next_token.tag == .kw_function) {
                 const async_token = try self.next(); // eat 'async'
@@ -698,6 +694,16 @@ fn whileStatement(self: *Self) ParseError!Node.Index {
     return self.addNode(
         .{ .while_statement = .{ .condition = cond, .body = body } },
         while_kw.start,
+        end_pos,
+    );
+}
+
+fn debuggerStatement(self: *Self) ParseError!Node.Index {
+    const token = try self.next();
+    const end_pos = try self.semiColon(token.start + token.len);
+    return self.addNode(
+        .{ .debugger_statement = {} },
+        token.start,
         end_pos,
     );
 }
@@ -1284,6 +1290,21 @@ fn reinterpretAsPattern(self: *Self, node_id: Node.Index) void {
     }
 }
 
+/// Parse an assignment expression that may be an L or an R-value.
+/// i.e, it may return a pattern like `{x=1}` that *must* be used as a destructuring or assignment target,
+/// or, it may return a pattern like `{x:a.b}` that can be assigned to, but not destructured
+/// (`let { x: a.b } = ...` is invalid, `({x: a.b} = ...)`) is fine.
+/// It may also return a regular R-Value that is neither a valid destructuring target, nor a pattern.
+/// To use any value returned by this function as a destructuring target, you must call `reinterpretAsPattern`:
+/// ```zig
+/// const expr_or_pattern = try assignmentExpression();
+/// if (self.current_destructure_kind.must_destruct) {
+///     // this will modify this node and its children in-place,
+///     // and convert, for example, an `object_literal` to an `object_pattern`.
+///     self.reinterpretAsPattern(expr_or_pattern);
+/// }
+/// ```
+/// To parse an expression that *must* be a valid R-Value, use `assignExpressionNoPattern`.
 fn assignmentExpression(self: *Self) ParseError!Node.Index {
     // Start with the assumption that we're parsing a valid destructurable expression.
     // Subsequent parsing functions will update this to refect the actual destructure-kind
@@ -1428,18 +1449,23 @@ fn yieldExpression(self: *Self) ParseError!Node.Index {
         _ = try self.next(); // eat '*'
     }
 
-    var operand: ?Node.Index = null;
     var end_pos = yield_kw.start + yield_kw.len;
-    if (has_operand) {
-        const operand_expr = try self.assignmentExpression();
-        end_pos = self.nodes.items(.end)[@intFromEnum(operand_expr)];
-        operand = operand_expr;
-    }
+    const operand: ?Node.Index = blk: {
+        if (has_operand) {
+            const operand_expr = try self.assignExpressionNoPattern();
+            end_pos = self.nodes.items(.end)[@intFromEnum(operand_expr)];
+            break :blk operand_expr;
+        }
 
-    return self.addNode(.{ .yield_expr = .{
-        .value = operand,
-        .is_delegated = is_delegated,
-    } }, yield_kw.start, end_pos);
+        break :blk null;
+    };
+
+    return self.addNode(.{
+        .yield_expr = .{
+            .value = operand,
+            .is_delegated = is_delegated,
+        },
+    }, yield_kw.start, end_pos);
 }
 
 /// ConditionalExpression:
@@ -1452,9 +1478,9 @@ fn conditionalExpression(self: *Self) ParseError!Node.Index {
     self.current_destructure_kind.setNoAssignOrDestruct();
 
     _ = try self.next(); // eat '?'
-    const true_expr = try self.assignmentExpression();
+    const true_expr = try self.assignExpressionNoPattern();
     _ = try self.expect(.@":");
-    const false_expr = try self.assignmentExpression();
+    const false_expr = try self.assignExpressionNoPattern();
 
     const start_pos = self.nodes.items(.start)[@intFromEnum(cond_expr)];
     const end_pos = self.nodes.items(.end)[@intFromEnum(false_expr)];
@@ -2402,7 +2428,7 @@ fn propertyDefinitionList(self: *Self) ParseError!?ast.SubRange {
 
             .@"[" => {
                 _ = try self.next();
-                const key = try self.assignmentExpression();
+                const key = try self.assignExpressionNoPattern();
                 _ = try self.expect(.@"]");
 
                 const property = try self.completePropertyDef(
