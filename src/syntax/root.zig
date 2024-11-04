@@ -5,8 +5,6 @@ pub const tokenize = @import("tokenize.zig");
 pub const pretty = @import("./pretty.zig");
 
 test {
-    _ = Parser;
-    _ = tokenize;
-    _ = Ast;
-    _ = Token;
+    const std = @import("std");
+    std.testing.refAllDeclsRecursive(@This());
 }

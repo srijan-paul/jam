@@ -227,6 +227,7 @@ pub const Tokenizer = struct {
                         break;
                     }
                 } else if (isNewline(ch)) {
+                    // TODO: what if its a \r\n break?
                     self.line += 1;
                 }
             }

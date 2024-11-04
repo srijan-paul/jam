@@ -8,15 +8,6 @@ pub fn build(b: *std.Build) !void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    const lib = b.addStaticLibrary(.{
-        .name = "jsickle",
-        .root_source_file = b.path("src/root.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-
-    b.installArtifact(lib);
-
     const util_module = b.addModule("util", .{
         .root_source_file = b.path("src/util/root.zig"),
         .target = target,
@@ -30,12 +21,34 @@ pub fn build(b: *std.Build) !void {
     });
     jam_syntax_module.addImport("util", util_module);
 
+    const jam_css_module = b.addModule("jam-css", .{
+        .root_source_file = b.path("src/css/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+
+    jam_css_module.addImport("util", util_module);
+
+    const lib = b.addStaticLibrary(.{
+        .name = "jsickle",
+        .root_source_file = b.path("src/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+
+    b.installArtifact(lib);
+    lib.root_module.addImport("css", jam_css_module);
+
     const exe = b.addExecutable(.{
         .name = "jsickle",
         .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
     });
+
+    b.installArtifact(exe);
+    exe.root_module.addImport("util", util_module);
+    exe.root_module.addImport("css", jam_css_module);
 
     {
         const test262 = b.addExecutable(.{
@@ -57,9 +70,6 @@ pub fn build(b: *std.Build) !void {
         }
     }
 
-    b.installArtifact(exe);
-    exe.root_module.addImport("util", util_module);
-
     const run_cmd = b.addRunArtifact(exe);
     run_cmd.step.dependOn(b.getInstallStep());
 
@@ -77,7 +87,6 @@ pub fn build(b: *std.Build) !void {
     });
 
     lib_unit_tests.root_module.addImport("util", util_module);
-    lib_unit_tests.root_module.addImport("jam-syntax", jam_syntax_module);
 
     const run_lib_unit_tests = b.addRunArtifact(lib_unit_tests);
     const test_step = b.step("test", "Run unit tests");
