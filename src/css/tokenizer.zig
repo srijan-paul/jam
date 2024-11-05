@@ -2,15 +2,17 @@ const std = @import("std");
 const util = @import("util");
 
 const codePointAt = util.utf8.codePointAt;
+const StringPool = util.StringPool;
+const Str = StringPool.String;
 
 const Self = @This();
 
 pub const Token = struct {
-    pub const Tag = enum {
+    pub const Data = union(enum) {
         eof,
         comment,
         identifier,
-        string,
+        string: Str,
 
         // erroenous tokens
 
@@ -22,13 +24,26 @@ pub const Token = struct {
         newline_string,
     };
 
-    tag: Tag,
     /// Byte offset into the input source string
     start: u32,
     /// Length of the token in bytes
     len: u32,
     /// 0-indexed line number where the token starts.
     line: u32,
+
+    /// Type tag to identify the kind of token,
+    /// along with some meta-data (e.g: Numeric value)
+    data: Data,
+
+    /// Get the tag to identify this token.
+    pub fn tag(self: *const Token) std.meta.Tag(Data) {
+        return std.meta.activeTag(self.data);
+    }
+
+    /// Get the source bytes of this token.
+    pub fn toByteSlice(self: *const Token, source: []const u8) []const u8 {
+        return source[self.start .. self.start + self.len];
+    }
 };
 
 /// Value of a CSS number token.
@@ -50,7 +65,12 @@ pub const Error = error{
     UnexpectedChar,
     UnterminatedComment,
     NoMatchingToken,
+    /// string pool got too big to represent with u32.
+    Overflow,
+    OutOfMemory,
 };
+
+allocator: std.mem.Allocator,
 
 /// Input source bytes.
 /// Should be valid UTF-8 for `.init` to succeed.
@@ -62,22 +82,39 @@ line: u32 = 0,
 /// Current byte offset in the input stream.
 index: u32 = 0,
 
+/// Temporary buffer for storing intermediate values.
+scratch: []u8,
+
+/// Intern strings to de-duplicate them and compare in O(1) time.
+/// See: src/util/string_intern.zig.
+string_pool: StringPool,
+
 /// Create a new tokenizer
-pub fn init(source: []const u8) Error!Self {
+pub fn init(allocator: std.mem.Allocator, source: []const u8) error{ InvalidUtf8, OutOfMemory }!Self {
     if (!std.unicode.utf8ValidateSlice(source)) {
         return Error.InvalidUtf8;
     }
 
     return Self{
+        .allocator = allocator,
         .source = source,
+        // make the buffer as big as the input so we never run out of memory,
+        // or reallocate.
+        .scratch = try allocator.alloc(u8, source.len),
+        .string_pool = try StringPool.init(allocator),
     };
+}
+
+pub fn deinit(self: *Self) void {
+    self.allocator.free(self.scratch);
+    self.string_pool.deinit();
 }
 
 /// Get the next token from the input stream.
 /// Returns `.Eof` if the end of the input stream is reached.
 pub fn next(self: *Self) Error!Token {
     const ch = self.peekByte() orelse return .{
-        .tag = Token.Tag.eof,
+        .data = .{ .eof = {} },
         .start = self.index,
         .len = 0,
         .line = self.line,
@@ -166,9 +203,8 @@ fn matchIdentStart(str: []const u8) ?u32 {
             if (cp.value == '\\') {
                 // '-'{escape}
                 if (str.len < 3) return null; // -\<eof> is invalid.
-                const next_cp_len = std.unicode.utf8ByteSequenceLength(str[2]) catch unreachable;
                 // check if \{codepoint} is a valid escape sequence
-                const escape_len = matchEscape(str[1 .. 2 + next_cp_len]) orelse return null;
+                const escape_len = matchSingleEscape(str[1..]) orelse return null;
                 return 1 + escape_len; // '-' + escape sequence length (includes '\')
             }
 
@@ -262,6 +298,22 @@ fn matchEscape(str: []const u8) ?u32 {
     return null;
 }
 
+// Match a single escaped codepoint after a "/".
+fn matchSingleEscape(str: []const u8) ?u32 {
+    std.debug.assert(str[0] == '\\');
+    if (str.len < 2) return null;
+
+    if (std.ascii.isAscii(str[1])) {
+        return if (isNewlineChar(str[1])) null else 2;
+    }
+
+    const cp_len =
+        std.unicode.utf8ByteSequenceLength(str[1]) catch
+        unreachable; // input has already been validated at this point.
+
+    return 1 + cp_len; // '\' + length of codepoint
+}
+
 /// Parse a CSS Identifier sequence
 fn identifierSequence(self: *Self) ?Token {
     const start_idx = self.index;
@@ -297,7 +349,7 @@ fn identifierSequence(self: *Self) ?Token {
     }
 
     return Token{
-        .tag = .identifier,
+        .data = .{ .identifier = {} },
         .start = start_idx,
         .len = self.index - start_idx,
         .line = self.line,
@@ -325,7 +377,7 @@ fn comment(self: *Self) Error!?Token {
 
     self.index += 2; // skip the closing "*/"
     return .{
-        .tag = .comment,
+        .data = .{ .comment = {} },
         .start = start,
         .len = self.index - start,
         .line = line,
@@ -352,42 +404,77 @@ fn isAtCommentStart(self: *const Self) bool {
 /// the tag returned is one of: string, malformed_string, newline_string, unterminated_string
 ///
 /// Ref: https://drafts.csswg.org/css-syntax-3/#consume-string-token
-fn matchStringLiteral(str: []const u8) struct { u32, Token.Tag } {
+fn matchStringLiteral(self: *Self, str: []const u8) Error!struct { u32, Token.Data } {
     std.debug.assert(str.len > 0 and (str[0] == '"' or str[0] == '\''));
     const quote = str[0];
+    self.scratch[0] = quote;
+
+    // Length of the string after processing all escapes.
+    var escaped_len: usize = 1;
 
     var i: usize = 1;
     while (i < str.len) {
         const byte = str[i];
-        if (std.ascii.isAscii(byte)) {
-            if (byte == quote) return .{ @intCast(i + 1), Token.Tag.string };
+        if (!std.ascii.isAscii(byte)) {
+            // Found a non-ASCII UTF-8 codepoint,
+            // Copy it into the scratch buffer.
+            const cp_len = codePointAt(str, i).len;
 
-            if (byte == '\\') {
-                i += matchEscape(str[i..]) orelse return .{
-                    @intCast(i),
-                    Token.Tag.malformed_string,
-                };
-            } else if (isNewlineChar(byte)) {
-                return .{ @intCast(i), Token.Tag.newline_string };
-            } else {
-                i += 1;
-            }
+            const dst = self.scratch[escaped_len .. escaped_len + cp_len];
+            const src = str[i .. i + cp_len];
+            @memcpy(dst, src);
+
+            i += cp_len;
+            escaped_len += cp_len;
+        } else if (byte == quote) {
+            // Found the closing quote.
+            // Copy the quote into the scratch buffer and exit.
+            self.scratch[escaped_len] = quote;
+            escaped_len += 1;
+
+            const interned = try self.string_pool.getInsert(self.scratch[0..escaped_len]);
+            return .{ @intCast(i + 1), .{ .string = interned } };
+        } else if (byte == '\\') {
+            // Found an escape sequence.
+            // Process the escape, then copy to the buffer without the leading '\'.
+            const escape_seq_len = matchSingleEscape(str[i..]) orelse return .{
+                @intCast(i),
+                .{ .malformed_string = {} },
+            };
+
+            const len_without_bslash = escape_seq_len - 1; // skip '/'
+            const dst = self.scratch[escaped_len .. escaped_len + len_without_bslash];
+            const src = str[i + 1 .. i + escape_seq_len];
+            @memcpy(dst, src);
+
+            i += escape_seq_len;
+            escaped_len += escape_seq_len - 1;
+        } else if (isNewlineChar(byte)) {
+            // Newlines are not allowed in CSS strings.
+            // Return an erroenous token.
+            return .{ @intCast(i), .{ .malformed_string = {} } };
         } else {
-            i += codePointAt(str, i).len;
+            // A regular ASCII character.
+            // copy it into the scratch buffer.
+            self.scratch[escaped_len] = byte;
+
+            i += 1;
+            escaped_len += 1;
         }
     }
 
-    return .{ @intCast(i), Token.Tag.unterminated_string };
+    // We never found the closing quote.
+    return .{ @intCast(i), .{ .unterminated_string = {} } };
 }
 
 /// Ref: https://drafts.csswg.org/css-syntax-3/#consume-string-token
 fn stringLiteral(self: *Self) Error!Token {
     const start = self.index;
 
-    const len, const tag = matchStringLiteral(self.source[self.index..]);
+    const len, const data = try self.matchStringLiteral(self.source[self.index..]);
     self.index += len;
     return .{
-        .tag = tag,
+        .data = data,
         .start = start,
         .len = len,
         .line = self.line,
@@ -435,18 +522,17 @@ fn isAtEof(self: *const Self) bool {
 
 const t = std.testing;
 
-fn testToken(src: []const u8, tag: Token.Tag) !void {
+fn testToken(src: []const u8, tag: std.meta.Tag(Token.Data)) !void {
     // first, test that token followed by EOF
     {
-        var tokenizer = try Self.init(src);
-        const token = try tokenizer.next();
+        var tokenizer = try Self.init(t.allocator, src);
+        defer tokenizer.deinit();
 
-        try std.testing.expectEqualDeep(Token{
-            .tag = tag,
-            .start = 0,
-            .len = @intCast(src.len),
-            .line = 0,
-        }, token);
+        const token = try tokenizer.next();
+        try t.expectEqual(tag, token.tag());
+        try t.expectEqual(@as(u32, @intCast(src.len)), token.len);
+        try t.expectEqual(0, token.start);
+        try t.expectEqual(0, token.line);
     }
 
     // then, that token wrapped by whitespace
@@ -461,20 +547,20 @@ fn testToken(src: []const u8, tag: Token.Tag) !void {
         );
 
         defer t.allocator.free(source);
-        var tokenizer = try Self.init(source);
+        var tokenizer = try Self.init(t.allocator, source);
+        defer tokenizer.deinit();
+
         const token = try tokenizer.next();
 
-        try std.testing.expectEqualDeep(Token{
-            .tag = tag,
-            .start = 2,
-            .len = @intCast(src.len),
-            .line = 1,
-        }, token);
+        try t.expectEqual(tag, token.tag());
+        try t.expectEqual(@as(u32, @intCast(src.len)), token.len);
+        try t.expectEqual(2, token.start);
+        try t.expectEqual(1, token.line);
     }
 }
 
 test {
-    const PassingCase = struct { []const u8, Token.Tag };
+    const PassingCase = struct { []const u8, std.meta.Tag(Token.Data) };
     // these should parse correctly
     const good_cases = [_]PassingCase{
         .{ "", .eof },
@@ -491,6 +577,7 @@ test {
         .{ "😃", .identifier },
         .{ "--😃", .identifier },
         .{ "-😃", .identifier },
+        .{ "-\\😃", .identifier },
         .{ "-_", .identifier },
         .{ "-\\e", .identifier },
         .{ "-\\😃", .identifier },
@@ -515,7 +602,24 @@ test {
 
     for (bad_cases) |test_case| {
         const str, const expected_err = test_case;
-        var tokenizer = try Self.init(str);
+        var tokenizer = try Self.init(t.allocator, str);
+        defer tokenizer.deinit();
+
         try t.expectError(expected_err, tokenizer.next());
+    }
+
+    {
+        var tokenizer = try Self.init(t.allocator, "'esc\\aped' 'escaped'");
+        defer tokenizer.deinit();
+
+        const token1 = try tokenizer.next();
+        try t.expectEqual(.string, token1.tag());
+        try t.expectEqualStrings("'escaped'", tokenizer.string_pool.toByteSlice(token1.data.string));
+        try t.expectEqualStrings("'esc\\aped'", token1.toByteSlice(tokenizer.source));
+
+        const token2 = try tokenizer.next();
+        try t.expectEqual(.string, token2.tag());
+        try t.expectEqualStrings("'escaped'", tokenizer.string_pool.toByteSlice(token2.data.string));
+        try t.expectEqualStrings("'escaped'", token2.toByteSlice(tokenizer.source));
     }
 }

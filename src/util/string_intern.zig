@@ -34,7 +34,7 @@ pub fn deinit(self: *Self) void {
     self.index_of_str.deinit();
 }
 
-fn ensureCapacity(self: *Self, n_bytes_wanted: u32) !void {
+fn ensureCapacity(self: *Self, n_bytes_wanted: u32) error{ OutOfMemory, Overflow }!void {
     const n_remaining_bytes = self.chars.len - self.n_bytes_used;
     if (n_remaining_bytes > n_bytes_wanted) return;
 
@@ -45,7 +45,7 @@ fn ensureCapacity(self: *Self, n_bytes_wanted: u32) !void {
 
 /// If `string` exists in the intern table, return the associated span.
 /// Otherwise, insert it and return the new span.
-pub fn getInsert(self: *Self, string: []const u8) !String {
+pub fn getInsert(self: *Self, string: []const u8) error{ OutOfMemory, Overflow }!String {
     const gop = try self.index_of_str.getOrPut(string);
     if (gop.found_existing) {
         return gop.value_ptr.*;
