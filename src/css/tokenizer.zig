@@ -1,5 +1,7 @@
 const std = @import("std");
 const util = @import("util");
+const types = util.types;
+const offsets = util.offsets;
 
 const codePointAt = util.utf8.codePointAt;
 const StringPool = util.StringPool;
@@ -8,11 +10,24 @@ const Str = StringPool.String;
 const Self = @This();
 
 pub const Token = struct {
+    pub const Index = enum(u32) { _ };
+
     pub const Data = union(enum) {
         eof,
         comment,
+
+        // TODO: Store the escaped identifier string here.
         identifier,
+        // Contains the escaped string value, including quotes
         string: Str,
+
+        // operators and punctuators
+        @")",
+        @"(",
+        @"{",
+        @"}",
+        @"[",
+        @"]",
 
         // erroenous tokens
 
@@ -44,20 +59,20 @@ pub const Token = struct {
     pub fn toByteSlice(self: *const Token, source: []const u8) []const u8 {
         return source[self.start .. self.start + self.len];
     }
+
+    /// (line, column) position for the start of this token.
+    pub fn startCoord(self: *const Token, source: []const u8) types.Coordinate {
+        return offsets.byteIndexToCoordinate(source, self.start);
+    }
 };
 
 /// Value of a CSS number token.
 /// Ref: https://drafts.csswg.org/css-syntax-3/#consume-number
-const NumericLiteral = struct {
-    pub const Kind = enum { integer, float };
-    kind: Kind,
+pub const NumericLiteral = struct {
+    pub const Kind = enum(u8) { integer, float };
     value: f64,
+    kind: Kind,
     has_sign: bool,
-};
-
-const Value = union(enum) {
-    number: NumericLiteral,
-    none, // For tokens like ';' and eof that don't have a value.
 };
 
 pub const Error = error{
@@ -125,6 +140,13 @@ pub fn next(self: *Self) Error!Token {
             self.skipWhitespace();
             return try self.next();
         },
+
+        '(' => return self.singleCharToken(.{ .@"(" = {} }),
+        ')' => return self.singleCharToken(.{ .@")" = {} }),
+        '[' => return self.singleCharToken(.{ .@"[" = {} }),
+        ']' => return self.singleCharToken(.{ .@"]" = {} }),
+        '{' => return self.singleCharToken(.{ .@"{" = {} }),
+        '}' => return self.singleCharToken(.{ .@"}" = {} }),
 
         '/' => {
             if (try self.comment()) |comment_token| {
@@ -318,8 +340,7 @@ fn matchSingleEscape(str: []const u8) ?u32 {
 fn identifierSequence(self: *Self) ?Token {
     const start_idx = self.index;
 
-    self.index += matchIdentStart(self.source[self.index..]) orelse
-        return null;
+    self.index += matchIdentStart(self.source[self.index..]) orelse return null;
 
     while (self.index < self.source.len) {
         const byte = self.source[self.index];
@@ -483,6 +504,16 @@ fn stringLiteral(self: *Self) Error!Token {
 
 // Helper functions:
 
+fn singleCharToken(self: *Self, data: Token.Data) Token {
+    self.index += 1;
+    return .{
+        .data = data,
+        .start = self.index - 1,
+        .len = 1,
+        .line = self.line,
+    };
+}
+
 /// Peek at the next byte in the input stream without consuming it.
 fn peekByte(self: *const Self) ?u8 {
     if (self.index >= self.source.len) {
@@ -564,6 +595,10 @@ test {
     // these should parse correctly
     const good_cases = [_]PassingCase{
         .{ "", .eof },
+        .{ "(", .@"(" },
+        .{ ")", .@")" },
+        .{ "{", .@"{" },
+        .{ "}", .@"}" },
         .{ "/**/", .comment },
         .{ "/* hello, hi */", .comment },
         .{ "/* hello, hi\n\r\n */", .comment },
