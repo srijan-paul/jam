@@ -37,7 +37,6 @@ pub fn build(b: *std.Build) !void {
     });
 
     b.installArtifact(lib);
-    lib.root_module.addImport("css", jam_css_module);
 
     const exe = b.addExecutable(.{
         .name = "jsickle",
@@ -47,8 +46,6 @@ pub fn build(b: *std.Build) !void {
     });
 
     b.installArtifact(exe);
-    exe.root_module.addImport("util", util_module);
-    exe.root_module.addImport("css", jam_css_module);
 
     {
         const test262 = b.addExecutable(.{
@@ -88,9 +85,17 @@ pub fn build(b: *std.Build) !void {
 
     lib_unit_tests.root_module.addImport("util", util_module);
 
+    const util_unit_tests = b.addTest(.{
+        .root_source_file = b.path("src/util/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+
     const run_lib_unit_tests = b.addRunArtifact(lib_unit_tests);
+    const run_util_unit_tests = b.addRunArtifact(util_unit_tests);
     const test_step = b.step("test", "Run unit tests");
     test_step.dependOn(&run_lib_unit_tests.step);
+    test_step.dependOn(&run_util_unit_tests.step);
 
     // dependencies
     var deps = std.ArrayList(struct {

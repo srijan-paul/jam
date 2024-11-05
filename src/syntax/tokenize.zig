@@ -260,7 +260,7 @@ pub const Tokenizer = struct {
             },
             'u' => {
                 // \uXXXX or \u{X} - \u{XXXXXX}
-                const parsed = util.parseUnicodeEscape(str) orelse
+                const parsed = util.utf8.parseUnicodeEscape(str) orelse
                     return TokenizeError.BadEscapeSequence;
                 iter.i += parsed.len;
             },
@@ -324,7 +324,7 @@ pub const Tokenizer = struct {
         self: *Self,
         it: *std.unicode.Utf8Iterator,
     ) TokenizeError!bool {
-        if (util.parseUnicodeEscape(it.bytes[it.i..])) |parsed| {
+        if (util.utf8.parseUnicodeEscape(it.bytes[it.i..])) |parsed| {
             if (canCodepointStartId(parsed.codepoint)) {
                 self.index += parsed.len;
                 return true;
@@ -342,7 +342,7 @@ pub const Tokenizer = struct {
     /// and check if the code point(s) form a valid identifier part.
     /// https://tc39.es/ecma262/#prod-IdentifierPartChar
     fn matchIdentifierContt(it: *std.unicode.Utf8Iterator) TokenizeError!bool {
-        if (util.parseUnicodeEscape(it.bytes[it.i..])) |parsed| {
+        if (util.utf8.parseUnicodeEscape(it.bytes[it.i..])) |parsed| {
             if (canCodepointContinueId(parsed.codepoint)) {
                 it.i += parsed.len;
                 return true;

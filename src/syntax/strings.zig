@@ -58,7 +58,7 @@ pub fn stringValue(self: *Self, token: Token) !String {
 
     while (iter.i < str.len) {
         if (str[iter.i] == '\\') {
-            const parsed_cp = util.parseUnicodeEscape(str[iter.i..]) orelse
+            const parsed_cp = util.utf8.parseUnicodeEscape(str[iter.i..]) orelse
                 unreachable; // validated during tokenization.
             const cp = parsed_cp.codepoint;
             var cp_slice: [4]u8 = undefined;

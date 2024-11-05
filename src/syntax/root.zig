@@ -6,5 +6,8 @@ pub const pretty = @import("./pretty.zig");
 
 test {
     const std = @import("std");
+    const util = @import("util");
+
     std.testing.refAllDeclsRecursive(@This());
+    std.testing.refAllDeclsRecursive(util);
 }

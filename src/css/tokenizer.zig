@@ -1,7 +1,7 @@
 const std = @import("std");
 const util = @import("util");
 
-const codePointAt = util.codePointAt;
+const codePointAt = util.utf8.codePointAt;
 
 const Self = @This();
 
@@ -10,6 +10,16 @@ pub const Token = struct {
         eof,
         comment,
         identifier,
+        string,
+
+        // erroenous tokens
+
+        /// A string with invalid escape sequence.
+        malformed_string,
+        /// A string that is missing the ending '"'.
+        unterminated_string,
+        /// A string that has a newline character in it.
+        newline_string,
     };
 
     tag: Tag,
@@ -19,6 +29,20 @@ pub const Token = struct {
     len: u32,
     /// 0-indexed line number where the token starts.
     line: u32,
+};
+
+/// Value of a CSS number token.
+/// Ref: https://drafts.csswg.org/css-syntax-3/#consume-number
+const NumericLiteral = struct {
+    pub const Kind = enum { integer, float };
+    kind: Kind,
+    value: f64,
+    has_sign: bool,
+};
+
+const Value = union(enum) {
+    number: NumericLiteral,
+    none, // For tokens like ';' and eof that don't have a value.
 };
 
 pub const Error = error{
@@ -60,15 +84,17 @@ pub fn next(self: *Self) Error!Token {
     };
 
     switch (ch) {
+        '\n', '\r', '\t', ' ', 0x0c => {
+            self.skipWhitespace();
+            return try self.next();
+        },
+
         '/' => {
             if (try self.comment()) |comment_token| {
                 return comment_token;
             }
         },
-        '\n', '\r', '\t', ' ', 0x0c => {
-            self.skipWhitespace();
-            return try self.next();
-        },
+        '"', '\'' => return try self.stringLiteral(),
         else => {
             return self.identifierSequence() orelse Error.NoMatchingToken;
         },
@@ -148,6 +174,7 @@ fn matchIdentStart(str: []const u8) ?u32 {
 
             return null;
         },
+
         else => {
             const cp = codePointAt(str, 0);
             if (isNonAsciiIdentCodePoint(cp.value)) {
@@ -205,8 +232,15 @@ fn skipWhitespace(self: *Self) void {
     }
 }
 
+/// Match an escape code that starts with "/", and has a single code-point
+fn matchEscapeCodeSingleCodepoint(str: []const u8) ?u32 {
+    std.debug.assert(str[0] == '\\');
+    if (str.len < 2) return null;
+
+    return null;
+}
+
 /// Match a CSS escape sequence.
-/// TODO: allow unicode codepints to be escaped.
 /// TOOD: add a helper – matchEscape2, to check for just 2 codepoitns
 fn matchEscape(str: []const u8) ?u32 {
     std.debug.assert(str[0] == '\\');
@@ -220,7 +254,8 @@ fn matchEscape(str: []const u8) ?u32 {
         if (i < str.len and isWhitespaceChar(str[i])) i += 1;
         return @intCast(i + 1); // include the leading '\'
     } else if (!isNewlineChar(str[1])) {
-        return 2;
+        const cp_len = std.unicode.utf8ByteSequenceLength(str[1]) catch unreachable;
+        return 1 + cp_len; // '\' + length of codepoint
     }
 
     // Invalid escape sequence.
@@ -289,7 +324,6 @@ fn comment(self: *Self) Error!?Token {
     }
 
     self.index += 2; // skip the closing "*/"
-
     return .{
         .tag = .comment,
         .start = start,
@@ -311,6 +345,56 @@ fn isAtCommentStart(self: *const Self) bool {
         self.source[self.index] == '/' and
         self.source[self.index + 1] == '*';
 }
+
+/// Returns a tuple where the first item is the length of the string literal,
+/// and the second item is the tag for that type of string.
+///
+/// the tag returned is one of: string, malformed_string, newline_string, unterminated_string
+///
+/// Ref: https://drafts.csswg.org/css-syntax-3/#consume-string-token
+fn matchStringLiteral(str: []const u8) struct { u32, Token.Tag } {
+    std.debug.assert(str.len > 0 and (str[0] == '"' or str[0] == '\''));
+    const quote = str[0];
+
+    var i: usize = 1;
+    while (i < str.len) {
+        const byte = str[i];
+        if (std.ascii.isAscii(byte)) {
+            if (byte == quote) return .{ @intCast(i + 1), Token.Tag.string };
+
+            if (byte == '\\') {
+                i += matchEscape(str[i..]) orelse return .{
+                    @intCast(i),
+                    Token.Tag.malformed_string,
+                };
+            } else if (isNewlineChar(byte)) {
+                return .{ @intCast(i), Token.Tag.newline_string };
+            } else {
+                i += 1;
+            }
+        } else {
+            i += codePointAt(str, i).len;
+        }
+    }
+
+    return .{ @intCast(i), Token.Tag.unterminated_string };
+}
+
+/// Ref: https://drafts.csswg.org/css-syntax-3/#consume-string-token
+fn stringLiteral(self: *Self) Error!Token {
+    const start = self.index;
+
+    const len, const tag = matchStringLiteral(self.source[self.index..]);
+    self.index += len;
+    return .{
+        .tag = tag,
+        .start = start,
+        .len = len,
+        .line = self.line,
+    };
+}
+
+// Helper functions:
 
 /// Peek at the next byte in the input stream without consuming it.
 fn peekByte(self: *const Self) ?u8 {
@@ -366,26 +450,27 @@ fn testToken(src: []const u8, tag: Token.Tag) !void {
     }
 
     // then, that token wrapped by whitespace
-    // {
-    //     if (tag == .comment) return;
-    //
-    //     const source = try std.mem.concat(
-    //         t.allocator,
-    //         u8,
-    //         &[_][]const u8{ "\n ", src, " " },
-    //     );
-    //
-    //     defer t.allocator.free(source);
-    //     var tokenizer = try Self.init(source);
-    //     const token = try tokenizer.next();
-    //
-    //     try std.testing.expectEqualDeep(Token{
-    //         .tag = tag,
-    //         .start = 2,
-    //         .len = @intCast(src.len),
-    //         .line = 1,
-    //     }, token);
-    // }
+    {
+        if (tag == .comment or tag == .eof or tag == .unterminated_string)
+            return;
+
+        const source = try std.mem.concat(
+            t.allocator,
+            u8,
+            &[_][]const u8{ "\n ", src, " " },
+        );
+
+        defer t.allocator.free(source);
+        var tokenizer = try Self.init(source);
+        const token = try tokenizer.next();
+
+        try std.testing.expectEqualDeep(Token{
+            .tag = tag,
+            .start = 2,
+            .len = @intCast(src.len),
+            .line = 1,
+        }, token);
+    }
 }
 
 test {
@@ -398,10 +483,21 @@ test {
         .{ "/* hello, hi\n\r\n */", .comment },
         .{ "identifier", .identifier },
         .{ "--id", .identifier },
+        .{ "--", .identifier },
         .{ "-id", .identifier },
         .{ "-\\x", .identifier },
-        .{ "-\\x\\yidentifier-of-my-choice", .identifier },
+        .{ "-\\x\\yidentifier-of-my-choic\\e", .identifier },
         .{ "--\\x\\yidentifier-of-my-choice", .identifier },
+        .{ "😃", .identifier },
+        .{ "--😃", .identifier },
+        .{ "-😃", .identifier },
+        .{ "-_", .identifier },
+        .{ "-\\e", .identifier },
+        .{ "-\\😃", .identifier },
+        .{ "'A string'", .string },
+        .{ "\"Double quoted string\"", .string },
+        .{ "\"Double quoted \\string\"", .string },
+        .{ "'A string", .unterminated_string },
     };
 
     for (good_cases) |test_case| {
