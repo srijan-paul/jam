@@ -15,12 +15,11 @@ pub fn parseBlock(p: *Parser) Parser.Error!ast.Node.Index {
     return p.addNode(.{ .block = body }, start_pos, end_pos);
 }
 
-pub fn parseBlockBody(p: *Parser) Parser.Error!ast.Block {
+pub fn parseBlockBody(p: *Parser) Parser.Error!ast.SubRange {
     while (p.current_token.tag() != .@"}") {
         _ = try p.nextToken();
     }
-
-    return ast.Block{ .rules = &.{} };
+    return ast.SubRange{ .start = 0, .end = 0 };
 }
 
 test parseBlock {

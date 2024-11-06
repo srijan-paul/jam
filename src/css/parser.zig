@@ -126,6 +126,17 @@ pub fn nextToken(self: *Self) Error!Token {
     return cur;
 }
 
+/// Get a slice of nodes referenced by the given subrange.
+/// a "SubRage" is a [from, to] index pair used to represent a contiguous range of nodes in the AST.
+pub fn subRangeAsSlice(self: *const Self, range: ast.SubRange) []ast.Node.Index {
+    return self.node_refs.items[range.start..range.end];
+}
+
+/// Get the token at the given index.
+pub fn getToken(self: *const Self, t: Token.Index) Token {
+    return self.tokens.items[@intFromEnum(t)];
+}
+
 // TODO: improve this doc comment.
 /// Create a new subrange from the given nodes and append them to the list of node ranges.
 pub fn newSubRange(

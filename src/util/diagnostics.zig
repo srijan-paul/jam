@@ -20,6 +20,11 @@ pub fn init(allocator: std.mem.Allocator) Self {
     };
 }
 
+/// Get the list of diagnostics.
+pub fn items(self: *const Self) []Diagnostic {
+    return self.diagnostics.items;
+}
+
 /// Push an error essage to the list of diagnostics.
 pub fn emit(
     self: *Self,

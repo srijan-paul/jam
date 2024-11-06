@@ -113,6 +113,7 @@ pub fn build(b: *std.Build) !void {
     });
 
     exe.root_module.addImport("jam-syntax", jam_syntax_module);
+    exe.root_module.addImport("css", jam_css_module);
 
     for (deps.items) |dep| {
         lib_unit_tests.root_module.addImport(dep.name, dep.module);
