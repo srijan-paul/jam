@@ -13,6 +13,7 @@ pub const JsTokenTag = enum(u32) {
     private_identifier,
     numeric_literal,
     string_literal,
+    regex_literal,
 
     @"\"",
     @"'",

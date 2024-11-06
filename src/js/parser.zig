@@ -1,3 +1,5 @@
+// A recursive decent parser for JavaScript.
+
 const std = @import("std");
 
 const Self = @This();
@@ -47,7 +49,7 @@ pub const Diagnostic = struct {
 /// Represents the currently active set of grammatical parameters
 /// in the parser state.
 /// https://tc39.es/ecma262/#sec-grammatical-parameters
-pub const ParseContext = packed struct(u8) {
+pub const ParseContext = packed struct(u16) {
     /// Is a ReturnStatement allowed in the current context?
     /// Unlike `await`, `return` is always parsed as a keyword, regardles of context.
     @"return": bool = false,
@@ -66,6 +68,10 @@ pub const ParseContext = packed struct(u8) {
     /// Are `in` statements allowed?
     /// Used to parse for-in loops.
     in: bool = true,
+    /// Whether the parser expects to see a regex literal
+    /// or a '/' or '/='. Necessary to disambiguate.
+    regex_literal: bool = false,
+    _: u7 = 0, // padding
 };
 
 // arranged in highest to lowest binding order
@@ -159,8 +165,6 @@ diagnostics: std.ArrayList(Diagnostic),
 /// The token that we're currently at.
 /// Calling `next()` or `peek()` will return this token.
 current_token: Token,
-/// The next token that we're going to read.
-next_token: Token,
 /// Line number of the token that was consumed previously.
 /// When being accessed, this property can be thought of as the starting line
 /// of the first token in the expression/statement that was last parsed.
@@ -266,7 +270,6 @@ pub fn init(
         .file_name = file_name,
         .tokenizer = try Tokenizer.init(source),
         .current_token = undefined,
-        .next_token = undefined,
 
         .diagnostics = try std.ArrayList(Diagnostic).initCapacity(allocator, 2),
         .nodes = .{},
@@ -284,8 +287,7 @@ pub fn init(
     const i = try self.addNode(.{ .none = {} }, 0, 0);
     std.debug.assert(i == Node.Index.empty);
 
-    // these calls will initialize `current_token` and `next_token`.
-    _ = try self.next();
+    // this call will initialize `current_token`.
     _ = try self.next();
     return self;
 }
@@ -334,7 +336,7 @@ fn statement(self: *Self) ParseError!Node.Index {
         .kw_while => self.whileStatement(),
         .kw_debugger => self.debuggerStatement(),
         .kw_async => {
-            if (self.next_token.tag == .kw_function) {
+            if ((try self.lookAhead()).tag == .kw_function) {
                 const async_token = try self.next(); // eat 'async'
                 _ = try self.next(); // eat 'function'
                 return self.functionDeclaration(async_token.start, .{ .is_async = true });
@@ -431,32 +433,31 @@ fn forStatement(self: *Self) ParseError!Node.Index {
 fn forLoopIterator(self: *Self) ParseError!struct { ForLoopKind, ast.ExtraData.Index } {
     _ = try self.expect(.@"(");
 
-    // Forbid for (let let of x) {} / for (let let = ...)
-    if (self.current_token.tag == .kw_let and self.next_token.tag == .kw_let) {
-        try self.emitDiagnostic(
-            self.current_token.startCoord(self.source),
-            "'let' cannot be used as a name in 'let' or 'const' declarations",
-            .{},
-        );
-        return ParseError.UnexpectedToken;
-    }
-
     // Check for productions that start with a variable declarator.
     // for (var/let/const x = 0; x < 10; x++)
     // for (let/let/const x in y)
     // for (let/let/const x of y)
-    const curr = self.current_token.tag;
-    if ((curr == .kw_let and self.isDeclaratorStart(self.next_token.tag)) or
-        curr == .kw_var or
-        curr == .kw_const)
-    {
+    const maybe_decl_kw = blk: {
+        const curr = self.current_token.tag;
+        if (curr == .kw_var or curr == .kw_const) {
+            break :blk try self.next();
+        }
+
+        if (curr == .kw_let) {
+            break :blk try self.startLetBinding();
+        }
+
+        break :blk null;
+    };
+
+    if (maybe_decl_kw) |decl_kw| {
         var loop_kind = ForLoopKind.basic;
-        const iterator = try self.completeLoopIterator(&loop_kind);
+        const iterator = try self.completeVarDeclLoopIterator(decl_kw, &loop_kind);
         return .{ loop_kind, iterator };
     }
 
     // 'for (;' indicates a basic 3-part for loop with empty initializer.
-    if (curr == .@";") {
+    if (self.isAtToken(.@";")) {
         const iterator = try self.completeBasicLoopIterator(Node.Index.empty);
         return .{ ForLoopKind.basic, iterator };
     }
@@ -545,8 +546,9 @@ fn forLoopStartExpression(self: *Self) ParseError!Node.Index {
     return first_expr;
 }
 
-fn completeLoopIterator(self: *Self, loop_kind: *ForLoopKind) ParseError!ast.ExtraData.Index {
-    const decl_kw = try self.next(); // eat 'let', 'var' or 'const'
+/// Once the opening '(' and a 'var'/'let'/'const' keyword has been consumed,
+/// this function parses the rest of the loop iterator.
+fn completeVarDeclLoopIterator(self: *Self, decl_kw: Token, loop_kind: *ForLoopKind) ParseError!ast.ExtraData.Index {
     std.debug.assert(decl_kw.tag == .kw_let or
         decl_kw.tag == .kw_var or
         decl_kw.tag == .kw_const);
@@ -710,7 +712,7 @@ fn debuggerStatement(self: *Self) ParseError!Node.Index {
     );
 }
 
-/// parse a VariableStatement, where `kw` is the keyword used to declare the variable (let, var, or const).
+/// Parse a VariableStatement, where `kw` is the keyword used to declare the variable (let, var, or const).
 fn variableStatement(self: *Self, kw: Token) ParseError!Node.Index {
     std.debug.assert(kw.tag == .kw_let or kw.tag == .kw_var or kw.tag == .kw_const);
 
@@ -765,12 +767,15 @@ fn varDeclKind(tag: Token.Tag) ast.VarDeclKind {
 /// is also a valid identifier.
 fn letStatement(self: *Self) ParseError!Node.Index {
     std.debug.assert(self.current_token.tag == .kw_let);
-    if (self.isDeclaratorStart(self.next_token.tag)) {
-        const let_kw = try self.next();
-        return self.variableStatement(let_kw);
-    }
+    const let_kw = try self.startLetBinding() orelse {
+        // If the `let` keyword doesn't start an identifier,
+        // then its an identifier.
+        // TODO: also support labelled statements where the label is `let`
+        return self.expressionStatement();
+    };
 
     if (self.isInStrictMode()) {
+        // TODO: disallow 'let' to be bound lexically.
         try self.emitDiagnostic(
             self.current_token.startCoord(self.source),
             "'let' can only be used to declare variables in strict mode",
@@ -779,8 +784,24 @@ fn letStatement(self: *Self) ParseError!Node.Index {
         return ParseError.LetInStrictMode;
     }
 
-    // TODO: also support labelled statements where the label is `let`
-    return self.expressionStatement();
+    return self.variableStatement(let_kw);
+}
+
+/// Checks if the parser is at the beginning of let binding,
+/// consumes the `let` token if so, and then returns it.
+/// Otherwise, it returns `null` and consumes nothing.
+///
+/// Must be called when `self.current_token` is a 'let' keyword.
+fn startLetBinding(self: *Self) ParseError!?Token {
+    std.debug.assert(self.current_token.tag == .kw_let);
+
+    const lookahead = try self.lookAhead();
+    if (self.isDeclaratorStart(lookahead.tag)) {
+        // TODO: disallow `let let = ...`, `const [let] = ...` etc.
+        return try self.next();
+    }
+
+    return null;
 }
 
 /// VariableDeclarator:
@@ -1167,11 +1188,28 @@ fn next(self: *Self) ParseError!Token {
         // TODO: store comments as trivia.
     }
 
-    const ret_token = self.current_token;
-    self.current_token = self.next_token;
-    self.next_token = next_token;
-    self.prev_token_line = ret_token.line;
-    return ret_token;
+    const current = self.current_token;
+    self.current_token = next_token;
+    return current;
+}
+
+/// Return the next non-whitespace and non-comment token,
+/// without consuming it, or advancing in the source.
+///
+/// NOTE: The token returned by this function should only be used for
+/// inspection, and never added to the AST.
+fn lookAhead(self: *Self) ParseError!Token {
+    const line = self.tokenizer.line;
+    const index = self.tokenizer.index;
+
+    var next_token = try self.tokenizer.next();
+    while (next_token.tag == .comment or
+        next_token.tag == .whitespace) : (next_token = try self.tokenizer.next())
+    {}
+
+    // restore the tokenizer state.
+    self.tokenizer.rewind(index, line);
+    return next_token;
 }
 
 inline fn peek(self: *Self) Token {
@@ -1298,7 +1336,7 @@ fn reinterpretAsPattern(self: *Self, node_id: Node.Index) void {
 /// Parse an assignment expression that may be an L or an R-value.
 /// i.e, it may return a pattern like `{x=1}` that *must* be used as a destructuring or assignment target,
 /// or, it may return a pattern like `{x:a.b}` that can be assigned to, but not destructured
-/// (`let { x: a.b } = ...` is invalid, `({x: a.b} = ...)`) is fine.
+/// (`let { x: a.b } = ...` is invalid, `({x: a.b} = ...)` is fine).
 /// It may also return a regular R-Value that is neither a valid destructuring target, nor a pattern.
 /// To use any value returned by this function as a destructuring target, you must call `reinterpretAsPattern`:
 /// ```zig
@@ -1699,7 +1737,7 @@ fn objectAssignmentPattern(self: *Self) ParseError!Node.Index {
             .@"..." => {
                 try props.append(try self.restElement());
                 destruct_kind.update(self.current_destructure_kind);
-                break; // spread element must be the last element
+                break; // rest element must be the last element
             },
 
             .identifier, .string_literal, .numeric_literal, .@"[" => {
@@ -1777,6 +1815,8 @@ fn unaryExpression(self: *Self) ParseError!Node.Index {
     }
 }
 
+/// Parse an await expression when `self.current_token`
+/// is the `await` keyword.
 fn awaitExpression(self: *Self) ParseError!Node.Index {
     const await_token = try self.next();
     std.debug.assert(await_token.tag == .kw_await);
@@ -2111,6 +2151,18 @@ fn completeComputedMemberExpression(self: *Self, object: Node.Index) ParseError!
 }
 
 fn primaryExpression(self: *Self) ParseError!Node.Index {
+    // If we're currently at a '/' or '/=' token,
+    // we probably have mistaken a regex literal start char for an operator.
+    // We'll rewind the tokenizer and try to parse a regex literal instead.
+    // This is ok.
+    const cur = &self.current_token;
+    if (cur.tag == .@"/" or cur.tag == .@"/=") {
+        self.tokenizer.rewind(cur.start, cur.line);
+        self.tokenizer.context.regex_literal = true;
+        self.current_token = try self.tokenizer.next();
+        self.tokenizer.context.regex_literal = false;
+    }
+
     const token = try self.next();
     switch (token.tag) {
         .kw_this => {
@@ -2125,11 +2177,20 @@ fn primaryExpression(self: *Self) ParseError!Node.Index {
         .identifier => {
             const id = try self.identifier(token);
             if (self.isAtToken(.@"=>")) {
-                return self.completeArrowFunction(&token, &token, id, .{ .is_arrow = true });
+                const params_range = try self.addSubRange(&[_]Node.Index{id});
+                // TODO: should functions with single parameters just not store a SubRange and store the
+                // parameter directly?
+                const params = try self.addNode(
+                    .{ .parameters = params_range },
+                    token.start,
+                    token.start + token.len,
+                );
+                return self.completeArrowFunction(&token, &token, params, .{ .is_arrow = true });
             }
             return id;
         },
         .numeric_literal,
+        .regex_literal,
         .string_literal,
         .kw_true,
         .kw_false,
@@ -2153,7 +2214,6 @@ fn primaryExpression(self: *Self) ParseError!Node.Index {
             // fall through to the default case.
         },
         .kw_function => return self.functionExpression(token.start, .{}),
-
         else => {},
     }
 

@@ -15,6 +15,8 @@ pub const Error = error{
     InvalidHexLiteral,
     InvalidBinaryLiteral,
     BadPunctuator,
+    BadRegexLiteral,
+    UnterminatedRegexClass,
     BadEscapeSequence,
     NonTerminatedString,
     InvalidSelfState,
@@ -109,9 +111,19 @@ pub fn next(self: *Self) Error!Token {
 
     switch (byte) {
         '/' => {
-            if (try self.comment()) |tok| {
+            if (try self.comment()) |tok|
                 return tok;
-            }
+
+            // Parsing regex literals is awkward.
+            // A '/abc' can either be the start of a regex literal,
+            // or a '/' (division) token followed by an 'abc' (identifier) token.
+            //
+            // The parser has to tell the tokenizer what it expects
+            // to see next. If it expects to see a literal, then
+            // we want to try tokenizing a regex literal.
+            // Otherwise, we look for '/' or '/='.
+            if (self.context.regex_literal)
+                return try self.regexLiteral();
             return try self.punctuator();
         },
         ' ', '\t', '\n', '\r' => return self.whiteSpaces(),
@@ -151,6 +163,15 @@ pub fn next(self: *Self) Error!Token {
     }
 }
 
+/// Rewind the tokenizer to a previous location in the source code.
+/// NOTE: the location given must be a valid index into the source code.
+/// Rewinding the tokenizer to an invalid location, such as the middle of UTF-8 codepoint
+/// results in undefined behavior.
+pub fn rewind(self: *Self, index: u32, line: u32) void {
+    self.index = index;
+    self.line = line;
+}
+
 /// tokenize a "." or a "..." token, assuming self.index is at '.'
 fn dot(self: *Self) Token {
     const start = self.index;
@@ -175,6 +196,8 @@ fn isNewline(ch: u21) bool {
     return ch == '\n' or ch == '\r' or ch == '\u{2028}' or ch == '\u{2029}';
 }
 
+/// Return a comment token.
+/// If the '/' does not start a comment at all, return null.
 fn comment(self: *Self) Error!?Token {
     const start = self.index;
     const str = self.source[start..];
@@ -213,6 +236,133 @@ fn comment(self: *Self) Error!?Token {
         .len = @intCast(iter.i),
         .tag = .comment,
         .line = start_line,
+    };
+}
+
+/// Consume a UTF-8 codepoint from the source string.
+/// This function advances the `self.index` pointer by the length of the next code-point.
+fn consumeUtf8CodePoint(self: *Self) Error!void {
+    const code_point_len =
+        std.unicode.utf8ByteSequenceLength(self.source[self.index]) catch
+        return Error.BadEscapeSequence;
+    self.index += code_point_len;
+}
+
+/// Eat an escaped character inside a regex literal.
+/// Implements the RegularExpressionBackslashSequence production.
+/// https://tc39.es/ecma262/#prod-RegularExpressionBackslashSequence
+/// This function advances the `self.index` pointer.
+fn consumeRegexEscape(self: *Self) Error!void {
+    std.debug.assert(self.source[self.index] == '\\');
+    if (self.index + 1 >= self.source.len)
+        return Error.UnexpectedEof;
+
+    self.index += 1; // skip '\'
+    const byte = self.source[self.index];
+    if (std.ascii.isAscii(byte)) {
+        if (isNewline(byte))
+            return Error.BadRegexLiteral;
+        self.index += 1;
+    } else {
+        try self.consumeUtf8CodePoint();
+    }
+}
+
+/// Consume a regex character class like "[a-zA-Z_]".
+/// This function advances the `self.index` pointer.
+fn consumeRegexCharacterClass(self: *Self) Error!void {
+    std.debug.assert(self.source[self.index] == '[');
+
+    while (!self.eof()) {
+        // Consume a RegularExpressionClassChar:
+        // https://tc39.es/ecma262/#prod-RegularExpressionClassChar
+        const byte = self.source[self.index];
+        if (std.ascii.isAscii(byte)) {
+            if (isNewline(byte)) {
+                return Error.BadRegexLiteral;
+            }
+
+            if (byte == '\\') {
+                try self.consumeRegexEscape();
+            } else {
+                self.index += 1;
+                // reached end of character class.
+                if (byte == ']') return;
+            }
+        } else {
+            try self.consumeUtf8CodePoint();
+        }
+    }
+
+    return Error.UnterminatedRegexClass;
+}
+
+/// Consume part of a regex.
+/// Implements 'RegularExpressionFirstChar' in the lexical grammar:
+/// https://tc39.es/ecma262/#prod-RegularExpressionFirstChar
+/// This function advances the `self.index` pointer.
+fn consumeRegexPart(self: *Self) Error!void {
+    const byte = self.source[self.index];
+    if (std.ascii.isAscii(byte)) {
+        if (byte == '[') {
+            // regex character class.
+            try self.consumeRegexCharacterClass();
+        } else {
+            self.index += 1; // regular ASCII char.
+        }
+    } else {
+        try self.consumeUtf8CodePoint();
+    }
+}
+
+/// Consume regex flag characters after the closing '/', if any
+/// https://tc39.es/ecma262/#prod-RegularExpressionFlags
+fn consumeRegexFlags(self: *Self) Error!void {
+    while (!self.eof()) {
+        const byte = self.source[self.index];
+        if (std.ascii.isAscii(byte)) {
+            if (canCodepointContinueId(byte))
+                self.index += 1
+            else
+                break;
+        } else {
+            const code_point = util.utf8.codePointAt(self.source, self.index);
+            if (canCodepointContinueId(code_point.value)) {
+                self.index += code_point.len;
+            } else {
+                break;
+            }
+        }
+    }
+}
+
+/// Parse a regex literal.
+/// https://tc39.es/ecma262/#prod-RegularExpressionLiteral
+fn regexLiteral(self: *Self) Error!Token {
+    std.debug.assert(self.source[self.index] == '/');
+
+    const start = self.index;
+    const line = self.line;
+
+    self.index += 1; // eat '/'
+    if (self.eof()) return Error.UnexpectedEof;
+
+    while (!self.eof()) {
+        // closing '/'
+        if (self.source[self.index] == '/') {
+            self.index += 1;
+            try self.consumeRegexFlags();
+            break;
+        }
+
+        try self.consumeRegexPart();
+    }
+
+    return Token{
+        .tag = .regex_literal,
+        .start = start,
+        .len = self.index - start,
+        .line = line,
     };
 }
 
@@ -778,7 +928,10 @@ fn isSimpleWhitespace(ch: u8) bool {
     }
 }
 
-/// Skip all consecutive white space characters.
+/// Consume all whitespace characters, including newlines,
+/// and return a token representing that span.
+/// Whitespace tokens are preserved in the Jam toolkit to
+/// re-construct the original source code.
 fn whiteSpaces(self: *Self) Token {
     const start = self.index;
     const line = self.line;
@@ -1026,6 +1179,16 @@ test Self {
         try t.expectEqual(Token.Tag.@"(", (try tokenizer.next()).tag);
         try t.expectEqual(Token.Tag.string_literal, (try tokenizer.next()).tag);
         try t.expectEqual(Token.Tag.@")", (try tokenizer.next()).tag);
+        try t.expectEqual(Token.Tag.eof, (try tokenizer.next()).tag);
+    }
+
+    {
+        var tokenizer = try Self.init(" /a\\(bc[some_character_class]/ //foo");
+        tokenizer.context.regex_literal = true; // '/' is now interpreted as regex literal start markers.
+        try t.expectEqual(Token.Tag.whitespace, (try tokenizer.next()).tag);
+        try t.expectEqual(Token.Tag.regex_literal, (try tokenizer.next()).tag);
+        try t.expectEqual(Token.Tag.whitespace, (try tokenizer.next()).tag);
+        try t.expectEqual(Token.Tag.comment, (try tokenizer.next()).tag);
         try t.expectEqual(Token.Tag.eof, (try tokenizer.next()).tag);
     }
 }
