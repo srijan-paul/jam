@@ -1,7 +1,13 @@
 const syntax = @import("syntax");
 
 pub const JsTokenTag = enum(u32) {
+    // both single and multiline comments
+    // TODO(@injuly): should there be a separate tag for multi-line comments?
     comment,
+
+    // whitespaces and newlines
+    // TODO(@injuly): should there be a separate tag for whitespaces that include newlines?
+    whitespace,
 
     identifier,
     private_identifier,

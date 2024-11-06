@@ -1161,7 +1161,9 @@ fn expect2(self: *Self, tag1: Token.Tag, tag2: Token.Tag) ParseError!Token {
 /// Consume the next token from the lexer, skipping all comments.
 fn next(self: *Self) ParseError!Token {
     var next_token = try self.tokenizer.next();
-    while (next_token.tag == .comment) : (next_token = try self.tokenizer.next()) {
+    while (next_token.tag == .comment or
+        next_token.tag == .whitespace) : (next_token = try self.tokenizer.next())
+    {
         // TODO: store comments as trivia.
     }
 
@@ -2199,9 +2201,8 @@ fn completeArrowFunction(
 
     const body = blk: {
         const body_start_token = self.current_token;
-        // If an arrow functin body starts with a '{',
-        // we will attempt to parse it as a block statement,
-        // and not an object literal.
+        // If an arrow function body starts with a '{',
+        // we will attempt to parse it as a block statement, and not an object literal.
         if (body_start_token.tag == .@"{") {
             const context = self.context;
             defer self.setContext(context);

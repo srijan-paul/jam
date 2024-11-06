@@ -4,8 +4,10 @@ const offsets = util.offsets;
 const types = util.types;
 
 /// The token data-type is used to represent spans in the source text.
-/// A tokenizer for JavaScript or CSS would produce a sequence of Token(Tag),
-/// where Tag is something like `JsTag` for JavaScript or `CssTag` for CSS.
+/// concatenating tokens in order should give yield the original source text.
+/// This allows syntax trees to preserve whitespaces and comments.
+/// Nodes need only store two properties: `start: Token.Index` and `end: Token.Index`,
+/// and we can reliably reconstruct the original source text with whitespaces.
 ///
 /// `TagType` must be an enum type.
 pub fn Token(TagType: type) type {

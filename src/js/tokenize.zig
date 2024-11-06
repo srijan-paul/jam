@@ -108,20 +108,13 @@ pub fn next(self: *Self) Error!Token {
     };
 
     switch (byte) {
-        ' ', '\t' => {
-            self.skipWhiteSpaces();
-            return self.next();
-        },
-        '\n', '\r' => {
-            self.skipNewlines();
-            return self.next();
-        },
         '/' => {
             if (try self.comment()) |tok| {
                 return tok;
             }
             return try self.punctuator();
         },
+        ' ', '\t', '\n', '\r' => return self.whiteSpaces(),
         '}',
         '{',
         '[',
@@ -176,25 +169,6 @@ fn dot(self: *Self) Token {
         .len = len,
         .line = self.line,
     };
-}
-
-// Skip all newlines and update the current line number.
-fn skipNewlines(self: *Self) void {
-    while (!self.eof()) : (self.index += 1) {
-        const ch = self.source[self.index];
-        if (isNewline(ch)) {
-            self.line += 1;
-            if (ch == '\r' and
-                self.index + 1 < self.source.len and
-                self.source[self.index + 1] == '\n')
-            {
-                // skip /r/n
-                self.index += 1;
-            }
-        } else {
-            break;
-        }
-    }
 }
 
 fn isNewline(ch: u21) bool {
@@ -805,12 +779,30 @@ fn isSimpleWhitespace(ch: u8) bool {
 }
 
 /// Skip all consecutive white space characters.
-fn skipWhiteSpaces(self: *Self) void {
+fn whiteSpaces(self: *Self) Token {
+    const start = self.index;
+    const line = self.line;
+
     while (!self.eof()) {
         const ch = self.source[self.index];
         // Whitespaces that are single byte UTF-8 code-points
         if (isSimpleWhitespace(ch)) {
             self.index += 1;
+            continue;
+        }
+
+        if (isNewline(ch)) {
+            self.line += 1;
+            self.index += 1;
+
+            if (ch == '\r' and
+                self.index + 1 < self.source.len and
+                self.source[self.index + 1] == '\n')
+            {
+                // skip /r/n
+                self.index += 1;
+            }
+
             continue;
         }
 
@@ -826,6 +818,13 @@ fn skipWhiteSpaces(self: *Self) void {
 
         break;
     }
+
+    return Token{
+        .tag = .whitespace,
+        .start = start,
+        .len = self.index - start,
+        .line = line,
+    };
 }
 
 const t = std.testing;
@@ -856,7 +855,8 @@ fn testToken(src: []const u8, tag: Token.Tag) !void {
 
         defer t.allocator.free(source);
         var tokenizer = try Self.init(source);
-        const token = try tokenizer.next();
+        var token = try tokenizer.next(); // skip leading whitespace
+        token = try tokenizer.next();
 
         try std.testing.expectEqualDeep(Token{
             .tag = tag,
@@ -991,7 +991,9 @@ test Self {
     {
         var tokenizer = try Self.init("123.00 + .333");
         try t.expectEqual(Token.Tag.numeric_literal, (try tokenizer.next()).tag);
+        try t.expectEqual(Token.Tag.whitespace, (try tokenizer.next()).tag);
         try t.expectEqual(Token.Tag.@"+", (try tokenizer.next()).tag);
+        try t.expectEqual(Token.Tag.whitespace, (try tokenizer.next()).tag);
         try t.expectEqual(Token.Tag.numeric_literal, (try tokenizer.next()).tag);
     }
 
