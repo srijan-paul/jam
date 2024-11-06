@@ -2122,7 +2122,13 @@ fn primaryExpression(self: *Self) ParseError!Node.Index {
                 token.start + token.len,
             );
         },
-        .identifier => return self.identifier(token),
+        .identifier => {
+            const id = try self.identifier(token);
+            if (self.isAtToken(.@"=>")) {
+                return self.completeArrowFunction(&token, &token, id, .{ .is_arrow = true });
+            }
+            return id;
+        },
         .numeric_literal,
         .string_literal,
         .kw_true,
@@ -2175,22 +2181,26 @@ fn identifier(self: *Self, token: Token) ParseError!Node.Index {
 /// an arrow function and return the complete arrow function AST node id.
 fn completeArrowFunction(
     self: *Self,
-    lparen: *const Token,
-    rparen: *const Token,
+    params_start_token: *const Token, // a '(' or an identifier.
+    params_end_token: *const Token, // a ')' or an identifier.
     params: Node.Index,
     flags: ast.FunctionFlags,
 ) ParseError!Node.Index {
+    std.debug.assert(flags.is_arrow);
+
     if (!self.isAtToken(.@"=>")) {
-        try self.emitDiagnostic(
-            lparen.startCoord(self.source),
-            "'()' is not a valid expression. Arrow functions start with '() => '",
-            .{},
-        );
-        return ParseError.InvalidArrowFunction;
+        if (params_start_token.tag == .@"(") {
+            try self.emitDiagnostic(
+                params_start_token.startCoord(self.source),
+                "'()' is not a valid expression. Arrow functions start with '() => '",
+                .{},
+            );
+            return ParseError.InvalidArrowFunction;
+        }
     }
 
     const fat_arrow = try self.next();
-    if (rparen.line != fat_arrow.line) {
+    if (params_end_token.line != fat_arrow.line) {
         try self.emitDiagnostic(
             fat_arrow.startCoord(self.source),
             "'=>' must be on the same line as the arrow function parameters",
@@ -2239,7 +2249,7 @@ fn completeArrowFunction(
                 },
             }),
         },
-    }, lparen.start, end_pos);
+    }, params_start_token.start, end_pos);
 }
 
 fn spreadElement(self: *Self) ParseError!Node.Index {
