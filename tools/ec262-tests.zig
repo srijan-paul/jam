@@ -1,5 +1,5 @@
 const std = @import("std");
-const syntax = @import("jam-syntax");
+const syntax = @import("js");
 
 const Parser = syntax.Parser;
 
