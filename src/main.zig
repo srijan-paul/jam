@@ -1,5 +1,5 @@
 const std = @import("std");
-const syntax = @import("jam-syntax");
+const js = @import("js");
 const css = @import("css");
 
 /// Parse a javascript file and return a stringified JSON representation of the AST.
@@ -16,7 +16,7 @@ fn jsFileToJsonAst(allocator: std.mem.Allocator, file_name: []const u8) ![]const
 
     defer allocator.free(source);
 
-    const Parser = syntax.Parser;
+    const Parser = js.Parser;
     var parser = try Parser.init(allocator, source, file_name);
     defer parser.deinit();
 
@@ -30,7 +30,7 @@ fn jsFileToJsonAst(allocator: std.mem.Allocator, file_name: []const u8) ![]const
         return err;
     };
 
-    return try syntax.pretty.toJsonString(allocator, &parser, node_idx);
+    return try js.pretty.toJsonString(allocator, &parser, node_idx);
 }
 
 /// Parse a javascript file and return a stringified JSON representation of the AST.

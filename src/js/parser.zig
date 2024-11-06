@@ -1,7 +1,7 @@
 const std = @import("std");
 
 const Self = @This();
-const Tokenizer = @import("./tokenize.zig").Tokenizer;
+const Tokenizer = @import("./tokenize.zig");
 const Token = @import("./token.zig").Token;
 const ast = @import("./ast.zig");
 const StringHelper = @import("./strings.zig");
@@ -473,6 +473,9 @@ fn forLoopIterator(self: *Self) ParseError!struct { ForLoopKind, ast.ExtraData.I
     // for (<Expression>;<Expression>;<Expression>);
     const expr = try self.forLoopStartExpression();
 
+    // `in` expressions are allowed now.
+    self.context.in = true;
+
     switch (self.current_token.tag) {
         .@";" => {
             // parse <Expression> ; <Expression> ; <Expression>
@@ -507,8 +510,6 @@ fn forLoopIterator(self: *Self) ParseError!struct { ForLoopKind, ast.ExtraData.I
                 ForLoopKind.for_of
             else
                 ForLoopKind.for_in;
-
-            self.context.in = true;
 
             _ = try self.next();
             const rhs = try self.expression();

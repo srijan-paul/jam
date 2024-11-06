@@ -1,6 +1,6 @@
 /// Helper for fast string interning and comparison.
 const std = @import("std");
-const Tokenizer = @import("./tokenize.zig").Tokenizer;
+const Tokenizer = @import("./tokenize.zig");
 const Token = @import("./token.zig").Token;
 const util = @import("util");
 

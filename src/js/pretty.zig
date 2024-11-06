@@ -1,3 +1,9 @@
+// Contains functions to convert an AST node to a struct that can be JSON serialized,
+// and then printed to the terminal / piped to a file for debugging or testing purposes.
+// Jam does *not* support the ESTree format right now, and its to be seen whether it should.
+// Exports:
+// - `toJsonString`: Converts an AST node to a JSON string.
+
 const std = @import("std");
 
 const Parser = @import("parser.zig");
