@@ -39,7 +39,7 @@ pub fn build(b: *std.Build) !void {
     jam_css_module.addImport("syntax", jam_syntax_module);
 
     const lib = b.addStaticLibrary(.{
-        .name = "jsickle",
+        .name = "jam",
         .root_source_file = b.path("src/root.zig"),
         .target = target,
         .optimize = optimize,
@@ -48,7 +48,7 @@ pub fn build(b: *std.Build) !void {
     b.installArtifact(lib);
 
     const exe = b.addExecutable(.{
-        .name = "jsickle",
+        .name = "jam",
         .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
