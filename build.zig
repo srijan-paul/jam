@@ -14,12 +14,20 @@ pub fn build(b: *std.Build) !void {
         .optimize = optimize,
     });
 
+    const jam_syntax_module = b.addModule("jam_syntax", .{
+        .root_source_file = b.path("src/syntax/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    jam_syntax_module.addImport("util", util_module);
+
     const jam_js_module = b.addModule("js", .{
         .root_source_file = b.path("src/js/root.zig"),
         .target = target,
         .optimize = optimize,
     });
     jam_js_module.addImport("util", util_module);
+    jam_js_module.addImport("syntax", jam_syntax_module);
 
     const jam_css_module = b.addModule("jam-css", .{
         .root_source_file = b.path("src/css/root.zig"),
@@ -28,6 +36,7 @@ pub fn build(b: *std.Build) !void {
     });
 
     jam_css_module.addImport("util", util_module);
+    jam_css_module.addImport("syntax", jam_syntax_module);
 
     const lib = b.addStaticLibrary(.{
         .name = "jsickle",
@@ -84,6 +93,7 @@ pub fn build(b: *std.Build) !void {
     });
 
     lib_unit_tests.root_module.addImport("util", util_module);
+    lib_unit_tests.root_module.addImport("syntax", jam_syntax_module);
 
     const util_unit_tests = b.addTest(.{
         .root_source_file = b.path("src/util/root.zig"),
@@ -114,11 +124,13 @@ pub fn build(b: *std.Build) !void {
 
     exe.root_module.addImport("js", jam_js_module);
     exe.root_module.addImport("css", jam_css_module);
+    exe.root_module.addImport("syntax", jam_syntax_module);
 
     for (deps.items) |dep| {
         lib_unit_tests.root_module.addImport(dep.name, dep.module);
         lib.root_module.addImport(dep.name, dep.module);
         exe.root_module.addImport(dep.name, dep.module);
         jam_js_module.addImport(dep.name, dep.module);
+        jam_css_module.addImport(dep.name, dep.module);
     }
 }

@@ -1320,7 +1320,7 @@ fn assignmentExpression(self: *Self) ParseError!Node.Index {
 
     const lhs = try yieldOrConditionalExpression(self);
 
-    if (!self.current_token.isAssignmentOperator()) {
+    if (!self.current_token.tag.isAssignmentOperator()) {
         return lhs;
     }
 
