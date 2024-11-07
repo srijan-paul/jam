@@ -2318,30 +2318,45 @@ fn callArgsOrAsyncArrowFunc(
         .can_be_assigned_to = true,
     };
 
+    // store a aa spread-element that isn't immediately
+    // followed by a ')'. We'll need it for reporting errors
+    // if we see a '=>' after the part between '()' is parsed.
+    // E.g: `async(...x, y)` -> this is call expression
+    //  `async(...x, y) => 1` ->  this is a syntax error.
+    var spread_elem_in_middle: ?Node.Index = null;
+
     while (!self.isAtToken(.@")")) {
         if (self.isAtToken(.@"...")) {
             const spread_elem = try self.spreadElement();
-            if (!self.isAtToken(.@")")) {
-                // TODO: error message can be improved
-                // based on destructure_kind.
-                try self.emitDiagnosticOnNode(spread_elem, "Expected ')' after spread element");
+            try sub_exprs.append(spread_elem);
+
+            if (self.isAtToken(.@")")) break;
+            // spread element must be the last item in a parameter list.
+            if (destructure_kind.must_destruct) {
+                try self.emitDiagnosticOnNode(spread_elem, "Expected ')' after rest element");
                 return Error.RestElementNotLast;
             }
-
-            try sub_exprs.append(spread_elem);
-            break;
+            // If 'must_destruct' is not set, but we parsed a spread element
+            // without seeing a ')' right after, then we must be inside a call-expression's
+            // arguments.
+            destructure_kind.setNoAssignOrDestruct();
+            spread_elem_in_middle = spread_elem;
+        } else {
+            const expr = try self.assignmentExpression();
+            destructure_kind.update(self.current_destructure_kind);
+            try sub_exprs.append(expr);
         }
 
-        const expr = try self.assignmentExpression();
-        destructure_kind.update(self.current_destructure_kind);
         if (destructure_kind.isMalformed()) {
             // TODO: this error message can be improved based
             // on whether the most recently parsed node was a
             // pattern.
-            try self.emitDiagnosticOnNode(expr, "Unexpected expression or pattern");
+            try self.emitDiagnosticOnNode(
+                sub_exprs.items[sub_exprs.items.len - 1],
+                "Unexpected expression or pattern inside '( ... )'",
+            );
             return Error.UnexpectedToken;
         }
-        try sub_exprs.append(expr);
 
         if (self.isAtToken(.@","))
             _ = try self.next()
@@ -2353,6 +2368,14 @@ fn callArgsOrAsyncArrowFunc(
 
     if (self.isAtToken(.@"=>")) {
         if (!destructure_kind.can_destruct) {
+            if (spread_elem_in_middle) |node| {
+                try self.emitDiagnosticOnNode(
+                    node,
+                    "Rest element must be the last item in a parameter list",
+                );
+                return Error.InvalidArrowParameters;
+            }
+
             // TODO: improve the location of the diagnostic.
             // Which part exactly is invalid?
             try self.emitDiagnostic(
@@ -2363,6 +2386,7 @@ fn callArgsOrAsyncArrowFunc(
             return Error.InvalidArrowParameters;
         }
 
+        // mutate the expressions so far to be interpreted as patterns.
         for (sub_exprs.items) |node| {
             self.reinterpretAsPattern(node);
         }
@@ -3313,22 +3337,12 @@ fn parseArgs(self: *Self) Error!struct { ast.SubRange, u32, u32 } {
 
     while (!self.isAtToken(.@")")) {
         if (self.isAtToken(.@"...")) {
-            // spread element must be the last argument
             const spread_elem = try self.spreadElement();
             try arg_list.append(spread_elem);
-            if (!self.isAtToken(.@")")) {
-                try self.emitBadTokenDiagnostic(
-                    "closing ')' after a spread element",
-                    &self.current_token,
-                );
-                return Error.RestElementNotLast;
-            }
-
-            break;
+        } else {
+            const expr = try self.assignExpressionNoPattern();
+            try arg_list.append(expr);
         }
-
-        const expr = try self.assignExpressionNoPattern();
-        try arg_list.append(expr);
         if (!self.isAtToken(.@","))
             break;
         _ = try self.next(); // eat ','
