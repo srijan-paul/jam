@@ -1,7 +1,6 @@
 const std = @import("std");
 const unicode_id = @import("unicode-id");
 const Token = @import("token.zig").Token;
-const Context = @import("parser.zig").ParseContext;
 
 const util = @import("util");
 
@@ -65,9 +64,11 @@ index: u32 = 0,
 line: u32 = 0,
 /// Current column number (0 indexed)
 col: u32 = 0,
-/// The current context that is controlled by the parser (or caller).
-/// This controls how certain tokens are parsed (e.g: whether `await` is a keyword or an identifier).
-context: Context = .{},
+/// When `true`, the tokenizer will attempt to parse any remaining input
+/// starting with '/' (that isn't a comment starter) as a regex literal (e.g: '/[a-zA-Z0-9]/').
+/// Otherwise, '/' (when not starting a comment) is assumed to be either the '/' or '/=' operator.
+/// This property is used to dis-ambiguate between division operators and regex literals.
+assume_blash_starts_regex: bool = false,
 
 /// Can be used to restore the state of the tokenizer to a previous
 /// location in the input.
@@ -122,7 +123,7 @@ pub fn next(self: *Self) Error!Token {
             // to see next. If it expects to see a literal, then
             // we want to try tokenizing a regex literal.
             // Otherwise, we look for '/' or '/='.
-            if (self.context.regex_literal)
+            if (self.assume_blash_starts_regex)
                 return try self.regexLiteral();
             return try self.punctuator();
         },
@@ -1183,8 +1184,8 @@ test Self {
     }
 
     {
-        var tokenizer = try Self.init(" /a\\(bc[some_character_class]/ //foo");
-        tokenizer.context.regex_literal = true; // '/' is now interpreted as regex literal start markers.
+        var tokenizer = try Self.init(" /a\\(bc[some_character_class]/g //foo");
+        tokenizer.assume_blash_starts_regex = true; // '/' is now interpreted as regex literal start marker.
         try t.expectEqual(Token.Tag.whitespace, (try tokenizer.next()).tag);
         try t.expectEqual(Token.Tag.regex_literal, (try tokenizer.next()).tag);
         try t.expectEqual(Token.Tag.whitespace, (try tokenizer.next()).tag);

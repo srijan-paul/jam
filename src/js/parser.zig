@@ -14,29 +14,43 @@ const types = util.types;
 const Node = ast.Node;
 const NodeData = ast.NodeData;
 
-const ParseError = error{
+pub const Error = error{
     UnexpectedToken,
-    OutOfMemory,
-    NotSupported,
+    // Return statement outside functions
     IllegalReturn,
+    // Await outside async scope.
     IllegalAwait,
+    // '=>' Not on the same line as arrow parameters
     IllegalFatArrow,
+    // 5 = ...
     InvalidAssignmentTarget,
+    //  (1) => ...
     InvalidArrowParameters,
     InvalidArrowFunction,
+    // Setter must have exactly one parameter
     InvalidSetter,
+    // Getter must have no parameters
     InvalidGetter,
+    // {x=1, x: 5} is neither a valid object literal nor a valid assignment pattern.
     InvalidObject,
+    // for (1 of []) {}
     InvalidLoopLhs,
-    InvalidPropertyName,
+    // function (1) {}; function(...xs, x) {}, etc.
     InvalidFunctionParameter,
+    // 'let' used as an identifier in strict mode.
     LetInStrictMode,
+    // let x = { x =  1} <- pattern where an object literal should've been
     UnexpectedPattern,
+    // let x = 5 let 6 = 5 <- no ';' between statements
     ExpectedSemicolon,
-    SpreadElementMustBeLast,
+    // let [a, ...as, b] = [1, 2, 3] <- 'as' must be the last
+    RestElementNotLast,
+    // let { x, y } <- destructuring pattern must have an initializer
     MissingInitializer,
+    // std.mem.Allocator.Error
+    OutOfMemory,
 } || Tokenizer.Error;
-const ParseFn = fn (self: *Self) ParseError!Node.Index;
+const ParseFn = fn (self: *Self) Error!Node.Index;
 
 /// An error or warning raised by the Parser.
 pub const Diagnostic = struct {
@@ -49,7 +63,7 @@ pub const Diagnostic = struct {
 /// Represents the currently active set of grammatical parameters
 /// in the parser state.
 /// https://tc39.es/ecma262/#sec-grammatical-parameters
-pub const ParseContext = packed struct(u16) {
+pub const ParseContext = packed struct(u8) {
     /// Is a ReturnStatement allowed in the current context?
     /// Unlike `await`, `return` is always parsed as a keyword, regardles of context.
     @"return": bool = false,
@@ -68,10 +82,6 @@ pub const ParseContext = packed struct(u16) {
     /// Are `in` statements allowed?
     /// Used to parse for-in loops.
     in: bool = true,
-    /// Whether the parser expects to see a regex literal
-    /// or a '/' or '/='. Necessary to disambiguate.
-    regex_literal: bool = false,
-    _: u7 = 0, // padding
 };
 
 // arranged in highest to lowest binding order
@@ -91,7 +101,7 @@ const shiftExpr = makeLeftAssoc(.shift_op_start, .shift_op_end, additiveExpr);
 
 // this one has to be hand-written to disallow 'in' inside for-loop iterators.
 // see: forStatement
-fn relationalExpr(self: *Self) ParseError!Node.Index {
+fn relationalExpr(self: *Self) Error!Node.Index {
     var node = try shiftExpr(self);
 
     const rel_op_start: u32 = @intFromEnum(Token.Tag.relational_start);
@@ -263,7 +273,7 @@ pub fn init(
     allocator: std.mem.Allocator,
     source: []const u8,
     file_name: []const u8,
-) ParseError!Self {
+) Error!Self {
     var self = Self{
         .allocator = allocator,
         .source = source,
@@ -327,7 +337,7 @@ pub fn parse(self: *Self) !Node.Index {
 // ----------------------------------------------------------------------------
 
 /// https://tc39.es/ecma262/#prod-Statement
-fn statement(self: *Self) ParseError!Node.Index {
+fn statement(self: *Self) Error!Node.Index {
     return switch (self.peek().tag) {
         .@"{" => self.blockStatement(),
         .@";" => self.emptyStatement(),
@@ -358,7 +368,7 @@ fn statement(self: *Self) ParseError!Node.Index {
     };
 }
 
-fn ifStatement(self: *Self) ParseError!Node.Index {
+fn ifStatement(self: *Self) Error!Node.Index {
     const if_kw = try self.next();
     std.debug.assert(if_kw.tag == .kw_if);
 
@@ -397,14 +407,14 @@ const ForLoopKind = enum {
 
 /// Parse a for loop. Returns an index of:
 /// ForOfStatement / ForInStatement / ForStatement
-fn forStatement(self: *Self) ParseError!Node.Index {
+fn forStatement(self: *Self) Error!Node.Index {
     const for_kw = try self.next();
     std.debug.assert(for_kw.tag == .kw_for);
 
     const loop_kind, const iterator = try self.forLoopIterator();
 
     const saved_context = self.context;
-    defer self.setContext(saved_context);
+    defer self.context = saved_context;
 
     self.context.@"break" = true;
     self.context.@"continue" = true;
@@ -430,7 +440,7 @@ fn forStatement(self: *Self) ParseError!Node.Index {
 /// Once a 'for' keyword has been consumed, this parses the part inside '()', including the parentheses.
 /// Returns a tuple where the first item is the kind of for loop (for-in, for-of, or basic),
 /// and the second item is the iterator (index of an `ast.ExtraData`).
-fn forLoopIterator(self: *Self) ParseError!struct { ForLoopKind, ast.ExtraData.Index } {
+fn forLoopIterator(self: *Self) Error!struct { ForLoopKind, ast.ExtraData.Index } {
     _ = try self.expect(.@"(");
 
     // Check for productions that start with a variable declarator.
@@ -463,7 +473,7 @@ fn forLoopIterator(self: *Self) ParseError!struct { ForLoopKind, ast.ExtraData.I
     }
 
     const context = self.context;
-    defer self.setContext(context);
+    defer self.context = context;
 
     // disallow `in` expressions.
     // The next `in` token is instead the iterator of the for loop.
@@ -488,7 +498,7 @@ fn forLoopIterator(self: *Self) ParseError!struct { ForLoopKind, ast.ExtraData.I
                     .{},
                 );
 
-                return ParseError.UnexpectedPattern;
+                return Error.UnexpectedPattern;
             }
 
             const iterator = try self.completeBasicLoopIterator(expr);
@@ -504,7 +514,7 @@ fn forLoopIterator(self: *Self) ParseError!struct { ForLoopKind, ast.ExtraData.I
                     "left hand side of for-loop must be a name or assignment pattern",
                     .{},
                 );
-                return ParseError.InvalidLoopLhs;
+                return Error.InvalidLoopLhs;
             }
 
             const loop_kind = if (self.isAtToken(.kw_of))
@@ -527,7 +537,7 @@ fn forLoopIterator(self: *Self) ParseError!struct { ForLoopKind, ast.ExtraData.I
 
         else => {
             try self.emitBadTokenDiagnostic("'of', 'in' or ';'", &self.current_token);
-            return ParseError.UnexpectedToken;
+            return Error.UnexpectedToken;
         },
     }
 }
@@ -536,7 +546,7 @@ fn forLoopIterator(self: *Self) ParseError!struct { ForLoopKind, ast.ExtraData.I
 /// the opening parenthesis.
 /// This expression may be followed a ';' token (indicating a 3-step for loop),
 /// or by 'in' or 'of' (indicating a for-in or for-of loop).
-fn forLoopStartExpression(self: *Self) ParseError!Node.Index {
+fn forLoopStartExpression(self: *Self) Error!Node.Index {
     const first_expr = try self.assignmentExpression();
 
     if (self.isAtToken(.@",") and !self.current_destructure_kind.must_destruct) {
@@ -548,7 +558,7 @@ fn forLoopStartExpression(self: *Self) ParseError!Node.Index {
 
 /// Once the opening '(' and a 'var'/'let'/'const' keyword has been consumed,
 /// this function parses the rest of the loop iterator.
-fn completeVarDeclLoopIterator(self: *Self, decl_kw: Token, loop_kind: *ForLoopKind) ParseError!ast.ExtraData.Index {
+fn completeVarDeclLoopIterator(self: *Self, decl_kw: Token, loop_kind: *ForLoopKind) Error!ast.ExtraData.Index {
     std.debug.assert(decl_kw.tag == .kw_let or
         decl_kw.tag == .kw_var or
         decl_kw.tag == .kw_const);
@@ -592,7 +602,7 @@ fn completeVarDeclLoopIterator(self: *Self, decl_kw: Token, loop_kind: *ForLoopK
 
                 if (self.current_destructure_kind.must_destruct) {
                     try self.emitBadDestructureDiagnostic(init_expr);
-                    return ParseError.UnexpectedPattern;
+                    return Error.UnexpectedPattern;
                 }
 
                 end_pos = self.nodeSpan(init_expr).end;
@@ -611,7 +621,10 @@ fn completeVarDeclLoopIterator(self: *Self, decl_kw: Token, loop_kind: *ForLoopK
     }
 }
 
-fn completeBasicLoopIterator(self: *Self, for_init: Node.Index) ParseError!ast.ExtraData.Index {
+/// A "Basic" loop iterator is a plain old (init; cond; update).
+/// Given the `init` expression or statement, this function parses the rest of the iterator
+/// upto the closing ')'.
+fn completeBasicLoopIterator(self: *Self, for_init: Node.Index) Error!ast.ExtraData.Index {
     _ = try self.expect(.@";");
 
     const for_cond = switch (self.current_token.tag) {
@@ -647,7 +660,7 @@ fn completeBasicLoopIterator(self: *Self, for_init: Node.Index) ParseError!ast.E
 /// Given the 'var'/'let'/'const' keyword,
 /// and the first declarator, parse the rest of the declarators (if any)
 /// and return a var decl node that represents a loop initializer.
-fn completeLoopInitializer(self: *Self, kw: Token, first_decl: Node.Index) ParseError!Node.Index {
+fn completeLoopInitializer(self: *Self, kw: Token, first_decl: Node.Index) Error!Node.Index {
     var decl_nodes = std.ArrayList(Node.Index).init(self.allocator);
     defer decl_nodes.deinit();
 
@@ -676,7 +689,7 @@ fn completeLoopInitializer(self: *Self, kw: Token, first_decl: Node.Index) Parse
     );
 }
 
-fn whileStatement(self: *Self) ParseError!Node.Index {
+fn whileStatement(self: *Self) Error!Node.Index {
     const while_kw = try self.next();
     std.debug.assert(while_kw.tag == .kw_while);
 
@@ -685,7 +698,7 @@ fn whileStatement(self: *Self) ParseError!Node.Index {
     _ = try self.expect(.@")");
 
     const saved_context = self.context;
-    defer self.setContext(saved_context);
+    defer self.context = saved_context;
 
     self.context.@"break" = true;
     self.context.@"continue" = true;
@@ -702,7 +715,7 @@ fn whileStatement(self: *Self) ParseError!Node.Index {
 }
 
 /// DebuggerStatement: 'debugger' ';'
-fn debuggerStatement(self: *Self) ParseError!Node.Index {
+fn debuggerStatement(self: *Self) Error!Node.Index {
     const token = try self.next();
     const end_pos = try self.semiColon(token.start + token.len);
     return self.addNode(
@@ -713,7 +726,7 @@ fn debuggerStatement(self: *Self) ParseError!Node.Index {
 }
 
 /// Parse a VariableStatement, where `kw` is the keyword used to declare the variable (let, var, or const).
-fn variableStatement(self: *Self, kw: Token) ParseError!Node.Index {
+fn variableStatement(self: *Self, kw: Token) Error!Node.Index {
     std.debug.assert(kw.tag == .kw_let or kw.tag == .kw_var or kw.tag == .kw_const);
 
     const decls = try self.variableDeclaratorList();
@@ -734,7 +747,7 @@ fn variableStatement(self: *Self, kw: Token) ParseError!Node.Index {
     );
 }
 
-fn variableDeclaratorList(self: *Self) ParseError!ast.SubRange {
+fn variableDeclaratorList(self: *Self) Error!ast.SubRange {
     var declarators = std.ArrayList(Node.Index).init(self.allocator);
     defer declarators.deinit();
 
@@ -765,7 +778,7 @@ fn varDeclKind(tag: Token.Tag) ast.VarDeclKind {
 /// Parse a statement that starts with the `let` keyword.
 /// This may not necessarily be a variable declaration, as `let`
 /// is also a valid identifier.
-fn letStatement(self: *Self) ParseError!Node.Index {
+fn letStatement(self: *Self) Error!Node.Index {
     std.debug.assert(self.current_token.tag == .kw_let);
     const let_kw = try self.startLetBinding() orelse {
         // If the `let` keyword doesn't start an identifier,
@@ -781,7 +794,7 @@ fn letStatement(self: *Self) ParseError!Node.Index {
             "'let' can only be used to declare variables in strict mode",
             .{},
         );
-        return ParseError.LetInStrictMode;
+        return Error.LetInStrictMode;
     }
 
     return self.variableStatement(let_kw);
@@ -792,7 +805,7 @@ fn letStatement(self: *Self) ParseError!Node.Index {
 /// Otherwise, it returns `null` and consumes nothing.
 ///
 /// Must be called when `self.current_token` is a 'let' keyword.
-fn startLetBinding(self: *Self) ParseError!?Token {
+fn startLetBinding(self: *Self) Error!?Token {
     std.debug.assert(self.current_token.tag == .kw_let);
 
     const lookahead = try self.lookAhead();
@@ -807,12 +820,12 @@ fn startLetBinding(self: *Self) ParseError!?Token {
 /// VariableDeclarator:
 ///  BindingPattern Initializer?
 ///  BindingElement Initializer?
-fn variableDeclarator(self: *Self) ParseError!Node.Index {
+fn variableDeclarator(self: *Self) Error!Node.Index {
     const lhs = try self.assignmentLhsExpr();
     if (!self.current_destructure_kind.can_destruct) {
         // TODO: improve error message
         try self.emitDiagnosticOnNode(lhs, "Invalid left-hand-side for variable declaration.");
-        return ParseError.UnexpectedPattern;
+        return Error.UnexpectedPattern;
     }
 
     const lhs_span = self.nodeSpan(lhs);
@@ -828,7 +841,7 @@ fn variableDeclarator(self: *Self) ParseError!Node.Index {
         } else if (self.nodeTag(lhs) != .identifier) {
             // Assignment patterns must have an initializer.
             try self.emitDiagnosticOnNode(lhs, "A destructuring declaration must have an initializer");
-            return ParseError.MissingInitializer;
+            return Error.MissingInitializer;
         }
 
         break :blk null;
@@ -842,7 +855,7 @@ fn variableDeclarator(self: *Self) ParseError!Node.Index {
 }
 
 /// EmptyStatement: ';'
-fn emptyStatement(self: *Self) ParseError!Node.Index {
+fn emptyStatement(self: *Self) Error!Node.Index {
     const semicolon = try self.next();
     std.debug.assert(semicolon.tag == .@";");
 
@@ -855,7 +868,7 @@ fn emptyStatement(self: *Self) ParseError!Node.Index {
 }
 
 /// ExpressionStatement: Expression ';'
-fn expressionStatement(self: *Self) ParseError!Node.Index {
+fn expressionStatement(self: *Self) Error!Node.Index {
     const expr = try self.expression();
     const expr_node = self.getNode(expr);
 
@@ -871,7 +884,7 @@ fn expressionStatement(self: *Self) ParseError!Node.Index {
 
 /// BlockStatement:
 ///   '{' StatementList? '}'
-fn blockStatement(self: *Self) ParseError!Node.Index {
+fn blockStatement(self: *Self) Error!Node.Index {
     const lbrac = try self.expect(.@"{");
     const start_pos = lbrac.start;
 
@@ -902,7 +915,7 @@ fn functionDeclaration(
     self: *Self,
     start_pos: u32,
     flags: ast.FunctionFlags,
-) ParseError!Node.Index {
+) Error!Node.Index {
     var fn_flags = flags;
     if (self.isAtToken(.@"*")) {
         _ = try self.next();
@@ -916,7 +929,7 @@ fn functionDeclaration(
         }
 
         try self.emitBadTokenDiagnostic("function name", &token);
-        return ParseError.UnexpectedToken;
+        return Error.UnexpectedToken;
     };
 
     return self.parseFunctionBody(start_pos, name_token, fn_flags, true);
@@ -925,7 +938,7 @@ fn functionDeclaration(
 /// ReturnStatement:
 ///    'return' ';'
 ///    'return' [no LineTerminator here] Expression? ';'
-fn returnStatement(self: *Self) ParseError!Node.Index {
+fn returnStatement(self: *Self) Error!Node.Index {
     const return_kw = try self.next();
     std.debug.assert(return_kw.tag == .kw_return);
 
@@ -937,7 +950,7 @@ fn returnStatement(self: *Self) ParseError!Node.Index {
             "Return statement is not allowed outside of a function",
             .{},
         );
-        return ParseError.IllegalReturn;
+        return Error.IllegalReturn;
     }
 
     if (self.current_token.line != return_kw.line or
@@ -954,7 +967,7 @@ fn returnStatement(self: *Self) ParseError!Node.Index {
 }
 
 /// BreakStatement: 'break' ';'
-fn breakStatement(self: *Self) ParseError!Node.Index {
+fn breakStatement(self: *Self) Error!Node.Index {
     const break_kw = try self.next();
     std.debug.assert(break_kw.tag == .kw_break);
 
@@ -964,7 +977,7 @@ fn breakStatement(self: *Self) ParseError!Node.Index {
             "'break' is not allowed outside loops and switch statements",
             .{},
         );
-        return ParseError.IllegalReturn;
+        return Error.IllegalReturn;
     }
 
     const start_pos = break_kw.start;
@@ -973,7 +986,7 @@ fn breakStatement(self: *Self) ParseError!Node.Index {
 }
 
 /// ContinueStatement: 'continue' ';'
-fn continueStatement(self: *Self) ParseError!Node.Index {
+fn continueStatement(self: *Self) Error!Node.Index {
     const continue_kw = try self.next();
     std.debug.assert(continue_kw.tag == .kw_continue);
 
@@ -983,7 +996,7 @@ fn continueStatement(self: *Self) ParseError!Node.Index {
             "'continue' is not allowed outside loops",
             .{},
         );
-        return ParseError.IllegalReturn;
+        return Error.IllegalReturn;
     }
 
     const start_pos = continue_kw.start;
@@ -1000,7 +1013,7 @@ fn continueStatement(self: *Self) ParseError!Node.Index {
 /// if a semi-colon is found, returns the end position of the semi-colon,
 /// otherwise returns `end_pos`.
 /// If the ASI rules cannot be applied, returns a parse error.
-fn semiColon(self: *Self, end_pos: u32) ParseError!u32 {
+fn semiColon(self: *Self, end_pos: u32) Error!u32 {
     return if (try self.eatSemiAsi()) |semi|
         semi.end
     else
@@ -1011,7 +1024,7 @@ fn semiColon(self: *Self, end_pos: u32) ParseError!u32 {
 /// If there if there is no semi-colon token, it will check if we're allowed to assume an implicit ';' exists
 /// https://tc39.es/ecma262/multipage/ecmascript-language-lexical-grammar.html#sec-automatic-semicolon-insertion
 /// If no semi-colon can be inserted, a parse error is returned instead.
-fn eatSemiAsi(self: *Self) ParseError!?types.Span {
+fn eatSemiAsi(self: *Self) Error!?types.Span {
     if (self.current_token.tag == .@";") {
         const semicolon = try self.next();
         return .{
@@ -1026,7 +1039,7 @@ fn eatSemiAsi(self: *Self) ParseError!?types.Span {
         return null;
 
     try self.emitBadTokenDiagnostic("a ';' or a newline", &self.current_token);
-    return ParseError.ExpectedSemicolon;
+    return Error.ExpectedSemicolon;
 }
 
 /// Returns whether a token with the tag `tag` can start a variable declarator
@@ -1034,11 +1047,6 @@ fn eatSemiAsi(self: *Self) ParseError!?types.Span {
 fn isDeclaratorStart(self: *Self, tag: Token.Tag) bool {
     return tag == .@"[" or tag == .@"{" or
         tag == .identifier or self.isKeywordIdentifier(tag);
-}
-
-fn setContext(self: *Self, context: ParseContext) void {
-    self.context = context;
-    self.tokenizer.context = context;
 }
 
 /// Returns whether the parser is currently parsing strict mode code.
@@ -1096,14 +1104,14 @@ fn addExtraData(self: *Self, data: ast.ExtraData) error{OutOfMemory}!ast.ExtraDa
 
 /// Emit a diagnostic that says a rest parameter must be the last in a function's parameter list.
 /// Always returns a parse error.
-fn restParamNotLastError(self: *Self, token: *const Token) ParseError!void {
+fn restParamNotLastError(self: *Self, token: *const Token) Error!void {
     try self.emitDiagnostic(
         token.startCoord(self.source),
         "Rest parameter must be the last parameter in a function",
         .{},
     );
 
-    return ParseError.InvalidFunctionParameter;
+    return Error.InvalidFunctionParameter;
 }
 
 fn emitBadDestructureDiagnostic(self: *Self, expr: Node.Index) error{OutOfMemory}!void {
@@ -1146,7 +1154,7 @@ fn emitDiagnostic(
 }
 
 /// Emit a parse error if the current token does not match `tag`.
-fn expect(self: *Self, tag: Token.Tag) ParseError!Token {
+fn expect(self: *Self, tag: Token.Tag) Error!Token {
     const token = try self.next();
     if (token.tag == tag) {
         return token;
@@ -1157,11 +1165,11 @@ fn expect(self: *Self, tag: Token.Tag) ParseError!Token {
         "Expected a '{s}', but found a '{s}'",
         .{ @tagName(tag), token.toByteSlice(self.source) },
     );
-    return ParseError.UnexpectedToken;
+    return Error.UnexpectedToken;
 }
 
 /// Emit a parse error if the current token does not match `tag1` or `tag2`.
-fn expect2(self: *Self, tag1: Token.Tag, tag2: Token.Tag) ParseError!Token {
+fn expect2(self: *Self, tag1: Token.Tag, tag2: Token.Tag) Error!Token {
     const token = try self.next();
     if (token.tag == tag1 or token.tag == tag2) {
         return token;
@@ -1176,11 +1184,11 @@ fn expect2(self: *Self, tag1: Token.Tag, tag2: Token.Tag) ParseError!Token {
             token.toByteSlice(self.source),
         },
     );
-    return ParseError.UnexpectedToken;
+    return Error.UnexpectedToken;
 }
 
 /// Consume the next token from the lexer, skipping all comments.
-fn next(self: *Self) ParseError!Token {
+fn next(self: *Self) Error!Token {
     var next_token = try self.tokenizer.next();
     while (next_token.tag == .comment or
         next_token.tag == .whitespace) : (next_token = try self.tokenizer.next())
@@ -1198,7 +1206,7 @@ fn next(self: *Self) ParseError!Token {
 ///
 /// NOTE: The token returned by this function should only be used for
 /// inspection, and never added to the AST.
-fn lookAhead(self: *Self) ParseError!Token {
+fn lookAhead(self: *Self) Error!Token {
     const line = self.tokenizer.line;
     const index = self.tokenizer.index;
 
@@ -1227,11 +1235,11 @@ fn isAtToken(self: *Self, tag: Token.Tag) bool {
 
 // Expression : AssignmentExpression
 //            | Expression, AssignmentExpression
-fn expression(self: *Self) ParseError!Node.Index {
+fn expression(self: *Self) Error!Node.Index {
     const expr = try self.assignmentExpression();
     if (self.current_destructure_kind.must_destruct) {
         try self.emitBadDestructureDiagnostic(expr);
-        return ParseError.UnexpectedPattern;
+        return Error.UnexpectedPattern;
     }
 
     if (self.isAtToken(.@",")) {
@@ -1242,7 +1250,7 @@ fn expression(self: *Self) ParseError!Node.Index {
 }
 
 /// Parse a comma-separated sequence expression, where the first-expression is already parsed.
-fn completeSequenceExpr(self: *Self, first_expr: Node.Index) ParseError!Node.Index {
+fn completeSequenceExpr(self: *Self, first_expr: Node.Index) Error!Node.Index {
     if (!self.isAtToken(.@",")) return first_expr;
 
     var nodes = std.ArrayList(Node.Index).init(self.allocator);
@@ -1266,7 +1274,7 @@ fn completeSequenceExpr(self: *Self, first_expr: Node.Index) ParseError!Node.Ind
     }, start_pos, end_pos);
 }
 
-fn assignmentLhsExpr(self: *Self) ParseError!Node.Index {
+fn assignmentLhsExpr(self: *Self) Error!Node.Index {
     self.current_destructure_kind = .{
         .can_destruct = true,
         .can_be_assigned_to = true,
@@ -1283,7 +1291,7 @@ fn assignmentLhsExpr(self: *Self) ParseError!Node.Index {
             }
 
             try self.emitBadTokenDiagnostic("assignment target", token);
-            return ParseError.InvalidAssignmentTarget;
+            return Error.InvalidAssignmentTarget;
         },
     }
 }
@@ -1348,7 +1356,7 @@ fn reinterpretAsPattern(self: *Self, node_id: Node.Index) void {
 /// }
 /// ```
 /// To parse an expression that *must* be a valid R-Value, use `assignExpressionNoPattern`.
-fn assignmentExpression(self: *Self) ParseError!Node.Index {
+fn assignmentExpression(self: *Self) Error!Node.Index {
     // Start with the assumption that we're parsing a valid destructurable expression.
     // Subsequent parsing functions will update this to refect the actual destructure-kind
     // of `lhs`.
@@ -1370,7 +1378,7 @@ fn assignmentExpression(self: *Self) ParseError!Node.Index {
             "Invalid assignment target",
             .{},
         );
-        return ParseError.InvalidAssignmentTarget;
+        return Error.InvalidAssignmentTarget;
     }
 
     self.reinterpretAsPattern(lhs);
@@ -1406,7 +1414,7 @@ fn assignmentExpression(self: *Self) ParseError!Node.Index {
 
 /// Parse an assignment expression, and ensure that its not a pattern
 /// that must be destructured (e.g: `{x=1}`).
-fn assignExpressionNoPattern(self: *Self) ParseError!Node.Index {
+fn assignExpressionNoPattern(self: *Self) Error!Node.Index {
     const expr = try self.assignmentExpression();
     if (self.current_destructure_kind.must_destruct) {
         const expr_start = self.nodes.items(.start)[@intFromEnum(expr)];
@@ -1418,13 +1426,13 @@ fn assignExpressionNoPattern(self: *Self) ParseError!Node.Index {
             .{},
         );
 
-        return ParseError.UnexpectedPattern;
+        return Error.UnexpectedPattern;
     }
 
     return expr;
 }
 
-fn coalesceExpression(self: *Self, start_expr: Node.Index) ParseError!Node.Index {
+fn coalesceExpression(self: *Self, start_expr: Node.Index) Error!Node.Index {
     const start_expr_span = self.nodeSpan(start_expr);
     const start_pos = start_expr_span.start;
     var end_pos = start_expr_span.end;
@@ -1456,7 +1464,7 @@ fn coalesceExpression(self: *Self, start_expr: Node.Index) ParseError!Node.Index
 /// ShortCircuitExpression:
 ///    LogicalOrExpression
 ///    CoalesceExpression
-fn shortCircuitExpresion(self: *Self) ParseError!Node.Index {
+fn shortCircuitExpresion(self: *Self) Error!Node.Index {
     const expr = try lOrExpr(self);
     switch (self.nodes.items(.data)[@intFromEnum(expr)]) {
         .binary_expr => |pl| {
@@ -1472,7 +1480,7 @@ fn shortCircuitExpresion(self: *Self) ParseError!Node.Index {
     }
 }
 
-fn yieldOrConditionalExpression(self: *Self) ParseError!Node.Index {
+fn yieldOrConditionalExpression(self: *Self) Error!Node.Index {
     if (!(self.current_token.tag == .kw_yield and self.context.is_yield_reserved)) {
         return self.conditionalExpression();
     }
@@ -1481,7 +1489,7 @@ fn yieldOrConditionalExpression(self: *Self) ParseError!Node.Index {
     return self.yieldExpression();
 }
 
-fn yieldExpression(self: *Self) ParseError!Node.Index {
+fn yieldExpression(self: *Self) Error!Node.Index {
     const yield_kw = try self.next();
     std.debug.assert(yield_kw.tag == .kw_yield and self.context.is_yield_reserved);
 
@@ -1514,7 +1522,7 @@ fn yieldExpression(self: *Self) ParseError!Node.Index {
 /// ConditionalExpression:
 ///     ShortCircuitExpression
 ///     ShortCircuitExpression '?' AssignmentExpression ':' AssignmentExpression
-fn conditionalExpression(self: *Self) ParseError!Node.Index {
+fn conditionalExpression(self: *Self) Error!Node.Index {
     const cond_expr = try self.shortCircuitExpresion();
     if (!self.isAtToken(.@"?")) return cond_expr;
 
@@ -1542,7 +1550,7 @@ fn conditionalExpression(self: *Self) ParseError!Node.Index {
 }
 
 // TODO: check static semantics according to the spec.
-fn assignmentPattern(self: *Self) ParseError!Node.Index {
+fn assignmentPattern(self: *Self) Error!Node.Index {
     const lhs = try self.lhsExpression();
     if (!self.isAtToken(.@"=")) return lhs;
 
@@ -1568,7 +1576,7 @@ fn assignmentPattern(self: *Self) ParseError!Node.Index {
 }
 
 /// https://tc39.es/ecma262/#prod-ArrayAssignmentPattern
-fn arrayAssignmentPattern(self: *Self) ParseError!Node.Index {
+fn arrayAssignmentPattern(self: *Self) Error!Node.Index {
     const lbrac = try self.next(); // eat '['
     std.debug.assert(lbrac.tag == .@"[");
 
@@ -1597,7 +1605,7 @@ fn arrayAssignmentPattern(self: *Self) ParseError!Node.Index {
                         "Comma not permitted after spread element in array pattern",
                         .{},
                     );
-                    return ParseError.InvalidAssignmentTarget;
+                    return Error.InvalidAssignmentTarget;
                 }
 
                 break;
@@ -1626,7 +1634,7 @@ fn arrayAssignmentPattern(self: *Self) ParseError!Node.Index {
     );
 }
 
-fn completePropertyPatternDef(self: *Self, key: Node.Index) ParseError!Node.Index {
+fn completePropertyPatternDef(self: *Self, key: Node.Index) Error!Node.Index {
     _ = try self.expect(.@":");
 
     const value = try self.assignmentPattern();
@@ -1640,7 +1648,7 @@ fn completePropertyPatternDef(self: *Self, key: Node.Index) ParseError!Node.Inde
     );
 }
 
-fn destructuredPropertyDefinition(self: *Self) ParseError!Node.Index {
+fn destructuredPropertyDefinition(self: *Self) Error!Node.Index {
     switch (self.current_token.tag) {
         .string_literal, .numeric_literal => {
             const key_token = try self.next();
@@ -1671,7 +1679,7 @@ fn destructuredPropertyDefinition(self: *Self) ParseError!Node.Index {
 
 /// Parse a destructured objectp proeprty starting with an identifier.
 /// Assumes that self.current_token is the .identifier.
-fn destructuredIdentifierProperty(self: *Self) ParseError!Node.Index {
+fn destructuredIdentifierProperty(self: *Self) Error!Node.Index {
     const key_token = try self.next();
     const key = try self.addNode(
         .{ .identifier = try self.addToken(key_token) },
@@ -1720,7 +1728,7 @@ fn destructuredIdentifierProperty(self: *Self) ParseError!Node.Index {
 }
 
 /// https://tc39.es/ecma262/#prod-ObjectAssignmentPattern
-fn objectAssignmentPattern(self: *Self) ParseError!Node.Index {
+fn objectAssignmentPattern(self: *Self) Error!Node.Index {
     const lbrace = try self.next(); // eat '{'
     std.debug.assert(lbrace.tag == .@"{");
 
@@ -1758,7 +1766,7 @@ fn objectAssignmentPattern(self: *Self) ParseError!Node.Index {
                         .{cur_token.toByteSlice(self.source)},
                     );
 
-                    return ParseError.InvalidAssignmentTarget;
+                    return Error.InvalidAssignmentTarget;
                 }
             },
         }
@@ -1783,7 +1791,7 @@ fn objectAssignmentPattern(self: *Self) ParseError!Node.Index {
     );
 }
 
-fn unaryExpression(self: *Self) ParseError!Node.Index {
+fn unaryExpression(self: *Self) Error!Node.Index {
     const token = self.peek();
     switch (token.tag) {
         .kw_delete,
@@ -1817,7 +1825,7 @@ fn unaryExpression(self: *Self) ParseError!Node.Index {
 
 /// Parse an await expression when `self.current_token`
 /// is the `await` keyword.
-fn awaitExpression(self: *Self) ParseError!Node.Index {
+fn awaitExpression(self: *Self) Error!Node.Index {
     const await_token = try self.next();
     std.debug.assert(await_token.tag == .kw_await);
 
@@ -1827,7 +1835,7 @@ fn awaitExpression(self: *Self) ParseError!Node.Index {
             "'await' expressions are only permitted inside async functions",
             .{},
         );
-        return ParseError.IllegalAwait;
+        return Error.IllegalAwait;
     }
 
     const operand = try self.unaryExpression();
@@ -1845,11 +1853,11 @@ fn awaitExpression(self: *Self) ParseError!Node.Index {
 /// The ECMASCript262 standard describes a syntax directed operation
 /// called `AssignmentTargetType`, which determines if a given expression
 /// is "SIMPLE", a.k.a, valid in contexts like the operand of `<expr>++`.
-fn isExprSimple(self: *Self) ParseError!Node.Index {
+fn isExprSimple(self: *Self) Error!Node.Index {
     _ = self;
 }
 
-fn updateExpression(self: *Self) ParseError!Node.Index {
+fn updateExpression(self: *Self) Error!Node.Index {
     const token = self.peek();
     if (token.tag == .@"++" or token.tag == .@"--") {
         const op_token = try self.next();
@@ -1885,7 +1893,7 @@ fn updateExpression(self: *Self) ParseError!Node.Index {
     return expr;
 }
 
-fn lhsExpression(self: *Self) ParseError!Node.Index {
+fn lhsExpression(self: *Self) Error!Node.Index {
     if (try self.tryNewExpression()) |expr| return expr;
     if (self.peek().tag == .kw_super) {
         return try self.superExpression();
@@ -1902,7 +1910,7 @@ fn lhsExpression(self: *Self) ParseError!Node.Index {
     return lhs_expr;
 }
 
-fn superExpression(self: *Self) ParseError!Node.Index {
+fn superExpression(self: *Self) Error!Node.Index {
     const super_token = try self.next();
     std.debug.assert(super_token.tag == .kw_super);
 
@@ -1913,7 +1921,7 @@ fn superExpression(self: *Self) ParseError!Node.Index {
     }, start, end);
 }
 
-fn tryNewExpression(self: *Self) ParseError!?Node.Index {
+fn tryNewExpression(self: *Self) Error!?Node.Index {
     if (self.isAtToken(.kw_new)) {
         const new_token = try self.next(); // eat "new"
         const expr = try self.memberExpression();
@@ -1932,13 +1940,13 @@ fn tryNewExpression(self: *Self) ParseError!?Node.Index {
     return null;
 }
 
-/// Try parsing a call expression. If the input is malformed, return a `ParseError`,
+/// Try parsing a call expression. If the input is malformed, return a `Error`,
 /// If no call expression was found, return `null`,
 /// Otherwise, return the index of the call expression node.
 /// NOTE: The call expression grammar might seem a little odd, because it
 /// also has productions that parse member expressions:
 /// https://262.ecma-international.org/15.0/index.html#prod-CallExpression
-fn tryCallExpression(self: *Self, callee: Node.Index) ParseError!?Node.Index {
+fn tryCallExpression(self: *Self, callee: Node.Index) Error!?Node.Index {
     const token = self.peek();
     if (token.tag != .@"(") return null;
 
@@ -1961,7 +1969,7 @@ fn tryCallExpression(self: *Self, callee: Node.Index) ParseError!?Node.Index {
 /// myFunc(...
 /////    ^-- already parsed the callee
 /// ```
-fn completeCallExpression(self: *Self, callee: Node.Index) ParseError!Node.Index {
+fn completeCallExpression(self: *Self, callee: Node.Index) Error!Node.Index {
     const start_pos = self.nodes.items(.start)[@intFromEnum(callee)];
     const call_args = try self.args();
     const call_expr = ast.CallExpr{
@@ -1974,7 +1982,7 @@ fn completeCallExpression(self: *Self, callee: Node.Index) ParseError!Node.Index
 }
 
 // CoverCallAndAsyncArrowHead:  MemberExpression Arguments
-fn coverCallAndAsyncArrowHead(self: *Self, callee: Node.Index) ParseError!Node.Index {
+fn coverCallAndAsyncArrowHead(self: *Self, callee: Node.Index) Error!Node.Index {
     const call_args = try self.args();
     const start_pos = self.nodes.items(.start)[@intFromEnum(callee)];
     const end_pos = self.nodes.items(.end)[@intFromEnum(call_args)];
@@ -1988,7 +1996,7 @@ fn coverCallAndAsyncArrowHead(self: *Self, callee: Node.Index) ParseError!Node.I
 }
 
 /// https://262.ecma-international.org/15.0/index.html#prod-OptionalExpression
-fn optionalExpression(self: *Self, object: Node.Index) ParseError!Node.Index {
+fn optionalExpression(self: *Self, object: Node.Index) Error!Node.Index {
     var expr = object;
     var cur_token = self.peek();
     while (cur_token.tag != .eof) : (cur_token = self.peek()) {
@@ -2006,7 +2014,7 @@ fn optionalExpression(self: *Self, object: Node.Index) ParseError!Node.Index {
 /// operators that are chained on top, and return a node which will be put into
 /// an `optional_expr` field of `ast.Node`.
 /// see: `Self.optionalChain`.
-fn completeOptionalChain(self: *Self, prev_expr: Node.Index) ParseError!Node.Index {
+fn completeOptionalChain(self: *Self, prev_expr: Node.Index) Error!Node.Index {
     var expr = try self.optionalChain(prev_expr);
     const start_pos = self.nodes.items(.start)[@intFromEnum(expr)];
 
@@ -2039,7 +2047,7 @@ fn completeOptionalChain(self: *Self, prev_expr: Node.Index) ParseError!Node.Ind
 /// The expression before the `?.` operator is already parsed and passed as an argument.
 ///
 /// See: https://262.ecma-international.org/15.0/index.html#prod-OptionalExpression
-fn optionalChain(self: *Self, object: Node.Index) ParseError!Node.Index {
+fn optionalChain(self: *Self, object: Node.Index) Error!Node.Index {
     const start_pos = self.nodes.items(.start)[@intFromEnum(object)];
 
     const chain_op = try self.next();
@@ -2080,12 +2088,12 @@ fn optionalChain(self: *Self, object: Node.Index) ParseError!Node.Index {
                 "Expected property access or function call after ?., but got {s}",
                 .{cur_token.toByteSlice(self.source)},
             );
-            return ParseError.UnexpectedToken;
+            return Error.UnexpectedToken;
         },
     }
 }
 
-fn memberExpression(self: *Self) ParseError!Node.Index {
+fn memberExpression(self: *Self) Error!Node.Index {
     var member_expr = try self.primaryExpression();
     var token = self.peek();
     while (token.tag != .eof) : (token = self.peek()) {
@@ -2098,7 +2106,7 @@ fn memberExpression(self: *Self) ParseError!Node.Index {
     return member_expr;
 }
 
-fn completeMemberExpression(self: *Self, object: Node.Index) ParseError!Node.Index {
+fn completeMemberExpression(self: *Self, object: Node.Index) Error!Node.Index {
     const dot = try self.next(); // eat "."
     std.debug.assert(dot.tag == .@".");
 
@@ -2116,7 +2124,7 @@ fn completeMemberExpression(self: *Self, object: Node.Index) ParseError!Node.Ind
             "Expected to see a property name after '.', got a '{s}' instead",
             .{tok.toByteSlice(self.source)},
         );
-        return ParseError.UnexpectedToken;
+        return Error.UnexpectedToken;
     };
 
     const property_access = ast.PropertyAccess{
@@ -2131,7 +2139,7 @@ fn completeMemberExpression(self: *Self, object: Node.Index) ParseError!Node.Ind
     return self.addNode(.{ .member_expr = property_access }, start_pos, end_pos);
 }
 
-fn completeComputedMemberExpression(self: *Self, object: Node.Index) ParseError!Node.Index {
+fn completeComputedMemberExpression(self: *Self, object: Node.Index) Error!Node.Index {
     const tok = try self.next(); // eat "["
     std.debug.assert(tok.tag == .@"[");
 
@@ -2150,17 +2158,17 @@ fn completeComputedMemberExpression(self: *Self, object: Node.Index) ParseError!
     return self.addNode(.{ .computed_member_expr = property_access }, start_pos, end_pos);
 }
 
-fn primaryExpression(self: *Self) ParseError!Node.Index {
+fn primaryExpression(self: *Self) Error!Node.Index {
     // If we're currently at a '/' or '/=' token,
-    // we probably have mistaken a regex literal start char for an operator.
+    // we probably have mistaken a regex literal's opening '/' for an operator.
     // We'll rewind the tokenizer and try to parse a regex literal instead.
-    // This is ok.
     const cur = &self.current_token;
     if (cur.tag == .@"/" or cur.tag == .@"/=") {
+        // Go back to the beginning of '/'
         self.tokenizer.rewind(cur.start, cur.line);
-        self.tokenizer.context.regex_literal = true;
+        self.tokenizer.assume_blash_starts_regex = true;
         self.current_token = try self.tokenizer.next();
-        self.tokenizer.context.regex_literal = false;
+        self.tokenizer.assume_blash_starts_regex = false;
     }
 
     const token = try self.next();
@@ -2226,10 +2234,11 @@ fn primaryExpression(self: *Self) ParseError!Node.Index {
         "Unexpected '{s}'",
         .{token.toByteSlice(self.source)},
     );
-    return ParseError.UnexpectedToken;
+    return Error.UnexpectedToken;
 }
 
-fn identifier(self: *Self, token: Token) ParseError!Node.Index {
+/// Save `token` as an identifier node.
+fn identifier(self: *Self, token: Token) Error!Node.Index {
     return self.addNode(
         .{ .identifier = try self.addToken(token) },
         token.start,
@@ -2245,7 +2254,7 @@ fn completeArrowFunction(
     params_end_token: *const Token, // a ')' or an identifier.
     params: Node.Index,
     flags: ast.FunctionFlags,
-) ParseError!Node.Index {
+) Error!Node.Index {
     std.debug.assert(flags.is_arrow);
 
     if (!self.isAtToken(.@"=>")) {
@@ -2255,7 +2264,7 @@ fn completeArrowFunction(
                 "'()' is not a valid expression. Arrow functions start with '() => '",
                 .{},
             );
-            return ParseError.InvalidArrowFunction;
+            return Error.InvalidArrowFunction;
         }
     }
 
@@ -2266,7 +2275,7 @@ fn completeArrowFunction(
             "'=>' must be on the same line as the arrow function parameters",
             .{},
         );
-        return ParseError.IllegalFatArrow;
+        return Error.IllegalFatArrow;
     }
 
     const body = blk: {
@@ -2275,7 +2284,7 @@ fn completeArrowFunction(
         // we will attempt to parse it as a block statement, and not an object literal.
         if (body_start_token.tag == .@"{") {
             const context = self.context;
-            defer self.setContext(context);
+            defer self.context = context;
             self.context.@"return" = true;
             break :blk try self.blockStatement();
         }
@@ -2287,7 +2296,7 @@ fn completeArrowFunction(
                 "Unexpected destructuring pattern in arrow function body",
                 .{},
             );
-            return ParseError.InvalidArrowFunction;
+            return Error.InvalidArrowFunction;
         }
 
         break :blk assignment;
@@ -2312,7 +2321,7 @@ fn completeArrowFunction(
     }, params_start_token.start, end_pos);
 }
 
-fn spreadElement(self: *Self) ParseError!Node.Index {
+fn spreadElement(self: *Self) Error!Node.Index {
     const dotdotdot = try self.next();
     std.debug.assert(dotdotdot.tag == .@"...");
     const rest_arg = try self.assignExpressionNoPattern();
@@ -2321,7 +2330,7 @@ fn spreadElement(self: *Self) ParseError!Node.Index {
 }
 
 /// Parse a RestElement, assuming we're at the `...` token
-fn restElement(self: *Self) ParseError!Node.Index {
+fn restElement(self: *Self) Error!Node.Index {
     const dotdotdot = try self.next();
     std.debug.assert(dotdotdot.tag == .@"...");
     const rest_arg = try self.assignmentLhsExpr();
@@ -2330,7 +2339,7 @@ fn restElement(self: *Self) ParseError!Node.Index {
 }
 
 /// Once a '(' token has been eaten, parse the either an arrow function or a parenthesized expression.
-fn completeArrowFuncOrGroupingExpr(self: *Self, lparen: *const Token) ParseError!Node.Index {
+fn completeArrowFuncOrGroupingExpr(self: *Self, lparen: *const Token) Error!Node.Index {
     const first_expr = try self.assignmentExpression();
     if (!self.current_destructure_kind.can_destruct) {
         const expr = try self.completeSequenceExpr(first_expr);
@@ -2383,7 +2392,7 @@ fn completeArrowFuncOrGroupingExpr(self: *Self, lparen: *const Token) ParseError
                 "Invalid object or destructuring pattern",
                 .{},
             );
-            return ParseError.InvalidObject;
+            return Error.InvalidObject;
         }
         try nodes.append(rhs);
     }
@@ -2399,7 +2408,7 @@ fn completeArrowFuncOrGroupingExpr(self: *Self, lparen: *const Token) ParseError
                 "Invalid arrow function parameters",
                 .{},
             );
-            return ParseError.InvalidArrowParameters;
+            return Error.InvalidArrowParameters;
         }
 
         for (nodes.items) |node| {
@@ -2429,7 +2438,7 @@ fn completeArrowFuncOrGroupingExpr(self: *Self, lparen: *const Token) ParseError
             "Grouping expression contains a destructuring pattern",
             .{},
         );
-        return ParseError.UnexpectedPattern;
+        return Error.UnexpectedPattern;
     }
 
     if (has_trailing_comma) {
@@ -2438,7 +2447,7 @@ fn completeArrowFuncOrGroupingExpr(self: *Self, lparen: *const Token) ParseError
             "Trailing comma is not permitted in parenthesied expressions",
             .{},
         );
-        return ParseError.UnexpectedToken;
+        return Error.UnexpectedToken;
     }
 
     if (nodes.items.len == 1) {
@@ -2450,7 +2459,7 @@ fn completeArrowFuncOrGroupingExpr(self: *Self, lparen: *const Token) ParseError
 }
 
 /// Parses either an arrow function or a parenthesized expression.
-fn groupingExprOrArrowFunction(self: *Self, lparen: *const Token) ParseError!Node.Index {
+fn groupingExprOrArrowFunction(self: *Self, lparen: *const Token) Error!Node.Index {
     if (self.isAtToken(.@")")) {
         const rparen = try self.next();
         const end_pos = rparen.start + rparen.len;
@@ -2476,7 +2485,7 @@ fn groupingExprOrArrowFunction(self: *Self, lparen: *const Token) ParseError!Nod
 
 /// Parse an object literal, assuming the `{` has already been consumed.
 /// https://262.ecma-international.org/15.0/index.html#prod-ObjectLiteral
-fn objectLiteral(self: *Self, start_pos: u32) ParseError!Node.Index {
+fn objectLiteral(self: *Self, start_pos: u32) Error!Node.Index {
     const properties = try self.propertyDefinitionList();
     const closing_brace = try self.expect(.@"}");
     const end_pos = closing_brace.start + closing_brace.len;
@@ -2486,7 +2495,7 @@ fn objectLiteral(self: *Self, start_pos: u32) ParseError!Node.Index {
 /// https://tc39.es/ecma262/#prod-PropertyDefinitionList
 /// Parse a comma-separated list of properties.
 /// Returns `null` if there's 0 properties in the object.
-fn propertyDefinitionList(self: *Self) ParseError!?ast.SubRange {
+fn propertyDefinitionList(self: *Self) Error!?ast.SubRange {
     var property_defs = std.ArrayList(Node.Index).init(self.allocator);
     defer property_defs.deinit();
 
@@ -2575,7 +2584,7 @@ fn propertyDefinitionList(self: *Self) ParseError!?ast.SubRange {
 
     if (destructure_kind.isMalformed()) {
         // TODO: emit a diagnostic.
-        return ParseError.InvalidObject;
+        return Error.InvalidObject;
     }
 
     self.current_destructure_kind = destructure_kind;
@@ -2585,7 +2594,7 @@ fn propertyDefinitionList(self: *Self) ParseError!?ast.SubRange {
 }
 
 /// Parse an object property name, which can be an identifier or a keyword.
-fn propertyName(self: *Self) ParseError!Node.Index {
+fn propertyName(self: *Self) Error!Node.Index {
     if (self.current_token.tag == .identifier or self.current_token.tag.isKeyword()) {
         self.current_destructure_kind.can_destruct = true;
         self.current_destructure_kind.can_be_assigned_to = true;
@@ -2598,11 +2607,11 @@ fn propertyName(self: *Self) ParseError!Node.Index {
         .{self.current_token.toByteSlice(self.source)},
     );
 
-    return ParseError.InvalidPropertyName;
+    return Error.UnexpectedToken;
 }
 
 /// Parse an the property of an object literal or object pattern that starts with an identifier.
-fn identifierProperty(self: *Self) ParseError!Node.Index {
+fn identifierProperty(self: *Self) Error!Node.Index {
     const key_token = try self.next();
     std.debug.assert(key_token.tag == .identifier or key_token.tag.isKeyword());
 
@@ -2644,7 +2653,7 @@ fn identifierProperty(self: *Self) ParseError!Node.Index {
             "Unexpected '{s}' in property definition",
             .{self.current_token.toByteSlice(self.source)},
         );
-        return ParseError.UnexpectedToken;
+        return Error.UnexpectedToken;
     }
 
     const key_end_pos = key_token.start + key_token.len;
@@ -2662,7 +2671,7 @@ fn identifierProperty(self: *Self) ParseError!Node.Index {
             const op_token = try self.next(); // eat '='
             if (key_token.tag != .identifier) {
                 try self.emitBadTokenDiagnostic("property name", &key_token);
-                return ParseError.InvalidPropertyName;
+                return Error.UnexpectedToken;
             }
 
             const value = try self.assignmentExpression();
@@ -2705,7 +2714,7 @@ fn identifierProperty(self: *Self) ParseError!Node.Index {
 /// Tries to parse a getter or setter, assuming `token` is an identifier.
 /// If no getter or setter is found, returns `null`.
 /// If there is a parse error, emits a diagnostic and returns the error.
-fn getterOrSetter(self: *Self, token: Token) ParseError!?Node.Index {
+fn getterOrSetter(self: *Self, token: Token) Error!?Node.Index {
     const kind: ast.PropertyDefinitionKind = blk: {
         const token_str = token.toByteSlice(self.source);
         if (std.mem.eql(u8, token_str, "get")) {
@@ -2728,7 +2737,7 @@ fn getterOrSetter(self: *Self, token: Token) ParseError!?Node.Index {
 }
 
 /// https://tc39.es/ecma262/#prod-ClassElementName
-fn classElementName(self: *Self) ParseError!Node.Index {
+fn classElementName(self: *Self) Error!Node.Index {
     const token = try self.next();
     switch (token.tag) {
         .identifier, .private_identifier => {
@@ -2749,7 +2758,7 @@ fn classElementName(self: *Self) ParseError!Node.Index {
                 "Expected property name, got '{s}'",
                 .{token.toByteSlice(self.source)},
             );
-            return ParseError.UnexpectedToken;
+            return Error.UnexpectedToken;
         },
     }
 }
@@ -2761,7 +2770,7 @@ fn parseMethodBody(
     key: Node.Index,
     flags: ast.PropertyDefinitionFlags,
     fn_flags: ast.FunctionFlags,
-) ParseError!Node.Index {
+) Error!Node.Index {
     std.debug.assert(self.current_token.tag == .@"(" and flags.is_method);
 
     const start_pos = self.peek().start;
@@ -2799,7 +2808,7 @@ fn checkGetterOrSetterParams(
     self: *Self,
     func_expr: Node.Index,
     kind: ast.PropertyDefinitionKind,
-) ParseError!void {
+) Error!void {
     const func = &self.getNode(func_expr).data.function_expr;
     const n_params = func.getParameterCount(self);
     if (kind == .get and n_params != 0) {
@@ -2808,7 +2817,7 @@ fn checkGetterOrSetterParams(
             "A 'get' accessor should have no parameter, but got {d}",
             .{n_params},
         );
-        return ParseError.InvalidGetter;
+        return Error.InvalidGetter;
     }
 
     if (kind == .set and n_params != 1) {
@@ -2817,7 +2826,7 @@ fn checkGetterOrSetterParams(
             "A 'set' accessor should have exaclty one parameters, but got {d}",
             .{n_params},
         );
-        return ParseError.InvalidSetter;
+        return Error.InvalidSetter;
     }
 }
 
@@ -2826,7 +2835,7 @@ fn completePropertyDef(
     self: *Self,
     key: Node.Index,
     flags: ast.PropertyDefinitionFlags,
-) ParseError!Node.Index {
+) Error!Node.Index {
     if (self.current_token.tag == .@"(") {
         self.current_destructure_kind.setNoAssignOrDestruct();
         return self.parseMethodBody(key, .{
@@ -2854,7 +2863,7 @@ fn completePropertyDef(
 
 /// Parse an ArrayLiteral:
 /// https://262.ecma-international.org/15.0/index.html#prod-ArrayLiteral
-fn arrayLiteral(self: *Self, start_pos: u32) ParseError!Node.Index {
+fn arrayLiteral(self: *Self, start_pos: u32) Error!Node.Index {
     var elements = std.ArrayList(Node.Index).init(self.allocator);
     defer elements.deinit();
 
@@ -2918,7 +2927,7 @@ fn functionExpression(
     self: *Self,
     start_pos: u32,
     flags: ast.FunctionFlags,
-) ParseError!Node.Index {
+) Error!Node.Index {
     var fn_flags = flags;
     if (self.isAtToken(.@"*")) {
         _ = try self.next(); // eat '*'
@@ -2943,9 +2952,9 @@ fn parseFunctionBody(
     name_token: ?Token.Index,
     flags: ast.FunctionFlags,
     is_decl: bool,
-) ParseError!Node.Index {
+) Error!Node.Index {
     const saved_context = self.context;
-    defer self.setContext(saved_context);
+    defer self.context = saved_context;
 
     if (flags.is_generator)
         self.context.is_yield_reserved = true;
@@ -2957,7 +2966,7 @@ fn parseFunctionBody(
 
     // Allow return statements inside function
     const ctx = self.context;
-    defer self.setContext(ctx);
+    defer self.context = ctx;
     self.context.@"return" = true;
 
     // TODO: make the body a statement list.
@@ -2986,7 +2995,7 @@ fn parseFunctionBody(
     return self.addNode(node_data, start_pos, end_pos);
 }
 
-fn parseParameter(self: *Self) ParseError!Node.Index {
+fn parseParameter(self: *Self) Error!Node.Index {
     const param = try self.assignmentLhsExpr();
     if (!self.current_destructure_kind.can_destruct) {
         try self.emitDiagnosticOnNode(
@@ -2994,7 +3003,7 @@ fn parseParameter(self: *Self) ParseError!Node.Index {
             "function parameter must be name, assignment pattern, or rest element",
         );
 
-        return ParseError.InvalidFunctionParameter;
+        return Error.InvalidFunctionParameter;
     }
 
     if (!self.isAtToken(.@"=")) return param;
@@ -3008,7 +3017,7 @@ fn parseParameter(self: *Self) ParseError!Node.Index {
             "Default parameter value cannot be a destructuring pattern",
         );
 
-        return ParseError.InvalidFunctionParameter;
+        return Error.InvalidFunctionParameter;
     }
 
     const node_starts: []u32 = self.nodes.items(.start);
@@ -3027,7 +3036,7 @@ fn parseParameter(self: *Self) ParseError!Node.Index {
 }
 
 /// Starting with the '(' token , parse formal parameters of a function.
-fn parseFormalParameters(self: *Self) ParseError!Node.Index {
+fn parseFormalParameters(self: *Self) Error!Node.Index {
     const lparen = try self.expect(.@"(");
     const start_pos = lparen.start;
 
@@ -3110,13 +3119,13 @@ fn nodeTag(self: *const Self, index: Node.Index) std.meta.Tag(NodeData) {
 }
 
 /// Parses arguments for a function call, assuming the current_token is '('
-fn args(self: *Self) ParseError!Node.Index {
+fn args(self: *Self) Error!Node.Index {
     const args_node, const start, const end = try self.parseArgs();
     return self.addNode(.{ .arguments = args_node }, start, end);
 }
 
 /// Parse arguments for a function call, then return it alongside the start and end locations.
-fn parseArgs(self: *Self) ParseError!struct { ast.SubRange, u32, u32 } {
+fn parseArgs(self: *Self) Error!struct { ast.SubRange, u32, u32 } {
     const start_pos = (try self.expect(.@"(")).start;
 
     var arg_list = std.ArrayList(Node.Index).init(self.allocator);
@@ -3132,7 +3141,7 @@ fn parseArgs(self: *Self) ParseError!struct { ast.SubRange, u32, u32 } {
                     "closing ')' after a spread element",
                     &self.current_token,
                 );
-                return ParseError.SpreadElementMustBeLast;
+                return Error.RestElementNotLast;
             }
 
             break;
@@ -3158,7 +3167,7 @@ fn makeRightAssoc(
     comptime l: *const ParseFn,
 ) *const ParseFn {
     const Parselet = struct {
-        fn parseFn(self: *Self) ParseError!Node.Index {
+        fn parseFn(self: *Self) Error!Node.Index {
             var node = try l(self);
 
             var token = self.peek();
@@ -3196,7 +3205,7 @@ fn makeLeftAssoc(
     const max: u32 = @intFromEnum(tag_max);
 
     const S = struct {
-        fn parseFn(self: *Self) ParseError!Node.Index {
+        fn parseFn(self: *Self) Error!Node.Index {
             var node = try nextFn(self);
 
             var token = self.peek();
