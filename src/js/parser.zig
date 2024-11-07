@@ -517,6 +517,8 @@ fn forLoopIterator(self: *Self) Error!struct { ForLoopKind, ast.ExtraData.Index 
                 return Error.InvalidLoopLhs;
             }
 
+            self.reinterpretAsPattern(expr);
+
             const loop_kind = if (self.isAtToken(.kw_of))
                 ForLoopKind.for_of
             else

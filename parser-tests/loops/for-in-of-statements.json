@@ -1,0 +1,341 @@
+{
+  "program": [
+    {
+      "for_statement": {
+        "init": {
+          "variable_declaration": {
+            "declarators": [
+              {
+                "variable_declarator": {
+                  "lhs": {
+                    "identifier": "x"
+                  },
+                  "init": {
+                    "literal": "1"
+                  }
+                }
+              }
+            ],
+            "kind": "let"
+          }
+        },
+        "condition": {
+          "binary_expression": {
+            "lhs": {
+              "identifier": "x"
+            },
+            "rhs": {
+              "literal": "100"
+            },
+            "operator": "<"
+          }
+        },
+        "update": {
+          "post_unary_expression": {
+            "operand": {
+              "identifier": "x"
+            },
+            "operator": "++"
+          }
+        },
+        "body": {
+          "empty_statement": {}
+        }
+      }
+    },
+    {
+      "for_of_statement": {
+        "lhs": {
+          "identifier": "x"
+        },
+        "rhs": {
+          "array": [
+            {
+              "literal": "1"
+            },
+            {
+              "literal": "2"
+            },
+            {
+              "literal": "3"
+            }
+          ]
+        },
+        "body": {
+          "empty_statement": {}
+        }
+      }
+    },
+    {
+      "for_of_statement": {
+        "lhs": {
+          "variable_declaration": {
+            "declarators": [
+              {
+                "variable_declarator": {
+                  "lhs": {
+                    "identifier": "x"
+                  }
+                }
+              }
+            ],
+            "kind": "let"
+          }
+        },
+        "rhs": {
+          "array": [
+            {
+              "literal": "1"
+            },
+            {
+              "literal": "2"
+            },
+            {
+              "literal": "3"
+            }
+          ]
+        },
+        "body": {
+          "empty_statement": {}
+        }
+      }
+    },
+    {
+      "for_of_statement": {
+        "lhs": {
+          "variable_declaration": {
+            "declarators": [
+              {
+                "variable_declarator": {
+                  "lhs": {
+                    "array_pattern": [
+                      {
+                        "identifier": "a"
+                      },
+                      {
+                        "identifier": "b"
+                      },
+                      {
+                        "identifier": "c"
+                      }
+                    ]
+                  }
+                }
+              }
+            ],
+            "kind": "let"
+          }
+        },
+        "rhs": {
+          "array": [
+            {
+              "literal": "1"
+            },
+            {
+              "literal": "2"
+            },
+            {
+              "literal": "3"
+            }
+          ]
+        },
+        "body": {
+          "empty_statement": {}
+        }
+      }
+    },
+    {
+      "for_statement": {
+        "init": {
+          "binary_expression": {
+            "lhs": {
+              "literal": "1"
+            },
+            "rhs": {
+              "literal": "1"
+            },
+            "operator": "+"
+          }
+        },
+        "body": {
+          "empty_statement": {}
+        }
+      }
+    },
+    {
+      "for_statement": {
+        "init": {
+          "variable_declaration": {
+            "declarators": [
+              {
+                "variable_declarator": {
+                  "lhs": {
+                    "identifier": "x"
+                  }
+                }
+              },
+              {
+                "variable_declarator": {
+                  "lhs": {
+                    "identifier": "y"
+                  }
+                }
+              }
+            ],
+            "kind": "let"
+          }
+        },
+        "body": {
+          "empty_statement": {}
+        }
+      }
+    },
+    {
+      "for_statement": {
+        "init": {
+          "variable_declaration": {
+            "declarators": [
+              {
+                "variable_declarator": {
+                  "lhs": {
+                    "identifier": "x"
+                  }
+                }
+              }
+            ],
+            "kind": "let"
+          }
+        },
+        "body": {
+          "empty_statement": {}
+        }
+      }
+    },
+    {
+      "for_in_statement": {
+        "lhs": {
+          "object_pattern": [
+            {
+              "object_property": {
+                "key": {
+                  "identifier": "x"
+                },
+                "value": {
+                  "identifier": "x"
+                },
+                "flags": {
+                  "is_method": false,
+                  "is_shorthand": true,
+                  "is_computed": false,
+                  "kind": "init"
+                }
+              }
+            },
+            {
+              "object_property": {
+                "key": {
+                  "identifier": "y"
+                },
+                "value": {
+                  "identifier": "y"
+                },
+                "flags": {
+                  "is_method": false,
+                  "is_shorthand": true,
+                  "is_computed": false,
+                  "kind": "init"
+                }
+              }
+            },
+            {
+              "object_property": {
+                "key": {
+                  "identifier": "z"
+                },
+                "value": {
+                  "identifier": "z"
+                },
+                "flags": {
+                  "is_method": false,
+                  "is_shorthand": true,
+                  "is_computed": false,
+                  "kind": "init"
+                }
+              }
+            }
+          ]
+        },
+        "rhs": {
+          "object_literal": []
+        },
+        "body": {
+          "empty_statement": {}
+        }
+      }
+    },
+    {
+      "for_in_statement": {
+        "lhs": {
+          "identifier": "x"
+        },
+        "rhs": {
+          "binary_expression": {
+            "lhs": {
+              "identifier": "z"
+            },
+            "rhs": {
+              "identifier": "y"
+            },
+            "operator": "in"
+          }
+        },
+        "body": {
+          "empty_statement": {}
+        }
+      }
+    },
+    {
+      "for_in_statement": {
+        "lhs": {
+          "object_pattern": [
+            {
+              "object_property": {
+                "key": {
+                  "identifier": "x"
+                },
+                "value": {
+                  "member_expression": {
+                    "object": {
+                      "identifier": "y"
+                    },
+                    "property": "z"
+                  }
+                },
+                "flags": {
+                  "is_method": false,
+                  "is_shorthand": false,
+                  "is_computed": false,
+                  "kind": "init"
+                }
+              }
+            }
+          ]
+        },
+        "rhs": {
+          "binary_expression": {
+            "lhs": {
+              "identifier": "z"
+            },
+            "rhs": {
+              "identifier": "y"
+            },
+            "operator": "in"
+          }
+        },
+        "body": {
+          "empty_statement": {}
+        }
+      }
+    }
+  ]
+}
