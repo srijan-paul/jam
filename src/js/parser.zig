@@ -445,8 +445,8 @@ fn forLoopIterator(self: *Self) Error!struct { ForLoopKind, ast.ExtraData.Index 
 
     // Check for productions that start with a variable declarator.
     // for (var/let/const x = 0; x < 10; x++)
-    // for (let/let/const x in y)
-    // for (let/let/const x of y)
+    // for (var/let/const x in y)
+    // for (var/let/const x of y)
     const maybe_decl_kw = blk: {
         const curr = self.current_token.tag;
         if (curr == .kw_var or curr == .kw_const) {
@@ -570,7 +570,6 @@ fn completeVarDeclLoopIterator(self: *Self, decl_kw: Token, loop_kind: *ForLoopK
     switch (self.current_token.tag) {
         .kw_in, .kw_of => {
             loop_kind.* = if (self.current_token.tag == .kw_in)
-                // TODO: handle the [In] grammar attribute
                 ForLoopKind.for_in
             else
                 ForLoopKind.for_of;
@@ -1200,6 +1199,7 @@ fn next(self: *Self) Error!Token {
 
     const current = self.current_token;
     self.current_token = next_token;
+    self.prev_token_line = current.line;
     return current;
 }
 
@@ -2168,16 +2168,15 @@ fn primaryExpression(self: *Self) Error!Node.Index {
     if (cur.tag == .@"/" or cur.tag == .@"/=") {
         // Go back to the beginning of '/'
         self.tokenizer.rewind(cur.start, cur.line);
-        self.tokenizer.assume_blash_starts_regex = true;
+        self.tokenizer.assume_bslash_starts_regex = true;
         self.current_token = try self.tokenizer.next();
-        self.tokenizer.assume_blash_starts_regex = false;
+        self.tokenizer.assume_bslash_starts_regex = false;
     }
 
     const token = try self.next();
     switch (token.tag) {
         .kw_this => {
-            // TODO: is this necessary?
-            // self.current_destructure_kind.setNoAssignOrDestruct();
+            self.current_destructure_kind.setNoAssignOrDestruct();
             return self.addNode(
                 .{ .this = try self.addToken(token) },
                 token.start,
@@ -2216,13 +2215,7 @@ fn primaryExpression(self: *Self) Error!Node.Index {
         .@"[" => return self.arrayLiteral(token.start),
         .@"{" => return self.objectLiteral(token.start),
         .@"(" => return self.groupingExprOrArrowFunction(&token),
-        .kw_async => {
-            if (self.current_token.tag == .kw_function) {
-                _ = try self.next(); // eat 'function'
-                return self.functionExpression(token.start, .{ .is_async = true });
-            }
-            // fall through to the default case.
-        },
+        .kw_async => return self.asyncExpression(&token),
         .kw_function => return self.functionExpression(token.start, .{}),
         else => {},
     }
@@ -2237,6 +2230,182 @@ fn primaryExpression(self: *Self) Error!Node.Index {
         .{token.toByteSlice(self.source)},
     );
     return Error.UnexpectedToken;
+}
+
+/// Parse a primary expression that starts with the 'async' token.
+/// We have to be careful to not parse 'async' as an identifier
+/// in places where it starts an async function expression.
+/// All of these are valid:
+/// ```js
+/// async x => 1 // async arrow function
+/// async (x) => x; // async arrow function
+/// async(x); // call expression where callee is an identifier 'async'.
+/// async function () { }; // async function expression
+/// async; // async as an identifier.
+/// async // expression statement
+/// x => 1 // regular arrow function, not async
+/// ```
+fn asyncExpression(self: *Self, async_token: *const Token) Error!Node.Index {
+    if (self.current_token.tag == .kw_function) {
+        _ = try self.next(); // eat 'function keyword'
+        return self.functionExpression(async_token.start, .{ .is_async = true });
+    }
+
+    if (self.current_token.tag == .@"(") {
+        const argsOrArrow = try self.callArgsOrAsyncArrowFunc(
+            async_token,
+            ast.FunctionFlags{
+                .is_async = true,
+                .is_arrow = true,
+            },
+        );
+
+        const node_slice = self.nodes.slice();
+        const parsed: *ast.NodeData = &node_slice.items(.data)[@intFromEnum(argsOrArrow)];
+        switch (parsed.*) {
+            .function_expr => return argsOrArrow,
+            .arguments => {
+                const async_identifier = try self.identifier(async_token.*);
+                return self.addNode(
+                    .{ .call_expr = .{ .callee = async_identifier, .arguments = argsOrArrow } },
+                    async_token.start,
+                    node_slice.items(.end)[@intFromEnum(argsOrArrow)],
+                );
+            },
+            else => unreachable,
+        }
+    }
+
+    if ((self.current_token.tag == .identifier or
+        self.isKeywordIdentifier(self.current_token.tag)) and
+        self.current_token.line == async_token.line)
+    {
+        // async x => ...
+        const id_token = try self.next();
+        const param = try self.identifier(id_token);
+        const params_range = try self.addSubRange(&[_]Node.Index{param});
+        const params = try self.addNode(
+            .{ .parameters = params_range },
+            id_token.start,
+            id_token.start + id_token.len,
+        );
+
+        return self.completeArrowFunction(
+            async_token,
+            &id_token,
+            params,
+            .{ .is_async = true, .is_arrow = true },
+        );
+    }
+
+    return self.identifier(async_token.*);
+}
+
+fn callArgsOrAsyncArrowFunc(
+    self: *Self,
+    async_token: *const Token,
+    flags: ast.FunctionFlags,
+) Error!Node.Index {
+    const lparen = try self.next();
+    std.debug.assert(lparen.tag == .@"(");
+
+    var sub_exprs = std.ArrayList(Node.Index).init(self.allocator);
+    defer sub_exprs.deinit();
+
+    var destructure_kind = DestructureKind{
+        .can_destruct = true,
+        .must_destruct = false,
+        .can_be_assigned_to = true,
+    };
+
+    while (!self.isAtToken(.@")")) {
+        if (self.isAtToken(.@"...")) {
+            const spread_elem = try self.spreadElement();
+            if (!self.isAtToken(.@")")) {
+                // TODO: error message can be improved
+                // based on destructure_kind.
+                try self.emitDiagnosticOnNode(spread_elem, "Expected ')' after spread element");
+                return Error.RestElementNotLast;
+            }
+
+            try sub_exprs.append(spread_elem);
+            break;
+        }
+
+        const expr = try self.assignmentExpression();
+        destructure_kind.update(self.current_destructure_kind);
+        if (destructure_kind.isMalformed()) {
+            // TODO: this error message can be improved based
+            // on whether the most recently parsed node was a
+            // pattern.
+            try self.emitDiagnosticOnNode(expr, "Unexpected expression or pattern");
+            return Error.UnexpectedToken;
+        }
+        try sub_exprs.append(expr);
+
+        if (self.isAtToken(.@","))
+            _ = try self.next()
+        else
+            break;
+    }
+
+    const rparen = try self.expect(.@")");
+
+    if (self.isAtToken(.@"=>")) {
+        if (!destructure_kind.can_destruct) {
+            // TODO: improve the location of the diagnostic.
+            // Which part exactly is invalid?
+            try self.emitDiagnostic(
+                lparen.startCoord(self.source),
+                "Invalid arrow function parameters",
+                .{},
+            );
+            return Error.InvalidArrowParameters;
+        }
+
+        for (sub_exprs.items) |node| {
+            self.reinterpretAsPattern(node);
+        }
+
+        const params_range = if (sub_exprs.items.len > 0)
+            try self.addSubRange(sub_exprs.items)
+        else
+            null;
+        const parameters = try self.addNode(
+            .{ .parameters = params_range },
+            lparen.start,
+            rparen.start + 1,
+        );
+
+        return self.completeArrowFunction(
+            async_token,
+            &rparen,
+            parameters,
+            flags,
+        );
+    }
+
+    if (destructure_kind.must_destruct) {
+        // TODO: improve the location of the diagnostic.
+        // Which part exaclty forces a destructuring pattern?
+        try self.emitDiagnostic(
+            lparen.startCoord(self.source),
+            "function call arguments contain a destructuring pattern",
+            .{},
+        );
+        return Error.UnexpectedPattern;
+    }
+
+    const call_args = if (sub_exprs.items.len > 0)
+        try self.addSubRange(sub_exprs.items)
+    else
+        null;
+
+    return self.addNode(
+        .{ .arguments = call_args },
+        lparen.start,
+        rparen.start + 1,
+    );
 }
 
 /// Save `token` as an identifier node.
@@ -2266,8 +2435,15 @@ fn completeArrowFunction(
                 "'()' is not a valid expression. Arrow functions start with '() => '",
                 .{},
             );
-            return Error.InvalidArrowFunction;
+        } else {
+            try self.emitDiagnostic(
+                params_start_token.startCoord(self.source),
+                "Expected '=>' after arrow function parameters",
+                .{},
+            );
         }
+
+        return Error.InvalidArrowFunction;
     }
 
     const fat_arrow = try self.next();
@@ -2323,6 +2499,7 @@ fn completeArrowFunction(
     }, params_start_token.start, end_pos);
 }
 
+/// Parse a spread element when current_token is '...'
 fn spreadElement(self: *Self) Error!Node.Index {
     const dotdotdot = try self.next();
     std.debug.assert(dotdotdot.tag == .@"...");
@@ -2366,7 +2543,7 @@ fn completeArrowFuncOrGroupingExpr(self: *Self, lparen: *const Token) Error!Node
             break;
         }
 
-        // A ... at this point is either a rest parameter or a syntax error.
+        // A '...' at this point is either a rest parameter or a syntax error.
         if (self.isAtToken(.@"...")) {
             if (destructure_kind.can_destruct) {
                 const rest_elem = try self.restElement();
@@ -2958,10 +3135,11 @@ fn parseFunctionBody(
     const saved_context = self.context;
     defer self.context = saved_context;
 
-    if (flags.is_generator)
-        self.context.is_yield_reserved = true;
-    if (flags.is_async)
-        self.context.is_await_reserved = true;
+    self.context.is_yield_reserved = flags.is_generator;
+    self.context.is_await_reserved = flags.is_async;
+    // disallow: while (1) { function f() { break; } }
+    self.context.@"break" = false;
+    self.context.@"continue" = false;
 
     const params = try self.parseFormalParameters();
     if (flags.is_arrow) unreachable; // not supported yet :)

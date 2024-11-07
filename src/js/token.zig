@@ -151,6 +151,7 @@ pub const JsTokenTag = enum(u32) {
     strict_mode_kw_end,
 
     // contextual keywords.
+    // TODO: enum and await are reserved, not contextual.
     contextual_keywords_start,
     kw_as,
     kw_await,

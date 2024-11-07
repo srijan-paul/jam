@@ -68,7 +68,7 @@ col: u32 = 0,
 /// starting with '/' (that isn't a comment starter) as a regex literal (e.g: '/[a-zA-Z0-9]/').
 /// Otherwise, '/' (when not starting a comment) is assumed to be either the '/' or '/=' operator.
 /// This property is used to dis-ambiguate between division operators and regex literals.
-assume_blash_starts_regex: bool = false,
+assume_bslash_starts_regex: bool = false,
 
 /// Can be used to restore the state of the tokenizer to a previous
 /// location in the input.
@@ -123,7 +123,7 @@ pub fn next(self: *Self) Error!Token {
             // to see next. If it expects to see a literal, then
             // we want to try tokenizing a regex literal.
             // Otherwise, we look for '/' or '/='.
-            if (self.assume_blash_starts_regex)
+            if (self.assume_bslash_starts_regex)
                 return try self.regexLiteral();
             return try self.punctuator();
         },
@@ -1185,7 +1185,7 @@ test Self {
 
     {
         var tokenizer = try Self.init(" /a\\(bc[some_character_class]/g //foo");
-        tokenizer.assume_blash_starts_regex = true; // '/' is now interpreted as regex literal start marker.
+        tokenizer.assume_bslash_starts_regex = true; // '/' is now interpreted as regex literal start marker.
         try t.expectEqual(Token.Tag.whitespace, (try tokenizer.next()).tag);
         try t.expectEqual(Token.Tag.regex_literal, (try tokenizer.next()).tag);
         try t.expectEqual(Token.Tag.whitespace, (try tokenizer.next()).tag);
