@@ -125,6 +125,31 @@ fn toPretty(
             };
         },
 
+        .try_statement => |try_stmt| {
+            const body = try copy(al, try toPretty(self, al, try_stmt.body));
+            const catch_clause = try copy(al, try toPretty(self, al, try_stmt.catch_clause));
+            const finalizer = try copy(al, try toPretty(self, al, try_stmt.finalizer));
+
+            return .{
+                .try_statement = .{
+                    .body = body,
+                    .catch_clause = catch_clause,
+                    .finalizer = finalizer,
+                },
+            };
+        },
+
+        .catch_clause => |catch_cl| {
+            const param = if (catch_cl.param) |p| try copy(al, try toPretty(self, al, p)) else null;
+            const body = try copy(al, try toPretty(self, al, catch_cl.body));
+            return .{
+                .catch_clause = .{
+                    .param = param,
+                    .body = body,
+                },
+            };
+        },
+
         .this => return .{ .this = {} },
         .member_expr => |payload| {
             const obj = try copy(al, try toPretty(self, al, payload.object));

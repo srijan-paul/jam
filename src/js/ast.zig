@@ -43,6 +43,7 @@ pub const YieldPayload = struct {
 
 pub const CallExpr = struct {
     callee: Node.Index,
+    // TODO: store the arguments inline
     arguments: Node.Index,
 };
 
@@ -162,6 +163,22 @@ pub const VariableDeclaration = struct {
     kind: VarDeclKind,
 };
 
+pub const CatchClause = struct {
+    /// points to a 'block_statement'
+    body: Node.Index,
+    /// points to an identifier or a pattern.
+    param: ?Node.Index,
+};
+
+pub const TryStatement = struct {
+    /// Points to a 'block_statement'
+    body: Node.Index,
+    /// Points to a 'catch_clause'
+    catch_clause: Node.Index,
+    /// Points to a 'block_statement'
+    finalizer: Node.Index,
+};
+
 /// Iterator for a regular old for-loop
 /// (i.e `for (let i = 0; i < 10; i++) { ... }`).
 /// init: `let i = 0`;
@@ -247,6 +264,8 @@ pub const NodeData = union(enum(u8)) {
 
     // Statements:
     empty_statement: void,
+    try_statement: TryStatement,
+    catch_clause: CatchClause,
     block_statement: ?SubRange,
     expression_statement: Node.Index,
     variable_declaration: VariableDeclaration,
@@ -337,6 +356,16 @@ pub const NodePretty = union(enum) {
     object_property: Pretty(PropertyDefinition),
     sequence_expression: Pretty(SubRange),
     conditional_expression: Pretty(Conditional),
+
+    catch_clause: struct {
+        param: ?Pretty(Node.Index),
+        body: Pretty(Node.Index),
+    },
+    try_statement: struct {
+        body: Pretty(Node.Index),
+        catch_clause: Pretty(Node.Index),
+        finalizer: Pretty(Node.Index),
+    },
     function: struct {
         parameters: Pretty(Node.Index),
         body: Pretty(Node.Index),

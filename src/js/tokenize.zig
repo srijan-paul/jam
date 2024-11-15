@@ -669,7 +669,7 @@ fn identifier(self: *Self) Error!Token {
 }
 
 /// https://262.ecma-international.org/15.0/index.html#prod-PrivateIdentifier
-fn privateIdentifier(self: *Self) !Token {
+fn privateIdentifier(self: *Self) Error!Token {
     const start = self.index;
     self.index += 1; // eat '#'
     const id = try self.identifier();

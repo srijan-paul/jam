@@ -361,6 +361,7 @@ fn statement(self: *Self) Error!Node.Index {
         .kw_break => self.breakStatement(),
         .kw_let => self.letStatement(),
         .kw_var, .kw_const => self.variableStatement(try self.next()),
+        .kw_try => self.tryStatement(),
         // TODO: right now, if expression parsing fails, the error message we get is:
         // "Expected an expression, found '<token>'."
         // This error message should be improved.
@@ -748,6 +749,8 @@ fn variableStatement(self: *Self, kw: Token) Error!Node.Index {
     );
 }
 
+/// Parse a list of variable declarators after the 'var', 'let', or 'const'
+/// keyword has been eaten.
 fn variableDeclaratorList(self: *Self) Error!ast.SubRange {
     var declarators = std.ArrayList(Node.Index).init(self.allocator);
     defer declarators.deinit();
@@ -774,6 +777,75 @@ fn varDeclKind(tag: Token.Tag) ast.VarDeclKind {
         .kw_const => .@"const",
         else => unreachable,
     };
+}
+
+fn tryStatement(self: *Self) Error!Node.Index {
+    const try_kw = try self.next();
+    const start_pos = try_kw.start;
+    std.debug.assert(try_kw.tag == .kw_try);
+
+    const body = try self.blockStatement();
+
+    var end_pos = self.nodes.items(.end)[@intFromEnum(body)];
+    var catch_clause = Node.Index.empty;
+    var finalizer = Node.Index.empty;
+
+    switch (self.current_token.tag) {
+        .kw_catch => {
+            catch_clause = try self.catchClause();
+            if (self.isAtToken(.kw_finally)) {
+                finalizer = try self.finallyBlock();
+                end_pos = self.nodes.items(.end)[@intFromEnum(finalizer)];
+            } else {
+                end_pos = self.nodes.items(.end)[@intFromEnum(catch_clause)];
+            }
+        },
+
+        .kw_finally => {
+            finalizer = try self.finallyBlock();
+            end_pos = self.nodes.items(.end)[@intFromEnum(finalizer)];
+        },
+
+        else => {
+            try self.emitBadTokenDiagnostic("'catch' or 'finally'", &self.current_token);
+            return Error.UnexpectedToken;
+        },
+    }
+
+    return self.addNode(.{ .try_statement = ast.TryStatement{
+        .finalizer = finalizer,
+        .catch_clause = catch_clause,
+        .body = body,
+    } }, start_pos, end_pos);
+}
+
+fn catchClause(self: *Self) Error!Node.Index {
+    const catch_kw = try self.expect(.kw_catch);
+    const param = blk: {
+        if (self.isAtToken(.@"(")) {
+            _ = try self.next();
+            const binding = try self.assignmentLhsExpr();
+            _ = try self.expect(.@")");
+            break :blk binding;
+        }
+
+        break :blk null;
+    };
+
+    const body = try self.blockStatement();
+    return self.addNode(.{
+        .catch_clause = ast.CatchClause{
+            .param = param,
+            .body = body,
+        },
+    }, catch_kw.start, self.nodeSpan(body).end);
+}
+
+fn finallyBlock(self: *Self) Error!Node.Index {
+    const finally_kw = try self.next();
+    std.debug.assert(finally_kw.tag == .kw_finally);
+    const body = try self.blockStatement();
+    return body;
 }
 
 /// Parse a statement that starts with the `let` keyword.
@@ -1747,7 +1819,12 @@ fn objectAssignmentPattern(self: *Self) Error!Node.Index {
             .@"..." => {
                 try props.append(try self.restElement());
                 destruct_kind.update(self.current_destructure_kind);
-                break; // rest element must be the last element
+
+                // TODO: we should continue parsing after the rest element,
+                // and report this error later.
+                const rb = try self.expect(.@"}");
+                end_pos = rb.start + rb.len;
+                break;
             },
 
             .identifier, .string_literal, .numeric_literal, .@"[" => {
