@@ -2173,6 +2173,8 @@ fn primaryExpression(self: *Self) Error!Node.Index {
         self.tokenizer.assume_bslash_starts_regex = false;
     }
 
+    if (cur.tag == .template_literal_part) return self.templateLiteral();
+
     const token = try self.next();
     switch (token.tag) {
         .kw_this => {
@@ -2230,6 +2232,56 @@ fn primaryExpression(self: *Self) Error!Node.Index {
         .{token.toByteSlice(self.source)},
     );
     return Error.UnexpectedToken;
+}
+
+/// Parse a template literal expression.
+fn templateLiteral(self: *Self) Error!Node.Index {
+    var template_parts = try std.ArrayList(Node.Index).initCapacity(self.allocator, 4);
+    defer template_parts.deinit();
+
+    var template_token = try self.next();
+    const start_pos = template_token.start;
+    var end_pos = template_token.start + template_token.len;
+
+    try template_parts.append(try self.addNode(
+        .{ .template_element = try self.addToken(template_token) },
+        start_pos,
+        end_pos,
+    ));
+
+    while (!self.isTemplateEndToken(&template_token)) {
+        // parse an interpolation expression.
+        try template_parts.append(try self.expression());
+
+        // The most recently processed (but unconsumed) token should be a '}'.
+        // We want to rewind back one character, and make the tokenizer treat the '}'
+        // as a part of a template literal.
+        self.tokenizer.rewind(self.current_token.start, self.current_token.line);
+        self.tokenizer.assume_rbrace_is_template_part = true;
+        self.current_token = try self.tokenizer.next();
+        self.tokenizer.assume_rbrace_is_template_part = false;
+
+        template_token = try self.expect(.template_literal_part);
+
+        // Now, parse the template part that follows
+        try template_parts.append(try self.addNode(
+            .{ .template_element = try self.addToken(template_token) },
+            template_token.start,
+            template_token.start + template_token.len,
+        ));
+        end_pos = template_token.start + template_token.len;
+    }
+
+    const elements = try self.addSubRange(template_parts.items);
+    return try self.addNode(
+        .{ .template_literal = elements },
+        start_pos,
+        end_pos,
+    );
+}
+
+fn isTemplateEndToken(self: *const Self, token: *const Token) bool {
+    return self.source[token.start + token.len - 1] == '`';
 }
 
 /// Parse a primary expression that starts with the 'async' token.

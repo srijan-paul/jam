@@ -236,6 +236,11 @@ pub const NodeData = union(enum(u8)) {
     object_property: PropertyDefinition,
     sequence_expr: SubRange,
     conditional_expr: Conditional,
+    /// Template literals are split into their subelements.
+    /// So `Hello ${"world"}` becomes: `template_element, string_literal, template_element`
+    template_literal: SubRange,
+    /// TODO: store raw and cooked values?
+    template_element: Token.Index,
 
     assignment_pattern: BinaryPayload,
     object_pattern: ?SubRange,
@@ -358,6 +363,8 @@ pub const NodePretty = union(enum) {
     variable_declaration: Pretty(VariableDeclaration),
     variable_declarator: Pretty(VariableDeclarator),
     return_statement: Pretty(?Node.Index),
+    template_element: Token_,
+    template_literal: Pretty(SubRange),
 
     // declarations
     none: void,

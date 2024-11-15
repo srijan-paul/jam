@@ -1,0 +1,60 @@
+{
+  "program": [
+    {
+      "expression_statement": {
+        "template_literal": [
+          {
+            "template_element": "`hello, ${"
+          },
+          {
+            "function": {
+              "parameters": {
+                "parameters": []
+              },
+              "body": {
+                "block_statement": [
+                  {
+                    "expression_statement": {
+                      "template_literal": [
+                        {
+                          "template_element": "`what ${"
+                        },
+                        {
+                          "binary_expression": {
+                            "lhs": {
+                              "literal": "1"
+                            },
+                            "rhs": {
+                              "literal": "1"
+                            },
+                            "operator": "+"
+                          }
+                        },
+                        {
+                          "template_element": "}`"
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              "info": {
+                "function": {
+                  "flags": {
+                    "is_generator": false,
+                    "is_async": false,
+                    "is_arrow": true,
+                    "_": 0
+                  }
+                }
+              }
+            }
+          },
+          {
+            "template_element": "} world`"
+          }
+        ]
+      }
+    }
+  ]
+}

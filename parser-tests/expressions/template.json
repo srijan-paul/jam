@@ -1,0 +1,93 @@
+{
+  "program": [
+    {
+      "expression_statement": {
+        "template_literal": [
+          {
+            "template_element": "``"
+          }
+        ]
+      }
+    },
+    {
+      "expression_statement": {
+        "template_literal": [
+          {
+            "template_element": "`12`"
+          }
+        ]
+      }
+    },
+    {
+      "expression_statement": {
+        "template_literal": [
+          {
+            "template_element": "`\\x61`"
+          }
+        ]
+      }
+    },
+    {
+      "expression_statement": {
+        "template_literal": [
+          {
+            "template_element": "`\"abc\"'xyz'`"
+          }
+        ]
+      }
+    },
+    {
+      "expression_statement": {
+        "template_literal": [
+          {
+            "template_element": "`abc${"
+          },
+          {
+            "object_literal": [
+              {
+                "object_property": {
+                  "key": {
+                    "identifier": "x"
+                  },
+                  "value": {
+                    "literal": "1"
+                  },
+                  "flags": {
+                    "is_method": false,
+                    "is_shorthand": false,
+                    "is_computed": false,
+                    "kind": "init"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "template_element": "}abc`"
+          }
+        ]
+      }
+    },
+    {
+      "expression_statement": {
+        "template_literal": [
+          {
+            "template_element": "`hello ${"
+          },
+          {
+            "identifier": "world"
+          },
+          {
+            "template_element": "}. ${"
+          },
+          {
+            "literal": "1"
+          },
+          {
+            "template_element": "} foo $`"
+          }
+        ]
+      }
+    }
+  ]
+}

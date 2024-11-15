@@ -18,7 +18,7 @@ pub const Error = error{
     UnterminatedRegexClass,
     BadEscapeSequence,
     NonTerminatedString,
-    InvalidSelfState,
+    NonTerminatedTemplateLiteral,
     MalformedIdentifier,
 };
 
@@ -70,32 +70,19 @@ col: u32 = 0,
 /// This property is used to dis-ambiguate between division operators and regex literals.
 assume_bslash_starts_regex: bool = false,
 
-/// Can be used to restore the state of the tokenizer to a previous
-/// location in the input.
-pub const State = struct {
-    index: u32,
-    line: u32,
-    col: u32,
-};
-
-pub fn saveState(self: *Self) State {
-    return State{
-        .index = self.index,
-        .line = self.line,
-        .col = self.col,
-    };
-}
-
-pub fn restoreState(self: *Self, state: State) void {
-    self.index = state.index;
-    self.line = state.line;
-    self.col = state.col;
-}
+/// When `true`, the tokenizer assumes that a '}' character is the part of a template
+/// literal after an interpolated expression, and not a "}" token.
+/// e.g:
+/// ```js
+/// `foo${bar}baz`
+///          ^
+/// ```
+/// This property is set by the parser when it expects the closing '}' of a template literal.
+assume_rbrace_is_template_part: bool = false,
 
 pub fn init(source: []const u8) Error!Self {
-    if (!std.unicode.utf8ValidateSlice(source)) {
+    if (!std.unicode.utf8ValidateSlice(source))
         return Error.InvalidUtf8;
-    }
 
     return Self{ .source = source };
 }
@@ -128,8 +115,29 @@ pub fn next(self: *Self) Error!Token {
             return try self.punctuator();
         },
         ' ', '\t', '\n', '\r' => return self.whiteSpaces(),
-        '}',
-        '{',
+        '}' => {
+            if (self.assume_rbrace_is_template_part)
+                return try self.templateAfterInterpolation();
+
+            self.index += 1;
+            return Token{
+                .start = self.index - 1,
+                .len = 1,
+                .line = self.line,
+                .tag = .@"}",
+            };
+        },
+
+        '{' => {
+            self.index += 1;
+            return Token{
+                .start = self.index - 1,
+                .len = 1,
+                .line = self.line,
+                .tag = .@"{",
+            };
+        },
+
         '[',
         ']',
         '(',
@@ -151,6 +159,7 @@ pub fn next(self: *Self) Error!Token {
         '?',
         => return try self.punctuator(),
         '"', '\'' => return try self.stringLiteral(),
+        '`' => return try self.startTemplateLiteral(),
         '#' => return try self.privateIdentifier(),
         '0'...'9' => return self.numericLiteral(),
         '.' => {
@@ -367,6 +376,42 @@ fn regexLiteral(self: *Self) Error!Token {
     };
 }
 
+fn consumeEscape(self: *Self) !void {
+    if (self.index + 1 >= self.source.len or
+        self.source[self.index] != '\\')
+        return Error.BadEscapeSequence;
+
+    switch (self.source[self.index + 1]) {
+        'x' => {
+            // \xXX
+            if (self.index + 4 < self.source.len and
+                (std.ascii.isHex(self.source[self.index + 2]) and
+                std.ascii.isHex(self.source[self.index + 3])))
+            {
+                self.index += 4;
+            } else {
+                return Error.BadEscapeSequence;
+            }
+        },
+        'u' => {
+            // \uXXXX or \u{X} - \u{XXXXXX}
+            const parsed = util.utf8.parseUnicodeEscape(self.source[self.index..]) orelse
+                return Error.BadEscapeSequence;
+            self.index += parsed.len;
+        },
+        else => {
+            self.index += 1; // skip '/'
+            const byte = self.source[self.index];
+            if (std.ascii.isAscii(byte)) {
+                self.index += 1;
+                if (isNewline(byte)) self.line += 1;
+            } else {
+                try self.consumeUtf8CodePoint();
+            }
+        },
+    }
+}
+
 fn parseEscape(self: *Self, iter: *std.unicode.Utf8Iterator) !void {
     const str = iter.bytes[iter.i..];
     if (str.len < 2 or str[0] != '\\')
@@ -398,24 +443,30 @@ fn parseEscape(self: *Self, iter: *std.unicode.Utf8Iterator) !void {
 fn stringLiteral(self: *Self) Error!Token {
     const start = self.index;
     const start_line = self.line;
-    const str = self.source[start..];
 
-    const quote_char: u21 = if (str[0] == '\'') '\'' else '"';
+    const quote_char: u8 = if (self.source[self.index] == '\'')
+        '\''
+    else
+        '"';
 
-    var iter = std.unicode.Utf8Iterator{ .bytes = str, .i = 1 };
+    self.index += 1; // eat opening quote
     var found_end_quote = false;
-    // TODO: do not use `nextCodepoint` for ASCII characters.
-    while (iter.i < str.len) {
-        if (str[iter.i] == '\\') {
-            try self.parseEscape(&iter);
+    while (!self.eof()) {
+        const byte = self.source[self.index];
+        if (!std.ascii.isAscii(byte)) {
+            try self.consumeUtf8CodePoint();
             continue;
         }
 
-        const codepoint = iter.nextCodepoint() orelse
-            unreachable;
-        if (codepoint == quote_char) {
-            found_end_quote = true;
-            break;
+        // ASCII char.
+        if (byte == '\\') {
+            try self.consumeEscape();
+        } else {
+            self.index += 1;
+            if (byte == quote_char) {
+                found_end_quote = true;
+                break;
+            }
         }
     }
 
@@ -423,14 +474,105 @@ fn stringLiteral(self: *Self) Error!Token {
         return Error.NonTerminatedString;
     }
 
-    const len: u32 = @intCast(iter.i);
-    self.index += len;
     return .{
         .tag = .string_literal,
         .start = start,
-        .len = len,
+        .len = self.index - start,
         .line = start_line,
     };
+}
+
+fn templateAfterInterpolation(self: *Self) Error!Token {
+    if (self.eof()) return Error.NonTerminatedTemplateLiteral;
+    if (self.source[self.index] != '}')
+        return Error.UnexpectedByte;
+
+    const start = self.index;
+    const line = self.line;
+
+    self.index += 1; // eat '}'
+    while (!self.eof()) {
+        const byte = self.source[self.index];
+        if (!std.ascii.isAscii(byte)) {
+            try self.consumeUtf8CodePoint();
+            continue;
+        }
+
+        switch (byte) {
+            '$' => {
+                self.index += 1; // $
+                if (!self.eof() and self.source[self.index] == '{') {
+                    self.index += 1; // {
+                    return Token{
+                        .tag = .template_literal_part,
+                        .start = start,
+                        .len = self.index - start,
+                        .line = line,
+                    };
+                }
+            },
+
+            '`' => {
+                self.index += 1;
+                return Token{
+                    .tag = .template_literal_part,
+                    .start = start,
+                    .len = self.index - start,
+                    .line = line,
+                };
+            },
+            '\\' => try self.consumeEscape(),
+            else => self.index += 1,
+        }
+    }
+
+    return Error.NonTerminatedTemplateLiteral;
+}
+
+/// Parses the beginning of a template literal,
+/// starting from the opening '`' character.
+fn startTemplateLiteral(self: *Self) Error!Token {
+    std.debug.assert(self.source[self.index] == '`');
+    const start = self.index;
+    const line = self.line;
+
+    self.index += 1; // eat '`'
+    while (!self.eof()) {
+        const byte = self.source[self.index];
+        if (!std.ascii.isAscii(byte)) {
+            try self.consumeUtf8CodePoint();
+            continue;
+        }
+
+        switch (byte) {
+            '$' => {
+                self.index += 1; // $
+                if (!self.eof() and self.source[self.index] == '{') {
+                    self.index += 1; // {
+                    return Token{
+                        .tag = .template_literal_part,
+                        .start = start,
+                        .len = self.index - start,
+                        .line = line,
+                    };
+                }
+            },
+
+            '`' => {
+                self.index += 1;
+                return Token{
+                    .tag = .template_literal_part,
+                    .start = start,
+                    .len = self.index - start,
+                    .line = line,
+                };
+            },
+            '\\' => try self.consumeEscape(),
+            else => self.index += 1,
+        }
+    }
+
+    return Error.NonTerminatedTemplateLiteral;
 }
 
 fn canCodepointStartId(cp: u21) bool {
@@ -581,7 +723,6 @@ fn punctuator(self: *Self) !Token {
                 break :blk .@"-";
             },
 
-            '{' => break :blk .@"{",
             '}' => break :blk .@"}",
             '(' => break :blk .@"(",
             ')' => break :blk .@")",
@@ -843,9 +984,7 @@ fn matchExponentPart(str: []const u8) ?u32 {
     }
 
     // we should've consumed at least one digit after e/e+/e-
-    if (!std.ascii.isDigit(str[i - 1])) {
-        return null;
-    }
+    if (!std.ascii.isDigit(str[i - 1])) return null;
 
     return i;
 }
@@ -887,6 +1026,7 @@ fn numericLiteral(self: *Self) !Token {
     self.index += len;
 
     // number must not be immediately followed by identifier
+    // TODO(@injuly): what if there is a multi-byte UTF-8 codepoint here?
     if (self.peekByte()) |ch| {
         if (canCodepointStartId(ch) or ch == '.' or std.ascii.isDigit(ch)) {
             return Error.InvalidNumericLiteral;
@@ -1030,6 +1170,18 @@ fn testTokenError(str: []const u8, err: anyerror) !void {
     try t.expectError(err, token_or_err);
 }
 
+fn testTokenList(source: []const u8, expected_tokens: []const Token.Tag) !void {
+    var tokenizer = try Self.init(source);
+    for (0.., expected_tokens) |i, expected| {
+        const token = try tokenizer.next();
+        t.expectEqual(expected, token.tag) catch |err| {
+            std.debug.print("Failed to match token #{d} on input: {s}", .{ i, source });
+            return err;
+        };
+    }
+    try t.expectEqual(.eof, (try tokenizer.next()).tag);
+}
+
 test Self {
     const test_cases = [_]struct { []const u8, Token.Tag }{
         .{ "$one", .identifier },
@@ -1092,11 +1244,13 @@ test Self {
         .{ "?.", .@"?." },
         .{ ",", .@"," },
         .{ "'hello, world!'", .string_literal },
+        .{ "'\\\n'", .string_literal },
         .{ "'\u{00000000078}'", .string_literal },
         .{ "'\\u{95}world!'", .string_literal },
         .{ "'\\u{95}world\\{105}'", .string_literal },
         .{ "'\\xFFworld\\{105}'", .string_literal },
         .{ "\"\\xFFworld\\{105}\"", .string_literal },
+        .{ "`hello`", .template_literal_part },
         .{ "// test comment", .comment },
         .{ "//", .comment },
         .{ "// else", .comment },
@@ -1191,5 +1345,25 @@ test Self {
         try t.expectEqual(Token.Tag.whitespace, (try tokenizer.next()).tag);
         try t.expectEqual(Token.Tag.comment, (try tokenizer.next()).tag);
         try t.expectEqual(Token.Tag.eof, (try tokenizer.next()).tag);
+    }
+
+    {
+        var tokenizer = try Self.init(" /a\\(bc[some_character_class]/g //foo");
+        tokenizer.assume_bslash_starts_regex = true; // '/' is now interpreted as regex literal start marker.
+        try t.expectEqual(Token.Tag.whitespace, (try tokenizer.next()).tag);
+        try t.expectEqual(Token.Tag.regex_literal, (try tokenizer.next()).tag);
+        try t.expectEqual(Token.Tag.whitespace, (try tokenizer.next()).tag);
+        try t.expectEqual(Token.Tag.comment, (try tokenizer.next()).tag);
+        try t.expectEqual(Token.Tag.eof, (try tokenizer.next()).tag);
+    }
+
+    {
+        var tokenizer = try Self.init("`hello ${'world'}`");
+        try t.expectEqual(.template_literal_part, (try tokenizer.next()).tag);
+        try t.expectEqual(.string_literal, (try tokenizer.next()).tag);
+        tokenizer.assume_rbrace_is_template_part = true;
+        try t.expectEqual(.template_literal_part, (try tokenizer.next()).tag);
+        tokenizer.assume_rbrace_is_template_part = false;
+        try t.expectEqual(.eof, (try tokenizer.next()).tag);
     }
 }

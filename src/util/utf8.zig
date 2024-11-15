@@ -8,6 +8,7 @@ pub fn parseUnicodeEscape(str: []const u8) ?struct { codepoint: u21, len: u32 } 
     }
 
     if (str[2] == '{') {
+        // TODO(@injuly): this can be optimized to not use 'indexOfScalar'
         const len = std.mem.indexOfScalar(u8, str, '}') orelse return null;
         if (len < 1) return null;
         for (str[3..len]) |ch| {

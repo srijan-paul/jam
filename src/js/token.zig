@@ -14,6 +14,10 @@ pub const JsTokenTag = enum(u32) {
     numeric_literal,
     string_literal,
     regex_literal,
+    template_literal_start,
+    template_literal_expression,
+    template_literal_part,
+    template_literal_end,
 
     @"\"",
     @"'",

@@ -113,6 +113,18 @@ fn toPretty(
             }
         },
 
+        .template_literal => |payload| {
+            const parts = try prettySubRange(al, self, payload);
+            return .{ .template_literal = parts };
+        },
+
+        .template_element => |t| {
+            const token = self.tokens.items[@intFromEnum(t)];
+            return .{
+                .template_element = token.toByteSlice(self.source),
+            };
+        },
+
         .this => return .{ .this = {} },
         .member_expr => |payload| {
             const obj = try copy(al, try toPretty(self, al, payload.object));
