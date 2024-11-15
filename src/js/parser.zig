@@ -3085,6 +3085,9 @@ fn classElementName(self: *Self) Error!Node.Index {
             return expr;
         },
         else => {
+            if (token.tag.isKeyword())
+                return self.identifier(token);
+
             try self.emitDiagnostic(
                 token.startCoord(self.source),
                 "Expected property name, got '{s}'",
