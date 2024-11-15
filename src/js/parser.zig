@@ -359,6 +359,7 @@ fn statement(self: *Self) Error!Node.Index {
         },
         .kw_return => self.returnStatement(),
         .kw_break => self.breakStatement(),
+        .kw_continue => self.continueStatement(),
         .kw_let => self.letStatement(),
         .kw_var, .kw_const => self.variableStatement(try self.next()),
         .kw_try => self.tryStatement(),
