@@ -939,7 +939,7 @@ fn matchDecimalIntegerLiteral(str: []const u8) ?u32 {
 fn matchHexDigits(str: []const u8) ?u32 {
     var i: u32 = 0;
     while (i < str.len and std.ascii.isHex(str[i])) : (i += 1) {
-        if (i + 1 < str.len and str[i + 1] == '_')
+        if (i + 2 < str.len and str[i + 1] == '_' and std.ascii.isHex(str[i + 2]))
             i += 1;
     }
 
@@ -949,7 +949,7 @@ fn matchHexDigits(str: []const u8) ?u32 {
 fn matchBinaryDigits(str: []const u8) ?u32 {
     var i: u32 = 0;
     while (i < str.len and (str[i] == '0' or str[i] == '1')) : (i += 1) {
-        if (i + 1 < str.len and str[i + 1] == '_')
+        if (i + 2 < str.len and str[i + 1] == '_' and (str[i + 2] == '0' or str[i + 2] == '1'))
             i += 1;
     }
 
@@ -961,8 +961,11 @@ fn matchDecimalPart(str: []const u8) ?u32 {
     if (str[0] != '.') return null;
 
     var i: u32 = 1;
-    while (i < str.len and std.ascii.isDigit(str[i])) : (i += 1) {}
-    if (i == 1) return null;
+    while (i < str.len and std.ascii.isDigit(str[i])) : (i += 1) {
+        if (i + 2 < str.len and str[i + 1] == '_' and std.ascii.isDigit(str[i + 2]))
+            i += 1;
+    }
+
     return i;
 }
 
@@ -996,8 +999,13 @@ fn numericLiteral(self: *Self) !Token {
 
     const len: u32 = blk: {
         if (str[0] == '.') {
-            break :blk matchDecimalPart(str) orelse
+            var decimal_len = matchDecimalPart(str) orelse
                 return Error.InvalidNumericLiteral;
+            decimal_len += matchExponentPart(str[decimal_len..]) orelse 0;
+
+            // Just "." is not a valid numeric literal.
+            if (decimal_len == 1) return Error.InvalidNumericLiteral;
+            break :blk decimal_len;
         }
 
         if (str.len > 2 and str[0] == '0' and (str[1] == 'x' or str[1] == 'X')) {
@@ -1028,7 +1036,7 @@ fn numericLiteral(self: *Self) !Token {
     // number must not be immediately followed by identifier
     // TODO(@injuly): what if there is a multi-byte UTF-8 codepoint here?
     if (self.peekByte()) |ch| {
-        if (canCodepointStartId(ch) or ch == '.' or std.ascii.isDigit(ch)) {
+        if (canCodepointStartId(ch) or std.ascii.isDigit(ch)) {
             return Error.InvalidNumericLiteral;
         }
     }
@@ -1196,6 +1204,7 @@ test Self {
         .{ "0", .numeric_literal },
         .{ "120", .numeric_literal },
         .{ "1_000_000", .numeric_literal },
+        .{ "1.5_1_1", .numeric_literal },
         .{ "1_00_0_000", .numeric_literal },
         .{ "123", .numeric_literal },
         .{ "1.5", .numeric_literal },
@@ -1281,9 +1290,9 @@ test Self {
 
     const bad_cases = [_]struct { []const u8, anyerror }{
         .{ "'hello", Error.NonTerminatedString },
-        .{ "1.5.5", Error.InvalidNumericLiteral },
+        .{ "1._5", Error.InvalidNumericLiteral },
+        .{ "1.5_", Error.InvalidNumericLiteral },
         .{ "1.5aaaA", Error.InvalidNumericLiteral },
-        .{ "1.5_1", Error.InvalidNumericLiteral },
         .{ "1__1", Error.InvalidNumericLiteral },
         .{ "0xg1", Error.InvalidHexLiteral },
     };
@@ -1336,6 +1345,15 @@ test Self {
         try t.expectEqual(Token.Tag.@")", (try tokenizer.next()).tag);
         try t.expectEqual(Token.Tag.eof, (try tokenizer.next()).tag);
     }
+
+    try testTokenList("f([1])", &[_]Token.Tag{
+        Token.Tag.identifier,
+        Token.Tag.@"(",
+        Token.Tag.@"[",
+        Token.Tag.numeric_literal,
+        Token.Tag.@"]",
+        Token.Tag.@")",
+    });
 
     {
         var tokenizer = try Self.init(" /a\\(bc[some_character_class]/g //foo");
