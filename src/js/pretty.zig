@@ -204,6 +204,10 @@ fn toPretty(
         },
 
         .this => return .{ .this = {} },
+        .throw_statement => |expr| {
+            const expression = try copy(al, try toPretty(self, al, expr));
+            return .{ .throw_statement = expression };
+        },
         .member_expr => |payload| {
             const obj = try copy(al, try toPretty(self, al, payload.object));
             const member = self.tokens.items[@intFromEnum(payload.property)];
@@ -405,6 +409,18 @@ fn toPretty(
 
             return .{
                 .while_statement = .{
+                    .condition = cond,
+                    .body = body,
+                },
+            };
+        },
+
+        .do_while_statement => |stmt| {
+            const cond = try copy(al, try toPretty(self, al, stmt.condition));
+            const body = try copy(al, try toPretty(self, al, stmt.body));
+
+            return .{
+                .do_while_statement = .{
                     .condition = cond,
                     .body = body,
                 },

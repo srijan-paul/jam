@@ -26,6 +26,8 @@ pub const Error = error{
     IllegalAwait,
     // '=>' Not on the same line as arrow parameters
     IllegalFatArrow,
+    // Found a newline where there shouldn't be one
+    IllegalNewline,
     // 5 = ...
     InvalidAssignmentTarget,
     //  (1) => ...
@@ -301,7 +303,6 @@ pub fn init(
         .node_lists = try std.ArrayList(Node.Index).initCapacity(allocator, 32),
         .extra_data = try std.ArrayList(ast.ExtraData).initCapacity(allocator, 32),
         .tokens = try std.ArrayList(Token).initCapacity(allocator, 256),
-
         .strings = try StringHelper.init(allocator, source),
     };
 
@@ -354,29 +355,19 @@ pub fn parse(self: *Self) !Node.Index {
 
 /// https://tc39.es/ecma262/#prod-Statement
 fn statementOrDeclaration(self: *Self) Error!Node.Index {
-    const maybe_decl = try declarationStatement(self);
-    if (maybe_decl) |decl|
-        return decl;
+    if (try self.declarationStatement()) |decl| return decl;
+    return self.statement();
+}
 
+fn statement(self: *Self) Error!Node.Index {
     return switch (self.current_token.tag) {
         .@"{" => self.blockStatement(),
         .@";" => self.emptyStatement(),
         .kw_if => self.ifStatement(),
         .kw_for => self.forStatement(),
+        .kw_do => self.doWhileStatement(),
         .kw_while => self.whileStatement(),
         .kw_debugger => self.debuggerStatement(),
-        .kw_async => {
-            if ((try self.lookAhead()).tag == .kw_function) {
-                const async_token = try self.next(); // eat 'async'
-                _ = try self.next(); // eat 'function'
-                return self.functionDeclaration(async_token.start, .{ .is_async = true });
-            }
-            return self.expressionStatement();
-        },
-        .kw_function => {
-            const fn_token = try self.next();
-            return self.functionDeclaration(fn_token.start, .{});
-        },
         .kw_return => self.returnStatement(),
         .kw_break => self.breakStatement(),
         .kw_continue => self.continueStatement(),
@@ -385,6 +376,7 @@ fn statementOrDeclaration(self: *Self) Error!Node.Index {
         .kw_try => self.tryStatement(),
         .kw_switch => self.switchStatement(),
         .kw_with => self.withStatement(),
+        .kw_throw => self.throwStatement(),
         // TODO: right now, if expression parsing fails, the error message we get is:
         // "Expected an expression, found '<token>'."
         // This error message should be improved.
@@ -392,11 +384,35 @@ fn statementOrDeclaration(self: *Self) Error!Node.Index {
     };
 }
 
+/// Declaration:
+///     FunctionDeclaration
+///     AsyncFunctionDeclaration
+///     GeneratorDeclaration
+///     AsyncGeneratorDeclaration
+///     ClassDeclaration
+///     LexicalDeclaration
 fn declarationStatement(self: *Self) Error!?Node.Index {
-    return switch (self.current_token.tag) {
-        .kw_class => try self.classDeclaration(),
-        else => null,
-    };
+    switch (self.current_token.tag) {
+        .kw_class => return try self.classDeclaration(),
+        .kw_function => {
+            const fn_token = try self.next();
+            return try self.functionDeclaration(fn_token.start, .{});
+        },
+        .kw_async => {
+            if ((try self.lookAhead()).tag == .kw_function) {
+                const async_token = try self.next(); // eat 'async'
+                _ = try self.next(); // eat 'function'
+                return try self.functionDeclaration(async_token.start, .{ .is_async = true });
+            }
+            return null;
+        },
+        .kw_let => {
+            const let_kw = try self.startLetBinding() orelse return null;
+            return try self.variableStatement(let_kw);
+        },
+        .kw_const => return try self.variableStatement(try self.next()),
+        else => return null,
+    }
 }
 
 /// https://tc39.es/ecma262/#sec-class-definitions
@@ -509,9 +525,6 @@ fn classBody(self: *Self) Error!ast.SubRange {
 // `saw_constructor` is an in-out parameter that is set to true if a constructor was seen.
 fn classElement(self: *Self, saw_constructor_inout: *bool) Error!Node.Index {
     switch (self.current_token.tag) {
-        .kw_async, .kw_static, .@"*" => {
-            return self.classPropertyWithModifier(.{}, .{});
-        },
         .kw_constructor => {
             saw_constructor_inout.* = true;
             const ctor_key = try self.identifier(try self.next());
@@ -521,16 +534,14 @@ fn classElement(self: *Self, saw_constructor_inout: *bool) Error!Node.Index {
                 .{},
             );
         },
-        else => {
-            const key = try self.classElementName();
-            return self.completeClassFieldDef(key, .{});
-        },
+        else => return self.classPropertyWithModifier(.{}, .{}),
     }
 }
 
-/// Parse a class property definition that starts with a modifier like 'async', 'static', etc.
+/// Parse a class property definition that has 0 or more modifiers like 'async', 'static', etc.
+/// This function is called when the parser is at the start of a class element, i.e the first modifier token
+/// (or name token, if the field has no modifiers).
 fn classPropertyWithModifier(self: *Self, flags: ast.ClassFieldFlags, fn_flags: ast.FunctionFlags) Error!Node.Index {
-    // TODO: refactor this switch
     switch (self.current_token.tag) {
         .kw_async => {
             const async_token = try self.next();
@@ -553,7 +564,7 @@ fn classPropertyWithModifier(self: *Self, flags: ast.ClassFieldFlags, fn_flags: 
                 );
             } else {
                 const key = try self.identifier(async_token);
-                return self.completeClassFieldDef(key, flags);
+                return self.completeClassFieldDef(key, flags, fn_flags);
             }
         },
 
@@ -591,7 +602,7 @@ fn classPropertyWithModifier(self: *Self, flags: ast.ClassFieldFlags, fn_flags: 
                 );
             } else {
                 const key = try self.identifier(static_token);
-                return self.completeClassFieldDef(key, flags);
+                return self.completeClassFieldDef(key, flags, fn_flags);
             }
         },
 
@@ -615,21 +626,35 @@ fn classPropertyWithModifier(self: *Self, flags: ast.ClassFieldFlags, fn_flags: 
         },
 
         else => {
-            const key = try self.classElementName();
-            if (fn_flags.is_async) {
-                if (self.current_token.tag == .@"(") {
-                    return self.parseClassMethodBody(key, flags, .{});
+            // Check for 'get' or 'set'
+            const kind: ast.ClassFieldKind = blk: {
+                const token_str = self.current_token.toByteSlice(self.source);
+                if (std.mem.eql(u8, token_str, "get"))
+                    break :blk .get;
+                if (std.mem.eql(u8, token_str, "set"))
+                    break :blk .set;
+                break :blk .init;
+            };
+
+            if (kind == .get or kind == .set) {
+                const get_or_set = try self.next(); // eat 'get' or 'set'
+                if (canStartClassElementName(&self.current_token)) {
+                    // Getter or Setter.
+                    const key = try self.classElementName();
+                    var field_flags = flags;
+                    field_flags.kind = kind;
+                    std.debug.assert(!fn_flags.is_generator);
+                    return self.parseClassMethodBody(key, field_flags, fn_flags);
                 }
 
-                // disallow fields like `async x = 5;`
-                try self.emitDiagnosticOnNode(
-                    key,
-                    "'async' modifier cannot be used on fields that are not methods",
-                );
-                return Error.IllegalModifier;
+                // Probably a regular field named 'get' or 'set',
+                // like `class A { get() { return 1 }; set = 2;  } `
+                const key = try self.identifier(get_or_set);
+                return self.completeClassFieldDef(key, flags, fn_flags);
             }
 
-            return self.completeClassFieldDef(key, flags);
+            const key = try self.classElementName();
+            return self.completeClassFieldDef(key, flags, fn_flags);
         },
     }
 }
@@ -639,10 +664,20 @@ fn completeClassFieldDef(
     self: *Self,
     key: Node.Index,
     flags: ast.ClassFieldFlags,
+    fn_flags: ast.FunctionFlags,
 ) Error!Node.Index {
     if (self.current_token.tag == .@"(") {
         self.current_destructure_kind.setNoAssignOrDestruct();
-        return self.parseClassMethodBody(key, flags, .{});
+        return self.parseClassMethodBody(key, flags, fn_flags);
+    }
+
+    if (fn_flags.is_async) {
+        // disallow fields like `async x = 5;`
+        try self.emitDiagnosticOnNode(
+            key,
+            "'async' modifier cannot be used on fields that are not methods",
+        );
+        return Error.IllegalModifier;
     }
 
     if (self.current_token.tag == .@"=") {
@@ -701,6 +736,15 @@ fn parseClassMethodBody(
     };
 
     if (flags.kind == .get or flags.kind == .set) {
+        if (fn_flags.is_async) {
+            try self.emitDiagnosticOnNode(
+                key,
+                "'async' modifier cannot be used on getters or setters",
+            );
+
+            return Error.IllegalModifier;
+        }
+
         // verify the number of parameters for getters and setters.
         // (the if expression looks stupid but is necessary because those are different enum types with same member names)
         try self.checkGetterOrSetterParams(
@@ -720,19 +764,28 @@ fn parseClassMethodBody(
 /// Return any statement except a labeled statement.
 /// Used in contexts where a labeled statement is not allowed, like the body of
 /// a WhileStatement.
-fn nonLabeledStatement(self: *Self) Error!Node.Index {
-    const stmt = try self.statementOrDeclaration();
-    const stmt_node = self.nodes.items(.data)[@intFromEnum(stmt)];
+fn stmtNotLabeledFunction(self: *Self) Error!Node.Index {
+    const lstmt = try self.statementOrDeclaration();
+    const data_slice: []ast.NodeData = self.nodes.items(.data);
+    const stmt_node = data_slice[@intFromEnum(lstmt)];
 
-    if (std.meta.activeTag(stmt_node) == .labeled_statement) {
-        try self.emitDiagnosticOnNode(
-            stmt,
-            "Labeled statement is not allowed here",
-        );
-        return Error.IllegalLabeledStatement;
+    switch (stmt_node) {
+        .labeled_statement => |labeled_stmt| {
+            // TODO: this should change to a helper function.
+            const stmt = data_slice[@intFromEnum(labeled_stmt.body)];
+            if (std.meta.activeTag(stmt) == .function_declaration) {
+                try self.emitDiagnosticOnToken(
+                    self.getToken(labeled_stmt.label),
+                    "Function declarations cannot be labeled here",
+                    .{},
+                );
+                return Error.IllegalLabeledStatement;
+            }
+        },
+        else => {},
     }
 
-    return stmt;
+    return lstmt;
 }
 
 fn ifStatement(self: *Self) Error!Node.Index {
@@ -743,13 +796,13 @@ fn ifStatement(self: *Self) Error!Node.Index {
     const cond = try self.expression();
     _ = try self.expect(.@")");
 
-    const consequent = try self.statementOrDeclaration();
+    const consequent = try self.stmtNotLabeledFunction();
     var end_pos = self.nodeSpan(consequent).end;
 
     var alternate = Node.Index.empty;
     if (self.peek().tag == .kw_else) {
         _ = try self.next();
-        alternate = try self.statementOrDeclaration();
+        alternate = try self.stmtNotLabeledFunction();
         end_pos = self.nodeSpan(alternate).end;
     }
 
@@ -786,7 +839,7 @@ fn forStatement(self: *Self) Error!Node.Index {
     self.context.@"break" = true;
     self.context.@"continue" = true;
 
-    const body = try self.statementOrDeclaration();
+    const body = try self.statement();
     const start_pos = for_kw.start;
     const end_pos = self.nodes.items(.end)[@intFromEnum(body)];
 
@@ -1082,6 +1135,33 @@ fn whileStatement(self: *Self) Error!Node.Index {
     );
 }
 
+fn doWhileStatement(self: *Self) Error!Node.Index {
+    const do_kw = try self.next();
+    std.debug.assert(do_kw.tag == .kw_do);
+
+    const saved_context = self.context;
+    defer self.context = saved_context;
+
+    self.context.@"break" = true;
+    self.context.@"continue" = true;
+
+    // TODO: Do not allow declarations or labeled functions here.
+    const body = try self.statementOrDeclaration();
+    _ = try self.expect(.kw_while);
+    _ = try self.expect(.@"(");
+    const cond = try self.expression();
+    _ = try self.expect(.@")");
+    var end_pos = self.nodeSpan(cond).end;
+
+    end_pos = try self.semiColon(end_pos);
+
+    return self.addNode(
+        .{ .do_while_statement = .{ .condition = cond, .body = body } },
+        do_kw.start,
+        end_pos,
+    );
+}
+
 /// DebuggerStatement: 'debugger' ';'
 fn debuggerStatement(self: *Self) Error!Node.Index {
     const token = try self.next();
@@ -1368,7 +1448,7 @@ fn withStatement(self: *Self) Error!Node.Index {
     const obj = try self.expression();
     _ = try self.expect(.@")");
 
-    const body = try self.nonLabeledStatement();
+    const body = try self.stmtNotLabeledFunction();
     const end_pos = self.nodeSpan(body).end;
 
     const stmt = try self.addNode(
@@ -1384,6 +1464,30 @@ fn withStatement(self: *Self) Error!Node.Index {
     }
 
     return stmt;
+}
+
+fn throwStatement(self: *Self) Error!Node.Index {
+    const throw_kw = try self.next();
+    std.debug.assert(throw_kw.tag == .kw_throw);
+
+    if (self.current_token.line != throw_kw.line) {
+        try self.emitDiagnostic(
+            throw_kw.startCoord(self.source),
+            "Illegal newline after 'throw'",
+            .{},
+        );
+        return Error.IllegalNewline;
+    }
+
+    const expr = try self.expression();
+    var end_pos = self.nodes.items(.end)[@intFromEnum(expr)];
+    end_pos = try self.semiColon(end_pos);
+
+    return self.addNode(
+        .{ .throw_statement = expr },
+        throw_kw.start,
+        end_pos,
+    );
 }
 
 /// Parse a statement that starts with the `let` keyword.
@@ -1402,7 +1506,7 @@ fn letStatement(self: *Self) Error!Node.Index {
         // TODO: disallow 'let' to be bound lexically.
         try self.emitDiagnostic(
             self.current_token.startCoord(self.source),
-            "'let' can only be used to declare variables in strict mode",
+            "'let' cannot be used as a variable name in strict mode",
             .{},
         );
         return Error.LetInStrictMode;
@@ -3126,6 +3230,20 @@ fn callArgsOrAsyncArrowFunc(
     );
 }
 
+fn bindingIdentifier(self: *Self) Error!Node.Index {
+    const token = try self.next();
+    if (token.tag != .identifier and !self.isKeywordIdentifier(token.tag)) {
+        try self.emitDiagnostic(
+            token.startCoord(self.source),
+            "Expected an identifier, got '{s}'",
+            .{token.toByteSlice(self.source)},
+        );
+        return Error.InvalidBindingIdentifier;
+    }
+
+    return self.identifier(token);
+}
+
 /// Save `token` as an identifier node.
 fn identifier(self: *Self, token: Token) Error!Node.Index {
     return self.addNode(
@@ -3842,11 +3960,20 @@ fn functionExpression(
         fn_flags.is_generator = true;
     }
 
+    const saved_ctx = self.context;
+    // 'await' and 'yield' are always allowed as
+    // function expression names
+    self.context.is_await_reserved = false;
+    self.context.is_yield_reserved = false;
+
     const name_token: ?Token.Index =
-        if (self.current_token.tag == .identifier)
+        if (self.current_token.tag == .identifier or
+        self.isKeywordIdentifier(self.current_token.tag))
         try self.addToken(try self.next())
     else
         null;
+
+    self.context = saved_ctx;
 
     defer self.current_destructure_kind = DestructureKind.CannotDestruct;
     return self.parseFunctionBody(start_pos, name_token, fn_flags, false);

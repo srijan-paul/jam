@@ -294,7 +294,6 @@ pub const NodeData = union(enum(u8)) {
     template_literal: SubRange,
     /// TODO: store raw and cooked values?
     template_element: Token.Index,
-
     assignment_pattern: BinaryPayload,
     object_pattern: ?SubRange,
 
@@ -311,8 +310,10 @@ pub const NodeData = union(enum(u8)) {
     class_declaration: Class,
     debugger_statement: void,
     if_statement: Conditional,
+    do_while_statement: WhileStatement,
     while_statement: WhileStatement,
     with_statement: WithStatement,
+    throw_statement: Node.Index,
     for_statement: ForStatement,
     for_of_statement: ForStatement,
     for_in_statement: ForStatement,
@@ -467,6 +468,7 @@ pub const NodePretty = union(enum) {
         object: Pretty(Node.Index),
         body: Pretty(Node.Index),
     },
+    throw_statement: Pretty(Node.Index),
     function: struct {
         parameters: Pretty(Node.Index),
         body: Pretty(Node.Index),
@@ -488,6 +490,7 @@ pub const NodePretty = union(enum) {
     },
     for_of_statement: PrettyForInOfStatement,
     for_in_statement: PrettyForInOfStatement,
+    do_while_statement: Pretty(WhileStatement),
     while_statement: Pretty(WhileStatement),
     switch_statement: struct {
         discriminant: *NodePretty,

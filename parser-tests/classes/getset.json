@@ -1,0 +1,245 @@
+{
+  "program": [
+    {
+      "class_declaration": {
+        "name": "A",
+        "body": [
+          {
+            "class_method": {
+              "key": {
+                "identifier": "x"
+              },
+              "value": {
+                "function": {
+                  "parameters": {
+                    "parameters": []
+                  },
+                  "body": {
+                    "block_statement": [
+                      {
+                        "return_statement": {
+                          "literal": "1"
+                        }
+                      }
+                    ]
+                  },
+                  "info": {
+                    "function": {
+                      "flags": {
+                        "is_generator": false,
+                        "is_async": false,
+                        "is_arrow": false,
+                        "_": 0
+                      }
+                    }
+                  }
+                }
+              },
+              "flags": {
+                "is_static": false,
+                "is_computed": false,
+                "kind": "get",
+                "_": false
+              }
+            }
+          },
+          {
+            "class_method": {
+              "key": {
+                "literal": "'x'"
+              },
+              "value": {
+                "function": {
+                  "parameters": {
+                    "parameters": []
+                  },
+                  "body": {
+                    "block_statement": [
+                      {
+                        "return_statement": {
+                          "literal": "1"
+                        }
+                      }
+                    ]
+                  },
+                  "info": {
+                    "function": {
+                      "flags": {
+                        "is_generator": false,
+                        "is_async": false,
+                        "is_arrow": false,
+                        "_": 0
+                      }
+                    }
+                  }
+                }
+              },
+              "flags": {
+                "is_static": false,
+                "is_computed": false,
+                "kind": "get",
+                "_": false
+              }
+            }
+          },
+          {
+            "class_method": {
+              "key": {
+                "literal": "'y'"
+              },
+              "value": {
+                "function": {
+                  "parameters": {
+                    "parameters": [
+                      {
+                        "identifier": "x"
+                      }
+                    ]
+                  },
+                  "body": {
+                    "block_statement": []
+                  },
+                  "info": {
+                    "function": {
+                      "flags": {
+                        "is_generator": false,
+                        "is_async": false,
+                        "is_arrow": false,
+                        "_": 0
+                      }
+                    }
+                  }
+                }
+              },
+              "flags": {
+                "is_static": false,
+                "is_computed": false,
+                "kind": "set",
+                "_": false
+              }
+            }
+          },
+          {
+            "class_method": {
+              "key": {
+                "identifier": "x"
+              },
+              "value": {
+                "function": {
+                  "parameters": {
+                    "parameters": [
+                      {
+                        "identifier": "x"
+                      }
+                    ]
+                  },
+                  "body": {
+                    "block_statement": [
+                      {
+                        "return_statement": {
+                          "literal": "1"
+                        }
+                      }
+                    ]
+                  },
+                  "info": {
+                    "function": {
+                      "flags": {
+                        "is_generator": false,
+                        "is_async": false,
+                        "is_arrow": false,
+                        "_": 0
+                      }
+                    }
+                  }
+                }
+              },
+              "flags": {
+                "is_static": false,
+                "is_computed": false,
+                "kind": "set",
+                "_": false
+              }
+            }
+          },
+          {
+            "class_method": {
+              "key": {
+                "identifier": "static"
+              },
+              "value": {
+                "function": {
+                  "parameters": {
+                    "parameters": []
+                  },
+                  "body": {
+                    "block_statement": [
+                      {
+                        "return_statement": {
+                          "literal": "1"
+                        }
+                      }
+                    ]
+                  },
+                  "info": {
+                    "function": {
+                      "flags": {
+                        "is_generator": false,
+                        "is_async": false,
+                        "is_arrow": false,
+                        "_": 0
+                      }
+                    }
+                  }
+                }
+              },
+              "flags": {
+                "is_static": true,
+                "is_computed": false,
+                "kind": "get",
+                "_": false
+              }
+            }
+          },
+          {
+            "class_method": {
+              "key": {
+                "identifier": "static"
+              },
+              "value": {
+                "function": {
+                  "parameters": {
+                    "parameters": [
+                      {
+                        "identifier": "x"
+                      }
+                    ]
+                  },
+                  "body": {
+                    "block_statement": []
+                  },
+                  "info": {
+                    "function": {
+                      "flags": {
+                        "is_generator": false,
+                        "is_async": false,
+                        "is_arrow": false,
+                        "_": 0
+                      }
+                    }
+                  }
+                }
+              },
+              "flags": {
+                "is_static": true,
+                "is_computed": false,
+                "kind": "set",
+                "_": false
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
