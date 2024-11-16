@@ -179,6 +179,26 @@ pub const TryStatement = struct {
     finalizer: Node.Index,
 };
 
+/// A single 'case' block in a switch statement.
+pub const SwitchCase = struct {
+    /// The `<test>` in `case <test>:`
+    expression: Node.Index,
+    /// A list of statements in the case block.
+    consequent: SubRange,
+};
+
+pub const SwitchDefaultCase = struct {
+    /// A list of statements in the default case block.
+    consequent: SubRange,
+};
+
+pub const SwitchStatement = struct {
+    /// The `expr` in `switch (expr) { ... }`
+    discriminant: Node.Index,
+    /// A list of `switch_case` nodes with at-most one `default_case`.
+    cases: SubRange,
+};
+
 /// Iterator for a regular old for-loop
 /// (i.e `for (let i = 0; i < 10; i++) { ... }`).
 /// init: `let i = 0`;
@@ -277,7 +297,14 @@ pub const NodeData = union(enum(u8)) {
     for_statement: ForStatement,
     for_of_statement: ForStatement,
     for_in_statement: ForStatement,
+    switch_statement: SwitchStatement,
+    /// A single 'case' block in a switch statement.
+    switch_case: SwitchCase,
+    /// The default case in a switch statement.
+    default_case: SwitchDefaultCase,
+    /// 'break' ';'
     break_statement: void,
+    /// 'continue' ';'
     continue_statement: void,
     parameters: ?SubRange,
     return_statement: ?Node.Index,
@@ -286,7 +313,7 @@ pub const NodeData = union(enum(u8)) {
     /// This is a sentinel, and always present at index 0 of the `nodes` array.
     /// Used to represent nodes like a missing `else` branch (instead of ?Node.Index)
     /// which would take up more space, and increase the size of this union.
-    none: void,
+    none,
 
     comptime {
         std.debug.assert(@bitSizeOf(NodeData) <= 128);
@@ -387,6 +414,17 @@ pub const NodePretty = union(enum) {
     for_of_statement: PrettyForInOfStatement,
     for_in_statement: PrettyForInOfStatement,
     while_statement: Pretty(WhileStatement),
+    switch_statement: struct {
+        discriminant: *NodePretty,
+        cases: Pretty(SubRange),
+    },
+    switch_case: struct {
+        expression: *NodePretty,
+        consequent: Pretty(SubRange),
+    },
+    default_case: struct {
+        consequent: Pretty(SubRange),
+    },
     break_statement: void,
     continue_statement: void,
     variable_declaration: Pretty(VariableDeclaration),

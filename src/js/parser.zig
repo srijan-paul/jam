@@ -47,6 +47,9 @@ pub const Error = error{
     RestElementNotLast,
     // let { x, y } <- destructuring pattern must have an initializer
     MissingInitializer,
+    // Multiple default clauses in a switch statement.
+    // switch (x) { default: 1 default: 2 }
+    MultipleDefaults,
     // std.mem.Allocator.Error
     OutOfMemory,
 } || Tokenizer.Error;
@@ -172,6 +175,9 @@ tokens: std.ArrayList(Token),
 node_lists: std.ArrayList(Node.Index),
 /// List of error messages and warnings generated during parsing.
 diagnostics: std.ArrayList(Diagnostic),
+/// Temporary array-list for intermediate allocations
+/// throughout the parser, e.g: list of case-blocks, list of statements.
+scratch: std.ArrayList(Node.Index),
 /// The token that we're currently at.
 /// Calling `next()` or `peek()` will return this token.
 current_token: Token,
@@ -283,6 +289,7 @@ pub fn init(
 
         .diagnostics = try std.ArrayList(Diagnostic).initCapacity(allocator, 2),
         .nodes = .{},
+        .scratch = try std.ArrayList(Node.Index).initCapacity(allocator, 32),
         .node_lists = try std.ArrayList(Node.Index).initCapacity(allocator, 32),
         .extra_data = try std.ArrayList(ast.ExtraData).initCapacity(allocator, 32),
         .tokens = try std.ArrayList(Token).initCapacity(allocator, 256),
@@ -307,6 +314,7 @@ pub fn deinit(self: *Self) void {
     self.tokens.deinit();
     self.node_lists.deinit();
     self.extra_data.deinit();
+    self.scratch.deinit();
     for (self.diagnostics.items) |d| {
         self.allocator.free(d.message);
     }
@@ -363,6 +371,7 @@ fn statement(self: *Self) Error!Node.Index {
         .kw_let => self.letStatement(),
         .kw_var, .kw_const => self.variableStatement(try self.next()),
         .kw_try => self.tryStatement(),
+        .kw_switch => self.switchStatement(),
         // TODO: right now, if expression parsing fails, the error message we get is:
         // "Expected an expression, found '<token>'."
         // This error message should be improved.
@@ -780,6 +789,7 @@ fn varDeclKind(tag: Token.Tag) ast.VarDeclKind {
     };
 }
 
+/// Parse a 'try'..'catch'..'finally' statement.
 fn tryStatement(self: *Self) Error!Node.Index {
     const try_kw = try self.next();
     const start_pos = try_kw.start;
@@ -847,6 +857,151 @@ fn finallyBlock(self: *Self) Error!Node.Index {
     std.debug.assert(finally_kw.tag == .kw_finally);
     const body = try self.blockStatement();
     return body;
+}
+
+fn switchStatement(self: *Self) Error!Node.Index {
+    const switch_kw = try self.next();
+    std.debug.assert(switch_kw.tag == .kw_switch);
+
+    _ = try self.expect(.@"(");
+    const discriminant = try self.expression();
+    _ = try self.expect(.@")");
+
+    _ = try self.expect(.@"{");
+
+    // allow break statements inside switch-case.
+    const ctx = self.context;
+    defer self.context = ctx;
+    self.context.@"break" = true;
+
+    const cases = try self.caseBlock();
+    const rbrace = try self.expect(.@"}");
+    const end_pos = rbrace.start + rbrace.len;
+
+    return self.addNode(
+        .{ .switch_statement = .{ .discriminant = discriminant, .cases = cases } },
+        switch_kw.start,
+        end_pos,
+    );
+}
+
+// Parse the all cases inside the body of a switch statement.
+// Does not consume the opening '{' and closing '}',
+// assumes the opening '{' has already been consumed.
+fn caseBlock(self: *Self) Error!ast.SubRange {
+
+    // restore the scratch space after parsing the case-block.
+    const scratch_prev_len = self.scratch.items.len;
+    defer self.scratch.items.len = scratch_prev_len;
+
+    var saw_default = false;
+    while (self.current_token.tag != .@"}") {
+        const case_node = blk: {
+            switch (self.current_token.tag) {
+                .kw_case => break :blk try self.caseClause(),
+                .kw_default => {
+                    if (saw_default) {
+                        try self.emitDiagnostic(
+                            self.current_token.startCoord(self.source),
+                            "Multiple 'default' clauses are not allowed in a switch statement",
+                            .{},
+                        );
+                        return Error.MultipleDefaults;
+                    }
+
+                    saw_default = true;
+                    break :blk try self.defaultCase();
+                },
+                else => {
+                    try self.emitBadTokenDiagnostic("'case' or 'default'", &self.current_token);
+                    return Error.UnexpectedToken;
+                },
+            }
+        };
+
+        try self.scratch.append(case_node);
+    }
+
+    const cases = try self.addSubRange(self.scratch.items[scratch_prev_len..]);
+
+    return cases;
+}
+
+/// Parse a single case clause inside a switch statement.
+/// A case clause begins with the 'case' (or 'default')  keyword:
+/// 'case' Expression ':' StatementList
+fn caseClause(self: *Self) Error!Node.Index {
+    const case_kw = try self.next();
+    std.debug.assert(case_kw.tag == .kw_case);
+
+    const test_expr = try self.expression();
+
+    const prev_scratch_len = self.scratch.items.len;
+    defer self.scratch.items.len = prev_scratch_len;
+
+    _ = try self.expect(.@":");
+    while (self.current_token.tag != .@"}" and
+        self.current_token.tag != .kw_case and
+        self.current_token.tag != .kw_default)
+    {
+        const stmt = try self.statement();
+        try self.scratch.append(stmt);
+    }
+
+    const consequent_stmts = self.scratch.items[prev_scratch_len..];
+
+    const end_pos =
+        if (consequent_stmts.len > 0)
+        self.nodes.items(.end)[@intFromEnum(consequent_stmts[consequent_stmts.len - 1])]
+    else
+        case_kw.start + case_kw.len;
+
+    const case_node = try self.addNode(
+        .{
+            .switch_case = ast.SwitchCase{
+                .expression = test_expr,
+                .consequent = try self.addSubRange(consequent_stmts),
+            },
+        },
+        case_kw.start,
+        end_pos,
+    );
+
+    return case_node;
+}
+
+/// Parse the 'default' case inside a switch statement.
+fn defaultCase(self: *Self) Error!Node.Index {
+    const default_kw = try self.next();
+    std.debug.assert(default_kw.tag == .kw_default);
+
+    _ = try self.expect(.@":");
+
+    const prev_scratch_len = self.scratch.items.len;
+    defer self.scratch.items.len = prev_scratch_len;
+
+    var cur = self.current_token.tag;
+    while (cur != .@"}" and cur != .kw_case and cur != .kw_default) : (cur = self.current_token.tag) {
+        const stmt = try self.statement();
+        try self.scratch.append(stmt);
+    }
+
+    const consequent_stmts = self.scratch.items[prev_scratch_len..];
+    const end_pos =
+        if (consequent_stmts.len > 0)
+        self.nodes.items(.end)[@intFromEnum(consequent_stmts[consequent_stmts.len - 1])]
+    else
+        default_kw.start + default_kw.len;
+
+    return self.addNode(
+        .{
+            .default_case = ast.SwitchDefaultCase{
+                .consequent = try self.addSubRange(consequent_stmts),
+            },
+        },
+        default_kw.start,
+        end_pos,
+    );
 }
 
 /// Parse a statement that starts with the `let` keyword.

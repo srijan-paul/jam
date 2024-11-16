@@ -150,6 +150,37 @@ fn toPretty(
             };
         },
 
+        .switch_statement => |switch_stmt| {
+            const discriminant = try copy(al, try toPretty(self, al, switch_stmt.discriminant));
+            const cases = try prettySubRange(al, self, switch_stmt.cases);
+            return .{
+                .switch_statement = .{
+                    .discriminant = discriminant,
+                    .cases = cases,
+                },
+            };
+        },
+
+        .switch_case => |switch_case| {
+            const expr = try copy(al, try toPretty(self, al, switch_case.expression));
+            const consequent = try prettySubRange(al, self, switch_case.consequent);
+            return .{
+                .switch_case = .{
+                    .expression = expr,
+                    .consequent = consequent,
+                },
+            };
+        },
+
+        .default_case => |default_case| {
+            const consequent = try prettySubRange(al, self, default_case.consequent);
+            return .{
+                .default_case = .{
+                    .consequent = consequent,
+                },
+            };
+        },
+
         .this => return .{ .this = {} },
         .member_expr => |payload| {
             const obj = try copy(al, try toPretty(self, al, payload.object));
