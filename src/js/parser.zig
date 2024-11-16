@@ -18,6 +18,8 @@ pub const Error = error{
     UnexpectedToken,
     // Return statement outside functions
     IllegalReturn,
+    // Labeled statement in places like the body of a for loop.
+    IllegalLabeledStatement,
     // Await outside async scope.
     IllegalAwait,
     // '=>' Not on the same line as arrow parameters
@@ -50,6 +52,8 @@ pub const Error = error{
     // Multiple default clauses in a switch statement.
     // switch (x) { default: 1 default: 2 }
     MultipleDefaults,
+    // "with" statement used in strict mode.
+    WithInStrictMode,
     // std.mem.Allocator.Error
     OutOfMemory,
 } || Tokenizer.Error;
@@ -372,11 +376,30 @@ fn statement(self: *Self) Error!Node.Index {
         .kw_var, .kw_const => self.variableStatement(try self.next()),
         .kw_try => self.tryStatement(),
         .kw_switch => self.switchStatement(),
+        .kw_with => self.withStatement(),
         // TODO: right now, if expression parsing fails, the error message we get is:
         // "Expected an expression, found '<token>'."
         // This error message should be improved.
         else => self.expressionStatement(),
     };
+}
+
+/// Return any statement except a labeled statement.
+/// Used in contexts where a labeled statement is not allowed, like the body of
+/// a WhileStatement.
+fn nonLabeledStatement(self: *Self) Error!Node.Index {
+    const stmt = try self.statement();
+    const stmt_node = self.nodes.items(.data)[@intFromEnum(stmt)];
+
+    if (std.meta.activeTag(stmt_node) == .labeled_statement) {
+        try self.emitDiagnosticOnNode(
+            stmt,
+            "Labeled statement is not allowed here",
+        );
+        return Error.IllegalLabeledStatement;
+    }
+
+    return stmt;
 }
 
 fn ifStatement(self: *Self) Error!Node.Index {
@@ -715,7 +738,7 @@ fn whileStatement(self: *Self) Error!Node.Index {
     self.context.@"break" = true;
     self.context.@"continue" = true;
 
-    // todo: perform a labelled statement check here.
+    // todo: perform a labeled statement check here.
     const body = try self.statement();
     const end_pos = self.nodeSpan(body).end;
 
@@ -1002,6 +1025,32 @@ fn defaultCase(self: *Self) Error!Node.Index {
         default_kw.start,
         end_pos,
     );
+}
+
+fn withStatement(self: *Self) Error!Node.Index {
+    const with_kw = try self.next();
+    std.debug.assert(with_kw.tag == .kw_with);
+
+    _ = try self.expect(.@"(");
+    const obj = try self.expression();
+    _ = try self.expect(.@")");
+
+    const body = try self.nonLabeledStatement();
+    const end_pos = self.nodeSpan(body).end;
+
+    const stmt = try self.addNode(
+        .{ .with_statement = .{ .object = obj, .body = body } },
+        with_kw.start,
+        end_pos,
+    );
+
+    if (self.context.strict) {
+        // TODO: emit this error but continue parsing.
+        try self.emitDiagnosticOnNode(stmt, "With statements are not allowed in strict mode");
+        return Error.WithInStrictMode;
+    }
+
+    return stmt;
 }
 
 /// Parse a statement that starts with the `let` keyword.

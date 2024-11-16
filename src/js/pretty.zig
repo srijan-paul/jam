@@ -172,6 +172,28 @@ fn toPretty(
             };
         },
 
+        .with_statement => |with_stmt| {
+            const object = try copy(al, try toPretty(self, al, with_stmt.object));
+            const body = try copy(al, try toPretty(self, al, with_stmt.body));
+            return .{
+                .with_statement = .{
+                    .object = object,
+                    .body = body,
+                },
+            };
+        },
+
+        .labeled_statement => |labeled_stmt| {
+            const label = self.getToken(labeled_stmt.label).toByteSlice(self.source);
+            const body = try copy(al, try toPretty(self, al, labeled_stmt.body));
+            return .{
+                .labeled_statement = .{
+                    .label = label,
+                    .body = body,
+                },
+            };
+        },
+
         .default_case => |default_case| {
             const consequent = try prettySubRange(al, self, default_case.consequent);
             return .{

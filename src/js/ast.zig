@@ -199,6 +199,16 @@ pub const SwitchStatement = struct {
     cases: SubRange,
 };
 
+pub const WithStatement = struct {
+    object: Node.Index,
+    body: Node.Index,
+};
+
+pub const LabeledStatement = struct {
+    label: Token.Index,
+    body: Node.Index,
+};
+
 /// Iterator for a regular old for-loop
 /// (i.e `for (let i = 0; i < 10; i++) { ... }`).
 /// init: `let i = 0`;
@@ -283,7 +293,8 @@ pub const NodeData = union(enum(u8)) {
     object_pattern: ?SubRange,
 
     // Statements:
-    empty_statement: void,
+    empty_statement,
+    labeled_statement: LabeledStatement,
     try_statement: TryStatement,
     catch_clause: CatchClause,
     block_statement: ?SubRange,
@@ -294,6 +305,7 @@ pub const NodeData = union(enum(u8)) {
     debugger_statement: void,
     if_statement: Conditional,
     while_statement: WhileStatement,
+    with_statement: WithStatement,
     for_statement: ForStatement,
     for_of_statement: ForStatement,
     for_in_statement: ForStatement,
@@ -373,8 +385,8 @@ pub const NodePretty = union(enum) {
 
     identifier: Token_,
     literal: Token_,
-    this: void,
-    empty_array_item: void,
+    this,
+    empty_array_item,
     array: Pretty(SubRange),
     array_pattern: Pretty(SubRange),
     object_pattern: Pretty(SubRange),
@@ -393,6 +405,10 @@ pub const NodePretty = union(enum) {
         catch_clause: Pretty(Node.Index),
         finalizer: Pretty(Node.Index),
     },
+    with_statement: struct {
+        object: Pretty(Node.Index),
+        body: Pretty(Node.Index),
+    },
     function: struct {
         parameters: Pretty(Node.Index),
         body: Pretty(Node.Index),
@@ -400,8 +416,9 @@ pub const NodePretty = union(enum) {
     },
 
     // statements
-    empty_statement: void,
-    debugger_statement: void,
+    empty_statement,
+    debugger_statement,
+    labeled_statement: Pretty(LabeledStatement),
     expression_statement: Pretty(Node.Index),
     block_statement: Pretty(SubRange),
     if_statement: Pretty(Conditional),

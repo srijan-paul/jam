@@ -222,7 +222,7 @@ pub fn compareTestResults(
         const test_file_name = entry.key_ptr.*;
         const new_value: std.json.Value = new_file_results.get(test_file_name) orelse {
             passing = false;
-            std.log.err("Missing entry for fiel {s} in new result file.", .{test_file_name});
+            std.log.err("Missing entry for file {s} in new result file.", .{test_file_name});
             break;
         };
 
