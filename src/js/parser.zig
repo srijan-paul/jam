@@ -16,6 +16,8 @@ const NodeData = ast.NodeData;
 
 pub const Error = error{
     UnexpectedToken,
+    // Invalid modifier like 'async'
+    IllegalModifier,
     // Return statement outside functions
     IllegalReturn,
     // Labeled statement in places like the body of a for loop.
@@ -52,6 +54,8 @@ pub const Error = error{
     // Multiple default clauses in a switch statement.
     // switch (x) { default: 1 default: 2 }
     MultipleDefaults,
+    // Class definition with multiple constructors
+    MultipleConstructors,
     // "with" statement used in strict mode.
     WithInStrictMode,
     // std.mem.Allocator.Error
@@ -331,7 +335,7 @@ pub fn parse(self: *Self) !Node.Index {
     defer statements.deinit();
 
     while (self.current_token.tag != .eof) {
-        const stmt = try self.statement();
+        const stmt = try self.statementOrDeclaration();
         try statements.append(stmt);
     }
 
@@ -349,8 +353,12 @@ pub fn parse(self: *Self) !Node.Index {
 // ----------------------------------------------------------------------------
 
 /// https://tc39.es/ecma262/#prod-Statement
-fn statement(self: *Self) Error!Node.Index {
-    return switch (self.peek().tag) {
+fn statementOrDeclaration(self: *Self) Error!Node.Index {
+    const maybe_decl = try declarationStatement(self);
+    if (maybe_decl) |decl|
+        return decl;
+
+    return switch (self.current_token.tag) {
         .@"{" => self.blockStatement(),
         .@";" => self.emptyStatement(),
         .kw_if => self.ifStatement(),
@@ -384,11 +392,336 @@ fn statement(self: *Self) Error!Node.Index {
     };
 }
 
+fn declarationStatement(self: *Self) Error!?Node.Index {
+    return switch (self.current_token.tag) {
+        .kw_class => try self.classDeclaration(),
+        else => null,
+    };
+}
+
+/// https://tc39.es/ecma262/#sec-class-definitions
+fn classDeclaration(self: *Self) Error!Node.Index {
+    const class_kw = try self.next();
+    std.debug.assert(class_kw.tag == .kw_class);
+
+    const name_token = try self.next();
+    if (name_token.tag != .identifier and !self.isKeywordIdentifier(name_token.tag)) {
+        try self.emitBadTokenDiagnostic("a class name", &name_token);
+        return Error.UnexpectedToken;
+    }
+
+    const name = try self.identifier(name_token);
+
+    const super_class = if (self.current_token.tag == .kw_extends)
+        try self.classHeritage()
+    else
+        Node.Index.empty;
+
+    const class_body = try self.classBody();
+    const rb = try self.expect(.@"}");
+
+    const info = try self.addExtraData(ast.ExtraData{
+        .class = .{
+            .name = name,
+            .super_class = super_class,
+        },
+    });
+
+    return try self.addNode(
+        .{ .class_declaration = .{ .class_information = info, .body = class_body } },
+        class_kw.start,
+        rb.start + rb.len,
+    );
+}
+
+fn classExpression(self: *Self, class_kw: Token) Error!Node.Index {
+    const name = blk: {
+        const cur = self.current_token.tag;
+        if (cur == .identifier or
+            self.isKeywordIdentifier(cur))
+        {
+            const name_token = try self.next();
+            break :blk try self.identifier(name_token);
+        }
+
+        break :blk null;
+    };
+
+    const super_class = if (self.current_token.tag == .kw_extends)
+        try self.classHeritage()
+    else
+        Node.Index.empty;
+
+    const class_body = try self.classBody();
+    const rb = try self.expect(.@"}");
+
+    const info = try self.addExtraData(ast.ExtraData{
+        .class = .{
+            .name = name,
+            .super_class = super_class,
+        },
+    });
+
+    return try self.addNode(
+        .{ .class_expression = .{ .class_information = info, .body = class_body } },
+        class_kw.start,
+        rb.start + rb.len,
+    );
+}
+
+fn classHeritage(self: *Self) Error!Node.Index {
+    _ = try self.expect(.kw_extends);
+    const super_class = try self.lhsExpression();
+    return super_class;
+}
+
+fn classBody(self: *Self) Error!ast.SubRange {
+    const prev_scratch_len = self.scratch.items.len;
+    defer self.scratch.items.len = prev_scratch_len;
+
+    _ = try self.expect(.@"{");
+
+    var n_constructors: usize = 0;
+    while (self.current_token.tag != .@"}") {
+        if (self.current_token.tag == .@";") {
+            _ = try self.next(); // eat ';'
+            continue;
+        }
+
+        var saw_constructor = false;
+        const element = try self.classElement(&saw_constructor);
+        if (saw_constructor) n_constructors += 1;
+
+        if (n_constructors > 1) {
+            try self.emitDiagnosticOnNode(
+                element,
+                "A class cannot have multiple constructor implementations",
+            );
+            return Error.MultipleConstructors;
+        }
+        try self.scratch.append(element);
+    }
+
+    const elements = self.scratch.items[prev_scratch_len..];
+    return try self.addSubRange(elements);
+}
+
+// `saw_constructor` is an in-out parameter that is set to true if a constructor was seen.
+fn classElement(self: *Self, saw_constructor_inout: *bool) Error!Node.Index {
+    switch (self.current_token.tag) {
+        .kw_async, .kw_static, .@"*" => {
+            return self.classPropertyWithModifier(.{}, .{});
+        },
+        .kw_constructor => {
+            saw_constructor_inout.* = true;
+            const ctor_key = try self.identifier(try self.next());
+            return self.parseClassMethodBody(
+                ctor_key,
+                .{ .is_static = false, .kind = .constructor },
+                .{},
+            );
+        },
+        else => {
+            const key = try self.classElementName();
+            return self.completeClassFieldDef(key, .{});
+        },
+    }
+}
+
+/// Parse a class property definition that starts with a modifier like 'async', 'static', etc.
+fn classPropertyWithModifier(self: *Self, flags: ast.ClassFieldFlags, fn_flags: ast.FunctionFlags) Error!Node.Index {
+    // TODO: refactor this switch
+    switch (self.current_token.tag) {
+        .kw_async => {
+            const async_token = try self.next();
+            if ((canStartClassElementName(&self.current_token) or
+                self.current_token.tag == .@"*") and
+                self.current_token.line == async_token.line)
+            {
+                if (fn_flags.is_async) {
+                    try self.emitBadTokenDiagnostic("Duplicate 'async' modifier", &async_token);
+                    return Error.UnexpectedToken;
+                }
+
+                return self.classPropertyWithModifier(
+                    flags,
+                    .{
+                        .is_async = true,
+                        .is_generator = fn_flags.is_generator,
+                        .is_arrow = false,
+                    },
+                );
+            } else {
+                const key = try self.identifier(async_token);
+                return self.completeClassFieldDef(key, flags);
+            }
+        },
+
+        .kw_static => {
+            const static_token = try self.next();
+            if ((canStartClassElementName(&self.current_token) or
+                self.current_token.tag == .@"*") and
+                self.current_token.line == static_token.line)
+            {
+                if (flags.is_static) {
+                    try self.emitDiagnosticOnToken(
+                        static_token,
+                        "Duplicate 'static' modifier",
+                        .{},
+                    );
+                    return Error.UnexpectedToken;
+                }
+
+                if (fn_flags.is_async) {
+                    try self.emitDiagnosticOnToken(
+                        static_token,
+                        "'static' modifier must precede 'async' modifier",
+                        .{},
+                    );
+                    return Error.UnexpectedToken;
+                }
+
+                return self.classPropertyWithModifier(
+                    .{
+                        .is_static = true,
+                        .is_computed = flags.is_computed,
+                        .kind = flags.kind,
+                    },
+                    fn_flags,
+                );
+            } else {
+                const key = try self.identifier(static_token);
+                return self.completeClassFieldDef(key, flags);
+            }
+        },
+
+        .@"*" => {
+            _ = try self.next();
+
+            if (!canStartClassElementName(&self.current_token)) {
+                try self.emitBadTokenDiagnostic(
+                    "a method name after '*'",
+                    &self.current_token,
+                );
+                return Error.UnexpectedToken;
+            }
+
+            const key = try self.classElementName();
+            return self.parseClassMethodBody(key, flags, .{
+                .is_generator = true,
+                .is_async = fn_flags.is_async,
+                .is_arrow = false,
+            });
+        },
+
+        else => {
+            const key = try self.classElementName();
+            if (fn_flags.is_async) {
+                if (self.current_token.tag == .@"(") {
+                    return self.parseClassMethodBody(key, flags, .{});
+                }
+
+                // disallow fields like `async x = 5;`
+                try self.emitDiagnosticOnNode(
+                    key,
+                    "'async' modifier cannot be used on fields that are not methods",
+                );
+                return Error.IllegalModifier;
+            }
+
+            return self.completeClassFieldDef(key, flags);
+        },
+    }
+}
+
+/// Assuming that the key has been parsed, complete the property definition.
+fn completeClassFieldDef(
+    self: *Self,
+    key: Node.Index,
+    flags: ast.ClassFieldFlags,
+) Error!Node.Index {
+    if (self.current_token.tag == .@"(") {
+        self.current_destructure_kind.setNoAssignOrDestruct();
+        return self.parseClassMethodBody(key, flags, .{});
+    }
+
+    if (self.current_token.tag == .@"=") {
+        _ = try self.next();
+        const value = try self.assignExpressionNoPattern();
+        const start_pos = self.nodes.items(.start)[@intFromEnum(key)];
+        var end_pos = self.nodes.items(.end)[@intFromEnum(value)];
+        end_pos = try self.semiColon(end_pos);
+        const kv_node = ast.ClassFieldDefinition{
+            .key = key,
+            .value = value,
+            .flags = flags,
+        };
+        return self.addNode(.{ .class_field = kv_node }, start_pos, end_pos);
+    }
+
+    var end_pos = self.nodes.items(.end)[@intFromEnum(key)];
+    end_pos = try self.semiColon(end_pos);
+    const kv_node = ast.ClassFieldDefinition{
+        .key = key,
+        .value = key,
+        .flags = ast.ClassFieldFlags{
+            .kind = .init,
+            .is_computed = flags.is_computed,
+            .is_static = flags.is_static,
+        },
+    };
+
+    const start_pos = self.nodes.items(.start)[@intFromEnum(key)];
+    return self.addNode(.{ .class_field = kv_node }, start_pos, end_pos);
+}
+
+/// Parse the method body of a class, assuming we're at the '(' token.
+/// Returns a `class_method` Node.
+fn parseClassMethodBody(
+    self: *Self,
+    key: Node.Index,
+    flags: ast.ClassFieldFlags,
+    fn_flags: ast.FunctionFlags,
+) Error!Node.Index {
+    std.debug.assert(self.current_token.tag == .@"(");
+
+    const start_pos = self.current_token.start;
+    const func_expr = try self.parseFunctionBody(
+        start_pos,
+        null,
+        fn_flags,
+        false,
+    );
+
+    const end_pos = self.nodes.items(.end)[@intFromEnum(func_expr)];
+    const kv_node = ast.ClassFieldDefinition{
+        .key = key,
+        .value = func_expr,
+        .flags = flags,
+    };
+
+    if (flags.kind == .get or flags.kind == .set) {
+        // verify the number of parameters for getters and setters.
+        // (the if expression looks stupid but is necessary because those are different enum types with same member names)
+        try self.checkGetterOrSetterParams(
+            func_expr,
+            if (flags.kind == .get) .get else .set,
+        );
+    }
+
+    const key_start = self.nodes.items(.start)[@intFromEnum(key)];
+    return self.addNode(
+        .{ .class_method = kv_node },
+        key_start,
+        end_pos,
+    );
+}
+
 /// Return any statement except a labeled statement.
 /// Used in contexts where a labeled statement is not allowed, like the body of
 /// a WhileStatement.
 fn nonLabeledStatement(self: *Self) Error!Node.Index {
-    const stmt = try self.statement();
+    const stmt = try self.statementOrDeclaration();
     const stmt_node = self.nodes.items(.data)[@intFromEnum(stmt)];
 
     if (std.meta.activeTag(stmt_node) == .labeled_statement) {
@@ -410,13 +743,13 @@ fn ifStatement(self: *Self) Error!Node.Index {
     const cond = try self.expression();
     _ = try self.expect(.@")");
 
-    const consequent = try self.statement();
+    const consequent = try self.statementOrDeclaration();
     var end_pos = self.nodeSpan(consequent).end;
 
     var alternate = Node.Index.empty;
     if (self.peek().tag == .kw_else) {
         _ = try self.next();
-        alternate = try self.statement();
+        alternate = try self.statementOrDeclaration();
         end_pos = self.nodeSpan(alternate).end;
     }
 
@@ -453,7 +786,7 @@ fn forStatement(self: *Self) Error!Node.Index {
     self.context.@"break" = true;
     self.context.@"continue" = true;
 
-    const body = try self.statement();
+    const body = try self.statementOrDeclaration();
     const start_pos = for_kw.start;
     const end_pos = self.nodes.items(.end)[@intFromEnum(body)];
 
@@ -739,7 +1072,7 @@ fn whileStatement(self: *Self) Error!Node.Index {
     self.context.@"continue" = true;
 
     // todo: perform a labeled statement check here.
-    const body = try self.statement();
+    const body = try self.statementOrDeclaration();
     const end_pos = self.nodeSpan(body).end;
 
     return self.addNode(
@@ -967,7 +1300,7 @@ fn caseClause(self: *Self) Error!Node.Index {
         self.current_token.tag != .kw_case and
         self.current_token.tag != .kw_default)
     {
-        const stmt = try self.statement();
+        const stmt = try self.statementOrDeclaration();
         try self.scratch.append(stmt);
     }
 
@@ -1005,7 +1338,7 @@ fn defaultCase(self: *Self) Error!Node.Index {
 
     var cur = self.current_token.tag;
     while (cur != .@"}" and cur != .kw_case and cur != .kw_default) : (cur = self.current_token.tag) {
-        const stmt = try self.statement();
+        const stmt = try self.statementOrDeclaration();
         try self.scratch.append(stmt);
     }
 
@@ -1170,7 +1503,7 @@ fn blockStatement(self: *Self) Error!Node.Index {
     defer statements.deinit();
 
     while (self.current_token.tag != .@"}") {
-        const stmt = try self.statement();
+        const stmt = try self.statementOrDeclaration();
         try statements.append(stmt);
     }
 
@@ -1427,6 +1760,20 @@ fn emitDiagnostic(
     const message = try std.fmt.allocPrint(self.allocator, fmt, fmt_args);
     try self.diagnostics.append(Diagnostic{
         .coord = coord,
+        .message = message,
+    });
+}
+
+/// Push an error essage to the list of diagnostics.
+fn emitDiagnosticOnToken(
+    self: *Self,
+    token: Token,
+    comptime fmt: []const u8,
+    fmt_args: anytype,
+) error{OutOfMemory}!void {
+    const message = try std.fmt.allocPrint(self.allocator, fmt, fmt_args);
+    try self.diagnostics.append(Diagnostic{
+        .coord = token.startCoord(self.source),
         .message = message,
     });
 }
@@ -2459,6 +2806,7 @@ fn primaryExpression(self: *Self) Error!Node.Index {
 
     const token = try self.next();
     switch (token.tag) {
+        .kw_class => return self.classExpression(token),
         .kw_this => {
             self.current_destructure_kind.setNoAssignOrDestruct();
             return self.addNode(
@@ -3285,17 +3633,18 @@ fn getterOrSetter(self: *Self, token: Token) Error!?Node.Index {
     );
 }
 
+/// Checks if a token can start a class element name.
+fn canStartClassElementName(token: *const Token) bool {
+    return token.tag.isValidPropertyName() or
+        token.tag == .@"[" or
+        token.tag == .private_identifier;
+}
+
 /// https://tc39.es/ecma262/#prod-ClassElementName
 fn classElementName(self: *Self) Error!Node.Index {
     const token = try self.next();
     switch (token.tag) {
-        .identifier, .private_identifier => {
-            return self.addNode(
-                .{ .identifier = try self.addToken(token) },
-                token.start,
-                token.start + token.len,
-            );
-        },
+        .identifier, .private_identifier => return self.identifier(token),
         .@"[" => {
             const expr = try self.assignmentExpression();
             _ = try self.expect(.@"]");
@@ -3332,7 +3681,7 @@ fn parseMethodBody(
 ) Error!Node.Index {
     std.debug.assert(self.current_token.tag == .@"(" and flags.is_method);
 
-    const start_pos = self.peek().start;
+    const start_pos = self.current_token.start;
     const func_expr = try self.parseFunctionBody(
         start_pos,
         null,

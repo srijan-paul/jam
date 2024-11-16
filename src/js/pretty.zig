@@ -316,6 +316,52 @@ fn toPretty(
                 },
             },
         },
+
+        .class_declaration, .class_expression => |class_decl| {
+            const name = class_decl.className(self);
+            const body = try prettySubRange(al, self, class_decl.body);
+
+            if (std.meta.activeTag(node.data) == .class_expression) {
+                return .{
+                    .class_expression = .{
+                        .name = name,
+                        .body = body,
+                    },
+                };
+            }
+
+            return .{
+                .class_declaration = .{
+                    .name = name orelse unreachable,
+                    .body = body,
+                },
+            };
+        },
+
+        .class_field => |field| return ast.NodePretty{
+            .class_field = .{
+                .key = try copy(al, try toPretty(self, al, field.key)),
+                .value = try copy(al, try toPretty(self, al, field.value)),
+                .flags = .{
+                    .is_computed = field.flags.is_computed,
+                    .is_static = field.flags.is_static,
+                    .kind = field.flags.kind,
+                },
+            },
+        },
+
+        .class_method => |field| return ast.NodePretty{
+            .class_method = .{
+                .key = try copy(al, try toPretty(self, al, field.key)),
+                .value = try copy(al, try toPretty(self, al, field.value)),
+                .flags = .{
+                    .is_computed = field.flags.is_computed,
+                    .is_static = field.flags.is_static,
+                    .kind = field.flags.kind,
+                },
+            },
+        },
+
         .spread_element => |payload| {
             const expr = try copy(al, try toPretty(self, al, payload));
             return .{ .spread_element = expr };

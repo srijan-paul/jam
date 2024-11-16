@@ -5,7 +5,7 @@ A high-performance JavaScript toolchain built from the ground up.
 
 ## Goals
 
-- 100% Spec compliant (currently: 76% of ECMAScript-262)
+- 100% Spec compliant (currently: 81% of ECMAScript-262)
 - Faster than (or close to) existing tools. 
 - Low memory footprint.
 - Support JS, TS, JSX, TSX, out of the box.

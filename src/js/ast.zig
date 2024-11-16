@@ -118,6 +118,17 @@ pub const PropertyDefinitionKind = enum(u5) {
     init,
 };
 
+pub const ClassFieldKind = enum(u5) {
+    /// Regular property or method
+    init,
+    /// Getter
+    get,
+    /// Setter
+    set,
+    /// The class constructor
+    constructor,
+};
+
 /// Flags for property definitions of an object literal.
 pub const PropertyDefinitionFlags = packed struct(u8) {
     is_method: bool = false,
@@ -130,6 +141,19 @@ pub const PropertyDefinition = struct {
     key: Node.Index,
     value: Node.Index,
     flags: PropertyDefinitionFlags = .{},
+};
+
+pub const ClassFieldFlags = packed struct(u8) {
+    is_static: bool = false,
+    is_computed: bool = false,
+    kind: ClassFieldKind = .init,
+    _: bool = false, // padding
+};
+
+pub const ClassFieldDefinition = struct {
+    key: Node.Index,
+    value: Node.Index,
+    flags: ClassFieldFlags = .{},
 };
 
 /// Payloads for ternary expressions and if statements.
@@ -209,39 +233,19 @@ pub const LabeledStatement = struct {
     body: Node.Index,
 };
 
-/// Iterator for a regular old for-loop
-/// (i.e `for (let i = 0; i < 10; i++) { ... }`).
-/// init: `let i = 0`;
-/// condition: `i < 10`;
-/// update: `i++`
-pub const ForIterator = struct {
-    init: Node.Index,
-    condition: Node.Index,
-    update: Node.Index,
-};
+pub const Class = struct {
+    class_information: ExtraData.Index,
+    body: SubRange,
 
-pub const ForInOfIterator = struct {
-    /// Left side of the 'of' keyword
-    left: Node.Index,
-    /// Right side of the 'of' keyword
-    right: Node.Index,
-    /// Set for for-await loops.
-    is_await: bool = false,
-};
-
-/// Extra metadata about a node.
-/// The specific type of meta-data is determined by the node's
-/// tag (i.e the active field of NodeData).
-pub const ExtraData = union {
-    pub const Index = enum(u32) { none = 0, _ };
-    function: struct {
-        /// Name of the function, if present (always an identifier token).
-        name: ?Token.Index,
-        /// Flags: generator, async, arrow, etc.
-        flags: FunctionFlags,
-    },
-    for_iterator: ForIterator,
-    for_in_of_iterator: ForInOfIterator,
+    /// Return the name of the class.
+    pub fn className(self: *const Class, p: *const Parser) ?[]const u8 {
+        const maybe_name_node = p.getExtraData(self.class_information).class.name;
+        if (maybe_name_node) |name_node| {
+            const node = p.getNode(name_node);
+            return p.source[node.start..node.end];
+        }
+        return null;
+    }
 };
 
 pub const NodeData = union(enum(u8)) {
@@ -278,9 +282,11 @@ pub const NodeData = union(enum(u8)) {
     /// A RestElement is used in patterns to represent destructured bindings like:
     /// `const [a, ...rest] = [1, 2, 3];`
     rest_element: Node.Index,
-
     object_literal: ?SubRange,
     object_property: PropertyDefinition,
+    class_expression: Class,
+    class_field: ClassFieldDefinition,
+    class_method: ClassFieldDefinition,
     sequence_expr: SubRange,
     conditional_expr: Conditional,
     /// Template literals are split into their subelements.
@@ -302,6 +308,7 @@ pub const NodeData = union(enum(u8)) {
     variable_declaration: VariableDeclaration,
     variable_declarator: VariableDeclarator,
     function_declaration: Function,
+    class_declaration: Class,
     debugger_statement: void,
     if_statement: Conditional,
     while_statement: WhileStatement,
@@ -330,6 +337,47 @@ pub const NodeData = union(enum(u8)) {
     comptime {
         std.debug.assert(@bitSizeOf(NodeData) <= 128);
     }
+};
+
+/// Iterator for a regular old for-loop
+/// (i.e `for (let i = 0; i < 10; i++) { ... }`).
+/// init: `let i = 0`;
+/// condition: `i < 10`;
+/// update: `i++`
+pub const ForIterator = struct {
+    init: Node.Index,
+    condition: Node.Index,
+    update: Node.Index,
+};
+
+pub const ForInOfIterator = struct {
+    /// Left side of the 'of' keyword
+    left: Node.Index,
+    /// Right side of the 'of' keyword
+    right: Node.Index,
+    /// Set for for-await loops.
+    is_await: bool = false,
+};
+
+pub const ClassInfo = struct {
+    name: ?Node.Index,
+    super_class: Node.Index,
+};
+
+/// Extra metadata about a node.
+/// The specific type of meta-data is determined by the node's
+/// tag (i.e the active field of NodeData).
+pub const ExtraData = union {
+    pub const Index = enum(u32) { none = 0, _ };
+    function: struct {
+        /// Name of the function, if present (always an identifier token).
+        name: ?Token.Index,
+        /// Flags: generator, async, arrow, etc.
+        flags: FunctionFlags,
+    },
+    for_iterator: ForIterator,
+    for_in_of_iterator: ForInOfIterator,
+    class: ClassInfo,
 };
 
 const Type = std.builtin.Type;
@@ -393,6 +441,16 @@ pub const NodePretty = union(enum) {
     assignment_pattern: BinaryPayload_,
     object_literal: Pretty(SubRange),
     object_property: Pretty(PropertyDefinition),
+    class_expression: struct {
+        name: ?[]const u8,
+        body: Pretty(SubRange),
+    },
+    class_declaration: struct {
+        name: []const u8,
+        body: Pretty(SubRange),
+    },
+    class_field: Pretty(ClassFieldDefinition),
+    class_method: Pretty(ClassFieldDefinition),
     sequence_expression: Pretty(SubRange),
     conditional_expression: Pretty(Conditional),
 
@@ -460,6 +518,7 @@ pub const NodePretty = union(enum) {
 pub const ExtraPretty = union(enum) {
     function: Pretty(std.meta.FieldType(ExtraData, .function)),
     for_iterator: Pretty(ForIterator),
+    class: Pretty(ClassInfo),
 };
 
 pub fn Pretty(T: type) type {
