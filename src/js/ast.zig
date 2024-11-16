@@ -248,6 +248,12 @@ pub const Class = struct {
     }
 };
 
+pub const TaggedTemplateExpression = struct {
+    tag: Node.Index,
+    /// Points to a template_literal
+    template: Node.Index,
+};
+
 pub const NodeData = union(enum(u8)) {
     program: ?SubRange,
 
@@ -256,6 +262,7 @@ pub const NodeData = union(enum(u8)) {
     binary_expr: BinaryPayload,
     member_expr: PropertyAccess,
     computed_member_expr: ComputedPropertyAccess,
+    tagged_template_expr: TaggedTemplateExpression,
     arguments: ?SubRange,
     new_expr: CallExpr,
     call_expr: CallExpr,
@@ -419,6 +426,7 @@ pub const NodePretty = union(enum) {
     member_expression: PropertyAccess_,
     computed_member_expression: ComputedPropertyAccess_,
     optional_expression: Pretty(Node.Index),
+    tagged_template_expression: Pretty(TaggedTemplateExpression),
     arguments: Pretty(SubRange),
     new_expression: Pretty(CallExpr),
     call_expression: Pretty(CallExpr),

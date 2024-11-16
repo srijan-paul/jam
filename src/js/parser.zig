@@ -2709,6 +2709,7 @@ fn lhsExpression(self: *Self) Error!Node.Index {
 
 fn superExpression(self: *Self) Error!Node.Index {
     const super_token = try self.next();
+    // TODO: check if we're in a surrounding class.
     std.debug.assert(super_token.tag == .kw_super);
 
     const super_args, const start, const end = try self.parseArgs();
@@ -2897,10 +2898,26 @@ fn memberExpression(self: *Self) Error!Node.Index {
         switch (token.tag) {
             .@"." => member_expr = try self.completeMemberExpression(member_expr),
             .@"[" => member_expr = try self.completeComputedMemberExpression(member_expr),
+            .template_literal_part => member_expr = try self.completeTaggedTemplate(member_expr),
             else => return member_expr,
         }
     }
     return member_expr;
+}
+
+/// When `current_token` is a template literal part, and a member_expr has been parsed
+/// this function parses a tagged template expression like "div`hello`"
+fn completeTaggedTemplate(self: *Self, tag: Node.Index) Error!Node.Index {
+    const template = try self.templateLiteral();
+    const start_pos = self.nodes.items(.start)[@intFromEnum(tag)];
+    const end_pos = self.nodes.items(.end)[@intFromEnum(template)];
+
+    return self.addNode(.{
+        .tagged_template_expr = .{
+            .tag = tag,
+            .template = template,
+        },
+    }, start_pos, end_pos);
 }
 
 fn completeMemberExpression(self: *Self, object: Node.Index) Error!Node.Index {
@@ -3048,6 +3065,7 @@ fn templateLiteral(self: *Self) Error!Node.Index {
     defer template_parts.deinit();
 
     var template_token = try self.next();
+    std.debug.assert(template_token.tag == .template_literal_part);
     const start_pos = template_token.start;
     var end_pos = template_token.start + template_token.len;
 

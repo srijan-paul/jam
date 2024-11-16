@@ -491,6 +491,17 @@ fn toPretty(
             return .{ .parameters = p_list };
         },
 
+        .tagged_template_expr => |tagged_template| {
+            const tag = try copy(al, try toPretty(self, al, tagged_template.tag));
+            const template = try copy(al, try toPretty(self, al, tagged_template.template));
+            return .{
+                .tagged_template_expression = .{
+                    .tag = tag,
+                    .template = template,
+                },
+            };
+        },
+
         .empty_statement => return .{ .empty_statement = {} },
         .continue_statement => |cont| return .{
             .continue_statement = .{
