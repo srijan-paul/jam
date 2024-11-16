@@ -325,7 +325,7 @@ pub const NodeData = union(enum(u8)) {
     /// 'break' ';'
     break_statement: void,
     /// 'continue' ';'
-    continue_statement: void,
+    continue_statement: struct { label: ?Node.Index },
     parameters: ?SubRange,
     return_statement: ?Node.Index,
 
@@ -504,7 +504,7 @@ pub const NodePretty = union(enum) {
         consequent: Pretty(SubRange),
     },
     break_statement: void,
-    continue_statement: void,
+    continue_statement: struct { label: Pretty(?Node.Index) },
     variable_declaration: Pretty(VariableDeclaration),
     variable_declarator: Pretty(VariableDeclarator),
     return_statement: Pretty(?Node.Index),

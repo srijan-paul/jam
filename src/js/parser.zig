@@ -1162,8 +1162,7 @@ fn whileStatement(self: *Self) Error!Node.Index {
     self.context.@"break" = true;
     self.context.@"continue" = true;
 
-    // todo: perform a labeled statement check here.
-    const body = try self.statementOrDeclaration();
+    const body = try self.stmtNotLabeledFunction();
     const end_pos = self.nodeSpan(body).end;
 
     return self.addNode(
@@ -1757,8 +1756,29 @@ fn continueStatement(self: *Self) Error!Node.Index {
     }
 
     const start_pos = continue_kw.start;
-    const end_pos = try self.semiColon(continue_kw.start + continue_kw.len);
-    return self.addNode(.{ .continue_statement = {} }, start_pos, end_pos);
+    var end_pos = continue_kw.start + continue_kw.len;
+
+    const label = blk: {
+        const cur = self.current_token;
+        if ((cur.tag == .identifier or self.isKeywordIdentifier(cur.tag)) and
+            cur.line == continue_kw.line)
+        {
+            // TODO: check if this label exists.
+            const token = try self.next();
+            const id = try self.identifier(token);
+            end_pos = token.start + token.len;
+            break :blk id;
+        }
+
+        break :blk null;
+    };
+
+    end_pos = try self.semiColon(end_pos);
+    return self.addNode(
+        .{ .continue_statement = .{ .label = label } },
+        start_pos,
+        end_pos,
+    );
 }
 
 // ------------------------

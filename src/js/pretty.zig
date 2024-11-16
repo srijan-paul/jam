@@ -492,7 +492,14 @@ fn toPretty(
         },
 
         .empty_statement => return .{ .empty_statement = {} },
-        .continue_statement => return .{ .continue_statement = {} },
+        .continue_statement => |cont| return .{
+            .continue_statement = .{
+                .label = if (cont.label) |l|
+                    try copy(al, try toPretty(self, al, l))
+                else
+                    null,
+            },
+        },
         .break_statement => return .{ .break_statement = {} },
         .debugger_statement => return .{ .debugger_statement = {} },
 
