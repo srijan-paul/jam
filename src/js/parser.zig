@@ -2264,19 +2264,12 @@ fn primaryExpression(self: *Self) Error!Node.Index {
             );
         },
         .identifier => {
-            const id = try self.identifier(token);
             if (self.isAtToken(.@"=>")) {
-                const params_range = try self.addSubRange(&[_]Node.Index{id});
-                // TODO: should functions with single parameters just not store a SubRange and store the
-                // parameter directly?
-                const params = try self.addNode(
-                    .{ .parameters = params_range },
-                    token.start,
-                    token.start + token.len,
-                );
-                return self.completeArrowFunction(&token, &token, params, .{ .is_arrow = true });
+                // arrow function starting with an identifier:
+                // 'x => 1'.
+                return self.identifierArrowFunction(&token);
             }
-            return id;
+            return self.identifier(token);
         },
         .numeric_literal,
         .regex_literal,
@@ -2301,6 +2294,10 @@ fn primaryExpression(self: *Self) Error!Node.Index {
     }
 
     if (self.isKeywordIdentifier(token.tag)) {
+        if (self.isAtToken(.@"=>")) {
+            // arrow function starting with keyword identifier: 'yield => 1'
+            return self.identifierArrowFunction(&token);
+        }
         return self.identifier(token);
     }
 
@@ -2310,6 +2307,21 @@ fn primaryExpression(self: *Self) Error!Node.Index {
         .{token.toByteSlice(self.source)},
     );
     return Error.UnexpectedToken;
+}
+
+/// Parse an arrow function that starts with an identifier token.
+/// E.g: `x => 1` or `yield => 2`
+fn identifierArrowFunction(self: *Self, token: *const Token) Error!Node.Index {
+    const id = try self.identifier(token.*);
+    const params_range = try self.addSubRange(&[_]Node.Index{id});
+    // TODO: should functions with single parameters just not store a SubRange and store the
+    // parameter directly?
+    const params = try self.addNode(
+        .{ .parameters = params_range },
+        token.start,
+        token.start + token.len,
+    );
+    return self.completeArrowFunction(token, token, params, .{ .is_arrow = true });
 }
 
 /// Parse a template literal expression.
@@ -3084,6 +3096,13 @@ fn classElementName(self: *Self) Error!Node.Index {
             const expr = try self.assignmentExpression();
             _ = try self.expect(.@"]");
             return expr;
+        },
+        .string_literal, .numeric_literal => {
+            return self.addNode(
+                .{ .literal = try self.addToken(token) },
+                token.start,
+                token.start + token.len,
+            );
         },
         else => {
             if (token.tag.isKeyword())
