@@ -380,8 +380,46 @@ fn statement(self: *Self) Error!Node.Index {
         // TODO: right now, if expression parsing fails, the error message we get is:
         // "Expected an expression, found '<token>'."
         // This error message should be improved.
-        else => self.expressionStatement(),
+        else => self.labeledOrExpressionStatement(),
     };
+}
+
+fn labeledOrExpressionStatement(self: *Self) Error!Node.Index {
+    const cur = self.current_token.tag;
+    if ((cur == .identifier or self.isKeywordIdentifier(cur)) and
+        (try self.lookAhead()).tag == .@":")
+    {
+        return self.labeledStatement();
+    }
+
+    return self.expressionStatement();
+}
+
+fn labeledStatement(self: *Self) Error!Node.Index {
+    const label = try self.next();
+    _ = try self.expect(.@":");
+
+    const body = try self.labeledItem();
+    const end_pos = self.nodes.items(.end)[@intFromEnum(body)];
+
+    return self.addNode(
+        .{
+            .labeled_statement = .{
+                .body = body,
+                .label = try self.addToken(label),
+            },
+        },
+        label.start,
+        end_pos,
+    );
+}
+
+fn labeledItem(self: *Self) Error!Node.Index {
+    if (self.isAtToken(.kw_function)) {
+        const fn_token = try self.next();
+        return self.functionDeclaration(fn_token.start, .{});
+    }
+    return self.statement();
 }
 
 /// Declaration:
@@ -1498,7 +1536,11 @@ fn letStatement(self: *Self) Error!Node.Index {
     const let_kw = try self.startLetBinding() orelse {
         // If the `let` keyword doesn't start an identifier,
         // then its an identifier.
-        // TODO: also support labelled statements where the label is `let`
+        if ((try self.lookAhead()).tag == .@":") {
+            // This is a labeled statement: 'let: ...'
+            return self.labeledStatement();
+        }
+
         return self.expressionStatement();
     };
 
