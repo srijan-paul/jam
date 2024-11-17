@@ -3413,6 +3413,7 @@ fn primaryExpression(self: *Self) Error!Node.Index {
             }
             return self.identifier(token);
         },
+        .legacy_octal_literal,
         .numeric_literal,
         .regex_literal,
         .string_literal,
@@ -3420,6 +3421,15 @@ fn primaryExpression(self: *Self) Error!Node.Index {
         .kw_false,
         .kw_null,
         => {
+            if (self.context.strict and token.tag == .legacy_octal_literal) {
+                try self.emitDiagnostic(
+                    token.startCoord(self.source),
+                    "Legacy octal literals are not allowed in strict mode",
+                    .{},
+                );
+                return Error.UnexpectedToken;
+            }
+
             self.current_destructure_kind.setNoAssignOrDestruct();
             return self.addNode(
                 .{ .literal = try self.addToken(token) },

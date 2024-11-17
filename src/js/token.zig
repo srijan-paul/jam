@@ -12,6 +12,9 @@ pub const JsTokenTag = enum(u32) {
     identifier,
     private_identifier,
     numeric_literal,
+    // octal literal starting with '0', but not with '0o' or '0O',
+    // e.g: 012
+    legacy_octal_literal,
     string_literal,
     regex_literal,
     template_literal_start,

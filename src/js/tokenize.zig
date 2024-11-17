@@ -997,11 +997,8 @@ fn punctuator(self: *Self) !Token {
 
 /// https://tc39.es/ecma262/#prod-DecimalIntegerLiteral
 fn matchDecimalIntegerLiteral(str: []const u8) ?u32 {
-    if (str[0] == '0') return 1;
-
     var i: u32 = 0;
-    // first character must be a non-zero digit.
-    if (str[i] < '1' and str[i] > '9') return null;
+    if (!std.ascii.isDigit(str[0])) return null;
     i += 1; // eat first char
 
     if (i < str.len and str[i] == '_')
@@ -1101,6 +1098,8 @@ fn numericLiteral(self: *Self) !Token {
     const start = self.index;
     const str = self.source[start..];
 
+    var is_legacy_octal_literal: bool = false;
+
     const len: u32 = blk: {
         if (str[0] == '.') {
             var decimal_len = matchDecimalPart(str) orelse
@@ -1138,6 +1137,14 @@ fn numericLiteral(self: *Self) !Token {
 
         var decimal_len = matchDecimalIntegerLiteral(str) orelse
             return Error.InvalidNumericLiteral;
+
+        if (str[0] == '0' and decimal_len > 1 and std.ascii.isDigit(str[1])) {
+            is_legacy_octal_literal = true;
+            // legacy octal literals cannot be followed by decimal or exponent parts.
+            // e.g: 012e1 is illegal.
+            break :blk decimal_len;
+        }
+
         if (decimal_len < str.len) {
             decimal_len += matchDecimalPart(str[decimal_len..]) orelse 0;
         }
@@ -1160,7 +1167,7 @@ fn numericLiteral(self: *Self) !Token {
     }
 
     return Token{
-        .tag = .numeric_literal,
+        .tag = if (is_legacy_octal_literal) .legacy_octal_literal else .numeric_literal,
         .start = start,
         .len = len,
         .line = self.line,
@@ -1341,6 +1348,7 @@ test Self {
         .{ "55e+1", .numeric_literal },
         .{ "55e-1", .numeric_literal },
         .{ "55e112", .numeric_literal },
+        .{ "055", .legacy_octal_literal },
         .{ "0XF", .numeric_literal },
         .{ ".1", .numeric_literal },
         .{ ".33", .numeric_literal },
