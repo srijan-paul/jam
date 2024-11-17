@@ -2801,6 +2801,7 @@ fn tryCallExpression(self: *Self, callee: Node.Index) Error!?Node.Index {
             .@"(" => call_expr = try self.completeCallExpression(call_expr),
             .@"[" => call_expr = try self.completeComputedMemberExpression(call_expr),
             .@"." => call_expr = try self.completeMemberExpression(call_expr),
+            .template_literal_part => call_expr = try self.completeTaggedTemplate(call_expr),
             else => break,
         }
     }
