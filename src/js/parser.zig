@@ -2310,11 +2310,22 @@ fn yieldExpression(self: *Self) Error!Node.Index {
     const yield_kw = try self.next();
     std.debug.assert(yield_kw.tag == .kw_yield and self.context.is_yield_reserved);
 
-    const has_operand = self.current_token.line == yield_kw.line;
-    const is_delegated = self.isAtToken(.@"*") and has_operand;
-    // TODO: the error message here can be improved, when yield* is followed by a non-expression.
-    if (is_delegated) {
-        _ = try self.next(); // eat '*'
+    var has_operand = false;
+    var is_delegated = false;
+    if (self.current_token.line == yield_kw.line) {
+        if (self.current_token.tag == .@"*") {
+            _ = try self.next();
+            is_delegated = true;
+            has_operand = true;
+        } else {
+            // `{ a = yield } = 5;` is valid JS syntax,
+            // and we shouldn't try to parse an expression
+            // even though the '}' and 'yield' are on the same line.
+            has_operand = switch (self.current_token.tag) {
+                .@"]", .@"}", .@",", .@")", .@";" => false,
+                else => true,
+            };
+        }
     }
 
     var end_pos = yield_kw.start + yield_kw.len;
