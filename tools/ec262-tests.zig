@@ -74,8 +74,18 @@ fn testOnPassingFile(
     const source = try pass_dir.readFileAlloc(allocator, file_name, std.math.maxInt(u32));
     defer allocator.free(source);
 
+    const source_type: syntax.Parser.SourceType =
+        if (std.mem.endsWith(u8, file_name, ".module.js"))
+        .module
+    else
+        .script;
+
     // parse the program
-    var parser = try Parser.init(allocator, source, .{});
+    var parser = try Parser.init(
+        allocator,
+        source,
+        .{ .source_type = source_type },
+    );
     defer parser.deinit();
 
     _ = try parser.parse();
@@ -87,7 +97,11 @@ fn testOnPassingFile(
     );
     defer allocator.free(source_explicit);
 
-    var parser2 = try Parser.init(allocator, source_explicit, .{});
+    var parser2 = try Parser.init(
+        allocator,
+        source_explicit,
+        .{ .source_type = source_type },
+    );
     defer parser2.deinit();
 
     _ = try parser2.parse();

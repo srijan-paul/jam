@@ -125,6 +125,44 @@ fn toPretty(
             };
         },
 
+        .import_declaration => |import| {
+            return .{
+                .import_declaration = .{
+                    .source = try copy(al, try toPretty(self, al, import.source)),
+                    .specifiers = try prettySubRange(al, self, import.specifiers),
+                },
+            };
+        },
+
+        .import_specifier => |specifier| {
+            const local = try copy(al, try toPretty(self, al, specifier.local));
+            const imported = if (specifier.imported) |i|
+                try copy(al, try toPretty(self, al, i))
+            else
+                null;
+
+            return .{
+                .import_specifier = .{
+                    .local = local,
+                    .imported = imported,
+                },
+            };
+        },
+
+        .import_default_specifier => |specifier| {
+            const name = try copy(al, try toPretty(self, al, specifier.name));
+            return .{
+                .import_default_specifier = .{ .name = name },
+            };
+        },
+
+        .import_namespace_specifier => |specifier| {
+            const name = try copy(al, try toPretty(self, al, specifier.name));
+            return .{
+                .import_namespace_specifier = .{ .name = name },
+            };
+        },
+
         .try_statement => |try_stmt| {
             const body = try copy(al, try toPretty(self, al, try_stmt.body));
             const catch_clause = try copy(al, try toPretty(self, al, try_stmt.catch_clause));

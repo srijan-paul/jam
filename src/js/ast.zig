@@ -260,6 +260,19 @@ pub const MetaProperty = struct {
     property: Node.Index,
 };
 
+pub const ImportDeclaration = struct {
+    specifiers: SubRange,
+    source: Node.Index,
+};
+
+pub const ImportDefaultSpecifier = struct { name: Node.Index };
+pub const ImportNamespaceSpecifier = struct { name: Node.Index };
+
+pub const ImportSpecifier = struct {
+    imported: ?Node.Index,
+    local: Node.Index,
+};
+
 pub const NodeData = union(enum(u8)) {
     program: ?SubRange,
 
@@ -343,6 +356,10 @@ pub const NodeData = union(enum(u8)) {
     continue_statement: struct { label: ?Node.Index },
     parameters: ?SubRange,
     return_statement: ?Node.Index,
+    import_declaration: ImportDeclaration,
+    import_default_specifier: ImportDefaultSpecifier,
+    import_specifier: ImportSpecifier,
+    import_namespace_specifier: ImportNamespaceSpecifier,
 
     /// Represents `null` AST node.
     /// This is a sentinel, and always present at index 0 of the `nodes` array.
@@ -525,11 +542,15 @@ pub const NodePretty = union(enum) {
     continue_statement: struct { label: Pretty(?Node.Index) },
     variable_declaration: Pretty(VariableDeclaration),
     variable_declarator: Pretty(VariableDeclarator),
+    import_declaration: Pretty(ImportDeclaration),
+    import_default_specifier: Pretty(ImportDefaultSpecifier),
+    import_specifier: Pretty(ImportSpecifier),
+    import_namespace_specifier: Pretty(ImportNamespaceSpecifier),
+
     return_statement: Pretty(?Node.Index),
     template_element: Token_,
     template_literal: Pretty(SubRange),
 
-    // declarations
     none: void,
 
     // helpers
@@ -548,6 +569,7 @@ pub fn Pretty(T: type) type {
     if (T == Token.Index) return []const u8;
     if (T == ?Token.Index) return ?[]const u8;
     if (T == SubRange) return []NodePretty;
+    if (T == ?SubRange) return []NodePretty;
     if (T == ExtraData.Index) return ExtraPretty;
 
     switch (@typeInfo(T)) {

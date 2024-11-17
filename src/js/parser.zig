@@ -131,7 +131,6 @@ const exponentExpr = makeRightAssoc(.@"**", Self.unaryExpression);
 
 const multiplicativeExpr = makeLeftAssoc(.multiplicative_start, .multiplicative_end, exponentExpr);
 const additiveExpr = makeLeftAssoc(.additive_start, .additive_end, multiplicativeExpr);
-
 const shiftExpr = makeLeftAssoc(.shift_op_start, .shift_op_end, additiveExpr);
 
 // this one has to be hand-written to disallow 'in' inside for-loop iterators.
@@ -226,11 +225,12 @@ context: ParseContext = .{},
 /// The kind of destructuring that is allowed for the expression
 /// that was just parsed by the parser.
 current_destructure_kind: DestructureKind = @bitCast(@as(u8, 0)),
-
+/// Whether we're parsing a module or a script.
 source_type: SourceType,
+/// Whether we're parsing JSX
 jsx: bool = false,
+/// Whether we're parsing TypeScript
 typescript: bool = false,
-
 /// Bit-flags to keep track of whether the
 /// most recently parsed expression can be destructured.
 const DestructureKind = packed struct(u8) {
@@ -334,7 +334,8 @@ pub fn init(
         .strings = try StringHelper.init(allocator, source),
     };
 
-    self.context.strict = config.strict_mode;
+    // "module"s are always parsed in strict mode.
+    self.context.strict = config.strict_mode or config.source_type == SourceType.module;
 
     if (config.jsx) {
         self.jsx = true;
@@ -372,15 +373,23 @@ pub fn deinit(self: *Self) void {
 }
 
 pub fn parse(self: *Self) !Node.Index {
-    var statements = std.ArrayList(Node.Index).init(self.allocator);
-    defer statements.deinit();
+    const prev_scratch_len = self.scratch.items.len;
+    defer self.scratch.items.len = prev_scratch_len;
 
-    while (self.current_token.tag != .eof) {
-        const stmt = try self.statementOrDeclaration();
-        try statements.append(stmt);
+    if (self.source_type == .module) {
+        while (self.current_token.tag != .eof) {
+            const stmt = try self.moduleItem();
+            try self.scratch.append(stmt);
+        }
+    } else {
+        while (self.current_token.tag != .eof) {
+            const stmt = try self.statementOrDeclaration();
+            try self.scratch.append(stmt);
+        }
     }
 
-    const stmt_list = try self.addSubRange(statements.items);
+    const statements = self.scratch.items[prev_scratch_len..];
+    const stmt_list = try self.addSubRange(statements);
     return try self.addNode(
         .{ .program = stmt_list },
         0,
@@ -388,10 +397,193 @@ pub fn parse(self: *Self) !Node.Index {
     );
 }
 
+pub fn moduleItem(self: *Self) Error!Node.Index {
+    return switch (self.current_token.tag) {
+        .kw_import => self.importDeclaration(),
+        .kw_export => self.exportDeclaration(),
+        else => self.statementOrDeclaration(),
+    };
+}
+
 // ----------------------------------------------------------------------------
 // Statements and declarators.
 // https://tc39.es/ecma262/#sec-ecmascript-language-statements-and-declarations
 // ----------------------------------------------------------------------------
+
+pub fn importDeclaration(self: *Self) Error!Node.Index {
+    const import_kw = try self.next();
+    std.debug.assert(import_kw.tag == .kw_import);
+
+    // import * as foo from "foo"
+    if (self.isAtToken(.@"*"))
+        return self.starImportDeclaration(import_kw);
+
+    // import "foo";
+    if (self.isAtToken(.string_literal)) {
+        const source = try self.primaryExpression();
+        var end_pos = self.nodes.items(.end)[@intFromEnum(source)];
+        end_pos = try self.semiColon(end_pos);
+
+        return self.addNode(
+            .{
+                .import_declaration = .{
+                    .source = source,
+                    .specifiers = try self.addSubRange(&[_]Node.Index{}),
+                },
+            },
+            import_kw.start,
+            end_pos,
+        );
+    }
+
+    const prev_scratch_len = self.scratch.items.len;
+    defer self.scratch.items.len = prev_scratch_len;
+
+    var end_pos = import_kw.start + import_kw.len;
+
+    const cur = self.current_token.tag;
+    // If there is a ',' after the default import,
+    // we must parse a list of import specifiers inside '{}'
+    var comma_after_default = false;
+    if (cur == .identifier or self.isKeywordIdentifier(cur)) {
+        const default_specifier = try self.defaultImportSpecifier();
+        try self.scratch.append(default_specifier);
+
+        // eat "," after default import
+        if (self.isAtToken(.@",")) {
+            _ = try self.next();
+            comma_after_default = true;
+        }
+    }
+
+    if (comma_after_default or self.isAtToken(.@"{")) {
+        _ = try self.expect(.@"{");
+
+        const rb = blk: while (true) {
+            const specifier = try self.importSpecifier();
+            try self.scratch.append(specifier);
+            const comma_or_rb = try self.expect2(.@",", .@"}");
+            if (comma_or_rb.tag == .@"}")
+                break :blk comma_or_rb;
+        };
+
+        end_pos = rb.start + rb.len;
+    }
+
+    const specifiers = self.scratch.items[prev_scratch_len..];
+    if (specifiers.len == 0) {
+        try self.emitDiagnosticOnToken(
+            self.current_token,
+            "Expected at least one import specifier",
+            .{},
+        );
+
+        return Error.UnexpectedToken;
+    }
+
+    _ = try self.expect(.kw_from);
+    const source = try self.stringLiteral();
+    end_pos = self.nodes.items(.end)[@intFromEnum(source)];
+
+    end_pos = try self.semiColon(end_pos);
+
+    return self.addNode(
+        .{
+            .import_declaration = .{
+                .source = source,
+                .specifiers = try self.addSubRange(specifiers),
+            },
+        },
+        import_kw.start,
+        end_pos,
+    );
+}
+
+/// Assuming 'current_token' is '*', parse a import namespace specifier
+/// like `* as Identifier`
+fn starImportDeclaration(self: *Self, import_kw: Token) Error!Node.Index {
+    const star_token = try self.expect(.@"*");
+    _ = try self.expect(.kw_as);
+
+    const name_token = try self.expect(.identifier);
+    const name = try self.identifier(name_token);
+
+    _ = try self.expect(.kw_from);
+    const source = try self.stringLiteral();
+    var end_pos = self.nodes.items(.end)[@intFromEnum(source)];
+    end_pos = try self.semiColon(end_pos);
+
+    const specifier = try self.addNode(
+        .{
+            .import_namespace_specifier = .{ .name = name },
+        },
+        star_token.start,
+        name_token.start + name_token.len,
+    );
+
+    return self.addNode(
+        .{
+            .import_declaration = .{
+                .source = source,
+                .specifiers = try self.addSubRange(&[_]Node.Index{specifier}),
+            },
+        },
+        import_kw.start,
+        end_pos,
+    );
+}
+
+/// Parse the next identifier token as a default import specifier.
+fn defaultImportSpecifier(self: *Self) Error!Node.Index {
+    const name_token = try self.next();
+    const name = try self.identifier(name_token);
+    return self.addNode(
+        .{
+            .import_default_specifier = .{ .name = name },
+        },
+        name_token.start,
+        name_token.start + name_token.len,
+    );
+}
+
+fn importSpecifier(self: *Self) Error!Node.Index {
+    var name_token: Token = undefined; // assigned in the 'blk' block
+    const name = blk: {
+        if (self.isAtToken(.string_literal)) {
+            name_token = try self.next();
+            break :blk try self.stringLiteralFromToken(name_token);
+        }
+
+        name_token = try self.next();
+        break :blk try self.identifier(name_token);
+    };
+
+    if (self.isAtToken(.kw_as) or name_token.tag == .string_literal) {
+        _ = try self.expect(.kw_as); // eat 'as'
+        const alias_token = try self.next();
+        const alias = try self.identifier(alias_token);
+        return self.addNode(
+            .{
+                .import_specifier = .{
+                    .local = alias,
+                    .imported = null,
+                },
+            },
+            name_token.start,
+            alias_token.start + alias_token.len,
+        );
+    }
+
+    return self.addNode(
+        .{ .import_specifier = .{ .local = name, .imported = null } },
+        name_token.start,
+        name_token.start + name_token.len,
+    );
+}
+
+pub fn exportDeclaration(_: *Self) Error!Node.Index {
+    return Error.JsxNotImplemented;
+}
 
 /// https://tc39.es/ecma262/#prod-Statement
 fn statementOrDeclaration(self: *Self) Error!Node.Index {
@@ -2012,15 +2204,14 @@ fn emitDiagnosticOnToken(
 
 /// Emit a parse error if the current token does not match `tag`.
 fn expect(self: *Self, tag: Token.Tag) Error!Token {
-    const token = try self.next();
-    if (token.tag == tag) {
-        return token;
+    if (self.current_token.tag == tag) {
+        return try self.next();
     }
 
     try self.emitDiagnostic(
-        token.startCoord(self.source),
+        self.current_token.startCoord(self.source),
         "Expected a '{s}', but found a '{s}'",
-        .{ @tagName(tag), token.toByteSlice(self.source) },
+        .{ @tagName(tag), self.current_token.toByteSlice(self.source) },
     );
     return Error.UnexpectedToken;
 }
@@ -3071,8 +3262,6 @@ fn parseMetaProperty(
     meta_token: *const Token,
     wanted_property_name: []const u8,
 ) Error!Node.Index {
-    // TODO: check if import.meta or new.target are
-    // valid in the current context.
     const dot = try self.next();
     std.debug.assert(dot.tag == .@".");
 
@@ -3088,6 +3277,16 @@ fn parseMetaProperty(
                 wanted_property_name,
             },
         );
+        return Error.InvalidMetaProperty;
+    }
+
+    if (self.source_type == .module and meta_token.tag == .kw_import) {
+        try self.emitDiagnostic(
+            meta_token.startCoord(self.source),
+            "Cannot use 'import.meta' outside a module",
+            .{},
+        );
+
         return Error.InvalidMetaProperty;
     }
 
@@ -3250,6 +3449,25 @@ fn primaryExpression(self: *Self) Error!Node.Index {
         .{token.toByteSlice(self.source)},
     );
     return Error.UnexpectedToken;
+}
+
+fn stringLiteral(self: *Self) Error!Node.Index {
+    const token = try self.expect(.string_literal);
+    self.current_destructure_kind.setNoAssignOrDestruct();
+    return self.addNode(
+        .{ .literal = try self.addToken(token) },
+        token.start,
+        token.start + token.len,
+    );
+}
+
+fn stringLiteralFromToken(self: *Self, token: Token) Error!Node.Index {
+    self.current_destructure_kind.setNoAssignOrDestruct();
+    return self.addNode(
+        .{ .literal = try self.addToken(token) },
+        token.start,
+        token.start + token.len,
+    );
 }
 
 /// Parse an arrow function that starts with an identifier token.

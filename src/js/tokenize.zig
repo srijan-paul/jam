@@ -34,7 +34,7 @@ pub const all_keywords = [_][]const u8{
   "super", "switch", "this", "throw", "true",
   "try", "typeof", "var", "void", "while",
   "with", "yield", "async", "of", "static",
-  "constructor", "extends",
+  "constructor", "extends", "as", "from",
 };
 // zig fmt: on
 
