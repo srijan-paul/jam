@@ -129,7 +129,9 @@ fn relationalExpr(self: *Self) Error!Node.Index {
     var token = self.peek();
     while (true) : (token = self.peek()) {
         const itag: u32 = @intFromEnum(token.tag);
-        if (itag > rel_op_start and itag < rel_op_end) {
+        if ((itag > rel_op_start and itag < rel_op_end) or
+            token.tag == .kw_in or token.tag == .kw_instanceof)
+        {
 
             // `in` expressions are not allowed when parsing the LHS
             // for `for-loop` iterators.

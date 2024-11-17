@@ -37,8 +37,6 @@ pub const JsTokenTag = enum(u32) {
     @">",
     @"<=",
     @">=",
-    kw_in,
-    kw_instanceof,
     relational_end,
 
     eq_op_start,
@@ -104,6 +102,9 @@ pub const JsTokenTag = enum(u32) {
     @"=>",
 
     keywords_start,
+
+    kw_in,
+    kw_instanceof,
 
     kw_true,
     kw_false,
