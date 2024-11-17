@@ -2736,7 +2736,6 @@ fn updateExpression(self: *Self) Error!Node.Index {
 }
 
 fn lhsExpression(self: *Self) Error!Node.Index {
-    if (try self.tryNewExpression()) |expr| return expr;
     var lhs_expr = try self.memberExpression();
     if (try self.tryCallExpression(lhs_expr)) |call_expr| {
         lhs_expr = call_expr;
