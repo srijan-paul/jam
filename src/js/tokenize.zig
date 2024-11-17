@@ -81,6 +81,9 @@ assume_bslash_starts_regex: bool = false,
 /// This property is set by the parser when it expects the closing '}' of a template literal.
 assume_rbrace_is_template_part: bool = false,
 
+/// Whether the tokenizer is parsing a module or a script.
+is_parsing_module: bool = false,
+
 pub fn init(source: []const u8) Error!Self {
     if (!std.unicode.utf8ValidateSlice(source))
         return Error.InvalidUtf8;

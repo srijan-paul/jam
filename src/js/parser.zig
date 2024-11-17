@@ -16,51 +16,55 @@ const NodeData = ast.NodeData;
 
 pub const Error = error{
     UnexpectedToken,
-    // Invalid modifier like 'async'
+    /// Invalid modifier like 'async'
     IllegalModifier,
-    // Return statement outside functions
+    /// Return statement outside functions
     IllegalReturn,
-    // Labeled statement in places like the body of a for loop.
+    /// Break statement outside loops
+    IllegalBreak,
+    /// Continue statement outside loops
+    IllegalContinue,
+    /// Labeled statement in places like the body of a for loop.
     IllegalLabeledStatement,
-    // Await outside async scope.
+    /// Await outside async scope.
     IllegalAwait,
-    // '=>' Not on the same line as arrow parameters
+    /// '=>' Not on the same line as arrow parameters
     IllegalFatArrow,
-    // Found a newline where there shouldn't be one
+    /// Found a newline where there shouldn't be one
     IllegalNewline,
-    // 5 = ...
+    /// 5 = ...
     InvalidAssignmentTarget,
-    //  (1) => ...
+    ///  (1) => ...
     InvalidArrowParameters,
     InvalidArrowFunction,
-    // Setter must have exactly one parameter
+    /// Setter must have exactly one parameter
     InvalidSetter,
-    // Getter must have no parameters
+    /// Getter must have no parameters
     InvalidGetter,
-    // {x=1, x: 5} is neither a valid object literal nor a valid assignment pattern.
+    /// {x=1, x: 5} is neither a valid object literal nor a valid assignment pattern.
     InvalidObject,
-    // for (1 of []) {}
+    /// for (1 of []) {}
     InvalidLoopLhs,
-    // function (1) {}; function(...xs, x) {}, etc.
+    /// function (1) {}; function(...xs, x) {}, etc.
     InvalidFunctionParameter,
-    // 'let' used as an identifier in strict mode.
+    /// 'let' used as an identifier in strict mode.
     LetInStrictMode,
-    // let x = { x =  1} <- pattern where an object literal should've been
+    /// let x = { x =  1} <- pattern where an object literal should've been
     UnexpectedPattern,
-    // let x = 5 let 6 = 5 <- no ';' between statements
+    /// let x = 5 let 6 = 5 <- no ';' between statements
     ExpectedSemicolon,
-    // let [a, ...as, b] = [1, 2, 3] <- 'as' must be the last
+    /// let [a, ...as, b] = [1, 2, 3] <- 'as' must be the last
     RestElementNotLast,
-    // let { x, y } <- destructuring pattern must have an initializer
+    /// let { x, y } <- destructuring pattern must have an initializer
     MissingInitializer,
-    // Multiple default clauses in a switch statement.
-    // switch (x) { default: 1 default: 2 }
+    /// Multiple default clauses in a switch statement.
+    /// switch (x) { default: 1 default: 2 }
     MultipleDefaults,
-    // Class definition with multiple constructors
+    /// Class definition with multiple constructors
     MultipleConstructors,
-    // "with" statement used in strict mode.
+    /// "with" statement used in strict mode.
     WithInStrictMode,
-    // std.mem.Allocator.Error
+    /// std.mem.Allocator.Error
     OutOfMemory,
 } || Tokenizer.Error;
 const ParseFn = fn (self: *Self) Error!Node.Index;
@@ -1733,12 +1737,33 @@ fn breakStatement(self: *Self) Error!Node.Index {
             "'break' is not allowed outside loops and switch statements",
             .{},
         );
-        return Error.IllegalReturn;
+        return Error.IllegalBreak;
     }
 
     const start_pos = break_kw.start;
-    const end_pos = try self.semiColon(break_kw.start + break_kw.len);
-    return self.addNode(.{ .break_statement = {} }, start_pos, end_pos);
+    var end_pos = break_kw.start + break_kw.len;
+
+    const label = blk: {
+        const cur = self.current_token;
+        if ((cur.tag == .identifier or self.isKeywordIdentifier(cur.tag)) and
+            cur.line == break_kw.line)
+        {
+            // TODO: check if this label exists.
+            const token = try self.next();
+            const id = try self.identifier(token);
+            end_pos = token.start + token.len;
+            break :blk id;
+        }
+
+        break :blk null;
+    };
+
+    end_pos = try self.semiColon(end_pos);
+    return self.addNode(
+        .{ .break_statement = .{ .label = label } },
+        start_pos,
+        end_pos,
+    );
 }
 
 /// ContinueStatement: 'continue' ';'
@@ -1752,7 +1777,7 @@ fn continueStatement(self: *Self) Error!Node.Index {
             "'continue' is not allowed outside loops",
             .{},
         );
-        return Error.IllegalReturn;
+        return Error.IllegalContinue;
     }
 
     const start_pos = continue_kw.start;

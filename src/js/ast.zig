@@ -330,7 +330,7 @@ pub const NodeData = union(enum(u8)) {
     /// The default case in a switch statement.
     default_case: SwitchDefaultCase,
     /// 'break' ';'
-    break_statement: void,
+    break_statement: struct { label: ?Node.Index },
     /// 'continue' ';'
     continue_statement: struct { label: ?Node.Index },
     parameters: ?SubRange,
@@ -511,7 +511,7 @@ pub const NodePretty = union(enum) {
     default_case: struct {
         consequent: Pretty(SubRange),
     },
-    break_statement: void,
+    break_statement: struct { label: Pretty(?Node.Index) },
     continue_statement: struct { label: Pretty(?Node.Index) },
     variable_declaration: Pretty(VariableDeclaration),
     variable_declarator: Pretty(VariableDeclarator),

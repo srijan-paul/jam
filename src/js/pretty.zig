@@ -511,7 +511,16 @@ fn toPretty(
                     null,
             },
         },
-        .break_statement => return .{ .break_statement = {} },
+
+        .break_statement => |brk| return .{
+            .break_statement = .{
+                .label = if (brk.label) |l|
+                    try copy(al, try toPretty(self, al, l))
+                else
+                    null,
+            },
+        },
+
         .debugger_statement => return .{ .debugger_statement = {} },
 
         .variable_declarator => |decl| {
