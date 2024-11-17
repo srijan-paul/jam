@@ -405,6 +405,11 @@ fn labeledStatement(self: *Self) Error!Node.Index {
     const label = try self.next();
     _ = try self.expect(.@":");
 
+    const ctx = self.context;
+    defer self.context = ctx;
+
+    self.context.@"break" = true;
+
     const body = try self.labeledItem();
     const end_pos = self.nodes.items(.end)[@intFromEnum(body)];
 

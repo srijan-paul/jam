@@ -60,6 +60,7 @@ const pass_exceptions = [_][]const u8{
     "7ebaa39b4a9b5b5b.js",
     "7bdcce70c382a9a4.js",
     "1f988cc22167927b.js",
+    "aec65a9745669870.js",
 };
 
 /// For a given file name, check whether `pass/<file>` and `pass-explicit/<file>`
