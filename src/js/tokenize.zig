@@ -323,7 +323,12 @@ fn consumeRegexCharacterClass(self: *Self) Error!void {
 fn consumeRegexPart(self: *Self) Error!void {
     const byte = self.source[self.index];
     if (std.ascii.isAscii(byte)) {
-        if (byte == '[') {
+        if (isNewline(byte))
+            return Error.BadRegexLiteral;
+
+        if (byte == '\\') {
+            try self.consumeRegexEscape();
+        } else if (byte == '[') {
             // regex character class.
             try self.consumeRegexCharacterClass();
         } else {

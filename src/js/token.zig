@@ -78,7 +78,6 @@ pub const JsTokenTag = enum(u32) {
     @"?.",
     @"?",
     @":",
-    @"<<=",
     @">>=",
 
     // assignment operators
@@ -97,6 +96,7 @@ pub const JsTokenTag = enum(u32) {
     @"/=",
     @"??=",
     @"**=",
+    @"<<=",
     assignment_op_end,
 
     @"=>",
