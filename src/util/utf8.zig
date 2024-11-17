@@ -20,7 +20,10 @@ pub fn parseUnicodeEscape(str: []const u8) ?struct { codepoint: u21, len: u32 } 
     }
 
     var i: u32 = 2;
-    while (i < str.len and std.ascii.isHex(str[i])) : (i += 1) {}
+    // TODO(@injuly): this part can also be optimized to avoid `parseInt`
+    while (i < str.len and i < 6 and
+        std.ascii.isHex(str[i])) : (i += 1)
+    {}
     if (i < 6) return null;
 
     const code_point = std.fmt.parseInt(u21, str[2..i], 16) catch
