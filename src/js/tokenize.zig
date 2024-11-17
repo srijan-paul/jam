@@ -130,7 +130,14 @@ pub fn next(self: *Self) Error!Token {
                 return try self.regexLiteral();
             return try self.punctuator();
         },
-        ' ', '\t', '\n', '\r' => return self.whiteSpaces(),
+        ' ',
+        '\t',
+        '\n',
+        '\r',
+        '\u{00A0}',
+        '\u{000B}',
+        '\u{000C}',
+        => return self.whiteSpaces(),
         '}' => {
             if (self.assume_rbrace_is_template_part)
                 return try self.templateAfterInterpolation();
@@ -193,7 +200,20 @@ pub fn next(self: *Self) Error!Token {
                 return self.dot();
             }
         },
-        else => return try self.identifier(),
+        else => {
+            // Check for non-ASCII whitespaces
+            const code_point_len = std.unicode.utf8ByteSequenceLength(byte) catch
+                return Error.InvalidUtf8;
+
+            if (code_point_len > 1) {
+                const code_point = util.utf8.codePointAt(self.source, self.index);
+                if (isNewline(code_point.value) or isMultiByteSpace(code_point.value)) {
+                    return self.whiteSpaces();
+                }
+            }
+
+            return self.identifier();
+        },
     }
 }
 
@@ -1197,6 +1217,22 @@ fn isSimpleWhitespace(ch: u8) bool {
         '\t',
         '\u{000B}',
         '\u{000C}',
+        '\u{00A0}',
+        => true,
+        else => false,
+    };
+}
+
+fn isMultiByteSpace(ch: u21) bool {
+    return switch (ch) {
+        '\u{FEFF}',
+        '\u{00A0}',
+        '\u{2000}',
+        '\u{2001}'...'\u{200A}',
+        '\u{202F}',
+        '\u{205F}',
+        '\u{3000}',
+        '\u{1680}',
         => true,
         else => false,
     };
@@ -1222,8 +1258,9 @@ fn whiteSpaces(self: *Self) Token {
                 continue;
             }
 
-            // <ZWNSBP> (Zero Width No Break Space... yeah)
-            if (cp.value == '\u{FEFF}') {
+            // <ZWNSBP>, and all UTF-8 code-points
+            // with the property 'White_Space=yes'
+            if (isMultiByteSpace(cp.value)) {
                 self.index += cp.len;
                 continue;
             }
