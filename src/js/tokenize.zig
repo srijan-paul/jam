@@ -1185,14 +1185,14 @@ fn peekByte(self: *Self) ?u8 {
 }
 
 fn isSimpleWhitespace(ch: u8) bool {
-    switch (ch) {
+    return switch (ch) {
         ' ',
         '\t',
         '\u{000B}',
         '\u{000C}',
-        => return true,
-        else => return false,
-    }
+        => true,
+        else => false,
+    };
 }
 
 /// Consume all whitespace characters, including newlines,
@@ -1205,13 +1205,28 @@ fn whiteSpaces(self: *Self) Token {
 
     while (!self.eof()) {
         const ch = self.source[self.index];
+
+        if (!std.ascii.isAscii(ch)) {
+            // check for Non-ASCII UTF-8 newline or whitespace char.
+            const cp = util.utf8.codePointAt(self.source, self.index);
+            if (cp.value == '\u{2028}' or cp.value == '\u{2029}') {
+                self.index += cp.len;
+                self.line += 1;
+                continue;
+            }
+
+            // <ZWNSBP> (Zero Width No Break Space... yeah)
+            if (cp.value == '\u{FEFF}') {
+                self.index += cp.len;
+                continue;
+            }
+            break;
+        }
+
         // Whitespaces that are single byte UTF-8 code-points
         if (isSimpleWhitespace(ch)) {
             self.index += 1;
-            continue;
-        }
-
-        if (isNewline(ch)) {
+        } else if (isNewline(ch)) {
             self.line += 1;
             self.index += 1;
 
@@ -1224,19 +1239,10 @@ fn whiteSpaces(self: *Self) Token {
             }
 
             continue;
+        } else {
+            // reached a non-whitespace character.
+            break;
         }
-
-        // <ZWNSBP> (Zero Width No Break Space... yeah)
-        if (ch == 0xEF and
-            self.index + 2 < self.source.len and
-            self.source[self.index + 1] == 0xBB and
-            self.source[self.index + 2] == 0xBF)
-        {
-            self.index += 3;
-            continue;
-        }
-
-        break;
     }
 
     return Token{
