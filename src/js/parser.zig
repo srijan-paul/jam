@@ -1422,10 +1422,14 @@ fn doWhileStatement(self: *Self) Error!Node.Index {
     _ = try self.expect(.kw_while);
     _ = try self.expect(.@"(");
     const cond = try self.expression();
-    _ = try self.expect(.@")");
-    var end_pos = self.nodeSpan(cond).end;
+    const rb = try self.expect(.@")");
 
-    end_pos = try self.semiColon(end_pos);
+    var end_pos = rb.start + rb.len;
+
+    if (self.isAtToken(.@";")) {
+        const semi = try self.next();
+        end_pos = semi.start + semi.len;
+    }
 
     return self.addNode(
         .{ .do_while_statement = .{ .condition = cond, .body = body } },
