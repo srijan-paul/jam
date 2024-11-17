@@ -2497,7 +2497,7 @@ fn destructuredPropertyDefinition(self: *Self) Error!Node.Index {
         },
         else => {
             if (self.current_token.tag == .identifier or
-                self.isKeywordIdentifier(self.current_token.tag))
+                self.current_token.tag.isKeyword())
             {
                 return self.destructuredIdentifierProperty();
             }
@@ -2507,7 +2507,7 @@ fn destructuredPropertyDefinition(self: *Self) Error!Node.Index {
     }
 }
 
-/// Parse a destructured objectp proeprty starting with an identifier.
+/// Parse a destructured object property starting with an identifier.
 /// Assumes that self.current_token is the .identifier.
 fn destructuredIdentifierProperty(self: *Self) Error!Node.Index {
     const key_token = try self.next();
@@ -2590,7 +2590,7 @@ fn objectAssignmentPattern(self: *Self) Error!Node.Index {
             },
 
             else => {
-                if (self.isKeywordIdentifier(cur_token.tag)) {
+                if (cur_token.tag.isKeyword()) {
                     const prop = try self.destructuredPropertyDefinition();
                     destruct_kind.update(self.current_destructure_kind);
                     try props.append(prop);
