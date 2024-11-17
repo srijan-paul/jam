@@ -3,6 +3,7 @@ const unicode_id = @import("unicode-id");
 const Token = @import("token.zig").Token;
 
 const util = @import("util");
+const parser = @import("parser.zig");
 
 const Self = @This();
 
@@ -89,7 +90,7 @@ is_parsing_module: bool = false,
 /// In strict mode, numeric literals starting with '0' are not allowed.
 is_in_strict_mode: bool = false,
 
-pub fn init(source: []const u8) Error!Self {
+pub fn init(source: []const u8, _: parser.Config) Error!Self {
     if (!std.unicode.utf8ValidateSlice(source))
         return Error.InvalidUtf8;
 

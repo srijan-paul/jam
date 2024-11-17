@@ -75,7 +75,7 @@ fn testOnPassingFile(
     defer allocator.free(source);
 
     // parse the program
-    var parser = try Parser.init(allocator, source, file_name);
+    var parser = try Parser.init(allocator, source, .{});
     defer parser.deinit();
 
     _ = try parser.parse();
@@ -87,7 +87,7 @@ fn testOnPassingFile(
     );
     defer allocator.free(source_explicit);
 
-    var parser2 = try Parser.init(allocator, source_explicit, file_name);
+    var parser2 = try Parser.init(allocator, source_explicit, .{});
     defer parser2.deinit();
 
     _ = try parser2.parse();

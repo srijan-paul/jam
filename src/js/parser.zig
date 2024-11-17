@@ -68,6 +68,9 @@ pub const Error = error{
     WithInStrictMode,
     /// std.mem.Allocator.Error
     OutOfMemory,
+    // TODO: remove these two errors
+    JsxNotImplemented,
+    TypeScriptNotImplemented,
 } || Tokenizer.Error;
 const ParseFn = fn (self: *Self) Error!Node.Index;
 
@@ -101,6 +104,19 @@ pub const ParseContext = packed struct(u8) {
     /// Are `in` statements allowed?
     /// Used to parse for-in loops.
     in: bool = true,
+};
+
+pub const SourceType = enum { script, module };
+/// Configuration options for the parser.
+pub const Config = struct {
+    /// Whether we're parsing a script or a module.
+    source_type: SourceType = .module,
+    /// Enable strict mode by default
+    strict_mode: bool = false,
+    /// Enable JSX support
+    jsx: bool = false,
+    /// Enable typescript support
+    typescript: bool = false,
 };
 
 // arranged in highest to lowest binding order
@@ -174,7 +190,6 @@ allocator: std.mem.Allocator,
 
 /// Immutable reference to the source code.
 source: []const u8,
-file_name: []const u8,
 /// Tokens are consumed on-demand, instead of being pre-scanned into a list.
 /// This is important because somtimes, tokens are context sensitive.
 /// For instance: a '/' can either be the start of a division-related operator, or
@@ -211,6 +226,10 @@ context: ParseContext = .{},
 /// The kind of destructuring that is allowed for the expression
 /// that was just parsed by the parser.
 current_destructure_kind: DestructureKind = @bitCast(@as(u8, 0)),
+
+source_type: SourceType,
+jsx: bool = false,
+typescript: bool = false,
 
 /// Bit-flags to keep track of whether the
 /// most recently parsed expression can be destructured.
@@ -296,14 +315,15 @@ const DestructureKind = packed struct(u8) {
 pub fn init(
     allocator: std.mem.Allocator,
     source: []const u8,
-    file_name: []const u8,
+    config: Config,
 ) Error!Self {
     var self = Self{
         .allocator = allocator,
         .source = source,
-        .file_name = file_name,
-        .tokenizer = try Tokenizer.init(source),
+        .tokenizer = try Tokenizer.init(source, config),
         .current_token = undefined,
+
+        .source_type = config.source_type,
 
         .diagnostics = try std.ArrayList(Diagnostic).initCapacity(allocator, 2),
         .nodes = .{},
@@ -313,6 +333,18 @@ pub fn init(
         .tokens = try std.ArrayList(Token).initCapacity(allocator, 256),
         .strings = try StringHelper.init(allocator, source),
     };
+
+    self.context.strict = config.strict_mode;
+
+    if (config.jsx) {
+        self.jsx = true;
+        return Error.JsxNotImplemented;
+    }
+
+    if (config.typescript) {
+        self.typescript = true;
+        return Error.TypeScriptNotImplemented;
+    }
 
     errdefer self.deinit();
 
