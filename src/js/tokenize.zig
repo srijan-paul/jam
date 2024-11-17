@@ -84,6 +84,11 @@ assume_rbrace_is_template_part: bool = false,
 /// Whether the tokenizer is parsing a module or a script.
 is_parsing_module: bool = false,
 
+/// Whether the tokenizer is parsing code in strict mode.
+/// This is set by the parser when it encounters a "use strict" directive.
+/// In strict mode, numeric literals starting with '0' are not allowed.
+is_in_strict_mode: bool = false,
+
 pub fn init(source: []const u8) Error!Self {
     if (!std.unicode.utf8ValidateSlice(source))
         return Error.InvalidUtf8;
@@ -943,8 +948,30 @@ fn matchDecimalIntegerLiteral(str: []const u8) ?u32 {
 fn matchHexDigits(str: []const u8) ?u32 {
     var i: u32 = 0;
     while (i < str.len and std.ascii.isHex(str[i])) : (i += 1) {
-        if (i + 2 < str.len and str[i + 1] == '_' and std.ascii.isHex(str[i + 2]))
+        if (i + 2 < str.len and
+            str[i + 1] == '_' and
+            std.ascii.isHex(str[i + 2]))
+        {
             i += 1;
+        }
+    }
+
+    return if (i > 0) i else null;
+}
+
+fn isOctalDigit(ch: u8) bool {
+    return ch >= '0' and ch <= '7';
+}
+
+fn matchOctalDigits(str: []const u8) ?u32 {
+    var i: u32 = 0;
+    while (i < str.len and isOctalDigit(str[i])) : (i += 1) {
+        if (i + 2 < str.len and
+            str[i + 1] == '_' and
+            isOctalDigit(str[i + 2]))
+        {
+            i += 1;
+        }
     }
 
     return if (i > 0) i else null;
@@ -953,7 +980,9 @@ fn matchHexDigits(str: []const u8) ?u32 {
 fn matchBinaryDigits(str: []const u8) ?u32 {
     var i: u32 = 0;
     while (i < str.len and (str[i] == '0' or str[i] == '1')) : (i += 1) {
-        if (i + 2 < str.len and str[i + 1] == '_' and (str[i + 2] == '0' or str[i + 2] == '1'))
+        if (i + 2 < str.len and
+            str[i + 1] == '_' and
+            (str[i + 2] == '0' or str[i + 2] == '1'))
             i += 1;
     }
 
@@ -1012,14 +1041,28 @@ fn numericLiteral(self: *Self) !Token {
             break :blk decimal_len;
         }
 
-        if (str.len > 2 and str[0] == '0' and (str[1] == 'x' or str[1] == 'X')) {
-            const hex_len: u32 = matchHexDigits(str[2..]) orelse
-                return Error.InvalidHexLiteral;
-            break :blk hex_len + 2;
-        } else if (str.len > 2 and str[0] == '0' and (str[1] == 'b' or str[1] == 'B')) {
-            const binary_len: u32 = matchBinaryDigits(str[2..]) orelse
-                return Error.InvalidBinaryLiteral;
-            break :blk binary_len + 2;
+        if (str.len > 2 and str[0] == '0') {
+            switch (str[1]) {
+                'x', 'X' => {
+                    const hex_len: u32 = matchHexDigits(str[2..]) orelse
+                        return Error.InvalidHexLiteral;
+                    break :blk hex_len + 2;
+                },
+
+                'o', 'O' => {
+                    const octal_len: u32 = matchOctalDigits(str[2..]) orelse
+                        return Error.InvalidNumericLiteral;
+                    break :blk octal_len + 2;
+                },
+
+                'b', 'B' => {
+                    const binary_len: u32 = matchBinaryDigits(str[2..]) orelse
+                        return Error.InvalidBinaryLiteral;
+                    break :blk binary_len + 2;
+                },
+
+                else => {},
+            }
         }
 
         var decimal_len = matchDecimalIntegerLiteral(str) orelse
