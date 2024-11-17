@@ -638,8 +638,7 @@ fn identifier(self: *Self) Error!Token {
     const view = std.unicode.Utf8View.initUnchecked(str);
     var it = view.iterator();
 
-    const is_valid_start = matchIdentifierStart(self, &it) catch |err|
-        return err;
+    const is_valid_start = try matchIdentifierStart(self, &it);
     if (!is_valid_start) return Error.MalformedIdentifier;
 
     const len = blk: {

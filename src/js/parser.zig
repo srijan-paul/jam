@@ -3802,7 +3802,7 @@ fn propertyDefinitionList(self: *Self) Error!?ast.SubRange {
             // generator method
             .@"*" => {
                 _ = try self.next(); // eat '*'
-                const key = try self.propertyName();
+                const key = try self.classElementName();
                 const generator_method = try self.parseMethodBody(
                     key,
                     .{ .is_method = true },
@@ -3855,23 +3855,6 @@ fn propertyDefinitionList(self: *Self) Error!?ast.SubRange {
 
     if (property_defs.items.len == 0) return null;
     return try self.addSubRange(property_defs.items);
-}
-
-/// Parse an object property name, which can be an identifier or a keyword.
-fn propertyName(self: *Self) Error!Node.Index {
-    if (self.current_token.tag == .identifier or self.current_token.tag.isKeyword()) {
-        self.current_destructure_kind.can_destruct = true;
-        self.current_destructure_kind.can_be_assigned_to = true;
-        return self.identifier(try self.next());
-    }
-
-    try self.emitDiagnostic(
-        self.current_token.startCoord(self.source),
-        "Expected a property name, got '{s}'",
-        .{self.current_token.toByteSlice(self.source)},
-    );
-
-    return Error.UnexpectedToken;
 }
 
 /// Parse an the property of an object literal or object pattern that starts with an identifier.
