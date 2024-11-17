@@ -32,6 +32,8 @@ pub const Error = error{
     IllegalFatArrow,
     /// Found a newline where there shouldn't be one
     IllegalNewline,
+    /// Incorrect use of a meta property like 'new.target'
+    InvalidMetaProperty,
     /// 5 = ...
     InvalidAssignmentTarget,
     ///  (1) => ...
@@ -495,9 +497,7 @@ fn classDeclaration(self: *Self) Error!Node.Index {
 fn classExpression(self: *Self, class_kw: Token) Error!Node.Index {
     const name = blk: {
         const cur = self.current_token.tag;
-        if (cur == .identifier or
-            self.isKeywordIdentifier(cur))
-        {
+        if (cur == .identifier or self.isKeywordIdentifier(cur)) {
             const name_token = try self.next();
             break :blk try self.identifier(name_token);
         }
@@ -505,7 +505,7 @@ fn classExpression(self: *Self, class_kw: Token) Error!Node.Index {
         break :blk null;
     };
 
-    const super_class = if (self.current_token.tag == .kw_extends)
+    const super_class = if (self.isAtToken(.kw_extends))
         try self.classHeritage()
     else
         Node.Index.empty;
@@ -1300,11 +1300,13 @@ fn tryStatement(self: *Self) Error!Node.Index {
         },
     }
 
-    return self.addNode(.{ .try_statement = ast.TryStatement{
-        .finalizer = finalizer,
-        .catch_clause = catch_clause,
-        .body = body,
-    } }, start_pos, end_pos);
+    return self.addNode(.{
+        .try_statement = ast.TryStatement{
+            .finalizer = finalizer,
+            .catch_clause = catch_clause,
+            .body = body,
+        },
+    }, start_pos, end_pos);
 }
 
 fn catchClause(self: *Self) Error!Node.Index {
@@ -2728,10 +2730,6 @@ fn updateExpression(self: *Self) Error!Node.Index {
 
 fn lhsExpression(self: *Self) Error!Node.Index {
     if (try self.tryNewExpression()) |expr| return expr;
-    if (self.peek().tag == .kw_super) {
-        return try self.superExpression();
-    }
-
     var lhs_expr = try self.memberExpression();
     if (try self.tryCallExpression(lhs_expr)) |call_expr| {
         lhs_expr = call_expr;
@@ -2749,29 +2747,35 @@ fn superExpression(self: *Self) Error!Node.Index {
     std.debug.assert(super_token.tag == .kw_super);
 
     const super_args, const start, const end = try self.parseArgs();
-
-    return self.addNode(.{
-        .super_call_expr = super_args,
-    }, start, end);
+    return self.addNode(.{ .super_call_expr = super_args }, start, end);
 }
 
+/// Parse a 'new' expression if 'current_token' is 'new',
+/// otherwise return `null`.
 fn tryNewExpression(self: *Self) Error!?Node.Index {
     if (self.isAtToken(.kw_new)) {
-        const new_token = try self.next(); // eat "new"
-        const expr = try self.memberExpression();
-        const expr_end_pos = self.nodes.items(.end)[@intFromEnum(expr)];
-        return try self.addNode(.{
-            .new_expr = .{
-                .callee = expr,
-                .arguments = if (self.isAtToken(.@"("))
-                    try self.args()
-                else
-                    try self.addNode(.{ .arguments = null }, new_token.start, new_token.start),
-            },
-        }, new_token.start, expr_end_pos);
+        const new_token = try self.next();
+        return try self.completeNewExpression(&new_token);
     }
-
     return null;
+}
+
+fn completeNewExpression(self: *Self, new_token: *const Token) Error!Node.Index {
+    const expr = try self.memberExpression();
+    const expr_end_pos = self.nodes.items(.end)[@intFromEnum(expr)];
+    return try self.addNode(.{
+        .new_expr = .{
+            .callee = expr,
+            .arguments = if (self.isAtToken(.@"("))
+                try self.args()
+            else
+                try self.addNode(
+                    .{ .arguments = null },
+                    new_token.start,
+                    new_token.start,
+                ),
+        },
+    }, new_token.start, expr_end_pos);
 }
 
 /// Try parsing a call expression. If the input is malformed, return a `Error`,
@@ -2928,8 +2932,14 @@ fn optionalChain(self: *Self, object: Node.Index) Error!Node.Index {
 }
 
 fn memberExpression(self: *Self) Error!Node.Index {
-    var member_expr = try self.primaryExpression();
-    var token = self.peek();
+    var member_expr = switch (self.current_token.tag) {
+        .kw_new => try self.newTargetOrExpression(),
+        .kw_import => try self.importMetaOrCall(),
+        .kw_super => try self.superPropertyOrCall(),
+        else => try self.primaryExpression(),
+    };
+
+    var token = self.current_token;
     while (token.tag != .eof) : (token = self.peek()) {
         switch (token.tag) {
             .@"." => member_expr = try self.completeMemberExpression(member_expr),
@@ -2939,6 +2949,106 @@ fn memberExpression(self: *Self) Error!Node.Index {
         }
     }
     return member_expr;
+}
+
+/// A `new.target` meta property, or a regular NewExpression
+/// https://tc39.es/ecma262/#prod-NewTarget
+/// https://tc39.es/ecma262/#prod-NewExpression
+fn newTargetOrExpression(self: *Self) Error!Node.Index {
+    const new_token = try self.next();
+    std.debug.assert(new_token.tag == .kw_new);
+    if (self.isAtToken(.@"."))
+        return self.parseMetaProperty(&new_token, "target");
+    // No '.' after 'new', so we're parsing a regular old
+    // NewExpression.
+    return self.completeNewExpression(&new_token);
+}
+
+/// Parse an `import.meta` meta property, or an ImportCall:
+/// https://tc39.es/ecma262/#prod-ImportMeta
+/// https://tc39.es/ecma262/#prod-ImportCall
+fn importMetaOrCall(self: *Self) Error!Node.Index {
+    const import_token = try self.next();
+    if (self.isAtToken(.@"."))
+        return try self.parseMetaProperty(&import_token, "meta");
+
+    // TODO: support "ImportCall":
+    // https://tc39.es/ecma262/#prod-ImportCall
+    try self.emitDiagnosticOnToken(import_token, "Unexpected 'import'", .{});
+    return Error.UnexpectedToken;
+}
+
+/// Parse a super property or call expression.
+/// https://tc39.es/ecma262/#prod-SuperProperty
+/// https://tc39.es/ecma262/#prod-SuperCall
+/// SuperProperty:
+///  super [ Expression ]
+///  super . IdentifierName
+/// SuperCall:
+///  super Arguments
+fn superPropertyOrCall(self: *Self) Error!Node.Index {
+    // TODO: disallow super outside classes that have a super class
+    const super_token = try self.next();
+    std.debug.assert(super_token.tag == .kw_super);
+
+    switch (self.current_token.tag) {
+        .@"[" => {
+            const super = try self.makeSuper(&super_token);
+            return self.completeComputedMemberExpression(super);
+        },
+        .@"." => {
+            const super = try self.makeSuper(&super_token);
+            return self.completeMemberExpression(super);
+        },
+        else => {
+            const super_args, const start, const end = try self.parseArgs();
+            return self.addNode(.{ .super_call_expr = super_args }, start, end);
+        },
+    }
+}
+
+/// Parse a 'MetaProperty' like `new.target` or `import.meta`.
+/// Assumes that `self.current_token` is the `new` or `import` keyword,
+/// and that current_token is a '.'
+fn parseMetaProperty(
+    self: *Self,
+    meta_token: *const Token,
+    wanted_property_name: []const u8,
+) Error!Node.Index {
+    // TODO: check if import.meta or new.target are
+    // valid in the current context.
+    const dot = try self.next();
+    std.debug.assert(dot.tag == .@".");
+
+    const property_token = try self.expect(.identifier);
+    const property_name_str = property_token.toByteSlice(self.source);
+    if (!std.mem.eql(u8, property_name_str, wanted_property_name)) {
+        try self.emitDiagnostic(
+            property_token.startCoord(self.source),
+            "Unexpected {s}, did you mean to use the meta property '{s}.{s}'",
+            .{
+                property_name_str,
+                meta_token.toByteSlice(self.source),
+                wanted_property_name,
+            },
+        );
+        return Error.InvalidMetaProperty;
+    }
+
+    const meta = try self.identifier(meta_token.*);
+    const property = try self.identifier(property_token);
+
+    const end_pos = property_token.start + property_token.len;
+    return self.addNode(
+        .{
+            .meta_property = .{
+                .meta = meta,
+                .property = property,
+            },
+        },
+        meta_token.start,
+        end_pos,
+    );
 }
 
 /// When `current_token` is a template literal part, and a member_expr has been parsed
@@ -3366,6 +3476,15 @@ fn identifier(self: *Self, token: Token) Error!Node.Index {
         .{ .identifier = try self.addToken(token) },
         token.start,
         token.start + token.len,
+    );
+}
+
+fn makeSuper(self: *Self, super_token: *const Token) Error!Node.Index {
+    std.debug.assert(super_token.tag == .kw_super);
+    return self.addNode(
+        .{ .super = try self.addToken(super_token.*) },
+        super_token.start,
+        super_token.start + super_token.len,
     );
 }
 

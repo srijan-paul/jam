@@ -13,6 +13,7 @@ pub const UnaryPayload = struct {
     operator: Token.Index,
 };
 
+// TODO: make `computed` a flag in the `PropertyAccess` struct
 pub const PropertyAccess = struct {
     object: Node.Index,
     property: Token.Index,
@@ -254,6 +255,11 @@ pub const TaggedTemplateExpression = struct {
     template: Node.Index,
 };
 
+pub const MetaProperty = struct {
+    meta: Node.Index,
+    property: Node.Index,
+};
+
 pub const NodeData = union(enum(u8)) {
     program: ?SubRange,
 
@@ -263,10 +269,12 @@ pub const NodeData = union(enum(u8)) {
     member_expr: PropertyAccess,
     computed_member_expr: ComputedPropertyAccess,
     tagged_template_expr: TaggedTemplateExpression,
+    meta_property: MetaProperty,
     arguments: ?SubRange,
     new_expr: CallExpr,
     call_expr: CallExpr,
     super_call_expr: ?SubRange,
+    super: Token.Index,
     // points to  call_expr, member_expr, or computed_member_expr
     optional_expr: Node.Index,
     function_expr: Function,
@@ -427,10 +435,12 @@ pub const NodePretty = union(enum) {
     computed_member_expression: ComputedPropertyAccess_,
     optional_expression: Pretty(Node.Index),
     tagged_template_expression: Pretty(TaggedTemplateExpression),
+    meta_property: Pretty(MetaProperty),
     arguments: Pretty(SubRange),
     new_expression: Pretty(CallExpr),
     call_expression: Pretty(CallExpr),
     super_call_expression: Pretty(SubRange),
+    super,
     spread_element: Pretty(Node.Index),
     rest_element: Pretty(Node.Index),
 

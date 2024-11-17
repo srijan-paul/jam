@@ -264,6 +264,7 @@ fn toPretty(
             .arguments = try prettySubRange(al, self, maybe_args),
         },
 
+        .super => return .{ .super = {} },
         .call_expr, .new_expr => |payload| {
             const callee = try copy(al, try toPretty(self, al, payload.callee));
             const arguments = try copy(al, try toPretty(self, al, payload.arguments));
@@ -518,6 +519,13 @@ fn toPretty(
                     try copy(al, try toPretty(self, al, l))
                 else
                     null,
+            },
+        },
+
+        .meta_property => |meta| return .{
+            .meta_property = .{
+                .meta = try copy(al, try toPretty(self, al, meta.meta)),
+                .property = try copy(al, try toPretty(self, al, meta.property)),
             },
         },
 
