@@ -2368,7 +2368,12 @@ fn conditionalExpression(self: *Self) Error!Node.Index {
     _ = try self.next(); // eat '?'
     const true_expr = try self.assignExpressionNoPattern();
     _ = try self.expect(.@":");
+
+    // [+In] grammar parameter
+    const context = self.context;
+    self.context.in = true;
     const false_expr = try self.assignExpressionNoPattern();
+    self.context = context;
 
     const start_pos = self.nodes.items(.start)[@intFromEnum(cond_expr)];
     const end_pos = self.nodes.items(.end)[@intFromEnum(false_expr)];
@@ -2392,7 +2397,12 @@ fn assignmentPattern(self: *Self) Error!Node.Index {
     if (!self.isAtToken(.@"=")) return lhs;
 
     const op_token = try self.next(); // eat '='
+
+    const context = self.context;
+    self.context.in = true;
     const rhs = try self.assignmentExpression();
+    self.context = context;
+
     const lhs_start_pos = self.nodes.items(.start)[@intFromEnum(lhs)];
     const rhs_end_pos = self.nodes.items(.end)[@intFromEnum(rhs)];
 
@@ -3114,6 +3124,12 @@ fn completeMemberExpression(self: *Self, object: Node.Index) Error!Node.Index {
 }
 
 fn completeComputedMemberExpression(self: *Self, object: Node.Index) Error!Node.Index {
+    // Apply the [+In] grammar parameter.
+    // in expressions are allowed in places like: for([a in b] in c)
+    const old_ctx = self.context;
+    self.context.in = true;
+    defer self.context = old_ctx;
+
     const tok = try self.next(); // eat "["
     std.debug.assert(tok.tag == .@"[");
 
@@ -3221,6 +3237,13 @@ fn identifierArrowFunction(self: *Self, token: *const Token) Error!Node.Index {
 
 /// Parse a template literal expression.
 fn templateLiteral(self: *Self) Error!Node.Index {
+    // Handle the [+In] grammar parameter
+    // to allow `for(`${foo in bar}` in baz)`;
+    const ctx = self.context;
+    self.context.in = true;
+    defer self.context = ctx;
+
+    // TODO: use the scratch space here.
     var template_parts = try std.ArrayList(Node.Index).initCapacity(self.allocator, 4);
     defer template_parts.deinit();
 
@@ -4394,6 +4417,12 @@ fn args(self: *Self) Error!Node.Index {
 
 /// Parse arguments for a function call, then return it alongside the start and end locations.
 fn parseArgs(self: *Self) Error!struct { ast.SubRange, u32, u32 } {
+    // The "+In" grammar attribute.
+    // This is to allow things like `for (f(a in b) in c)`
+    const old_ctx = self.context;
+    self.context.in = true;
+    defer self.context = old_ctx;
+
     const start_pos = (try self.expect(.@"(")).start;
 
     var arg_list = std.ArrayList(Node.Index).init(self.allocator);
