@@ -90,11 +90,17 @@ is_parsing_module: bool = false,
 /// In strict mode, numeric literals starting with '0' are not allowed.
 is_in_strict_mode: bool = false,
 
-pub fn init(source: []const u8, _: parser.Config) Error!Self {
+config: parser.Config,
+
+pub fn init(source: []const u8, config: parser.Config) Error!Self {
     if (!std.unicode.utf8ValidateSlice(source))
         return Error.InvalidUtf8;
 
-    return Self{ .source = source };
+    return Self{
+        .source = source,
+        .config = config,
+        .is_in_strict_mode = config.strict_mode or config.source_type == .module,
+    };
 }
 
 pub fn next(self: *Self) Error!Token {
@@ -148,6 +154,15 @@ pub fn next(self: *Self) Error!Token {
             };
         },
 
+        '<' => {
+            if (self.config.source_type == .script) {
+                if (try self.singleLineHtmlCommentOpen()) |tok|
+                    return tok;
+            }
+
+            return self.punctuator();
+        },
+
         '[',
         ']',
         '(',
@@ -156,7 +171,6 @@ pub fn next(self: *Self) Error!Token {
         ';',
         ':',
         '>',
-        '<',
         '-',
         '+',
         '*',
@@ -220,43 +234,95 @@ fn isNewline(ch: u21) bool {
 /// If the '/' does not start a comment at all, return null.
 fn comment(self: *Self) Error!?Token {
     const start = self.index;
-    const str = self.source[start..];
     const start_line = self.index;
-    if (str.len < 2) return null;
 
-    var iter = std.unicode.Utf8Iterator{ .bytes = str, .i = 2 };
+    const str = self.source[start..];
+    if (str.len < 2) return null;
     if (std.mem.startsWith(u8, str, "//")) {
         // https://262.ecma-international.org/15.0/index.html#prod-SingleLineComment
-        while (iter.nextCodepoint()) |ch| {
-            if (isNewline(ch)) {
-                self.line += 1;
-                break;
-            }
-        }
+        try self.consumeSingleLineCommentChars();
     } else if (std.mem.startsWith(u8, str, "/*")) {
         // https://262.ecma-international.org/15.0/index.html#prod-MultiLineComment
-        while (iter.nextCodepoint()) |ch| {
-            if (ch == '*') {
-                if (iter.i < str.len and str[iter.i] == '/') {
-                    iter.i += 1;
-                    break;
-                }
-            } else if (isNewline(ch)) {
-                // TODO: what if its a \r\n break?
-                self.line += 1;
-            }
-        }
+        try self.consumeMultiLineCommentChars();
     } else {
         return null;
     }
 
-    self.index += @intCast(iter.i);
     return .{
         .start = start,
-        .len = @intCast(iter.i),
+        .len = self.index - start,
         .tag = .comment,
         .line = start_line,
     };
+}
+
+/// If the remaining source starts with a "<!--",
+/// consume a single line HTML comment and return it.
+/// Otherwise, return null.
+/// https://tc39.es/ecma262/#prod-annexB-SingleLineHTMLOpenComment
+fn singleLineHtmlCommentOpen(self: *Self) Error!?Token {
+    std.debug.assert(self.source[self.index] == '<');
+    const start = self.index;
+
+    if (std.mem.startsWith(u8, self.source[self.index..], "<!--")) {
+        self.index += 4;
+        try self.consumeSingleLineCommentChars();
+        return .{
+            .start = start,
+            .len = self.index - start,
+            .tag = .comment,
+            .line = self.line,
+        };
+    }
+
+    return null;
+}
+
+/// Consume all characters until a newline or EOF is seen.
+fn consumeSingleLineCommentChars(self: *Self) Error!void {
+    while (!self.eof()) {
+        const byte = self.source[self.index];
+        if (std.ascii.isAscii(byte)) {
+            if (isNewline(byte)) {
+                self.line += 1;
+                break;
+            }
+            self.index += 1;
+        } else {
+            const code_point = util.utf8.codePointAt(self.source, self.index);
+            self.index += code_point.len;
+            if (isNewline(code_point.value)) {
+                self.line += 1;
+                break;
+            }
+        }
+    }
+}
+
+/// Consume all source characters until EOF or a '*/' sequence is found.
+fn consumeMultiLineCommentChars(self: *Self) Error!void {
+    while (!self.eof()) {
+        const byte = self.source[self.index];
+        if (std.ascii.isAscii(byte)) {
+            if (byte == '*') {
+                if (self.index + 1 < self.source.len and self.source[self.index + 1] == '/') {
+                    self.index += 2;
+                    break;
+                }
+            } else if (isNewline(byte)) {
+                // TODO: what if its a /r/n?
+                self.line += 1;
+            }
+
+            self.index += 1;
+        } else {
+            const code_point = util.utf8.codePointAt(self.source, self.index);
+            self.index += code_point.len;
+            if (isNewline(code_point.value)) {
+                self.line += 1;
+            }
+        }
+    }
 }
 
 /// Consume a UTF-8 codepoint from the source string.
@@ -1186,7 +1252,7 @@ const t = std.testing;
 fn testToken(src: []const u8, tag: Token.Tag) !void {
     // first, test that token followed by EOF
     {
-        var tokenizer = try Self.init(src);
+        var tokenizer = try Self.init(src, .{});
         const token = try tokenizer.next();
 
         try std.testing.expectEqualDeep(Token{
@@ -1208,7 +1274,7 @@ fn testToken(src: []const u8, tag: Token.Tag) !void {
         );
 
         defer t.allocator.free(source);
-        var tokenizer = try Self.init(source);
+        var tokenizer = try Self.init(source, .{});
         var token = try tokenizer.next(); // skip leading whitespace
         token = try tokenizer.next();
 
@@ -1222,7 +1288,7 @@ fn testToken(src: []const u8, tag: Token.Tag) !void {
 }
 
 fn testTokenError(str: []const u8, err: anyerror) !void {
-    var tokenizer = Self.init(str) catch |init_error| {
+    var tokenizer = Self.init(str, .{}) catch |init_error| {
         try t.expectEqual(err, init_error);
         return;
     };
@@ -1231,7 +1297,7 @@ fn testTokenError(str: []const u8, err: anyerror) !void {
 }
 
 fn testTokenList(source: []const u8, expected_tokens: []const Token.Tag) !void {
-    var tokenizer = try Self.init(source);
+    var tokenizer = try Self.init(source, .{});
     for (0.., expected_tokens) |i, expected| {
         const token = try tokenizer.next();
         t.expectEqual(expected, token.tag) catch |err| {
@@ -1331,7 +1397,7 @@ test Self {
 
     // test that tokenizer can handle empty input
     {
-        var tokenizer = try Self.init("");
+        var tokenizer = try Self.init("", .{});
         try std.testing.expectEqualDeep(Token{
             .tag = .eof,
             .start = 0,
@@ -1358,7 +1424,7 @@ test Self {
     }
 
     {
-        var tokenizer = try Self.init("123.00 + .333");
+        var tokenizer = try Self.init("123.00 + .333", .{});
         try t.expectEqual(Token.Tag.numeric_literal, (try tokenizer.next()).tag);
         try t.expectEqual(Token.Tag.whitespace, (try tokenizer.next()).tag);
         try t.expectEqual(Token.Tag.@"+", (try tokenizer.next()).tag);
@@ -1371,7 +1437,7 @@ test Self {
             \\/* this is a
             \\ multiline
             \\ comment */
-        );
+        , .{});
         const comment_token = try tokenizer.next();
         try t.expectEqual(.comment, comment_token.tag);
         try t.expectEqualDeep(
@@ -1382,7 +1448,7 @@ test Self {
     }
 
     {
-        var tokenizer = try Self.init("f([1])");
+        var tokenizer = try Self.init("f([1])", .{});
         try t.expectEqual(Token.Tag.identifier, (try tokenizer.next()).tag);
         try t.expectEqual(Token.Tag.@"(", (try tokenizer.next()).tag);
         try t.expectEqual(Token.Tag.@"[", (try tokenizer.next()).tag);
@@ -1391,7 +1457,7 @@ test Self {
         try t.expectEqual(Token.Tag.@")", (try tokenizer.next()).tag);
     }
     {
-        var tokenizer = try Self.init(&.{ 40, 39, 92, 226, 128, 169, 39, 41 });
+        var tokenizer = try Self.init(&.{ 40, 39, 92, 226, 128, 169, 39, 41 }, .{});
         try t.expectEqual(Token.Tag.@"(", (try tokenizer.next()).tag);
         try t.expectEqual(Token.Tag.string_literal, (try tokenizer.next()).tag);
         try t.expectEqual(Token.Tag.@")", (try tokenizer.next()).tag);
@@ -1408,7 +1474,7 @@ test Self {
     });
 
     {
-        var tokenizer = try Self.init(" /a\\(bc[some_character_class]/g //foo");
+        var tokenizer = try Self.init(" /a\\(bc[some_character_class]/g //foo", .{});
         tokenizer.assume_bslash_starts_regex = true; // '/' is now interpreted as regex literal start marker.
         try t.expectEqual(Token.Tag.whitespace, (try tokenizer.next()).tag);
         try t.expectEqual(Token.Tag.regex_literal, (try tokenizer.next()).tag);
@@ -1418,7 +1484,7 @@ test Self {
     }
 
     {
-        var tokenizer = try Self.init(" /a\\(bc[some_character_class]/g //foo");
+        var tokenizer = try Self.init(" /a\\(bc[some_character_class]/g //foo", .{});
         tokenizer.assume_bslash_starts_regex = true; // '/' is now interpreted as regex literal start marker.
         try t.expectEqual(Token.Tag.whitespace, (try tokenizer.next()).tag);
         try t.expectEqual(Token.Tag.regex_literal, (try tokenizer.next()).tag);
@@ -1428,7 +1494,7 @@ test Self {
     }
 
     {
-        var tokenizer = try Self.init("`hello ${'world'}`");
+        var tokenizer = try Self.init("`hello ${'world'}`", .{});
         try t.expectEqual(.template_literal_part, (try tokenizer.next()).tag);
         try t.expectEqual(.string_literal, (try tokenizer.next()).tag);
         tokenizer.assume_rbrace_is_template_part = true;

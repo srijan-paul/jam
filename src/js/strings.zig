@@ -88,7 +88,7 @@ fn toByteSlice(self: *Self, string: String) []const u8 {
 const t = std.testing;
 
 fn testStringValue(id_str: []const u8, expected: []const u8) !void {
-    var tokenizer = try Tokenizer.init(id_str);
+    var tokenizer = try Tokenizer.init(id_str, .{});
     const id_token = try tokenizer.next();
 
     var strings = try Self.init(t.allocator, id_str);

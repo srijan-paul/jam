@@ -4789,7 +4789,7 @@ fn runTestOnFile(tests_dir: std.fs.Dir, file_path: []const u8) !void {
     );
     defer t.allocator.free(source_code);
 
-    var parser = try Self.init(t.allocator, source_code, file_path);
+    var parser = try Self.init(t.allocator, source_code, .{ .source_type = .script });
     defer parser.deinit();
 
     const root_node = parser.parse() catch |err| {
