@@ -188,6 +188,7 @@ pub fn next(self: *Self) Error!Token {
         '|',
         '&',
         '?',
+        '~',
         => return try self.punctuator(),
         '"', '\'' => return try self.stringLiteral(),
         '`' => return try self.startTemplateLiteral(),
@@ -1086,7 +1087,6 @@ fn matchDecimalPart(str: []const u8) ?u32 {
         if (i + 2 < str.len and str[i + 1] == '_' and std.ascii.isDigit(str[i + 2]))
             i += 1;
     }
-
     return i;
 }
 
@@ -1158,11 +1158,17 @@ fn numericLiteral(self: *Self) !Token {
         var decimal_len = matchDecimalIntegerLiteral(str) orelse
             return Error.InvalidNumericLiteral;
 
-        if (str[0] == '0' and decimal_len > 1 and std.ascii.isDigit(str[1])) {
-            is_legacy_octal_literal = true;
-            // legacy octal literals cannot be followed by decimal or exponent parts.
-            // e.g: 012e1 is illegal.
-            break :blk decimal_len;
+        if (str[0] == '0' and decimal_len > 1) {
+            is_legacy_octal_literal = octal_blk: {
+                for (0..decimal_len) |i| {
+                    if (str[i] > '7') break :octal_blk false;
+                }
+                break :octal_blk true;
+            };
+
+            // 0012.5 is invalid (octal literal followed by decimal part)
+            // 0088.5 is valid (decimal literal followed by decimal part)
+            if (is_legacy_octal_literal) break :blk decimal_len;
         }
 
         if (decimal_len < str.len) {
@@ -1179,10 +1185,17 @@ fn numericLiteral(self: *Self) !Token {
     self.index += len;
 
     // number must not be immediately followed by identifier
-    // TODO(@injuly): what if there is a multi-byte UTF-8 codepoint here?
-    if (self.peekByte()) |ch| {
-        if (canCodepointStartId(ch) or std.ascii.isDigit(ch)) {
-            return Error.InvalidNumericLiteral;
+    if (!self.eof()) {
+        const byte = self.source[self.index];
+        if (std.ascii.isAscii(byte)) {
+            if (canCodepointStartId(byte) or std.ascii.isDigit(byte)) {
+                return Error.InvalidNumericLiteral;
+            }
+        } else {
+            const code_point = util.utf8.codePointAt(self.source, self.index);
+            if (canCodepointStartId(code_point.value)) {
+                return Error.InvalidNumericLiteral;
+            }
         }
     }
 

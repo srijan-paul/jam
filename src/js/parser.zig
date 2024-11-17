@@ -308,7 +308,7 @@ const DestructureKind = packed struct(u8) {
     }
 
     pub fn isMalformed(self: *DestructureKind) bool {
-        return self.must_destruct and !self.can_destruct;
+        return self.must_destruct and !self.can_destruct and !self.can_be_assigned_to;
     }
 };
 
@@ -3839,6 +3839,11 @@ fn completeArrowFunction(
             break :blk try self.blockStatement();
         }
 
+        const context = self.context;
+        defer self.context = context;
+        self.context.is_yield_reserved = flags.is_generator;
+        self.context.is_await_reserved = flags.is_async;
+
         const assignment = try self.assignmentExpression();
         if (self.current_destructure_kind.must_destruct) {
             try self.emitDiagnostic(
@@ -4203,7 +4208,7 @@ fn identifierProperty(self: *Self) Error!Node.Index {
 
         .@"=" => {
             const op_token = try self.next(); // eat '='
-            if (key_token.tag != .identifier) {
+            if (!key_token.tag.isValidPropertyName()) {
                 try self.emitBadTokenDiagnostic("property name", &key_token);
                 return Error.UnexpectedToken;
             }
