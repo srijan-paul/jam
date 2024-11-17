@@ -2511,11 +2511,7 @@ fn destructuredPropertyDefinition(self: *Self) Error!Node.Index {
 /// Assumes that self.current_token is the .identifier.
 fn destructuredIdentifierProperty(self: *Self) Error!Node.Index {
     const key_token = try self.next();
-    const key = try self.addNode(
-        .{ .identifier = try self.addToken(key_token) },
-        key_token.start,
-        key_token.start + key_token.len,
-    );
+    const key = try self.identifier(key_token);
 
     const cur_token = self.peek();
     if (cur_token.tag == .@"=") {
@@ -2542,6 +2538,17 @@ fn destructuredIdentifierProperty(self: *Self) Error!Node.Index {
 
     if (cur_token.tag == .@":") {
         return self.completePropertyPatternDef(key);
+    }
+
+    // Disallow stuff like "`{ if }`" (`{ if: x }` is valid)
+    if (!(key_token.tag == .identifier or self.isKeywordIdentifier(key_token.tag))) {
+        try self.emitDiagnosticOnToken(
+            key_token,
+            "Unexpected '{s}' in destructuring pattern",
+            .{key_token.toByteSlice(self.source)},
+        );
+
+        return Error.UnexpectedToken;
     }
 
     return self.addNode(
