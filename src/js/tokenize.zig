@@ -170,6 +170,17 @@ pub fn next(self: *Self) Error!Token {
             return self.punctuator();
         },
 
+        '-' => {
+            if (self.config.source_type == .script) {
+                if (self.index == 0 or isNewline(self.source[self.index - 1])) {
+                    if (try self.singleLineHtmlCommentClose()) |tok|
+                        return tok;
+                }
+            }
+
+            return self.punctuator();
+        },
+
         '[',
         ']',
         '(',
@@ -178,7 +189,6 @@ pub fn next(self: *Self) Error!Token {
         ';',
         ':',
         '>',
-        '-',
         '+',
         '*',
         '%',
@@ -269,12 +279,54 @@ fn comment(self: *Self) Error!?Token {
         return null;
     }
 
+    const end_line = self.line;
+    if (start_line == end_line and self.config.source_type == .script) {
+        // After eating the comment:
+        // 1. Eat all trailing whitespaces.
+        // 2. Then, look for an HTML comment close "-->"
+        const ws_len = matchWhiteSpaces(self.source[self.index..]);
+        const remaining = self.source[self.index + ws_len ..];
+        if (std.mem.startsWith(u8, remaining, "-->")) {
+            self.index += ws_len; // consume whitespaces
+            self.index += 3; // consume "-->"
+            try self.consumeSingleLineCommentChars();
+            return .{
+                .start = start,
+                .len = self.index - start,
+                .tag = .comment,
+                .line = start_line,
+            };
+        }
+    }
+
     return .{
         .start = start,
         .len = self.index - start,
         .tag = .comment,
         .line = start_line,
     };
+}
+
+fn matchWhiteSpaces(str: []const u8) u32 {
+    var i: usize = 0;
+    while (i < str.len) {
+        const b = str[i];
+        if (std.ascii.isAscii(b)) {
+            if (isSimpleWhitespace(b)) {
+                i += 1;
+            } else {
+                break;
+            }
+        } else {
+            const code_point = util.utf8.codePointAt(str, i);
+            if (isMultiByteSpace(code_point.value)) {
+                i += code_point.len;
+            } else {
+                break;
+            }
+        }
+    }
+    return @intCast(i);
 }
 
 /// If the remaining source starts with a "<!--",
@@ -287,6 +339,28 @@ fn singleLineHtmlCommentOpen(self: *Self) Error!?Token {
 
     if (std.mem.startsWith(u8, self.source[self.index..], "<!--")) {
         self.index += 4;
+        try self.consumeSingleLineCommentChars();
+        return .{
+            .start = start,
+            .len = self.index - start,
+            .tag = .comment,
+            .line = self.line,
+        };
+    }
+
+    return null;
+}
+
+/// If the remaining source starts with a "-->",
+/// consume a single line HTML comment and return it.
+/// Otherwise, return null.
+/// https://tc39.es/ecma262/#prod-annexB-SingleLineHTMLCloseComment
+fn singleLineHtmlCommentClose(self: *Self) Error!?Token {
+    std.debug.assert(self.source[self.index] == '-');
+    const start = self.index;
+
+    if (std.mem.startsWith(u8, self.source[self.index..], "-->")) {
+        self.index += 3;
         try self.consumeSingleLineCommentChars();
         return .{
             .start = start,
@@ -1261,7 +1335,7 @@ fn isMultiByteSpace(ch: u21) bool {
 /// and return a token representing that span.
 /// Whitespace tokens are preserved in the Jam toolkit to
 /// re-construct the original source code.
-fn whiteSpaces(self: *Self) Token {
+fn whiteSpaces(self: *Self) Error!Token {
     const start = self.index;
     const line = self.line;
 
@@ -1305,6 +1379,21 @@ fn whiteSpaces(self: *Self) Token {
         } else {
             // reached a non-whitespace character.
             break;
+        }
+    }
+
+    // HTML comment may appear after whitespaces on the same line:
+    // `     --> hello, world!` (Yes, this is valid JS in script mode)
+    if (self.config.source_type == .script and self.line == line) {
+        const remaining = self.source[self.index..];
+        if (std.mem.startsWith(u8, remaining, "-->")) {
+            try self.consumeSingleLineCommentChars();
+            return .{
+                .start = start,
+                .len = self.index - start,
+                .tag = .comment,
+                .line = self.line,
+            };
         }
     }
 
