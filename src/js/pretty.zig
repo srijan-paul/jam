@@ -142,10 +142,7 @@ fn toPretty(
                 null;
 
             return .{
-                .import_specifier = .{
-                    .local = local,
-                    .imported = imported,
-                },
+                .import_specifier = .{ .local = local, .imported = imported },
             };
         },
 
@@ -160,6 +157,61 @@ fn toPretty(
             const name = try copy(al, try toPretty(self, al, specifier.name));
             return .{
                 .import_namespace_specifier = .{ .name = name },
+            };
+        },
+
+        .export_specifier => |specifier| {
+            const local = try copy(al, try toPretty(self, al, specifier.local));
+            const exported = if (specifier.exported) |e|
+                try copy(al, try toPretty(self, al, e))
+            else
+                null;
+
+            return .{
+                .export_specifier = .{ .local = local, .exported = exported },
+            };
+        },
+
+        .export_declaration => |exp| {
+            const declaration = try copy(al, try toPretty(self, al, exp.declaration));
+            return .{
+                .export_declaration = .{
+                    .declaration = declaration,
+                    .default = exp.default,
+                },
+            };
+        },
+
+        .export_from_declaration => |exp| {
+            const source = try copy(al, try toPretty(self, al, exp.source));
+            const specifiers = try prettySubRange(al, self, exp.specifiers);
+            return .{
+                .export_from_declaration = .{
+                    .source = source,
+                    .specifiers = specifiers,
+                },
+            };
+        },
+
+        .export_all_declaration => |exp| {
+            const source = try copy(al, try toPretty(self, al, exp.source));
+            const name = if (exp.name) |exp_name|
+                try copy(al, try toPretty(self, al, exp_name))
+            else
+                null;
+
+            return .{
+                .export_all_declaration = .{
+                    .source = source,
+                    .name = name,
+                },
+            };
+        },
+
+        .export_list_declaration => |exp| {
+            const specifiers = try prettySubRange(al, self, exp.specifiers);
+            return .{
+                .export_list_declaration = .{ .specifiers = specifiers },
             };
         },
 

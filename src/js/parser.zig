@@ -414,10 +414,6 @@ pub fn importDeclaration(self: *Self) Error!Node.Index {
     const import_kw = try self.next();
     std.debug.assert(import_kw.tag == .kw_import);
 
-    // import * as foo from "foo"
-    if (self.isAtToken(.@"*"))
-        return self.starImportDeclaration(import_kw);
-
     // import "foo";
     if (self.isAtToken(.string_literal)) {
         return self.completeImportDeclaration(import_kw.start, &.{});
@@ -426,50 +422,72 @@ pub fn importDeclaration(self: *Self) Error!Node.Index {
     const prev_scratch_len = self.scratch.items.len;
     defer self.scratch.items.len = prev_scratch_len;
 
-    const cur = self.current_token.tag;
-    // If there is a ',' after the default import,
+    // If there is a trailing ',' after the default or star import
     // we must parse a list of import specifiers inside '{}'
-    var comma_after_default = false;
+    var trailing_comma = false;
+
+    const cur = self.current_token.tag;
+
+    // Whether we have at least one import (either default, namespace, or specifier list)
+    // This is to avoid parsing `import from "foo";` as a valid import statement.
+    var has_imports = false;
+
     if (cur == .identifier or self.isKeywordIdentifier(cur)) {
+        has_imports = true;
         const default_specifier = try self.defaultImportSpecifier();
         try self.scratch.append(default_specifier);
 
-        // eat "," after default import
-        if (self.isAtToken(.@",")) {
+        trailing_comma = self.isAtToken(.@",");
+        if (trailing_comma) {
             _ = try self.next();
-            comma_after_default = true;
         }
     }
 
-    if (comma_after_default or self.isAtToken(.@"{")) {
+    // import * as foo from "foo"
+    if (self.isAtToken(.@"*")) {
+        has_imports = true;
+        const specifier = try self.starImportSpecifier();
+        try self.scratch.append(specifier);
+
+        _ = try self.expect(.kw_from);
+        return self.completeImportDeclaration(
+            import_kw.start,
+            self.scratch.items[prev_scratch_len..],
+        );
+    }
+
+    if (trailing_comma or self.isAtToken(.@"{")) {
+        has_imports = true;
         _ = try self.expect(.@"{");
 
-        while (true) {
+        while (self.current_token.tag != .@"}") {
             const specifier = try self.importSpecifier();
             try self.scratch.append(specifier);
             const comma_or_rb = try self.expect2(.@",", .@"}");
             if (comma_or_rb.tag == .@"}")
                 break;
+        } else {
+            _ = try self.next(); // eat '}'
         }
     }
 
-    const specifiers = self.scratch.items[prev_scratch_len..];
-    if (specifiers.len == 0) {
+    if (!has_imports) {
         try self.emitDiagnosticOnToken(
             self.current_token,
-            "Expected at least one import specifier",
+            "Expected an import specifier, '*', or a default import",
             .{},
         );
         return Error.UnexpectedToken;
     }
 
+    const specifiers = self.scratch.items[prev_scratch_len..];
     _ = try self.expect(.kw_from);
     return self.completeImportDeclaration(import_kw.start, specifiers);
 }
 
 /// Assuming 'current_token' is '*', parse a import namespace specifier
 /// like `* as Identifier`
-fn starImportDeclaration(self: *Self, import_kw: Token) Error!Node.Index {
+fn starImportSpecifier(self: *Self) Error!Node.Index {
     const star_token = try self.expect(.@"*");
     _ = try self.expect(.kw_as);
 
@@ -484,8 +502,7 @@ fn starImportDeclaration(self: *Self, import_kw: Token) Error!Node.Index {
         name_token.start + name_token.len,
     );
 
-    _ = try self.expect(.kw_from);
-    return self.completeImportDeclaration(import_kw.start, &.{specifier});
+    return specifier;
 }
 
 /// Assuming everything upto 'from' has been consumed,
@@ -559,8 +576,233 @@ fn importSpecifier(self: *Self) Error!Node.Index {
     );
 }
 
-pub fn exportDeclaration(_: *Self) Error!Node.Index {
-    return Error.JsxNotImplemented;
+fn moduleExportName(self: *Self) Error!Node.Index {
+    if (self.isAtToken(.string_literal))
+        return self.stringLiteral();
+
+    const name_token = try self.next();
+    if (name_token.tag != .identifier and
+        name_token.tag != .kw_default and
+        !self.isKeywordIdentifier(name_token.tag))
+    {
+        try self.emitBadTokenDiagnostic("an identifier", &name_token);
+        return Error.UnexpectedToken;
+    }
+
+    return self.identifier(name_token);
+}
+
+/// Parse an 'export' declaration:
+/// https://tc39.es/ecma262/#prod-ExportDeclaration
+fn exportDeclaration(self: *Self) Error!Node.Index {
+    const export_kw = try self.next();
+    std.debug.assert(export_kw.tag == .kw_export);
+
+    if (self.isAtToken(.kw_default)) {
+        return try self.defaultExport(&export_kw);
+    }
+
+    const maybe_decl = blk: {
+        switch (self.current_token.tag) {
+            .kw_var, .kw_let, .kw_const => {
+                const var_kw = try self.next();
+                break :blk try self.variableStatement(var_kw);
+            },
+            else => break :blk try self.declarationStatement(),
+        }
+    };
+
+    if (maybe_decl) |decl| {
+        return self.addNode(
+            .{ .export_declaration = .{ .declaration = decl } },
+            export_kw.start,
+            self.nodes.items(.end)[@intFromEnum(decl)],
+        );
+    }
+
+    if (self.isAtToken(.@"{")) {
+        _ = try self.expect(.@"{");
+        const specifiers = try self.namedExportList();
+        const rbrace = try self.expect(.@"}");
+        var end_pos = rbrace.start + rbrace.len;
+
+        // A "from" after an export specifier list implies
+        // an export statement like:
+        // ```js
+        // export { x, y } from "foo";
+        // ```
+        if (self.isAtToken(.kw_from)) {
+            _ = try self.expect(.kw_from);
+            end_pos = self.current_token.start + self.current_token.len;
+            const source = try self.stringLiteral();
+
+            end_pos = try self.semiColon(end_pos);
+            return self.addNode(
+                .{
+                    .export_from_declaration = .{
+                        .specifiers = specifiers,
+                        .source = source,
+                    },
+                },
+                export_kw.start,
+                end_pos,
+            );
+        }
+
+        end_pos = try self.semiColon(end_pos);
+        return self.addNode(.{
+            .export_list_declaration = .{ .specifiers = specifiers },
+        }, export_kw.start, end_pos);
+    }
+
+    if (self.isAtToken(.@"*")) {
+        return self.starExportDeclaration(export_kw);
+    }
+
+    try self.emitDiagnosticOnToken(
+        self.current_token,
+        "Expected an export declaration",
+        .{},
+    );
+
+    return Error.UnexpectedToken;
+}
+
+fn starExportDeclaration(self: *Self, export_kw: Token) Error!Node.Index {
+    _ = try self.expect(.@"*");
+
+    const name = blk: {
+        if (self.isAtToken(.kw_as)) {
+            _ = try self.next();
+            const name_token = try self.next();
+            if (name_token.tag != .identifier and
+                !self.isKeywordIdentifier(name_token.tag))
+            {
+                try self.emitBadTokenDiagnostic("an identifier", &name_token);
+                return Error.UnexpectedToken;
+            }
+
+            break :blk try self.identifier(name_token);
+        }
+
+        break :blk null;
+    };
+
+    _ = try self.expect(.kw_from);
+
+    const source = try self.stringLiteral();
+    var end_pos = self.nodes.items(.end)[@intFromEnum(source)];
+    end_pos = try self.semiColon(end_pos);
+
+    return self.addNode(
+        .{
+            .export_all_declaration = .{
+                .name = name,
+                .source = source,
+            },
+        },
+        export_kw.start,
+        end_pos,
+    );
+}
+
+fn defaultExport(self: *Self, export_kw: *const Token) Error!Node.Index {
+    const default_kw = try self.next();
+    std.debug.assert(default_kw.tag == .kw_default);
+    var end_pos = default_kw.start + default_kw.len;
+
+    const exported = blk: {
+        switch (self.current_token.tag) {
+            .kw_class => {
+                const class_kw = try self.next();
+                const class = try self.classExpression(class_kw);
+                end_pos = self.nodes.items(.end)[@intFromEnum(class)];
+                break :blk class;
+            },
+            .kw_function => {
+                const fn_token = try self.next();
+                const func = try self.functionExpression(fn_token.start, .{});
+                end_pos = self.nodes.items(.end)[@intFromEnum(func)];
+                break :blk func;
+            },
+            .kw_async => {
+                const async_line = self.current_token.line;
+                const lookahead = try self.lookAhead();
+                if (lookahead.tag == .kw_function and lookahead.line == async_line) {
+                    const async_token = try self.next(); // eat 'async'
+                    _ = try self.next(); // eat 'function'
+                    const func = try self.functionExpression(
+                        async_token.start,
+                        .{ .is_async = true },
+                    );
+                    end_pos = self.nodes.items(.end)[@intFromEnum(func)];
+                    break :blk func;
+                }
+                const expr = try self.assignExpressionNoPattern();
+                end_pos = self.nodes.items(.end)[@intFromEnum(expr)];
+                end_pos = try self.semiColon(end_pos);
+                break :blk expr;
+            },
+            else => {
+                const expr = try self.assignExpressionNoPattern();
+                end_pos = self.nodes.items(.end)[@intFromEnum(expr)];
+                end_pos = try self.semiColon(end_pos);
+                break :blk expr;
+            },
+        }
+    };
+
+    return self.addNode(
+        .{
+            .export_declaration = .{
+                .declaration = exported,
+                .default = true,
+            },
+        },
+        export_kw.start,
+        end_pos,
+    );
+}
+
+pub fn namedExportList(self: *Self) Error!ast.SubRange {
+    const prev_scratch_len = self.scratch.items.len;
+    defer self.scratch.items.len = prev_scratch_len;
+
+    while (self.current_token.tag != .@"}") {
+        const specifier = try self.exportSpecifier();
+        try self.scratch.append(specifier);
+        if (self.isAtToken(.@"}")) break;
+        _ = try self.expect(.@",");
+    }
+
+    const specifiers = self.scratch.items[prev_scratch_len..];
+    return try self.addSubRange(specifiers);
+}
+
+fn exportSpecifier(self: *Self) Error!Node.Index {
+    const local = try self.moduleExportName();
+    const start_pos = self.nodes.items(.start)[@intFromEnum(local)];
+    var end_pos = self.nodes.items(.end)[@intFromEnum(local)];
+
+    const alias = blk: {
+        if (!self.isAtToken(.kw_as)) break :blk null;
+
+        _ = try self.next(); // eat 'as'
+        const alias_ = try self.moduleExportName();
+        end_pos = self.nodes.items(.end)[@intFromEnum(alias_)];
+        break :blk alias_;
+    };
+
+    return self.addNode(
+        .{
+            .export_specifier = .{
+                .local = local,
+                .exported = alias,
+            },
+        },
+        start_pos,
+        end_pos,
+    );
 }
 
 /// https://tc39.es/ecma262/#prod-Statement
@@ -3555,7 +3797,8 @@ fn isTemplateEndToken(self: *const Self, token: *const Token) bool {
 /// x => 1 // regular arrow function, not async
 /// ```
 fn asyncExpression(self: *Self, async_token: *const Token) Error!Node.Index {
-    if (self.current_token.tag == .kw_function) {
+    const async_line = async_token.line;
+    if (self.current_token.tag == .kw_function and async_line == self.current_token.line) {
         _ = try self.next(); // eat 'function keyword'
         return self.functionExpression(async_token.start, .{ .is_async = true });
     }

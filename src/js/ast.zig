@@ -273,6 +273,16 @@ pub const ImportSpecifier = struct {
     local: Node.Index,
 };
 
+pub const ExportSpecifier = struct {
+    local: Node.Index,
+    exported: ?Node.Index,
+};
+
+pub const ExportedDeclaration = struct {
+    declaration: Node.Index,
+    default: bool = false,
+};
+
 pub const NodeData = union(enum(u8)) {
     program: ?SubRange,
 
@@ -360,6 +370,18 @@ pub const NodeData = union(enum(u8)) {
     import_default_specifier: ImportDefaultSpecifier,
     import_specifier: ImportSpecifier,
     import_namespace_specifier: ImportNamespaceSpecifier,
+
+    export_declaration: ExportedDeclaration,
+    export_specifier: ExportSpecifier,
+    export_list_declaration: struct { specifiers: SubRange },
+    export_from_declaration: struct {
+        source: Node.Index,
+        specifiers: SubRange,
+    },
+    export_all_declaration: struct {
+        source: Node.Index,
+        name: ?Node.Index,
+    },
 
     /// Represents `null` AST node.
     /// This is a sentinel, and always present at index 0 of the `nodes` array.
@@ -546,6 +568,18 @@ pub const NodePretty = union(enum) {
     import_default_specifier: Pretty(ImportDefaultSpecifier),
     import_specifier: Pretty(ImportSpecifier),
     import_namespace_specifier: Pretty(ImportNamespaceSpecifier),
+
+    export_declaration: struct { declaration: *NodePretty, default: bool },
+    export_specifier: Pretty(ExportSpecifier),
+    export_list_declaration: struct { specifiers: Pretty(SubRange) },
+    export_from_declaration: struct {
+        source: *NodePretty,
+        specifiers: Pretty(SubRange),
+    },
+    export_all_declaration: struct {
+        source: *NodePretty,
+        name: ?*NodePretty,
+    },
 
     return_statement: Pretty(?Node.Index),
     template_element: Token_,
