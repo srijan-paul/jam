@@ -279,8 +279,7 @@ fn comment(self: *Self) Error!?Token {
         return null;
     }
 
-    const end_line = self.line;
-    if (start_line == end_line and self.config.source_type == .script) {
+    if (self.config.source_type == .script) {
         // After eating the comment:
         // 1. Eat all trailing whitespaces.
         // 2. Then, look for an HTML comment close "-->"
@@ -1384,7 +1383,19 @@ fn whiteSpaces(self: *Self) Error!Token {
 
     // HTML comment may appear after whitespaces on the same line:
     // `     --> hello, world!` (Yes, this is valid JS in script mode)
-    if (self.config.source_type == .script and self.line == line) {
+    if (self.config.source_type == .script and
+        // avoid consuming HTML comment chars if it starts right after a newline.
+        // e.g: In this case:
+        // ```js
+        // x
+        //
+        // --> comment
+        // ```
+        // We should get:  `x`, `whitespace`, `comment`,
+        // and not: `x`, `comment`
+        self.index > 0 and
+        !isNewline(self.source[self.index - 1]))
+    {
         const remaining = self.source[self.index..];
         if (std.mem.startsWith(u8, remaining, "-->")) {
             try self.consumeSingleLineCommentChars();
