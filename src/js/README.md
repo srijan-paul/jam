@@ -13,13 +13,12 @@ no allocations are made in the parser.
 
 The parser never backtracks, even for [cover productions](https://tc39.es/ecma262/#prod-CoverParenthesizedExpressionAndArrowParameterList) like arrow functions.
 For example, consider that a `(a, b)` could either be a parenthesized expression, or a parameter list for an arrow function.
-
 One way to parse this is to consume the `(`, assume a ParenthesizedExpression, then go back in the input string if we see a `=>`
 (or if we see an obvious assignment pattern that cannot appear inside `()`, like `{a=1}` or `...foo`).
 
 Jam takes an alternative approach.
-The parser maintains some internal state to track whether each individual item inside `()` can be a valid parameter,
-and modify the existing parse-tree if we see a `=>` later.
+The parser maintains some internal state to track whether each individual item inside `()` is also a valid parameter,
+and modifies the existing parse-tree if a `=>` is seen after the `)` token.
 
 This approach was inspired by [the Meriyah parser](https://github.com/meriyah/meriyah).
 
@@ -34,7 +33,7 @@ The syntax tree is designed in a way that preserves all information from the sou
 meaning that the source code can be completely re-constructed from the AST, without any loss of information.
 Owing to this decision, building source-transformation tools like minifiers and formatters becomes easier.
 
-This design was inspired by Oilshell.
+This design was inspired by [Oilshell](https://www.oilshell.org/).
 See: [From AST to Lossless syntax tree](https://www.oilshell.org/blog/2017/02/11.html).
 
 ## Storing AST nodes
