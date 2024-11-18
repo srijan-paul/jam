@@ -420,26 +420,11 @@ pub fn importDeclaration(self: *Self) Error!Node.Index {
 
     // import "foo";
     if (self.isAtToken(.string_literal)) {
-        const source = try self.primaryExpression();
-        var end_pos = self.nodes.items(.end)[@intFromEnum(source)];
-        end_pos = try self.semiColon(end_pos);
-
-        return self.addNode(
-            .{
-                .import_declaration = .{
-                    .source = source,
-                    .specifiers = try self.addSubRange(&[_]Node.Index{}),
-                },
-            },
-            import_kw.start,
-            end_pos,
-        );
+        return self.completeImportDeclaration(import_kw.start, &.{});
     }
 
     const prev_scratch_len = self.scratch.items.len;
     defer self.scratch.items.len = prev_scratch_len;
-
-    var end_pos = import_kw.start + import_kw.len;
 
     const cur = self.current_token.tag;
     // If there is a ',' after the default import,
@@ -459,15 +444,13 @@ pub fn importDeclaration(self: *Self) Error!Node.Index {
     if (comma_after_default or self.isAtToken(.@"{")) {
         _ = try self.expect(.@"{");
 
-        const rb = blk: while (true) {
+        while (true) {
             const specifier = try self.importSpecifier();
             try self.scratch.append(specifier);
             const comma_or_rb = try self.expect2(.@",", .@"}");
             if (comma_or_rb.tag == .@"}")
-                break :blk comma_or_rb;
-        };
-
-        end_pos = rb.start + rb.len;
+                break;
+        }
     }
 
     const specifiers = self.scratch.items[prev_scratch_len..];
@@ -477,26 +460,11 @@ pub fn importDeclaration(self: *Self) Error!Node.Index {
             "Expected at least one import specifier",
             .{},
         );
-
         return Error.UnexpectedToken;
     }
 
     _ = try self.expect(.kw_from);
-    const source = try self.stringLiteral();
-    end_pos = self.nodes.items(.end)[@intFromEnum(source)];
-
-    end_pos = try self.semiColon(end_pos);
-
-    return self.addNode(
-        .{
-            .import_declaration = .{
-                .source = source,
-                .specifiers = try self.addSubRange(specifiers),
-            },
-        },
-        import_kw.start,
-        end_pos,
-    );
+    return self.completeImportDeclaration(import_kw.start, specifiers);
 }
 
 /// Assuming 'current_token' is '*', parse a import namespace specifier
@@ -508,11 +476,6 @@ fn starImportDeclaration(self: *Self, import_kw: Token) Error!Node.Index {
     const name_token = try self.expect(.identifier);
     const name = try self.identifier(name_token);
 
-    _ = try self.expect(.kw_from);
-    const source = try self.stringLiteral();
-    var end_pos = self.nodes.items(.end)[@intFromEnum(source)];
-    end_pos = try self.semiColon(end_pos);
-
     const specifier = try self.addNode(
         .{
             .import_namespace_specifier = .{ .name = name },
@@ -521,14 +484,29 @@ fn starImportDeclaration(self: *Self, import_kw: Token) Error!Node.Index {
         name_token.start + name_token.len,
     );
 
+    _ = try self.expect(.kw_from);
+    return self.completeImportDeclaration(import_kw.start, &.{specifier});
+}
+
+/// Assuming everything upto 'from' has been consumed,
+/// parse the source of the import declaration, and return the import node.
+fn completeImportDeclaration(
+    self: *Self,
+    start_pos: u32,
+    specifiers: []const Node.Index,
+) Error!Node.Index {
+    const source = try self.stringLiteral();
+    var end_pos = self.nodes.items(.end)[@intFromEnum(source)];
+    end_pos = try self.semiColon(end_pos);
+
     return self.addNode(
         .{
             .import_declaration = .{
                 .source = source,
-                .specifiers = try self.addSubRange(&[_]Node.Index{specifier}),
+                .specifiers = try self.addSubRange(specifiers),
             },
         },
-        import_kw.start,
+        start_pos,
         end_pos,
     );
 }
@@ -2724,13 +2702,12 @@ fn completePropertyPatternDef(self: *Self, key: Node.Index) Error!Node.Index {
 
 fn destructuredPropertyDefinition(self: *Self) Error!Node.Index {
     switch (self.current_token.tag) {
-        .string_literal, .numeric_literal => {
+        .string_literal,
+        .numeric_literal,
+        .legacy_octal_literal,
+        => {
             const key_token = try self.next();
-            const key = try self.addNode(
-                .{ .literal = try self.addToken(key_token) },
-                key_token.start,
-                key_token.start + key_token.len,
-            );
+            const key = try self.parseLiteral(&key_token);
             return self.completePropertyPatternDef(key);
         },
         .@"[" => {
@@ -2834,7 +2811,12 @@ fn objectAssignmentPattern(self: *Self) Error!Node.Index {
                 break;
             },
 
-            .identifier, .string_literal, .numeric_literal, .@"[" => {
+            .identifier,
+            .string_literal,
+            .numeric_literal,
+            .legacy_octal_literal,
+            .@"[",
+            => {
                 const prop = try self.destructuredPropertyDefinition();
                 destruct_kind.update(self.current_destructure_kind);
                 try props.append(prop);
@@ -3424,23 +3406,7 @@ fn primaryExpression(self: *Self) Error!Node.Index {
         .kw_true,
         .kw_false,
         .kw_null,
-        => {
-            if (self.context.strict and token.tag == .legacy_octal_literal) {
-                try self.emitDiagnostic(
-                    token.startCoord(self.source),
-                    "Legacy octal literals are not allowed in strict mode",
-                    .{},
-                );
-                return Error.UnexpectedToken;
-            }
-
-            self.current_destructure_kind.setNoAssignOrDestruct();
-            return self.addNode(
-                .{ .literal = try self.addToken(token) },
-                token.start,
-                token.start + token.len,
-            );
-        },
+        => return self.parseLiteral(&token),
         .@"[" => return self.arrayLiteral(token.start),
         .@"{" => return self.objectLiteral(token.start),
         .@"(" => return self.groupingExprOrArrowFunction(&token),
@@ -3463,6 +3429,24 @@ fn primaryExpression(self: *Self) Error!Node.Index {
         .{token.toByteSlice(self.source)},
     );
     return Error.UnexpectedToken;
+}
+
+fn parseLiteral(self: *Self, token: *const Token) Error!Node.Index {
+    if (self.context.strict and token.tag == .legacy_octal_literal) {
+        try self.emitDiagnostic(
+            token.startCoord(self.source),
+            "Legacy octal literals are not allowed in strict mode",
+            .{},
+        );
+        return Error.UnexpectedToken;
+    }
+
+    self.current_destructure_kind.setNoAssignOrDestruct();
+    return self.addNode(
+        .{ .literal = try self.addToken(token.*) },
+        token.start,
+        token.start + token.len,
+    );
 }
 
 fn stringLiteral(self: *Self) Error!Node.Index {
@@ -4057,9 +4041,8 @@ fn propertyDefinitionList(self: *Self) Error!?ast.SubRange {
 
     var destructure_kind = self.current_destructure_kind;
 
-    const cur_token = self.peek();
-    while (cur_token.tag != .eof) {
-        switch (cur_token.tag) {
+    while (true) {
+        switch (self.current_token.tag) {
             .identifier => {
                 try property_defs.append(try self.identifierProperty());
                 destructure_kind.update(self.current_destructure_kind);
@@ -4078,7 +4061,10 @@ fn propertyDefinitionList(self: *Self) Error!?ast.SubRange {
                 try property_defs.append(property);
             },
 
-            .numeric_literal, .string_literal => {
+            .numeric_literal,
+            .string_literal,
+            .legacy_octal_literal,
+            => {
                 const key_token = try self.next();
                 const key = try self.addNode(
                     .{ .literal = try self.addToken(key_token) },
@@ -4292,7 +4278,10 @@ fn classElementName(self: *Self) Error!Node.Index {
             _ = try self.expect(.@"]");
             return expr;
         },
-        .string_literal, .numeric_literal => {
+        .string_literal,
+        .numeric_literal,
+        .legacy_octal_literal,
+        => {
             return self.addNode(
                 .{ .literal = try self.addToken(token) },
                 token.start,

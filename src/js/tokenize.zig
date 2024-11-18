@@ -1017,20 +1017,29 @@ fn punctuator(self: *Self) !Token {
 }
 
 /// https://tc39.es/ecma262/#prod-DecimalIntegerLiteral
-fn matchDecimalIntegerLiteral(str: []const u8) ?u32 {
+/// Also returns a boolean flag indicating whether the literal is an octal number
+/// (only contains numbers 0-7, and starts with a 0)
+fn matchDecimalIntegerLiteral(str: []const u8) ?struct {
+    is_octal: bool,
+    len: u32,
+} {
+    if (str.len == 0) return null;
+
     var i: u32 = 0;
-    if (!std.ascii.isDigit(str[0])) return null;
-    i += 1; // eat first char
-
-    if (i < str.len and str[i] == '_')
-        i += 1; // eat '_' after first char
-
+    var is_octal = true;
     while (i < str.len and std.ascii.isDigit(str[i])) : (i += 1) {
-        if (i + 1 < str.len and str[i + 1] == '_')
+        if (i + 2 < str.len and str[i + 1] == '_' and std.ascii.isDigit(str[i + 2])) {
             i += 1;
+        }
+        is_octal = is_octal and str[i] <= '7';
     }
 
-    return i;
+    // Check if:
+    // 1. The first digit was '0'.
+    // 2. The number is not just a single '0'.
+    // 3. All other digits are in the octal range.
+    is_octal = is_octal and str[0] == '0' and i > 1;
+    return .{ .is_octal = is_octal, .len = i };
 }
 
 /// https://262.ecma-international.org/15.0/index.html#prod-grammar-notation-HexIntegerLiteral
@@ -1155,17 +1164,14 @@ fn numericLiteral(self: *Self) !Token {
             }
         }
 
-        var decimal_len = matchDecimalIntegerLiteral(str) orelse
+        const decimal_match = matchDecimalIntegerLiteral(str) orelse
             return Error.InvalidNumericLiteral;
 
-        if (str[0] == '0' and decimal_len > 1) {
-            is_legacy_octal_literal = octal_blk: {
-                for (0..decimal_len) |i| {
-                    if (str[i] > '7') break :octal_blk false;
-                }
-                break :octal_blk true;
-            };
+        var decimal_len = decimal_match.len;
+        is_legacy_octal_literal = decimal_match.is_octal;
 
+        if (is_legacy_octal_literal) {
+            // Octal literals starting with "0" are not allowed to have a decimal part.
             // 0012.5 is invalid (octal literal followed by decimal part)
             // 0088.5 is valid (decimal literal followed by decimal part)
             if (is_legacy_octal_literal) break :blk decimal_len;
