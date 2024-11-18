@@ -1604,21 +1604,22 @@ fn completeBasicLoopIterator(self: *Self, for_init: Node.Index) Error!ast.ExtraD
 /// and the first declarator, parse the rest of the declarators (if any)
 /// and return a var decl node that represents a loop initializer.
 fn completeLoopInitializer(self: *Self, kw: Token, first_decl: Node.Index) Error!Node.Index {
-    var decl_nodes = std.ArrayList(Node.Index).init(self.allocator);
-    defer decl_nodes.deinit();
+    const prev_scratch_len = self.scratch.items.len;
+    defer self.scratch.items.len = prev_scratch_len;
 
-    try decl_nodes.append(first_decl);
+    try self.scratch.append(first_decl);
     const var_kind = varDeclKind(kw.tag);
 
     while (self.current_token.tag == .@",") {
         _ = try self.next();
         const decl = try self.variableDeclarator(var_kind);
-        try decl_nodes.append(decl);
+        try self.scratch.append(decl);
     }
 
-    const decls = try self.addSubRange(decl_nodes.items);
+    const decl_nodes = self.scratch.items[prev_scratch_len..];
+    const decls = try self.addSubRange(decl_nodes);
 
-    const last_decl = decl_nodes.items[decl_nodes.items.len - 1];
+    const last_decl = decl_nodes[decl_nodes.len - 1];
     const end_pos = self.nodes.items(.end)[@intFromEnum(last_decl)];
 
     return self.addNode(
@@ -1725,12 +1726,12 @@ fn variableStatement(self: *Self, kw: Token) Error!Node.Index {
 /// Parse a list of variable declarators after the 'var', 'let', or 'const'
 /// keyword has been eaten.
 fn variableDeclaratorList(self: *Self, kind: ast.VarDeclKind) Error!ast.SubRange {
-    var declarators = std.ArrayList(Node.Index).init(self.allocator);
-    defer declarators.deinit();
+    const prev_scratch_len = self.scratch.items.len;
+    defer self.scratch.items.len = prev_scratch_len;
 
     while (true) {
         const decl = try self.variableDeclarator(kind);
-        try declarators.append(decl);
+        try self.scratch.append(decl);
         if (self.current_token.tag == .@",") {
             _ = try self.next();
         } else {
@@ -1738,7 +1739,8 @@ fn variableDeclaratorList(self: *Self, kind: ast.VarDeclKind) Error!ast.SubRange
         }
     }
 
-    const decls = try self.addSubRange(declarators.items);
+    const declarators = self.scratch.items[prev_scratch_len..];
+    const decls = try self.addSubRange(declarators);
     return decls;
 }
 
@@ -2140,23 +2142,24 @@ fn blockStatement(self: *Self) Error!Node.Index {
     const lbrac = try self.expect(.@"{");
     const start_pos = lbrac.start;
 
-    var statements = std.ArrayList(Node.Index).init(self.allocator);
-    defer statements.deinit();
+    const prev_scratch_len = self.scratch.items.len;
+    defer self.scratch.items.len = prev_scratch_len;
 
     while (self.current_token.tag != .@"}") {
         const stmt = try self.statementOrDeclaration();
-        try statements.append(stmt);
+        try self.scratch.append(stmt);
     }
 
     const rbrace = try self.next();
     std.debug.assert(rbrace.tag == .@"}");
     const end_pos = rbrace.start + rbrace.len;
 
-    if (statements.items.len == 0) {
+    const statements = self.scratch.items[prev_scratch_len..];
+    if (statements.len == 0) {
         return self.addNode(.{ .block_statement = null }, start_pos, end_pos);
     }
 
-    const stmt_list_node = try self.addSubRange(statements.items);
+    const stmt_list_node = try self.addSubRange(statements);
     const block_node = ast.NodeData{ .block_statement = stmt_list_node };
     return self.addNode(block_node, start_pos, end_pos);
 }
@@ -2565,10 +2568,10 @@ fn expression(self: *Self) Error!Node.Index {
 fn completeSequenceExpr(self: *Self, first_expr: Node.Index) Error!Node.Index {
     if (!self.isAtToken(.@",")) return first_expr;
 
-    var nodes = std.ArrayList(Node.Index).init(self.allocator);
-    defer nodes.deinit();
+    const prev_scratch_len = self.scratch.items.len;
+    defer self.scratch.items.len = prev_scratch_len;
 
-    _ = try nodes.append(first_expr);
+    _ = try self.scratch.append(first_expr);
 
     const start_pos = self.nodes.items(.start)[@intFromEnum(first_expr)];
     var end_pos = self.nodes.items(.start)[@intFromEnum(first_expr)];
@@ -2577,10 +2580,11 @@ fn completeSequenceExpr(self: *Self, first_expr: Node.Index) Error!Node.Index {
         _ = try self.next(); // eat ','
         const rhs = try self.assignExpressionNoPattern();
         end_pos = self.nodes.items(.start)[@intFromEnum(rhs)];
-        try nodes.append(rhs);
+        try self.scratch.append(rhs);
     }
 
-    const expr_list = try self.addSubRange(nodes.items);
+    const nodes = self.scratch.items[prev_scratch_len..];
+    const expr_list = try self.addSubRange(nodes);
     return try self.addNode(ast.NodeData{
         .sequence_expr = expr_list,
     }, start_pos, end_pos);
@@ -2914,8 +2918,8 @@ fn arrayAssignmentPattern(self: *Self) Error!Node.Index {
     const lbrac = try self.next(); // eat '['
     std.debug.assert(lbrac.tag == .@"[");
 
-    var items = std.ArrayList(Node.Index).init(self.allocator);
-    defer items.deinit();
+    const prev_scratch_len = self.scratch.items.len;
+    defer self.scratch.items.len = prev_scratch_len;
 
     var token = self.peek();
     while (true) : (token = self.peek()) {
@@ -2923,7 +2927,7 @@ fn arrayAssignmentPattern(self: *Self) Error!Node.Index {
             .@"," => {
                 const comma = try self.next(); // eat ','
                 if (self.isAtToken(.@"]")) break;
-                try items.append(try self.addNode(
+                try self.scratch.append(try self.addNode(
                     .{ .empty_array_item = {} },
                     comma.start,
                     comma.start + 1,
@@ -2931,7 +2935,7 @@ fn arrayAssignmentPattern(self: *Self) Error!Node.Index {
             },
 
             .@"..." => {
-                try items.append(try self.restElement());
+                try self.scratch.append(try self.restElement());
                 if (self.isAtToken(.@",")) {
                     const comma_tok = try self.next();
                     try self.emitDiagnostic(
@@ -2948,7 +2952,7 @@ fn arrayAssignmentPattern(self: *Self) Error!Node.Index {
             .@"]" => break,
 
             else => {
-                try items.append(try self.assignmentPattern());
+                try self.scratch.append(try self.assignmentPattern());
             },
         }
 
@@ -2960,7 +2964,8 @@ fn arrayAssignmentPattern(self: *Self) Error!Node.Index {
     }
 
     const rbrac = try self.expect(.@"]"); // eat ']'
-    const array_items = try self.addSubRange(items.items);
+    const items = self.scratch.items[prev_scratch_len..];
+    const array_items = try self.addSubRange(items);
     return try self.addNode(
         .{ .array_pattern = array_items },
         lbrac.start,
@@ -3072,8 +3077,8 @@ fn objectAssignmentPattern(self: *Self) Error!Node.Index {
     const lbrace = try self.next(); // eat '{'
     std.debug.assert(lbrace.tag == .@"{");
 
-    var props = std.ArrayList(Node.Index).init(self.allocator);
-    defer props.deinit();
+    const prev_scratch_len = self.scratch.items.len;
+    defer self.scratch.items.len = prev_scratch_len;
 
     var end_pos = lbrace.start + lbrace.len;
 
@@ -3083,7 +3088,7 @@ fn objectAssignmentPattern(self: *Self) Error!Node.Index {
     while (cur_token.tag != .@"}") : (cur_token = self.peek()) {
         switch (cur_token.tag) {
             .@"..." => {
-                try props.append(try self.restElement());
+                try self.scratch.append(try self.restElement());
                 destruct_kind.update(self.current_destructure_kind);
 
                 // TODO: we should continue parsing after the rest element,
@@ -3101,14 +3106,14 @@ fn objectAssignmentPattern(self: *Self) Error!Node.Index {
             => {
                 const prop = try self.destructuredPropertyDefinition();
                 destruct_kind.update(self.current_destructure_kind);
-                try props.append(prop);
+                try self.scratch.append(prop);
             },
 
             else => {
                 if (cur_token.tag.isKeyword()) {
                     const prop = try self.destructuredPropertyDefinition();
                     destruct_kind.update(self.current_destructure_kind);
-                    try props.append(prop);
+                    try self.scratch.append(prop);
                 } else {
                     try self.emitDiagnostic(
                         cur_token.startCoord(self.source),
@@ -3131,7 +3136,8 @@ fn objectAssignmentPattern(self: *Self) Error!Node.Index {
         end_pos = rbrace.start + rbrace.len;
     }
 
-    const destructured_props = try self.addSubRange(props.items);
+    const props = self.scratch.items[prev_scratch_len..];
+    const destructured_props = try self.addSubRange(props);
     self.current_destructure_kind = destruct_kind;
 
     return self.addNode(
@@ -3789,16 +3795,15 @@ fn templateLiteral(self: *Self) Error!Node.Index {
     self.context.in = true;
     defer self.context = ctx;
 
-    // TODO: use the scratch space here.
-    var template_parts = try std.ArrayList(Node.Index).initCapacity(self.allocator, 4);
-    defer template_parts.deinit();
+    const prev_scratch_len = self.scratch.items.len;
+    defer self.scratch.items.len = prev_scratch_len;
 
     var template_token = try self.next();
     std.debug.assert(template_token.tag == .template_literal_part);
     const start_pos = template_token.start;
     var end_pos = template_token.start + template_token.len;
 
-    try template_parts.append(try self.addNode(
+    try self.scratch.append(try self.addNode(
         .{ .template_element = try self.addToken(template_token) },
         start_pos,
         end_pos,
@@ -3806,7 +3811,7 @@ fn templateLiteral(self: *Self) Error!Node.Index {
 
     while (!self.isTemplateEndToken(&template_token)) {
         // parse an interpolation expression.
-        try template_parts.append(try self.expression());
+        try self.scratch.append(try self.expression());
 
         // The most recently processed (but unconsumed) token should be a '}'.
         // We want to rewind back one character, and make the tokenizer treat the '}'
@@ -3819,7 +3824,7 @@ fn templateLiteral(self: *Self) Error!Node.Index {
         template_token = try self.expect(.template_literal_part);
 
         // Now, parse the template part that follows
-        try template_parts.append(try self.addNode(
+        try self.scratch.append(try self.addNode(
             .{ .template_element = try self.addToken(template_token) },
             template_token.start,
             template_token.start + template_token.len,
@@ -3827,7 +3832,8 @@ fn templateLiteral(self: *Self) Error!Node.Index {
         end_pos = template_token.start + template_token.len;
     }
 
-    const elements = try self.addSubRange(template_parts.items);
+    const template_parts = self.scratch.items[prev_scratch_len..];
+    const elements = try self.addSubRange(template_parts);
     return try self.addNode(
         .{ .template_literal = elements },
         start_pos,
@@ -3917,8 +3923,8 @@ fn callArgsOrAsyncArrowFunc(
     const lparen = try self.next();
     std.debug.assert(lparen.tag == .@"(");
 
-    var sub_exprs = std.ArrayList(Node.Index).init(self.allocator);
-    defer sub_exprs.deinit();
+    const scratch_start = self.scratch.items.len;
+    defer self.scratch.items.len = scratch_start;
 
     var destructure_kind = DestructureKind{
         .can_destruct = true,
@@ -3936,7 +3942,7 @@ fn callArgsOrAsyncArrowFunc(
     while (!self.isAtToken(.@")")) {
         if (self.isAtToken(.@"...")) {
             const spread_elem = try self.spreadElement();
-            try sub_exprs.append(spread_elem);
+            try self.scratch.append(spread_elem);
 
             if (self.isAtToken(.@")")) break;
             // spread element must be the last item in a parameter list.
@@ -3952,7 +3958,7 @@ fn callArgsOrAsyncArrowFunc(
         } else {
             const expr = try self.assignmentExpression();
             destructure_kind.update(self.current_destructure_kind);
-            try sub_exprs.append(expr);
+            try self.scratch.append(expr);
         }
 
         if (destructure_kind.isMalformed()) {
@@ -3960,7 +3966,7 @@ fn callArgsOrAsyncArrowFunc(
             // on whether the most recently parsed node was a
             // pattern.
             try self.emitDiagnosticOnNode(
-                sub_exprs.items[sub_exprs.items.len - 1],
+                self.scratch.items[self.scratch.items.len - 1],
                 "Unexpected expression or pattern inside '( ... )'",
             );
             return Error.UnexpectedToken;
@@ -3973,6 +3979,7 @@ fn callArgsOrAsyncArrowFunc(
     }
 
     const rparen = try self.expect(.@")");
+    const sub_exprs = self.scratch.items[scratch_start..];
 
     if (self.isAtToken(.@"=>")) {
         if (!destructure_kind.can_destruct) {
@@ -3995,12 +4002,12 @@ fn callArgsOrAsyncArrowFunc(
         }
 
         // mutate the expressions so far to be interpreted as patterns.
-        for (sub_exprs.items) |node| {
+        for (sub_exprs) |node| {
             self.reinterpretAsPattern(node);
         }
 
-        const params_range = if (sub_exprs.items.len > 0)
-            try self.addSubRange(sub_exprs.items)
+        const params_range = if (sub_exprs.len > 0)
+            try self.addSubRange(sub_exprs)
         else
             null;
         const parameters = try self.addNode(
@@ -4028,8 +4035,8 @@ fn callArgsOrAsyncArrowFunc(
         return Error.UnexpectedPattern;
     }
 
-    const call_args = if (sub_exprs.items.len > 0)
-        try self.addSubRange(sub_exprs.items)
+    const call_args = if (sub_exprs.len > 0)
+        try self.addSubRange(sub_exprs)
     else
         null;
 
@@ -4341,15 +4348,15 @@ fn objectLiteral(self: *Self, start_pos: u32) Error!Node.Index {
 /// Parse a comma-separated list of properties.
 /// Returns `null` if there's 0 properties in the object.
 fn propertyDefinitionList(self: *Self) Error!?ast.SubRange {
-    var property_defs = std.ArrayList(Node.Index).init(self.allocator);
-    defer property_defs.deinit();
+    const scratch_start = self.scratch.items.len;
+    defer self.scratch.items.len = scratch_start;
 
     var destructure_kind = self.current_destructure_kind;
 
     while (true) {
         switch (self.current_token.tag) {
             .identifier => {
-                try property_defs.append(try self.identifierProperty());
+                try self.scratch.append(try self.identifierProperty());
                 destructure_kind.update(self.current_destructure_kind);
             },
 
@@ -4363,7 +4370,7 @@ fn propertyDefinitionList(self: *Self) Error!?ast.SubRange {
                     .{ .is_computed = true },
                 );
                 destructure_kind.update(self.current_destructure_kind);
-                try property_defs.append(property);
+                try self.scratch.append(property);
             },
 
             .numeric_literal,
@@ -4379,7 +4386,7 @@ fn propertyDefinitionList(self: *Self) Error!?ast.SubRange {
 
                 const property_expr = try self.completePropertyDef(key, .{});
                 destructure_kind.update(self.current_destructure_kind);
-                try property_defs.append(property_expr);
+                try self.scratch.append(property_expr);
             },
 
             // generator method
@@ -4392,7 +4399,7 @@ fn propertyDefinitionList(self: *Self) Error!?ast.SubRange {
                     .{ .is_generator = true },
                 );
                 destructure_kind.can_destruct = false;
-                try property_defs.append(generator_method);
+                try self.scratch.append(generator_method);
             },
 
             .@"..." => {
@@ -4403,7 +4410,7 @@ fn propertyDefinitionList(self: *Self) Error!?ast.SubRange {
 
                 const start = ellipsis_tok.start;
                 const end = self.nodes.items(.end)[@intFromEnum(expr)];
-                try property_defs.append(try self.addNode(.{ .spread_element = expr }, start, end));
+                try self.scratch.append(try self.addNode(.{ .spread_element = expr }, start, end));
 
                 if (self.isAtToken(.@",")) {
                     // comma is not allowed after rest element in object patterns
@@ -4413,7 +4420,7 @@ fn propertyDefinitionList(self: *Self) Error!?ast.SubRange {
             else => {
                 if (self.current_token.tag.isKeyword()) {
                     const id_property = try self.identifierProperty();
-                    try property_defs.append(id_property);
+                    try self.scratch.append(id_property);
                     destructure_kind.update(self.current_destructure_kind);
                 } else {
                     break;
@@ -4436,8 +4443,9 @@ fn propertyDefinitionList(self: *Self) Error!?ast.SubRange {
 
     self.current_destructure_kind = destructure_kind;
 
-    if (property_defs.items.len == 0) return null;
-    return try self.addSubRange(property_defs.items);
+    const property_defs = self.scratch.items[scratch_start..];
+    if (property_defs.len == 0) return null;
+    return try self.addSubRange(property_defs);
 }
 
 /// Parse an the property of an object literal or object pattern that starts with an identifier.
@@ -4707,8 +4715,8 @@ fn completePropertyDef(
 /// Parse an ArrayLiteral:
 /// https://262.ecma-international.org/15.0/index.html#prod-ArrayLiteral
 fn arrayLiteral(self: *Self, start_pos: u32) Error!Node.Index {
-    var elements = std.ArrayList(Node.Index).init(self.allocator);
-    defer elements.deinit();
+    const scratch_start = self.scratch.items.len;
+    defer self.scratch.items.len = scratch_start;
 
     var destructure_kind = self.current_destructure_kind;
 
@@ -4717,7 +4725,7 @@ fn arrayLiteral(self: *Self, start_pos: u32) Error!Node.Index {
         while (self.isAtToken(.@",")) {
             // elision: https://262.ecma-international.org/15.0/index.html#prod-Elision
             const comma = try self.next();
-            try elements.append(try self.addNode(
+            try self.scratch.append(try self.addNode(
                 .{ .empty_array_item = {} },
                 comma.start,
                 comma.start + comma.len,
@@ -4743,13 +4751,13 @@ fn arrayLiteral(self: *Self, start_pos: u32) Error!Node.Index {
                     destructure_kind.setNoAssignOrDestruct();
                 }
 
-                try elements.append(try self.addNode(.{ .spread_element = expr }, start, end));
+                try self.scratch.append(try self.addNode(.{ .spread_element = expr }, start, end));
             },
 
             else => {
                 const item = try self.assignmentExpression();
                 destructure_kind.update(self.current_destructure_kind);
-                try elements.append(item);
+                try self.scratch.append(item);
             },
         }
 
@@ -4760,7 +4768,8 @@ fn arrayLiteral(self: *Self, start_pos: u32) Error!Node.Index {
         }
     }
 
-    const nodes = try self.addSubRange(elements.items);
+    const elements = self.scratch.items[scratch_start..];
+    const nodes = try self.addSubRange(elements);
     self.current_destructure_kind = destructure_kind;
     return self.addNode(.{ .array_literal = nodes }, start_pos, end_pos);
 }
@@ -4894,8 +4903,8 @@ fn parseFormalParameters(self: *Self) Error!Node.Index {
     const lparen = try self.expect(.@"(");
     const start_pos = lparen.start;
 
-    var params = std.ArrayList(Node.Index).init(self.allocator);
-    defer params.deinit();
+    const scratch_start = self.scratch.items.len;
+    defer self.scratch.items.len = scratch_start;
 
     const rparen = blk: {
         if (self.isAtToken(.@")")) break :blk try self.next();
@@ -4903,7 +4912,7 @@ fn parseFormalParameters(self: *Self) Error!Node.Index {
         while (true) {
             if (self.isAtToken(.@"...")) {
                 const rest_elem = try self.restElement();
-                try params.append(rest_elem);
+                try self.scratch.append(rest_elem);
 
                 if (!self.isAtToken(.@")")) {
                     try self.restParamNotLastError(&self.current_token);
@@ -4913,7 +4922,7 @@ fn parseFormalParameters(self: *Self) Error!Node.Index {
             }
 
             const param = try self.parseParameter();
-            try params.append(param);
+            try self.scratch.append(param);
 
             const comma_or_rpar = try self.expect2(.@",", .@")");
             if (comma_or_rpar.tag == .@")") break :blk comma_or_rpar;
@@ -4921,9 +4930,9 @@ fn parseFormalParameters(self: *Self) Error!Node.Index {
     };
 
     const end_pos = rparen.start + rparen.len;
-
-    const param_list = if (params.items.len > 0)
-        try self.addSubRange(params.items)
+    const params = self.scratch.items[scratch_start..];
+    const param_list = if (params.len > 0)
+        try self.addSubRange(params)
     else
         null;
 
@@ -4988,16 +4997,16 @@ fn parseArgs(self: *Self) Error!struct { ast.SubRange, u32, u32 } {
 
     const start_pos = (try self.expect(.@"(")).start;
 
-    var arg_list = std.ArrayList(Node.Index).init(self.allocator);
-    defer arg_list.deinit();
+    const scratch_start = self.scratch.items.len;
+    defer self.scratch.items.len = scratch_start;
 
     while (!self.isAtToken(.@")")) {
         if (self.isAtToken(.@"...")) {
             const spread_elem = try self.spreadElement();
-            try arg_list.append(spread_elem);
+            try self.scratch.append(spread_elem);
         } else {
             const expr = try self.assignExpressionNoPattern();
-            try arg_list.append(expr);
+            try self.scratch.append(expr);
         }
         if (!self.isAtToken(.@","))
             break;
@@ -5007,7 +5016,8 @@ fn parseArgs(self: *Self) Error!struct { ast.SubRange, u32, u32 } {
     const close_paren = try self.expect(.@")"); // eat closing ')'
     const end_pos = close_paren.start + close_paren.len;
 
-    return .{ try self.addSubRange(arg_list.items), start_pos, end_pos };
+    const arg_list = self.scratch.items[scratch_start..];
+    return .{ try self.addSubRange(arg_list), start_pos, end_pos };
 }
 
 /// make a right associative parse function for an infix operator represented
