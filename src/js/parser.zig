@@ -1578,10 +1578,11 @@ fn completeLoopInitializer(self: *Self, kw: Token, first_decl: Node.Index) Error
     defer decl_nodes.deinit();
 
     try decl_nodes.append(first_decl);
+    const var_kind = varDeclKind(kw.tag);
 
     while (self.current_token.tag == .@",") {
         _ = try self.next();
-        const decl = try self.variableDeclarator();
+        const decl = try self.variableDeclarator(var_kind);
         try decl_nodes.append(decl);
     }
 
@@ -1593,7 +1594,7 @@ fn completeLoopInitializer(self: *Self, kw: Token, first_decl: Node.Index) Error
     return self.addNode(
         .{
             .variable_declaration = .{
-                .kind = varDeclKind(kw.tag),
+                .kind = var_kind,
                 .declarators = decls,
             },
         },
@@ -1672,7 +1673,8 @@ fn debuggerStatement(self: *Self) Error!Node.Index {
 fn variableStatement(self: *Self, kw: Token) Error!Node.Index {
     std.debug.assert(kw.tag == .kw_let or kw.tag == .kw_var or kw.tag == .kw_const);
 
-    const decls = try self.variableDeclaratorList();
+    const kind = varDeclKind(kw.tag);
+    const decls = try self.variableDeclaratorList(kind);
     const last_decl = decls.asSlice(self)[0];
 
     var end_pos: u32 = self.nodes.items(.end)[@intFromEnum(last_decl)];
@@ -1681,7 +1683,7 @@ fn variableStatement(self: *Self, kw: Token) Error!Node.Index {
     return self.addNode(
         .{
             .variable_declaration = .{
-                .kind = varDeclKind(kw.tag),
+                .kind = kind,
                 .declarators = decls,
             },
         },
@@ -1692,12 +1694,12 @@ fn variableStatement(self: *Self, kw: Token) Error!Node.Index {
 
 /// Parse a list of variable declarators after the 'var', 'let', or 'const'
 /// keyword has been eaten.
-fn variableDeclaratorList(self: *Self) Error!ast.SubRange {
+fn variableDeclaratorList(self: *Self, kind: ast.VarDeclKind) Error!ast.SubRange {
     var declarators = std.ArrayList(Node.Index).init(self.allocator);
     defer declarators.deinit();
 
     while (true) {
-        const decl = try self.variableDeclarator();
+        const decl = try self.variableDeclarator(kind);
         try declarators.append(decl);
         if (self.current_token.tag == .@",") {
             _ = try self.next();
@@ -2036,7 +2038,7 @@ fn startLetBinding(self: *Self) Error!?Token {
 /// VariableDeclarator:
 ///  BindingPattern Initializer?
 ///  BindingElement Initializer?
-fn variableDeclarator(self: *Self) Error!Node.Index {
+fn variableDeclarator(self: *Self, kind: ast.VarDeclKind) Error!Node.Index {
     const lhs = try self.assignmentLhsExpr();
     if (!self.current_destructure_kind.can_destruct) {
         // TODO: improve error message
@@ -2057,6 +2059,10 @@ fn variableDeclarator(self: *Self) Error!Node.Index {
         } else if (self.nodeTag(lhs) != .identifier) {
             // Assignment patterns must have an initializer.
             try self.emitDiagnosticOnNode(lhs, "A destructuring declaration must have an initializer");
+            return Error.MissingInitializer;
+        } else if (kind == .@"const") {
+            // Constants must have an initializer.
+            try self.emitDiagnosticOnNode(lhs, "Missing initializer in const declaration");
             return Error.MissingInitializer;
         }
 
