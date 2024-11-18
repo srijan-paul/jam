@@ -984,6 +984,11 @@ fn classHeritage(self: *Self) Error!Node.Index {
 }
 
 fn classBody(self: *Self) Error!ast.SubRange {
+    // class bodies are always parsed in strict mode.
+    const context = self.context;
+    self.context.strict = true;
+    defer self.context = context;
+
     const prev_scratch_len = self.scratch.items.len;
     defer self.scratch.items.len = prev_scratch_len;
 
