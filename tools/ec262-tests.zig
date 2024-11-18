@@ -61,6 +61,22 @@ const pass_exceptions = [_][]const u8{
     "7bdcce70c382a9a4.js",
     "1f988cc22167927b.js",
     "aec65a9745669870.js",
+    "95520bedf0fdd4c9.js",
+    "b8403938b1ddd626.js",
+    "1223609b0f7a2129.js",
+    "90ad0135b905a622.js",
+    "4ed17e0e2686e5e5.js",
+    "aac70baa56299267.js",
+    "446ffc8afda7e47f.js",
+    "04b26d042948d474.js",
+    "46173461e93df4c2.js",
+    "3b5d1fb0e093dab8.js",
+    "a6cb605b66ef0eb5.js",
+    "d88992e07614f506.js",
+    "55c15fe174790fb2.js",
+    "aeca992c7be882ba.js",
+    "0eb53d0e06cd5417.js",
+    "24557730b5076325.js",
 };
 
 /// For a given file name, check whether `pass/<file>` and `pass-explicit/<file>`

@@ -422,16 +422,15 @@ pub fn importDeclaration(self: *Self) Error!Node.Index {
     const prev_scratch_len = self.scratch.items.len;
     defer self.scratch.items.len = prev_scratch_len;
 
-    // If there is a trailing ',' after the default or star import
+    // If there is a trailing ',' after the default import,
     // we must parse a list of import specifiers inside '{}'
     var trailing_comma = false;
-
-    const cur = self.current_token.tag;
 
     // Whether we have at least one import (either default, namespace, or specifier list)
     // This is to avoid parsing `import from "foo";` as a valid import statement.
     var has_imports = false;
 
+    const cur = self.current_token.tag;
     if (cur == .identifier or self.isKeywordIdentifier(cur)) {
         has_imports = true;
         const default_specifier = try self.defaultImportSpecifier();
