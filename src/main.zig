@@ -17,7 +17,7 @@ fn jsFileToJsonAst(allocator: std.mem.Allocator, file_name: []const u8) ![]const
     defer allocator.free(source);
 
     const Parser = js.Parser;
-    var parser = try Parser.init(allocator, source, .{});
+    var parser = try Parser.init(allocator, source, .{ .source_type = .script });
     defer parser.deinit();
 
     const node_idx = parser.parse() catch |err| {

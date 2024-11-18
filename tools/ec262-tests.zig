@@ -7,16 +7,28 @@ const ParseResult = enum {
     pass,
     parse_error,
     ast_no_match,
+    malformed_file_parsed,
 };
 
 /// Structured representation of the `tools/results.json` file.
 const TestResult = struct {
     fail_percent: std.json.Value,
     pass_percent: std.json.Value,
+
+    // The below two metrics are calculated from the 'fail' directory
+    // in the test-suite.
+
+    /// % of files that have parse errors,
+    /// and the parser rightly fails on them.
+    malformed_pass_percent: std.json.Value,
+    /// % of files that have parse errors,
+    /// but the parser incorrectly passes them.
+    malformed_fail_percent: std.json.Value,
+
     unmatching_ast_count: usize,
 
     /// string -> string map.
-    /// key is a filename like "12ea3bf0653f8409.js", and value is `TestResult`.
+    /// key is a filename like "12ea3bf0653f8409.js", and value is a stringified `TestResult`.
     test_cases: std.json.Value,
 };
 
@@ -145,6 +157,35 @@ fn testOnPassingFile(
     return ParseResult.pass;
 }
 
+/// Run the parser on a file that has a syntax error, then ensure
+/// that the parser exits with an error.
+fn testOnMalformedFile(
+    allocator: std.mem.Allocator,
+    fail_dir: *std.fs.Dir,
+    file_name: []const u8,
+) !ParseResult {
+    const source = try fail_dir.readFileAlloc(allocator, file_name, std.math.maxInt(u32));
+    defer allocator.free(source);
+
+    const source_type: syntax.Parser.SourceType =
+        if (std.mem.endsWith(u8, file_name, ".module.js"))
+        .module
+    else
+        .script;
+
+    // parse the program
+    var parser = Parser.init(
+        allocator,
+        source,
+        .{ .source_type = source_type },
+    ) catch return .malformed_file_parsed;
+    defer parser.deinit();
+
+    _ = parser.parse() catch
+        return ParseResult.pass;
+    return ParseResult.malformed_file_parsed;
+}
+
 /// Read an existing `tools/results.json` file.
 pub fn readResultsFile(allocator: std.mem.Allocator, results_file_path: []const u8) !std.json.Parsed(TestResult) {
     const previous_results_str = try std.fs.cwd().readFileAlloc(
@@ -177,18 +218,23 @@ pub fn runValidSyntaxTests(al: std.mem.Allocator) !TestResult {
     var pass_explicit_dir = try d.openDir("pass-explicit", .{ .iterate = true });
     defer pass_explicit_dir.close();
 
-    var pass_dir_iter = pass_explicit_dir.iterate();
+    var fail_dir = try d.openDir("fail", .{ .iterate = true });
+    defer fail_dir.close();
 
-    var n_total: f64 = 0.0;
+    var pass_dir_iter = pass_explicit_dir.iterate();
+    var fail_dir_iter = fail_dir.iterate();
+
+    var n_good_files: f64 = 0.0;
     var n_pass: f64 = 0.0;
     var n_fail: f64 = 0.0;
+
     var n_ast_no_match: usize = 0;
 
     var test_cases = std.json.ObjectMap.init(al);
     while (try pass_dir_iter.next()) |entry| {
         if (entry.kind != .file) continue;
 
-        n_total += 1.0;
+        n_good_files += 1.0;
         const result = testOnPassingFile(
             al,
             &pass_dir,
@@ -198,25 +244,48 @@ pub fn runValidSyntaxTests(al: std.mem.Allocator) !TestResult {
 
         switch (result) {
             .pass => n_pass += 1.0,
-            .parse_error => n_fail += 1.0,
             .ast_no_match => n_ast_no_match += 1,
+            else => n_fail += 1.0,
         }
 
         const name = try al.dupe(u8, entry.name);
         try test_cases.put(name, .{ .string = @tagName(result) });
     }
 
-    const fail_rate = ((n_fail + @as(f64, @floatFromInt(n_ast_no_match))) / n_total) * 100.0;
-    const pass_rate = (n_pass / n_total) * 100.0;
-    std.debug.assert(n_fail + @as(f64, @floatFromInt(n_ast_no_match)) + n_pass == n_total);
+    var n_malformed_pass: f64 = 0.0;
+    var n_malformed_fail: f64 = 0.0;
+    var n_malformed_files: f64 = 0.0;
+    while (try fail_dir_iter.next()) |entry| {
+        if (entry.kind != .file) continue;
+        n_malformed_files += 1.0;
+        const result = try testOnMalformedFile(al, &fail_dir, entry.name);
+        switch (result) {
+            .pass => n_malformed_pass += 1.0,
+            else => n_malformed_fail += 1.0,
+        }
+
+        const name = try al.dupe(u8, entry.name);
+        try test_cases.put(name, .{ .string = @tagName(result) });
+    }
+
+    const fail_rate = ((n_fail + @as(f64, @floatFromInt(n_ast_no_match))) / n_good_files) * 100.0;
+    const pass_rate = (n_pass / n_good_files) * 100.0;
+    std.debug.assert(n_fail + @as(f64, @floatFromInt(n_ast_no_match)) + n_pass == n_good_files);
+
+    const malformed_pass_rate = (n_malformed_pass / n_malformed_files) * 100.0;
+    const malformed_fail_rate = (n_malformed_fail / n_malformed_files) * 100.0;
 
     const fail_rate_str = try std.fmt.allocPrint(al, "{d}", .{fail_rate});
     const pass_rate_str = try std.fmt.allocPrint(al, "{d}", .{pass_rate});
+    const malformed_pass_rate_str = try std.fmt.allocPrint(al, "{d}", .{malformed_pass_rate});
+    const malformed_fail_rate_str = try std.fmt.allocPrint(al, "{d}", .{malformed_fail_rate});
 
     return TestResult{
         .test_cases = .{ .object = test_cases },
         .fail_percent = .{ .number_string = fail_rate_str },
         .pass_percent = .{ .number_string = pass_rate_str },
+        .malformed_pass_percent = .{ .number_string = malformed_pass_rate_str },
+        .malformed_fail_percent = .{ .number_string = malformed_fail_rate_str },
         .unmatching_ast_count = n_ast_no_match,
     };
 }

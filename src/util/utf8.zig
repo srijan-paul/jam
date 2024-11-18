@@ -14,7 +14,7 @@ pub fn parseUnicodeEscape(str: []const u8) ?struct { codepoint: u21, len: u32 } 
         for (str[3..len]) |ch| {
             if (!std.ascii.isHex(ch)) return null;
         }
-        const code_point = std.fmt.parseInt(u24, str[3..len], 16) catch unreachable;
+        const code_point = std.fmt.parseInt(u24, str[3..len], 16) catch return null;
         if (code_point > 0x10FFFF) return null;
         return .{ .codepoint = @intCast(code_point), .len = @intCast(len + 1) };
     }

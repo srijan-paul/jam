@@ -2535,7 +2535,7 @@ fn completeSequenceExpr(self: *Self, first_expr: Node.Index) Error!Node.Index {
 
     while (self.isAtToken(.@",")) {
         _ = try self.next(); // eat ','
-        const rhs = try self.assignmentExpression();
+        const rhs = try self.assignExpressionNoPattern();
         end_pos = self.nodes.items(.start)[@intFromEnum(rhs)];
         try nodes.append(rhs);
     }
@@ -2586,6 +2586,7 @@ fn reinterpretAsPattern(self: *Self, node_id: Node.Index) void {
         .empty_array_item,
         .rest_element,
         .computed_member_expr,
+        .call_expr,
         => return,
         .object_literal => |object_pl| {
             node.* = .{ .object_pattern = object_pl };
@@ -3263,16 +3264,32 @@ fn tryCallExpression(self: *Self, callee: Node.Index) Error!?Node.Index {
 
     var call_expr = try self.coverCallAndAsyncArrowHead(callee);
     var cur_token = self.peek();
+    var destruct_kind = self.current_destructure_kind;
     while (cur_token.tag != .eof) : (cur_token = self.peek()) {
         switch (cur_token.tag) {
-            .@"(" => call_expr = try self.completeCallExpression(call_expr),
-            .@"[" => call_expr = try self.completeComputedMemberExpression(call_expr),
-            .@"." => call_expr = try self.completeMemberExpression(call_expr),
-            .template_literal_part => call_expr = try self.completeTaggedTemplate(call_expr),
+            .@"(" => {
+                call_expr = try self.completeCallExpression(call_expr);
+                destruct_kind.setNoAssignOrDestruct();
+            },
+            .@"[" => {
+                call_expr = try self.completeComputedMemberExpression(call_expr);
+                destruct_kind.can_destruct = false;
+                destruct_kind.can_be_assigned_to = true;
+            },
+            .@"." => {
+                call_expr = try self.completeMemberExpression(call_expr);
+                destruct_kind.can_destruct = false;
+                destruct_kind.can_be_assigned_to = true;
+            },
+            .template_literal_part => {
+                call_expr = try self.completeTaggedTemplate(call_expr);
+                destruct_kind.setNoAssignOrDestruct();
+            },
             else => break,
         }
     }
 
+    self.current_destructure_kind = destruct_kind;
     return call_expr;
 }
 
@@ -4223,6 +4240,12 @@ fn completeArrowFuncOrGroupingExpr(self: *Self, lparen: *const Token) Error!Node
         return Error.UnexpectedPattern;
     }
 
+    // (a, b) cannot be assigned to or destructured,
+    // but (a) = 1 is valid.
+    if (nodes.items.len > 1) {
+        self.current_destructure_kind.setNoAssignOrDestruct();
+    }
+
     if (has_trailing_comma) {
         try self.emitDiagnostic(
             rparen.startCoord(self.source),
@@ -4552,8 +4575,6 @@ fn parseMethodBody(
     flags: ast.PropertyDefinitionFlags,
     fn_flags: ast.FunctionFlags,
 ) Error!Node.Index {
-    std.debug.assert(self.current_token.tag == .@"(" and flags.is_method);
-
     const start_pos = self.current_token.start;
     const func_expr = try self.parseFunctionBody(
         start_pos,
@@ -4648,7 +4669,7 @@ fn arrayLiteral(self: *Self, start_pos: u32) Error!Node.Index {
     var elements = std.ArrayList(Node.Index).init(self.allocator);
     defer elements.deinit();
 
-    var destructuring_kind = self.current_destructure_kind;
+    var destructure_kind = self.current_destructure_kind;
 
     var end_pos = start_pos;
     while (true) {
@@ -4675,9 +4696,10 @@ fn arrayLiteral(self: *Self, start_pos: u32) Error!Node.Index {
                 const expr = try self.assignmentExpression();
                 const start = ellipsis_tok.start;
                 const end = self.nodes.items(.end)[@intFromEnum(expr)];
+                destructure_kind.update(self.current_destructure_kind);
                 if (self.isAtToken(.@",")) {
                     // "," is not allowed after rest element in array patterns
-                    destructuring_kind.setNoAssignOrDestruct();
+                    destructure_kind.setNoAssignOrDestruct();
                 }
 
                 try elements.append(try self.addNode(.{ .spread_element = expr }, start, end));
@@ -4685,7 +4707,7 @@ fn arrayLiteral(self: *Self, start_pos: u32) Error!Node.Index {
 
             else => {
                 const item = try self.assignmentExpression();
-                destructuring_kind.update(self.current_destructure_kind);
+                destructure_kind.update(self.current_destructure_kind);
                 try elements.append(item);
             },
         }
@@ -4698,7 +4720,7 @@ fn arrayLiteral(self: *Self, start_pos: u32) Error!Node.Index {
     }
 
     const nodes = try self.addSubRange(elements.items);
-    self.current_destructure_kind = destructuring_kind;
+    self.current_destructure_kind = destructure_kind;
     return self.addNode(.{ .array_literal = nodes }, start_pos, end_pos);
 }
 
