@@ -650,7 +650,7 @@ fn toPretty(
             const params = try copy(al, try toPretty(self, al, f.parameters));
             const info = self.getExtraData(f.info);
             const func_flags = info.function.flags;
-            const func_name = f.getName(self);
+            const func_name = f.getName(self.tree);
             const flags: ast.Pretty(ast.FunctionFlags) = .{
                 .is_async = func_flags.is_async,
                 .is_generator = func_flags.is_generator,

@@ -14,6 +14,8 @@ const types = util.types;
 const Node = ast.Node;
 const NodeData = ast.NodeData;
 
+pub const Tree = ast.Tree;
+
 pub const Error = error{
     UnexpectedToken,
     /// Invalid modifier like 'async'
@@ -197,14 +199,14 @@ tokenizer: Tokenizer,
 /// All AST nodes are stored in this flat list and reference
 /// each other using their indices.
 /// This is an *append only* list.
-nodes: std.MultiArrayList(Node),
+nodes: *std.MultiArrayList(Node),
 /// Extra information about a node, if any. See: `ast.ExtraData`.
-extra_data: std.ArrayList(ast.ExtraData),
+extra_data: *std.ArrayList(ast.ExtraData),
 /// List of tokens that are necessary to keep around
 /// e.g - identifiers, literals, function names, etc.
-tokens: std.ArrayList(Token),
+tokens: *std.ArrayList(Token),
 /// Arguments for function calls, new-expressions, etc.
-node_lists: std.ArrayList(Node.Index),
+node_lists: *std.ArrayList(Node.Index),
 /// List of error messages and warnings generated during parsing.
 diagnostics: std.ArrayList(Diagnostic),
 /// Temporary array-list for intermediate allocations
@@ -231,6 +233,8 @@ source_type: SourceType,
 jsx: bool = false,
 /// Whether we're parsing TypeScript
 typescript: bool = false,
+/// The parse result
+tree: *Tree,
 /// Bit-flags to keep track of whether the
 /// most recently parsed expression can be destructured.
 const DestructureKind = packed struct(u8) {
@@ -317,22 +321,39 @@ pub fn init(
     source: []const u8,
     config: Config,
 ) Error!Self {
-    var self = Self{
+    // First, allocate a struct to store the resulting parse tree.
+    var parse_tree = try allocator.create(Tree);
+    parse_tree.* = Tree{
         .allocator = allocator,
         .source = source,
+        .root = Node.Index.empty,
+        .nodes = .{},
+        .node_indices = try std.ArrayList(Node.Index).initCapacity(allocator, 32),
+        .extras = try std.ArrayList(ast.ExtraData).initCapacity(allocator, 32),
+        .tokens = try std.ArrayList(Token).initCapacity(allocator, 256),
+    };
+
+    var self = Self{
         .tokenizer = try Tokenizer.init(source, config),
+        // initialized below in the call to `self.next()`
         .current_token = undefined,
+
+        .allocator = allocator,
+        .source = source,
+        .tree = parse_tree,
 
         .source_type = config.source_type,
 
+        .nodes = &parse_tree.nodes,
+        .node_lists = &parse_tree.node_indices,
+        .extra_data = &parse_tree.extras,
+        .tokens = &parse_tree.tokens,
+
         .diagnostics = try std.ArrayList(Diagnostic).initCapacity(allocator, 2),
-        .nodes = .{},
         .scratch = try std.ArrayList(Node.Index).initCapacity(allocator, 32),
-        .node_lists = try std.ArrayList(Node.Index).initCapacity(allocator, 32),
-        .extra_data = try std.ArrayList(ast.ExtraData).initCapacity(allocator, 32),
-        .tokens = try std.ArrayList(Token).initCapacity(allocator, 256),
         .strings = try StringHelper.init(allocator, source),
     };
+    errdefer self.deinit();
 
     // "module"s are always parsed in strict mode.
     self.context.strict = config.strict_mode or config.source_type == SourceType.module;
@@ -347,8 +368,6 @@ pub fn init(
         return Error.TypeScriptNotImplemented;
     }
 
-    errdefer self.deinit();
-
     // the `null` node always lives at index-0.
     // see: ast.NodeData.none
     const i = try self.addNode(.{ .none = {} }, 0, 0);
@@ -360,10 +379,9 @@ pub fn init(
 }
 
 pub fn deinit(self: *Self) void {
-    self.nodes.deinit(self.allocator);
-    self.tokens.deinit();
-    self.node_lists.deinit();
-    self.extra_data.deinit();
+    self.tree.deinit();
+    self.allocator.destroy(self.tree);
+
     self.scratch.deinit();
     for (self.diagnostics.items) |d| {
         self.allocator.free(d.message);
@@ -828,9 +846,6 @@ fn statement(self: *Self) Error!Node.Index {
         .kw_switch => self.switchStatement(),
         .kw_with => self.withStatement(),
         .kw_throw => self.throwStatement(),
-        // TODO: right now, if expression parsing fails, the error message we get is:
-        // "Expected an expression, found '<token>'."
-        // This error message should be improved.
         else => self.labeledOrExpressionStatement(),
     };
 }
@@ -872,8 +887,18 @@ fn labeledStatement(self: *Self) Error!Node.Index {
 
 fn labeledItem(self: *Self) Error!Node.Index {
     if (self.isAtToken(.kw_function)) {
-        const fn_token = try self.next();
-        return self.functionDeclaration(fn_token.start, .{});
+        if (self.context.strict or self.source_type == .script) {
+            const fn_token = try self.next();
+            return self.functionDeclaration(fn_token.start, .{});
+        }
+
+        try self.emitDiagnosticOnToken(
+            self.current_token,
+            "Function declarations cannot be labeled",
+            .{},
+        );
+
+        return Error.UnexpectedToken;
     }
     return self.statement();
 }
@@ -1680,7 +1705,7 @@ fn variableStatement(self: *Self, kw: Token) Error!Node.Index {
 
     const kind = varDeclKind(kw.tag);
     const decls = try self.variableDeclaratorList(kind);
-    const last_decl = decls.asSlice(self)[0];
+    const last_decl = self.subRangeToSlice(decls)[0];
 
     var end_pos: u32 = self.nodes.items(.end)[@intFromEnum(last_decl)];
     end_pos = try self.semiColon(end_pos);
@@ -2277,6 +2302,10 @@ fn continueStatement(self: *Self) Error!Node.Index {
 // Common helper functions
 // ------------------------
 
+fn subRangeToSlice(self: *Self, range: ast.SubRange) []const Node.Index {
+    return self.node_lists.items[@intFromEnum(range.from)..@intFromEnum(range.to)];
+}
+
 /// Helper function to finish a statement with a semi-colon.
 /// `end_pos` is the end-position of the statement node,
 /// if a semi-colon is found, returns the end position of the semi-colon,
@@ -2601,16 +2630,14 @@ fn reinterpretAsPattern(self: *Self, node_id: Node.Index) void {
         => return,
         .object_literal => |object_pl| {
             node.* = .{ .object_pattern = object_pl };
-            const elems_idx = object_pl orelse return;
-            const elems = elems_idx.asSlice(self);
+            const elems = self.subRangeToSlice(object_pl orelse return);
             for (elems) |elem_id| {
                 self.reinterpretAsPattern(elem_id);
             }
         },
         .array_literal => |array_pl| {
             node.* = .{ .array_pattern = array_pl };
-            const elems_idx = array_pl orelse return;
-            const elems = elems_idx.asSlice(self);
+            const elems = self.subRangeToSlice(array_pl orelse return);
             for (elems) |elem_id| {
                 self.reinterpretAsPattern(elem_id);
             }
@@ -2787,7 +2814,7 @@ fn yieldExpression(self: *Self) Error!Node.Index {
             is_delegated = true;
             has_operand = true;
         } else {
-            // `{ a = yield } = 5;` is valid JS syntax,
+            // `[ a = yield ] = 5;` is valid JS syntax,
             // and we shouldn't try to parse an expression
             // even though the '}' and 'yield' are on the same line.
             has_operand = switch (self.current_token.tag) {
@@ -4625,7 +4652,8 @@ fn checkGetterOrSetterParams(
     kind: ast.PropertyDefinitionKind,
 ) Error!void {
     const func = &self.getNode(func_expr).data.function_expr;
-    const n_params = func.getParameterCount(self);
+    const n_params = func.getParameterCount(self.tree);
+
     if (kind == .get and n_params != 0) {
         try self.emitDiagnostic(
             self.current_token.startCoord(self.source),

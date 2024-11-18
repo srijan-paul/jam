@@ -2,6 +2,61 @@ const std = @import("std");
 const Token = @import("token.zig").Token;
 const Parser = @import("parser.zig");
 
+/// Represents a parse tree.
+/// Nodes are stored in a flat array, and reference each other using indices.
+pub const Tree = struct {
+    allocator: std.mem.Allocator,
+    /// index of the "program" node in the `nodes` array
+    root: Node.Index,
+    /// Source code represented by this tree
+    source: []const u8,
+    /// A flat list that stores all nodes in the AST.
+    nodes: std.MultiArrayList(Node),
+    tokens: std.ArrayList(Token),
+    /// Extra information for some nodes.
+    /// referenced using indicies (see: `ExtraData.Index`)
+    extras: std.ArrayList(ExtraData),
+    /// An array containing indices of AST nodes.
+    /// Related nodes are stored next to each other.
+    /// For example, indices of all arguments in a call expression are stored in a row.
+    /// Then, the `CallExpression` node can use an `ast.SubRange` to reference a slice of nodes
+    /// from within this array.
+    node_indices: std.ArrayList(Node.Index),
+
+    /// Obtain all the data for a single AST Node.
+    pub fn getNode(self: *const Tree, index: Node.Index) Node {
+        return self.nodes.get(@intFromEnum(index));
+    }
+
+    /// Get a token by its index (Token.Index)
+    pub fn getToken(self: *const Tree, index: Token.Index) Token {
+        return self.tokens.items[@intFromEnum(index)];
+    }
+
+    /// Get the extra data of a node from its ExtraData.Index
+    pub fn getExtraData(self: *const Tree, index: ExtraData.Index) ExtraData {
+        return self.extras.items[@intFromEnum(index)];
+    }
+
+    /// Get a slice of nodes from an ast.SubRange.
+    pub fn getSubRange(
+        self: *const Tree,
+        from_: SubRange.Index,
+        to_: SubRange.Index,
+    ) []const Node.Index {
+        const from: usize = @intFromEnum(from_);
+        const to: usize = @intFromEnum(to_);
+        return self.node_indices.items[from..to];
+    }
+
+    pub fn deinit(self: *Tree) void {
+        self.nodes.deinit(self.allocator);
+        self.tokens.deinit();
+        self.extras.deinit();
+        self.node_indices.deinit();
+    }
+};
+
 pub const BinaryPayload = struct {
     lhs: Node.Index,
     rhs: Node.Index,
@@ -30,10 +85,10 @@ pub const SubRange = struct {
     to: Index,
 
     /// Return a slice of `Node.Index`es that represents the sub-range.
-    pub fn asSlice(self: *const SubRange, parser: *const Parser) []const Node.Index {
+    pub fn asSlice(self: *const SubRange, tree: *const Tree) []const Node.Index {
         const from: usize = @intFromEnum(self.from);
         const to: usize = @intFromEnum(self.to);
-        return parser.node_lists.items[from..to];
+        return tree.node_indices.items[from..to];
     }
 };
 
@@ -65,34 +120,28 @@ pub const Function = struct {
     info: ExtraData.Index,
     /// Get the name of this function, if it has one,
     /// directly from the source buffer.
-    pub fn getName(self: *const Function, parser: *const Parser) ?[]const u8 {
-        const maybe_name_token = parser.getExtraData(self.info).function.name;
+    pub fn getName(self: *const Function, tree: *const Tree) ?[]const u8 {
+        const maybe_name_token = tree.getExtraData(self.info).function.name;
         if (maybe_name_token) |name_token| {
-            const token = parser.getToken(name_token);
-            return token.toByteSlice(parser.source);
+            const token = tree.getToken(name_token);
+            return token.toByteSlice(tree.source);
         }
         return null;
     }
 
     /// Returns a slice containing all the parameter nodes in the function.
-    pub fn getParameterSlice(
-        self: *const Function,
-        parser: *const Parser,
-    ) []const Node.Index {
-        const params_node = parser.getNode(self.parameters);
+    pub fn getParameterSlice(self: *const Function, tree: *const Tree) []const Node.Index {
+        const params_node = tree.getNode(self.parameters);
         const maybe_params_range = params_node.data.parameters;
         if (maybe_params_range) |params_range| {
-            return parser.getSubRange(params_range.from, params_range.to);
+            return tree.getSubRange(params_range.from, params_range.to);
         }
         return &[_]Node.Index{};
     }
 
     /// Returns the number of parameters in the function.
-    pub fn getParameterCount(
-        self: *const Function,
-        parser: *const Parser,
-    ) usize {
-        const params_node = parser.getNode(self.parameters);
+    pub fn getParameterCount(self: *const Function, tree: *const Tree) usize {
+        const params_node = tree.getNode(self.parameters);
         const maybe_params_range = params_node.data.parameters;
         if (maybe_params_range) |params_range| {
             const to: usize = @intFromEnum(params_range.to);
@@ -255,38 +304,70 @@ pub const TaggedTemplateExpression = struct {
     template: Node.Index,
 };
 
+/// A meta property like `new.target` or `import.meta`
 pub const MetaProperty = struct {
     meta: Node.Index,
     property: Node.Index,
 };
 
+/// An import declaration with zero or more specifiers.
 pub const ImportDeclaration = struct {
+    /// Represents 'X', a', 'b', 'ns', and 'c' in:
+    /// ```js
+    /// import Foo, { a as a_alias, b, c } from "module"
+    /// import * as ns from "module"
+    /// ```
+    /// A specifier can be:
+    /// - `ImportDefaultSpecifier` (Foo)
+    /// - `ImportSpecifier` (`a as a_alias`, b, c)
+    /// - `ImportNamespaceSpecifier` (`* as ns`)
     specifiers: SubRange,
+    /// String literal. Module path that was imported.
     source: Node.Index,
 };
 
+/// A default import.
+/// `name` is always an identifier
 pub const ImportDefaultSpecifier = struct { name: Node.Index };
+/// A namespace import: `import * as ns from "module"`
 pub const ImportNamespaceSpecifier = struct { name: Node.Index };
 
+/// An import specifier with an optional alias.
 pub const ImportSpecifier = struct {
+    /// The name used when referencing the item in the module its imported from
+    /// If `null`, then its the same as `local`.
     imported: ?Node.Index,
+    /// The alias used when referencing the item in the current module.
+    /// If `imported` is null, then this is just the name of the imported item.
     local: Node.Index,
 };
 
+/// An exported identifier.
+/// `export { *foo as bar* }`
 pub const ExportSpecifier = struct {
+    /// Name of the top-level declaration that is being exported
     local: Node.Index,
+    /// Alias used when importing the exported item.
+    /// If no alias is present (i.e no "as"), this is null.
     exported: ?Node.Index,
 };
 
+/// Represents all exports of the following manner:
+/// ```js
+/// export function f() { }
+/// export let x = 10;
+/// export default function f() { }
+/// export default 1
+/// ```
 pub const ExportedDeclaration = struct {
+    /// The declaration that is being exported.
     declaration: Node.Index,
+    /// `true` if this declaration is the default export.
     default: bool = false,
 };
 
 pub const NodeData = union(enum(u8)) {
     program: ?SubRange,
-
-    // Expressions:
     assignment_expr: BinaryPayload,
     binary_expr: BinaryPayload,
     member_expr: PropertyAccess,
@@ -311,7 +392,8 @@ pub const NodeData = union(enum(u8)) {
     identifier: Token.Index,
     literal: Token.Index,
     this: Token.Index,
-    empty_array_item: void,
+    /// Represents a "missing" item in an array literal: `[,]`
+    empty_array_item,
     array_literal: ?SubRange,
     array_pattern: ?SubRange,
     /// A SpreadElement is used in expressions to splat arrays/objects.
@@ -532,7 +614,6 @@ pub const NodePretty = union(enum) {
         info: Pretty(ExtraData.Index),
     },
 
-    // statements
     empty_statement,
     debugger_statement,
     labeled_statement: Pretty(LabeledStatement),
