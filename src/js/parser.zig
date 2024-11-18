@@ -2605,7 +2605,9 @@ fn reinterpretAsPattern(self: *Self, node_id: Node.Index) void {
             }
         },
         .object_property => |property_definiton| self.reinterpretAsPattern(property_definiton.value),
-        .assignment_expr => |assign_pl| node.* = .{ .assignment_pattern = assign_pl },
+        .assignment_expr => |assign_pl| {
+            node.* = .{ .assignment_pattern = assign_pl };
+        },
         .spread_element => |spread_pl| {
             self.reinterpretAsPattern(spread_pl);
             node.* = .{ .rest_element = spread_pl };
@@ -2667,7 +2669,7 @@ fn assignmentExpression(self: *Self) Error!Node.Index {
     // assignment patterns inside object literals are handled separately
     // in `Parser.identifierProperty`
     self.current_destructure_kind = .{
-        .can_destruct = true, // TODO: should this be false?
+        .can_destruct = op_token.tag == .@"=",
         .can_be_assigned_to = true,
         .must_destruct = false,
     };

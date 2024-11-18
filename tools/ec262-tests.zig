@@ -178,7 +178,7 @@ fn testOnMalformedFile(
         allocator,
         source,
         .{ .source_type = source_type },
-    ) catch return .malformed_file_parsed;
+    ) catch return .pass;
     defer parser.deinit();
 
     _ = parser.parse() catch
@@ -299,7 +299,10 @@ pub fn compareTestResults(
 ) !bool {
     var passing = true;
 
-    const old_pass_rate: f64 = old_result.pass_percent.float;
+    const old_pass_rate: f64 = if (std.meta.activeTag(old_result.pass_percent) == .float)
+        old_result.pass_percent.float
+    else
+        @floatFromInt(old_result.pass_percent.integer);
     const new_pass_rate: f64 = try std.fmt.parseFloat(f64, new_result.pass_percent.number_string);
 
     if (new_pass_rate < old_pass_rate) {
