@@ -71,6 +71,8 @@ pub const Error = error{
     WithInStrictMode,
     /// A variable is declared twice.
     DuplicateBinding,
+    /// Attempt to delete a local variable in strict mode.
+    IllegalDeleteInStrictMode,
     /// std.mem.Allocator.Error
     OutOfMemory,
     Overflow,
@@ -3224,7 +3226,26 @@ fn unaryExpression(self: *Self) Error!Node.Index {
         => {
             const op_token = try self.next();
             const expr = try self.unaryExpression();
-            const expr_end_pos = self.nodes.items(.end)[@intFromEnum(expr)];
+
+            // Ensure that "delete Identifier" is not used in
+            // strict mode code.
+            const slice = self.nodes.slice();
+            const expr_tag = std.meta.activeTag(slice.items(.data)[@intFromEnum(expr)]);
+            if (self.context.strict and
+                op_token.tag == .kw_delete and
+                expr_tag == .identifier)
+            {
+                try self.emitDiagnosticOnNode(
+                    expr,
+                    "Cannot delete variable in strict mode",
+                );
+
+                // TODO: instead of returning en error here.
+                // we can continue parsing.
+                return Error.IllegalDeleteInStrictMode;
+            }
+
+            const expr_end_pos = slice.items(.end)[@intFromEnum(expr)];
             self.current_destructure_kind.setNoAssignOrDestruct();
             return try self.addNode(.{
                 .unary_expr = ast.UnaryPayload{
@@ -4968,12 +4989,36 @@ fn parseFunctionBody(
     return self.addNode(node_data, start_pos, end_pos);
 }
 
+/// Parse a  list of statements surrounded by '{}'.
+/// Does not introduce a new scope.
 fn functionBody(self: *Self) Error!Node.Index {
     const lbrac = try self.expect(.@"{");
     const start_pos = lbrac.start;
 
     const prev_scratch_len = self.scratch.items.len;
     defer self.scratch.items.len = prev_scratch_len;
+
+    // check all directives and see if we enter strict mode somewhere
+    const is_strict = blk: {
+        while (!self.isAtToken(.@"}")) {
+            const stmt = try self.statementOrDeclaration();
+            try self.scratch.append(stmt);
+
+            switch (self.checkDirective(stmt)) {
+                .use_strict => break :blk true,
+                .directive => {},
+                .not_directive => break :blk false,
+            }
+        }
+
+        break :blk false;
+    };
+
+    const ctx = self.context;
+    defer self.context = ctx;
+    if (is_strict) {
+        self.context.strict = true;
+    }
 
     while (self.current_token.tag != .@"}") {
         const stmt = try self.statementOrDeclaration();
@@ -4992,6 +5037,43 @@ fn functionBody(self: *Self) Error!Node.Index {
     const stmt_list_node = try self.addSubRange(statements);
     const block_node = ast.NodeData{ .block_statement = stmt_list_node };
     return self.addNode(block_node, start_pos, end_pos);
+}
+
+/// Encodes the kind of directive present at the beginning of a function
+const DirectiveKind = enum {
+    /// A "use strict" directive
+    use_strict,
+    /// Some unrecognized directive (or a string literal)
+    directive,
+    /// Some other statement
+    not_directive,
+};
+
+/// Check if a given statement is a directive.
+/// If so, return whether its a "use strict" directive or not.
+fn checkDirective(self: *const Self, stmt: Node.Index) DirectiveKind {
+    const nodes_slice = self.nodes.slice();
+    const data: []ast.NodeData = nodes_slice.items(.data);
+
+    if (std.meta.activeTag(data[@intFromEnum(stmt)]) != .expression_statement)
+        return .not_directive;
+
+    const expr_id: usize = @intFromEnum(
+        data[@intFromEnum(stmt)].expression_statement,
+    );
+
+    const expr = data[expr_id];
+    if (std.meta.activeTag(expr) != .literal)
+        return .not_directive;
+
+    const literal_token = self.getToken(expr.literal);
+    if (literal_token.tag != .string_literal)
+        return .not_directive;
+
+    const string_val = literal_token.toByteSlice(self.source);
+    if (std.mem.eql(u8, string_val[1 .. literal_token.len - 1], "use strict"))
+        return .use_strict;
+    return .directive;
 }
 
 fn parseParameter(self: *Self) Error!Node.Index {
@@ -5119,6 +5201,10 @@ fn nodeSpan(self: *const Self, index: Node.Index) types.Span {
 /// Return the tag that identifies the type of a node.
 fn nodeTag(self: *const Self, index: Node.Index) std.meta.Tag(NodeData) {
     return std.meta.activeTag(self.nodes.items(.data)[@intFromEnum(index)]);
+}
+
+fn nodeData(self: *const Self, index: Node.Index) *const NodeData {
+    return &self.nodes.items(.data)[@intFromEnum(index)];
 }
 
 /// Parses arguments for a function call, assuming the current_token is '('
