@@ -71,6 +71,7 @@ pub const Error = error{
     WithInStrictMode,
     /// std.mem.Allocator.Error
     OutOfMemory,
+    Overflow,
     // TODO: remove these two errors
     JsxNotImplemented,
     TypeScriptNotImplemented,
@@ -333,6 +334,7 @@ pub fn init(
         .node_indices = try std.ArrayList(Node.Index).initCapacity(allocator, 32),
         .extras = try std.ArrayList(ast.ExtraData).initCapacity(allocator, 32),
         .tokens = try std.ArrayList(Token).initCapacity(allocator, 256),
+        .string_pool = try util.StringPool.init(allocator),
     };
 
     var self = Self{
@@ -353,7 +355,7 @@ pub fn init(
 
         .diagnostics = try std.ArrayList(Diagnostic).initCapacity(allocator, 2),
         .scratch = try std.ArrayList(Node.Index).initCapacity(allocator, 32),
-        .strings = try StringHelper.init(allocator, source),
+        .strings = try StringHelper.init(allocator, source, &parse_tree.string_pool),
         .scope = try ScopeManager.init(allocator, if (config.source_type == .module) .module else .script),
     };
     errdefer self.deinit();
@@ -570,14 +572,15 @@ fn importSpecifier(self: *Self) Error!Node.Index {
             break :blk try self.stringLiteralFromToken(name_token);
         }
 
-        name_token = try self.next();
+        name_token = try self.expectIdOrKeyword();
         break :blk try self.identifier(name_token);
     };
 
     if (self.isAtToken(.kw_as) or name_token.tag == .string_literal) {
         _ = try self.expect(.kw_as); // eat 'as'
-        const alias_token = try self.next();
+        const alias_token = try self.expectIdentifier();
         const alias = try self.identifier(alias_token);
+
         return self.addNode(
             .{
                 .import_specifier = .{
@@ -2505,6 +2508,16 @@ fn expectIdentifier(self: *Self) Error!Token {
     return Error.UnexpectedToken;
 }
 
+fn expectIdOrKeyword(self: *Self) Error!Token {
+    const token = try self.next();
+    if (token.tag.isIdentifier() or token.tag.isKeyword()) {
+        return token;
+    }
+
+    try self.emitBadTokenDiagnostic("identifier", &token);
+    return Error.UnexpectedToken;
+}
+
 /// Emit a parse error if the current token does not match `tag1` or `tag2`.
 fn expect2(self: *Self, tag1: Token.Tag, tag2: Token.Tag) Error!Token {
     const token = try self.next();
@@ -4088,8 +4101,9 @@ fn bindingIdentifier(self: *Self) Error!Node.Index {
 
 /// Save `token` as an identifier node.
 fn identifier(self: *Self, token: Token) Error!Node.Index {
+    const token_string = try self.strings.stringValue(&token);
     return self.addNode(
-        .{ .identifier = try self.addToken(token) },
+        .{ .identifier = token_string },
         token.start,
         token.start + token.len,
     );

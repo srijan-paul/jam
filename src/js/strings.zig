@@ -1,4 +1,4 @@
-/// Helper for fast string interning and comparison.
+// Helper for fast string interning and comparison.
 const std = @import("std");
 const Tokenizer = @import("./tokenize.zig");
 const Token = @import("./token.zig").Token;
@@ -16,32 +16,32 @@ source: []const u8,
 /// Reusable buffer for temporary string storage.
 buf: []u8,
 /// Intern pool for strings.
-string_pool: StringPool,
+string_pool: *StringPool,
 
 pub fn init(
     allocator: std.mem.Allocator,
     source: []const u8,
+    string_pool: *StringPool,
 ) std.mem.Allocator.Error!Self {
     return Self{
         .allocator = allocator,
         .source = source,
-        .string_pool = try StringPool.init(allocator),
+        .string_pool = string_pool,
         .buf = try allocator.alloc(u8, 128),
     };
 }
 
 pub fn deinit(self: *Self) void {
-    self.string_pool.deinit();
     self.allocator.free(self.buf);
 }
 
 /// Parse a token as a string, by resolving all escape codes.
-pub fn stringValue(self: *Self, token: Token) !String {
-    std.debug.assert(token.tag.isIdentifier());
+pub fn stringValue(self: *Self, token: *const Token) error{ OutOfMemory, Overflow }!String {
+    std.debug.assert(token.tag.isIdentifier() or token.tag.isKeyword());
     const str = token.toByteSlice(self.source);
 
     // If the string is entirely ASCII and has no escape codes,
-    // we can just return the slice as is
+    // we can just return the slice after interning it as is.
     // Non-ASCII identifiers are tagged with ".non_ascii_identifier"
     if (token.tag == .identifier) {
         return try self.string_pool.getInsert(str);
@@ -89,10 +89,13 @@ fn testStringValue(id_str: []const u8, expected: []const u8) !void {
     var tokenizer = try Tokenizer.init(id_str, .{});
     const id_token = try tokenizer.next();
 
-    var strings = try Self.init(t.allocator, id_str);
+    var string_pool = try StringPool.init(t.allocator);
+    defer string_pool.deinit();
+
+    var strings = try Self.init(t.allocator, id_str, &string_pool);
     defer strings.deinit();
 
-    const id_string = try strings.stringValue(id_token);
+    const id_string = try strings.stringValue(&id_token);
     try t.expectEqualStrings(expected, strings.toByteSlice(id_string));
 }
 

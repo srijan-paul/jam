@@ -3,6 +3,8 @@ const Token = @import("token.zig").Token;
 const Parser = @import("parser.zig");
 const util = @import("util");
 
+const String = util.StringPool.String;
+
 /// Represents a parse tree.
 /// Nodes are stored in a flat array, and reference each other using indices.
 pub const Tree = struct {
@@ -24,7 +26,7 @@ pub const Tree = struct {
     /// from within this array.
     node_indices: std.ArrayList(Node.Index),
     /// String intern table for fast string comparison
-    // string_pool: util.StringPool,
+    string_pool: util.StringPool,
 
     /// Obtain all the data for a single AST Node.
     pub fn getNode(self: *const Tree, index: Node.Index) Node {
@@ -56,6 +58,7 @@ pub const Tree = struct {
         self.nodes.deinit(self.allocator);
         self.tokens.deinit();
         self.extras.deinit();
+        self.string_pool.deinit();
         self.node_indices.deinit();
     }
 };
@@ -392,7 +395,7 @@ pub const NodeData = union(enum(u8)) {
     yield_expr: YieldPayload,
     update_expr: UnaryPayload,
 
-    identifier: Token.Index,
+    identifier: String,
     literal: Token.Index,
     this: Token.Index,
     /// Represents a "missing" item in an array literal: `[,]`

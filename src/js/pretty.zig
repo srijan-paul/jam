@@ -100,17 +100,14 @@ fn toPretty(
                 };
         },
 
-        .identifier,
-        .literal,
-        => |tok_id| {
+        .identifier => |name| {
+            const name_str = self.tree.string_pool.toByteSlice(name);
+            return .{ .identifier = name_str };
+        },
+
+        .literal => |tok_id| {
             const token = self.tokens.items[@intFromEnum(tok_id)];
-            if (checkActiveField(node.data, "identifier")) {
-                const id = token.toByteSlice(self.source);
-                const escaped = try escapeUtf8(al, id);
-                return .{ .identifier = escaped };
-            } else {
-                return .{ .literal = token.toByteSlice(self.source) };
-            }
+            return .{ .literal = token.toByteSlice(self.source) };
         },
 
         .template_literal => |payload| {
