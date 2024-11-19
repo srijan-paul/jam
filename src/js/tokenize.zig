@@ -759,89 +759,112 @@ fn canCodepointContinueId(cp: u21) bool {
     return cp == '$' or unicode_id.canContinueId(cp);
 }
 
-/// If the next ASCII char or UTF-8 codepoint is a valid identifier
-/// start, consume it and return true.
-/// Otherwise, return false and do not advance in the input.
+/// A character in an identifier
+const IdCharKind = enum {
+    /// An ASCII byte
+    ascii,
+    /// An escape code or a UTF-8 code point
+    non_ascii,
+    /// Not a valid identifier character
+    invalid,
+};
+
+/// If the next ASCII char or UTF-8 code point is a valid identifier
+/// start, consume it and return whether its an ASCII char.
+/// Otherwise, return "invalid" and do not advance in the input.
 /// https://tc39.es/ecma262/#prod-IdentifierStartChar
-fn matchIdentifierStart(self: *Self) Error!bool {
+fn matchIdentifierStart(self: *Self) Error!IdCharKind {
     const byte = self.source[self.index];
     if (std.ascii.isAscii(byte)) {
         if (canCodepointStartId(byte)) {
             self.index += 1;
-            return true;
+            return .ascii;
         }
 
-        if (byte != '\\') return false;
+        if (byte != '\\') return .invalid;
 
         const s = self.source[self.index..];
         const parsed = utf8.parseUnicodeEscape(s) orelse
-            return false;
+            return .invalid;
 
         if (canCodepointStartId(parsed.codepoint)) {
             self.index += parsed.len;
-            return true;
+            return .non_ascii;
         }
 
-        return false;
+        return .invalid;
     }
 
     const cp = utf8.codePointAt(self.source, self.index);
     if (canCodepointStartId(cp.value)) {
         self.index += cp.len;
-        return true;
+        return .non_ascii;
     }
 
-    return false;
+    return .invalid;
 }
 
 /// Check if the code point(s) form a valid identifier part.
-/// If so, consume the code point and return true.
-/// Otherwise, return false.
+/// If so, consume the code point and return whether it was an ASCII char.
+/// Otherwise, return "invalid".
 /// https://tc39.es/ecma262/#prod-IdentifierPartChar
-fn matchIdentifierContt(self: *Self) Error!bool {
+fn matchIdentifierContt(self: *Self) Error!IdCharKind {
     const byte = self.source[self.index];
     if (std.ascii.isAscii(byte)) {
         // A-Za-z0-9$_
         if (canCodepointContinueId(byte)) {
             self.index += 1;
-            return true;
+            return .ascii;
         }
 
         // unicode escape sequence.
-        if (byte != '\\') return false;
+        if (byte != '\\') return .invalid;
         const s = self.source[self.index..];
         const parsed = utf8.parseUnicodeEscape(s) orelse
-            return false;
+            return .invalid;
 
         if (canCodepointContinueId(parsed.codepoint)) {
             self.index += parsed.len;
-            return true;
+            return .non_ascii;
         }
-        return false;
+        return .invalid;
     }
 
     // UTF-8 code point
     const cp = utf8.codePointAt(self.source, self.index);
     if (canCodepointContinueId(cp.value)) {
         self.index += cp.len;
-        return true;
+        return .non_ascii;
     }
-    return false;
+    return .invalid;
 }
 
 fn identifier(self: *Self) Error!Token {
     const start = self.index;
     const str = self.source[start..];
 
-    const is_valid_start = try matchIdentifierStart(self);
-    if (!is_valid_start) return Error.MalformedIdentifier;
+    const start_char = try matchIdentifierStart(self);
+    if (start_char == .invalid) return Error.MalformedIdentifier;
+
+    var token_tag: Token.Tag = if (start_char == .ascii)
+        .identifier
+    else
+        .non_ascii_identifier;
 
     while (!self.eof()) {
-        const is_id_part = try self.matchIdentifierContt();
-        if (!is_id_part) break;
+        const part_char = try self.matchIdentifierContt();
+        switch (part_char) {
+            .ascii => {},
+            .non_ascii => token_tag = Token.Tag.non_ascii_identifier,
+            .invalid => break,
+        }
     }
 
     const len = self.index - start;
+
+    // TODO: ensure its not an escaped keyword.
+    // To do this well, add a 'escaped_code_point' member in the IdCharKind
+    // enum.
     const id_str = str[0..len];
     if (len >= 2 and len <= 12) {
         for (0.., all_keywords) |i, kw| {
@@ -859,7 +882,7 @@ fn identifier(self: *Self) Error!Token {
     return Token{
         .start = start,
         .len = @intCast(len),
-        .tag = Token.Tag.identifier,
+        .tag = token_tag,
         .line = self.line,
     };
 }
@@ -869,10 +892,15 @@ fn privateIdentifier(self: *Self) Error!Token {
     const start = self.index;
     self.index += 1; // eat '#'
     const id = try self.identifier();
+    const tag: Token.Tag = if (id.tag == .identifier)
+        .private_identifier
+    else
+        .private_non_ascii_identifier;
+
     return Token{
         .start = start,
         .len = id.len + 1,
-        .tag = .private_identifier,
+        .tag = tag,
         .line = self.line,
     };
 }
@@ -1506,10 +1534,10 @@ test Self {
         .{ "$123", .identifier },
         .{ "fooobar", .identifier },
         .{ "#fooobar", .private_identifier },
-        .{ "ಠ_ಠ", .identifier },
-        .{ "\\u{105}bc", .identifier },
-        .{ "\\u{105}\\u{5f}", .identifier },
-        .{ "\\u{105}\\u005f", .identifier },
+        .{ "ಠ_ಠ", .non_ascii_identifier },
+        .{ "\\u{105}bc", .non_ascii_identifier },
+        .{ "\\u{105}\\u{5f}", .non_ascii_identifier },
+        .{ "\\u{105}\\u005f", .non_ascii_identifier },
         .{ "0", .numeric_literal },
         .{ "120", .numeric_literal },
         .{ "1_000_000", .numeric_literal },
@@ -1574,7 +1602,7 @@ test Self {
         .{ "//", .comment },
         .{ "// else", .comment },
         .{ "else", .kw_else },
-        .{ "\\u0065lse", .identifier },
+        .{ "\\u0065lse", .non_ascii_identifier },
         .{ "elsey", .identifier },
         .{ "/* test comment */", .comment },
     };

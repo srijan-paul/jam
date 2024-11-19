@@ -10,7 +10,15 @@ pub const JsTokenTag = enum(u32) {
     whitespace,
 
     identifier,
+    /// An identifier that is contains non-ASCII characters.
+    /// This is a separate token kind because it allows us to have fewer allocations
+    /// in some places in the parser.
+    non_ascii_identifier,
     private_identifier,
+    /// A private identifier that contains non-ASCII characters.
+    /// See: non_ascii_identifier
+    private_non_ascii_identifier,
+
     numeric_literal,
     // octal literal starting with '0', but not with '0o' or '0O',
     // e.g: 012
@@ -195,7 +203,14 @@ pub const JsTokenTag = enum(u32) {
     }
 
     pub fn isValidPropertyName(self: JsTokenTag) bool {
-        return self == .identifier or self.isKeyword();
+        return self == .identifier or
+            self == .non_ascii_identifier or
+            self.isKeyword();
+    }
+
+    pub inline fn isIdentifier(self: JsTokenTag) bool {
+        return self == .identifier or
+            self == .non_ascii_identifier;
     }
 
     pub fn isAssignmentOperator(self: JsTokenTag) bool {

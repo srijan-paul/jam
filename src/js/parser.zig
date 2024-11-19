@@ -449,7 +449,7 @@ pub fn importDeclaration(self: *Self) Error!Node.Index {
     var has_imports = false;
 
     const cur = self.current_token.tag;
-    if (cur == .identifier or self.isKeywordIdentifier(cur)) {
+    if (cur.isIdentifier() or self.isKeywordIdentifier(cur)) {
         has_imports = true;
         const default_specifier = try self.defaultImportSpecifier();
         try self.scratch.append(default_specifier);
@@ -508,7 +508,7 @@ fn starImportSpecifier(self: *Self) Error!Node.Index {
     const star_token = try self.expect(.@"*");
     _ = try self.expect(.kw_as);
 
-    const name_token = try self.expect(.identifier);
+    const name_token = try self.expectIdentifier();
     const name = try self.identifier(name_token);
 
     const specifier = try self.addNode(
@@ -598,7 +598,7 @@ fn moduleExportName(self: *Self) Error!Node.Index {
         return self.stringLiteral();
 
     const name_token = try self.next();
-    if (name_token.tag != .identifier and
+    if (!name_token.tag.isIdentifier() and
         name_token.tag != .kw_default and
         !self.isKeywordIdentifier(name_token.tag))
     {
@@ -694,9 +694,7 @@ fn starExportDeclaration(self: *Self, export_kw: Token) Error!Node.Index {
         if (self.isAtToken(.kw_as)) {
             _ = try self.next();
             const name_token = try self.next();
-            if (name_token.tag != .identifier and
-                !self.isKeywordIdentifier(name_token.tag))
-            {
+            if (!(name_token.tag.isIdentifier() or self.isKeywordIdentifier(name_token.tag))) {
                 try self.emitBadTokenDiagnostic("an identifier", &name_token);
                 return Error.UnexpectedToken;
             }
@@ -798,6 +796,8 @@ pub fn namedExportList(self: *Self) Error!ast.SubRange {
     return try self.addSubRange(specifiers);
 }
 
+/// Parse an export specifier.
+/// `export { *x as x_alias* } from "foo"`
 fn exportSpecifier(self: *Self) Error!Node.Index {
     const local = try self.moduleExportName();
     const start_pos = self.nodes.items(.start)[@intFromEnum(local)];
@@ -856,7 +856,7 @@ fn statement(self: *Self) Error!Node.Index {
 /// otherwise parse an expression statement.
 fn labeledOrExpressionStatement(self: *Self) Error!Node.Index {
     const cur = self.current_token.tag;
-    if ((cur == .identifier or self.isKeywordIdentifier(cur)) and
+    if ((cur.isIdentifier() or self.isKeywordIdentifier(cur)) and
         (try self.lookAhead()).tag == .@":")
     {
         return self.labeledStatement();
@@ -944,7 +944,7 @@ fn classDeclaration(self: *Self) Error!Node.Index {
     std.debug.assert(class_kw.tag == .kw_class);
 
     const name_token = try self.next();
-    if (name_token.tag != .identifier and !self.isKeywordIdentifier(name_token.tag)) {
+    if (!name_token.tag.isIdentifier() and !self.isKeywordIdentifier(name_token.tag)) {
         try self.emitBadTokenDiagnostic("a class name", &name_token);
         return Error.UnexpectedToken;
     }
@@ -976,7 +976,7 @@ fn classDeclaration(self: *Self) Error!Node.Index {
 fn classExpression(self: *Self, class_kw: Token) Error!Node.Index {
     const name = blk: {
         const cur = self.current_token.tag;
-        if (cur == .identifier or self.isKeywordIdentifier(cur)) {
+        if (cur.isIdentifier() or self.isKeywordIdentifier(cur)) {
             const name_token = try self.next();
             break :blk try self.identifier(name_token);
         }
@@ -2183,7 +2183,7 @@ fn functionDeclaration(
 
     const name_token = blk: {
         const token = try self.next();
-        if (token.tag == .identifier or self.isKeywordIdentifier(token.tag)) {
+        if (token.tag.isIdentifier() or self.isKeywordIdentifier(token.tag)) {
             break :blk try self.addToken(token);
         }
 
@@ -2244,7 +2244,7 @@ fn breakStatement(self: *Self) Error!Node.Index {
 
     const label = blk: {
         const cur = self.current_token;
-        if ((cur.tag == .identifier or self.isKeywordIdentifier(cur.tag)) and
+        if ((cur.tag.isIdentifier() or self.isKeywordIdentifier(cur.tag)) and
             cur.line == break_kw.line)
         {
             // TODO: check if this label exists.
@@ -2284,7 +2284,7 @@ fn continueStatement(self: *Self) Error!Node.Index {
 
     const label = blk: {
         const cur = self.current_token;
-        if ((cur.tag == .identifier or self.isKeywordIdentifier(cur.tag)) and
+        if ((cur.tag.isIdentifier() or self.isKeywordIdentifier(cur.tag)) and
             cur.line == continue_kw.line)
         {
             // TODO: check if this label exists.
@@ -2351,7 +2351,7 @@ fn eatSemiAsi(self: *Self) Error!?types.Span {
 /// ({, or [, or an identifier).
 fn isDeclaratorStart(self: *Self, tag: Token.Tag) bool {
     return tag == .@"[" or tag == .@"{" or
-        tag == .identifier or self.isKeywordIdentifier(tag);
+        tag.isIdentifier() or self.isKeywordIdentifier(tag);
 }
 
 /// Returns whether the parser is currently parsing strict mode code.
@@ -2486,6 +2486,21 @@ fn expect(self: *Self, tag: Token.Tag) Error!Token {
     return Error.UnexpectedToken;
 }
 
+/// Emit a parse error if the current token is not an identifier.
+/// If the current token is an identifier, consume and return it.
+fn expectIdentifier(self: *Self) Error!Token {
+    if (self.current_token.tag.isIdentifier()) {
+        return try self.next();
+    }
+
+    try self.emitDiagnostic(
+        self.current_token.startCoord(self.source),
+        "Expected an identifier, but found a '{s}'",
+        .{self.current_token.toByteSlice(self.source)},
+    );
+    return Error.UnexpectedToken;
+}
+
 /// Emit a parse error if the current token does not match `tag1` or `tag2`.
 fn expect2(self: *Self, tag1: Token.Tag, tag2: Token.Tag) Error!Token {
     const token = try self.next();
@@ -2606,7 +2621,7 @@ fn assignmentLhsExpr(self: *Self) Error!Node.Index {
         .@"{" => return self.objectAssignmentPattern(),
         .@"[" => return self.arrayAssignmentPattern(),
         else => {
-            if (token.tag == .identifier or self.isKeywordIdentifier(token.tag)) {
+            if (token.tag.isIdentifier() or self.isKeywordIdentifier(token.tag)) {
                 return self.identifier(try self.next());
             }
 
@@ -2618,7 +2633,7 @@ fn assignmentLhsExpr(self: *Self) Error!Node.Index {
 
 fn isSimpleAssignmentTarget(self: *const Self, node: Node.Index) bool {
     return switch (self.getNode(node).data) {
-        .identifier, .member_expr, .computed_member_expr => true,
+        .non_ascii_identifier, .identifier, .member_expr, .computed_member_expr => true,
         else => false,
     };
 }
@@ -3008,7 +3023,7 @@ fn destructuredPropertyDefinition(self: *Self) Error!Node.Index {
             return self.completePropertyPatternDef(key);
         },
         else => {
-            if (self.current_token.tag == .identifier or
+            if (self.current_token.tag.isIdentifier() or
                 self.current_token.tag.isKeyword())
             {
                 return self.destructuredIdentifierProperty();
@@ -3053,7 +3068,7 @@ fn destructuredIdentifierProperty(self: *Self) Error!Node.Index {
     }
 
     // Disallow stuff like "`{ if }`" (`{ if: x }` is valid)
-    if (!(key_token.tag == .identifier or self.isKeywordIdentifier(key_token.tag))) {
+    if (!(key_token.tag.isIdentifier() or self.isKeywordIdentifier(key_token.tag))) {
         try self.emitDiagnosticOnToken(
             key_token,
             "Unexpected '{s}' in destructuring pattern",
@@ -3102,6 +3117,7 @@ fn objectAssignmentPattern(self: *Self) Error!Node.Index {
                 break;
             },
 
+            .non_ascii_identifier,
             .identifier,
             .string_literal,
             .numeric_literal,
@@ -3452,7 +3468,7 @@ fn optionalChain(self: *Self, object: Node.Index) Error!Node.Index {
             return self.addNode(.{ .optional_expr = expr }, start_pos, end_pos);
         },
         else => {
-            if (self.current_token.tag == .identifier or self.current_token.tag.isKeyword()) {
+            if (self.current_token.tag.isIdentifier() or self.current_token.tag.isKeyword()) {
                 const property_name_token = try self.next(); // eat the property name
                 const end_pos = property_name_token.start + property_name_token.len;
                 const expr = try self.addNode(.{ .member_expr = .{
@@ -3559,7 +3575,7 @@ fn parseMetaProperty(
     const dot = try self.next();
     std.debug.assert(dot.tag == .@".");
 
-    const property_token = try self.expect(.identifier);
+    const property_token = try self.expectIdentifier();
     const property_name_str = property_token.toByteSlice(self.source);
     if (!std.mem.eql(u8, property_name_str, wanted_property_name)) {
         try self.emitDiagnostic(
@@ -3624,7 +3640,7 @@ fn completeMemberExpression(self: *Self, object: Node.Index) Error!Node.Index {
     const property_token_idx: Token.Index = blk: {
         const tok = try self.next();
         // Yes, keywords are valid property names...
-        if (tok.tag == .identifier or tok.tag.isKeyword()) {
+        if (tok.tag.isIdentifier() or tok.tag.isKeyword()) {
             break :blk try self.addToken(tok);
         }
 
@@ -3699,7 +3715,8 @@ fn primaryExpression(self: *Self) Error!Node.Index {
                 token.start + token.len,
             );
         },
-        .identifier => {
+
+        .non_ascii_identifier, .identifier => {
             if (self.isAtToken(.@"=>")) {
                 // arrow function starting with an identifier:
                 // 'x => 1'.
@@ -3894,7 +3911,7 @@ fn asyncExpression(self: *Self, async_token: *const Token) Error!Node.Index {
         }
     }
 
-    if ((self.current_token.tag == .identifier or
+    if ((self.current_token.tag.isIdentifier() or
         self.isKeywordIdentifier(self.current_token.tag)) and
         self.current_token.line == async_token.line)
     {
@@ -4053,7 +4070,7 @@ fn callArgsOrAsyncArrowFunc(
 
 fn bindingIdentifier(self: *Self) Error!Node.Index {
     const token = try self.next();
-    if (token.tag != .identifier and !self.isKeywordIdentifier(token.tag)) {
+    if (!token.tag.isIdentifier() and !self.isKeywordIdentifier(token.tag)) {
         try self.emitDiagnostic(
             token.startCoord(self.source),
             "Expected an identifier, got '{s}'",
@@ -4359,7 +4376,7 @@ fn propertyDefinitionList(self: *Self) Error!?ast.SubRange {
 
     while (true) {
         switch (self.current_token.tag) {
-            .identifier => {
+            .non_ascii_identifier, .identifier => {
                 try self.scratch.append(try self.identifierProperty());
                 destructure_kind.update(self.current_destructure_kind);
             },
@@ -4455,7 +4472,7 @@ fn propertyDefinitionList(self: *Self) Error!?ast.SubRange {
 /// Parse an the property of an object literal or object pattern that starts with an identifier.
 fn identifierProperty(self: *Self) Error!Node.Index {
     const key_token = try self.next();
-    std.debug.assert(key_token.tag == .identifier or key_token.tag.isKeyword());
+    std.debug.assert(key_token.tag.isIdentifier() or key_token.tag.isKeyword());
 
     const cur_token = self.current_token;
     if (cur_token.tag != .@":" and cur_token.tag != .@"(" and
@@ -4589,7 +4606,10 @@ fn canStartClassElementName(token: *const Token) bool {
 fn classElementName(self: *Self) Error!Node.Index {
     const token = try self.next();
     switch (token.tag) {
-        .identifier, .private_identifier => return self.identifier(token),
+        .non_ascii_identifier,
+        .identifier,
+        .private_identifier,
+        => return self.identifier(token),
         .@"[" => {
             const expr = try self.assignmentExpression();
             _ = try self.expect(.@"]");
@@ -4798,7 +4818,7 @@ fn functionExpression(
     self.context.is_yield_reserved = false;
 
     const name_token: ?Token.Index =
-        if (self.current_token.tag == .identifier or
+        if (self.current_token.tag.isIdentifier() or
         self.isKeywordIdentifier(self.current_token.tag))
         try self.addToken(try self.next())
     else

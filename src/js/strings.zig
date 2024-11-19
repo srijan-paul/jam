@@ -37,15 +37,13 @@ pub fn deinit(self: *Self) void {
 
 /// Parse a token as a string, by resolving all escape codes.
 pub fn stringValue(self: *Self, token: Token) !String {
-    std.debug.assert(token.tag == .identifier);
+    std.debug.assert(token.tag.isIdentifier());
     const str = token.toByteSlice(self.source);
 
-    // TODO: can this be made faster with SIMD?
-    for (str) |ch| {
-        if (!(std.ascii.isAscii(ch) and ch != '\\')) break;
-    } else {
-        // If the string is enturely ASCII and has no escape codes,
-        // we can just return the slice as is
+    // If the string is enturely ASCII and has no escape codes,
+    // we can just return the slice as is
+    // Non-ASCII identifiers are tagged with ".non_ascii_identifier"
+    if (token.tag == .identifier) {
         return try self.string_pool.getInsert(str);
     }
 

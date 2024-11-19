@@ -1,6 +1,7 @@
 const std = @import("std");
 const Token = @import("token.zig").Token;
 const Parser = @import("parser.zig");
+const util = @import("util");
 
 /// Represents a parse tree.
 /// Nodes are stored in a flat array, and reference each other using indices.
@@ -22,6 +23,8 @@ pub const Tree = struct {
     /// Then, the `CallExpression` node can use an `ast.SubRange` to reference a slice of nodes
     /// from within this array.
     node_indices: std.ArrayList(Node.Index),
+    /// String intern table for fast string comparison
+    // string_pool: util.StringPool,
 
     /// Obtain all the data for a single AST Node.
     pub fn getNode(self: *const Tree, index: Node.Index) Node {
