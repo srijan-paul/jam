@@ -6,7 +6,7 @@ The AST is described in `ast.zig`, and a recursive descent parser is implemented
 ## Parser architecture 
 
 Jam uses a recursive descent parser that tries to keep allocations to a minimum.
-All AST nodes are stored in a flat array (`std.ArrayList(Node)`), and reference each other using indices.
+All AST nodes are stored in a flat array (`std.MultiArrayList(Node)`), and reference each other using indices.
 
 Apart from a few growable buffers—an array of all nodes, an array of all metadata, and some scratch space—
 no allocations are made in the parser.

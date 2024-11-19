@@ -3,6 +3,7 @@ const unicode_id = @import("unicode-id");
 const Token = @import("token.zig").Token;
 
 const util = @import("util");
+const utf8 = util.utf8;
 const parser = @import("parser.zig");
 
 const Self = @This();
@@ -217,7 +218,7 @@ pub fn next(self: *Self) Error!Token {
                 return Error.InvalidUtf8;
 
             if (code_point_len > 1) {
-                const code_point = util.utf8.codePointAt(self.source, self.index);
+                const code_point = utf8.codePointAt(self.source, self.index);
                 if (isNewline(code_point.value) or isMultiByteSpace(code_point.value)) {
                     return self.whiteSpaces();
                 }
@@ -317,7 +318,7 @@ fn matchWhiteSpaces(str: []const u8) u32 {
                 break;
             }
         } else {
-            const code_point = util.utf8.codePointAt(str, i);
+            const code_point = utf8.codePointAt(str, i);
             if (isMultiByteSpace(code_point.value)) {
                 i += code_point.len;
             } else {
@@ -383,7 +384,7 @@ fn consumeSingleLineCommentChars(self: *Self) Error!void {
             }
             self.index += 1;
         } else {
-            const code_point = util.utf8.codePointAt(self.source, self.index);
+            const code_point = utf8.codePointAt(self.source, self.index);
             self.index += code_point.len;
             if (isNewline(code_point.value)) {
                 self.line += 1;
@@ -410,7 +411,7 @@ fn consumeMultiLineCommentChars(self: *Self) Error!void {
 
             self.index += 1;
         } else {
-            const code_point = util.utf8.codePointAt(self.source, self.index);
+            const code_point = utf8.codePointAt(self.source, self.index);
             self.index += code_point.len;
             if (isNewline(code_point.value)) {
                 self.line += 1;
@@ -511,7 +512,7 @@ fn consumeRegexFlags(self: *Self) Error!void {
             else
                 break;
         } else {
-            const code_point = util.utf8.codePointAt(self.source, self.index);
+            const code_point = utf8.codePointAt(self.source, self.index);
             if (canCodepointContinueId(code_point.value)) {
                 self.index += code_point.len;
             } else {
@@ -570,7 +571,7 @@ fn consumeEscape(self: *Self) !void {
         },
         'u' => {
             // \uXXXX or \u{X} - \u{XXXXXX}
-            const parsed = util.utf8.parseUnicodeEscape(self.source[self.index..]) orelse
+            const parsed = utf8.parseUnicodeEscape(self.source[self.index..]) orelse
                 return Error.BadEscapeSequence;
             self.index += parsed.len;
         },
@@ -603,7 +604,7 @@ fn parseEscape(self: *Self, iter: *std.unicode.Utf8Iterator) !void {
         },
         'u' => {
             // \uXXXX or \u{X} - \u{XXXXXX}
-            const parsed = util.utf8.parseUnicodeEscape(str) orelse
+            const parsed = utf8.parseUnicodeEscape(str) orelse
                 return Error.BadEscapeSequence;
             iter.i += parsed.len;
         },
@@ -758,71 +759,93 @@ fn canCodepointContinueId(cp: u21) bool {
     return cp == '$' or unicode_id.canContinueId(cp);
 }
 
-/// Advance the iterator by one or more code points,
-/// and check if the code point(s) form a valid identifier start.
+/// If the next ASCII char or UTF-8 codepoint is a valid identifier
+/// start, consume it and return true.
+/// Otherwise, return false and do not advance in the input.
 /// https://tc39.es/ecma262/#prod-IdentifierStartChar
-fn matchIdentifierStart(
-    self: *Self,
-    it: *std.unicode.Utf8Iterator,
-) Error!bool {
-    if (util.utf8.parseUnicodeEscape(it.bytes[it.i..])) |parsed| {
+fn matchIdentifierStart(self: *Self) Error!bool {
+    const byte = self.source[self.index];
+    if (std.ascii.isAscii(byte)) {
+        if (canCodepointStartId(byte)) {
+            self.index += 1;
+            return true;
+        }
+
+        if (byte != '\\') return false;
+
+        const s = self.source[self.index..];
+        const parsed = utf8.parseUnicodeEscape(s) orelse
+            return false;
+
         if (canCodepointStartId(parsed.codepoint)) {
             self.index += parsed.len;
             return true;
-        } else {
-            return false;
         }
+
+        return false;
     }
 
-    const codepoint = it.nextCodepoint() orelse
-        return Error.InvalidUtf8; // bad utf-8 input.
-    return canCodepointStartId(codepoint);
+    const cp = utf8.codePointAt(self.source, self.index);
+    if (canCodepointStartId(cp.value)) {
+        self.index += cp.len;
+        return true;
+    }
+
+    return false;
 }
 
-/// Advance the iterator by one or more code points,
-/// and check if the code point(s) form a valid identifier part.
+/// Check if the code point(s) form a valid identifier part.
+/// If so, consume the code point and return true.
+/// Otherwise, return false.
 /// https://tc39.es/ecma262/#prod-IdentifierPartChar
-fn matchIdentifierContt(it: *std.unicode.Utf8Iterator) Error!bool {
-    if (util.utf8.parseUnicodeEscape(it.bytes[it.i..])) |parsed| {
-        if (canCodepointContinueId(parsed.codepoint)) {
-            it.i += parsed.len;
+fn matchIdentifierContt(self: *Self) Error!bool {
+    const byte = self.source[self.index];
+    if (std.ascii.isAscii(byte)) {
+        // A-Za-z0-9$_
+        if (canCodepointContinueId(byte)) {
+            self.index += 1;
             return true;
-        } else {
-            return false;
         }
+
+        // unicode escape sequence.
+        if (byte != '\\') return false;
+        const s = self.source[self.index..];
+        const parsed = utf8.parseUnicodeEscape(s) orelse
+            return false;
+
+        if (canCodepointContinueId(parsed.codepoint)) {
+            self.index += parsed.len;
+            return true;
+        }
+        return false;
     }
 
-    const code_point = it.nextCodepoint() orelse
-        return Error.InvalidUtf8;
-    return canCodepointContinueId(code_point);
+    // UTF-8 code point
+    const cp = utf8.codePointAt(self.source, self.index);
+    if (canCodepointContinueId(cp.value)) {
+        self.index += cp.len;
+        return true;
+    }
+    return false;
 }
 
 fn identifier(self: *Self) Error!Token {
     const start = self.index;
     const str = self.source[start..];
 
-    const view = std.unicode.Utf8View.initUnchecked(str);
-    var it = view.iterator();
-
-    const is_valid_start = try matchIdentifierStart(self, &it);
+    const is_valid_start = try matchIdentifierStart(self);
     if (!is_valid_start) return Error.MalformedIdentifier;
 
-    const len = blk: {
-        while (it.i < str.len) {
-            const oldlen = it.i;
-            const is_valid_contt = matchIdentifierContt(&it) catch |err|
-                return err;
-            if (!is_valid_contt) break :blk oldlen;
-        }
+    while (!self.eof()) {
+        const is_id_part = try self.matchIdentifierContt();
+        if (!is_id_part) break;
+    }
 
-        break :blk it.i;
-    };
-
+    const len = self.index - start;
     const id_str = str[0..len];
     if (len >= 2 and len <= 12) {
         for (0.., all_keywords) |i, kw| {
             if (std.mem.eql(u8, id_str, kw)) {
-                self.index += @intCast(len);
                 return Token{
                     .start = start,
                     .len = @intCast(len),
@@ -833,7 +856,6 @@ fn identifier(self: *Self) Error!Token {
         }
     }
 
-    self.index += @intCast(len);
     return Token{
         .start = start,
         .len = @intCast(len),
@@ -1271,7 +1293,7 @@ fn numericLiteral(self: *Self) !Token {
                 return Error.InvalidNumericLiteral;
             }
         } else {
-            const code_point = util.utf8.codePointAt(self.source, self.index);
+            const code_point = utf8.codePointAt(self.source, self.index);
             if (canCodepointStartId(code_point.value)) {
                 return Error.InvalidNumericLiteral;
             }
@@ -1343,7 +1365,7 @@ fn whiteSpaces(self: *Self) Error!Token {
 
         if (!std.ascii.isAscii(ch)) {
             // check for Non-ASCII UTF-8 newline or whitespace char.
-            const cp = util.utf8.codePointAt(self.source, self.index);
+            const cp = utf8.codePointAt(self.source, self.index);
             if (cp.value == '\u{2028}' or cp.value == '\u{2029}') {
                 self.index += cp.len;
                 self.line += 1;

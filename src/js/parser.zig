@@ -685,6 +685,8 @@ fn exportDeclaration(self: *Self) Error!Node.Index {
     return Error.UnexpectedToken;
 }
 
+/// Parse an export all statement, assuming the `export` token has been consumed already
+/// `export * as foo from "module"`
 fn starExportDeclaration(self: *Self, export_kw: Token) Error!Node.Index {
     _ = try self.expect(.@"*");
 
@@ -850,6 +852,8 @@ fn statement(self: *Self) Error!Node.Index {
     };
 }
 
+/// If the input starts with `Identifier :`, parse a labeled statement,
+/// otherwise parse an expression statement.
 fn labeledOrExpressionStatement(self: *Self) Error!Node.Index {
     const cur = self.current_token.tag;
     if ((cur == .identifier or self.isKeywordIdentifier(cur)) and
