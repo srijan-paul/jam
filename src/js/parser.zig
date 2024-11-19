@@ -69,6 +69,8 @@ pub const Error = error{
     MultipleConstructors,
     /// "with" statement used in strict mode.
     WithInStrictMode,
+    /// A variable is declared twice.
+    DuplicateBinding,
     /// std.mem.Allocator.Error
     OutOfMemory,
     Overflow,
@@ -89,7 +91,7 @@ pub const Diagnostic = struct {
 /// Represents the currently active set of grammatical parameters
 /// in the parser state.
 /// https://tc39.es/ecma262/#sec-grammatical-parameters
-pub const ParseContext = packed struct(u8) {
+pub const ParseContext = packed struct(u16) {
     /// Is a ReturnStatement allowed in the current context?
     /// Unlike `await`, `return` is always parsed as a keyword, regardles of context.
     @"return": bool = false,
@@ -108,6 +110,11 @@ pub const ParseContext = packed struct(u8) {
     /// Are `in` statements allowed?
     /// Used to parse for-in loops.
     in: bool = true,
+    /// Whether we are currently parsing the LHS of a variable
+    /// declarator, or a function parameter.
+    parsing_declarator: enum(u2) { @"var", lexical, none } = .none,
+    // padding
+    _: u6 = 0,
 };
 
 pub const SourceType = enum { script, module };
@@ -1364,6 +1371,9 @@ fn forStatement(self: *Self) Error!Node.Index {
     const for_kw = try self.next();
     std.debug.assert(for_kw.tag == .kw_for);
 
+    try self.scope.enterScope(.block, self.context.strict);
+    defer self.scope.exitScope();
+
     const loop_kind, const iterator = try self.forLoopIterator();
 
     const saved_context = self.context;
@@ -2082,7 +2092,12 @@ fn startLetBinding(self: *Self) Error!?Token {
 ///  BindingPattern Initializer?
 ///  BindingElement Initializer?
 fn variableDeclarator(self: *Self, kind: ast.VarDeclKind) Error!Node.Index {
+    const ctx = self.context;
+    self.context.parsing_declarator =
+        if (kind == .@"var") .@"var" else .lexical;
     const lhs = try self.assignmentLhsExpr();
+    self.context = ctx;
+
     if (!self.current_destructure_kind.can_destruct) {
         // TODO: improve error message
         try self.emitDiagnosticOnNode(lhs, "Invalid left-hand-side for variable declaration.");
@@ -2156,6 +2171,9 @@ fn blockStatement(self: *Self) Error!Node.Index {
     const prev_scratch_len = self.scratch.items.len;
     defer self.scratch.items.len = prev_scratch_len;
 
+    try self.scope.enterScope(.block, self.context.strict);
+    defer self.scope.exitScope();
+
     while (self.current_token.tag != .@"}") {
         const stmt = try self.statementOrDeclaration();
         try self.scratch.append(stmt);
@@ -2188,17 +2206,22 @@ fn functionDeclaration(
         fn_flags.is_generator = true;
     }
 
-    const name_token = blk: {
-        const token = try self.next();
-        if (token.tag.isIdentifier() or self.isKeywordIdentifier(token.tag)) {
-            break :blk try self.addToken(token);
-        }
+    const func_name = try self.functionName();
+    return self.parseFunctionBody(start_pos, func_name, fn_flags, true);
+}
 
-        try self.emitBadTokenDiagnostic("function name", &token);
-        return Error.UnexpectedToken;
-    };
+fn functionName(self: *Self) Error!Node.Index {
+    const context = self.context;
+    defer self.context = context;
+    self.context.parsing_declarator = .@"var"; // functions are hoisted
 
-    return self.parseFunctionBody(start_pos, name_token, fn_flags, true);
+    const token = try self.next();
+    if (self.isIdentifier(token.tag)) {
+        return self.variableName(token);
+    }
+
+    try self.emitBadTokenDiagnostic("function name", &token);
+    return Error.UnexpectedToken;
 }
 
 /// ReturnStatement:
@@ -2379,6 +2402,10 @@ fn isKeywordIdentifier(self: *const Self, tag: Token.Tag) bool {
             return tag.isStrictModeKeyword() or tag == .kw_let;
         },
     }
+}
+
+fn isIdentifier(self: *const Self, tag: Token.Tag) bool {
+    return tag.isIdentifier() or self.isKeywordIdentifier(tag);
 }
 
 /// Reserve a slot for node, then return the index of the reserved slot.
@@ -2639,7 +2666,7 @@ fn assignmentLhsExpr(self: *Self) Error!Node.Index {
         .@"[" => return self.arrayAssignmentPattern(),
         else => {
             if (token.tag.isIdentifier() or self.isKeywordIdentifier(token.tag)) {
-                return self.identifier(try self.next());
+                return self.variableName(try self.next());
             }
 
             try self.emitBadTokenDiagnostic("assignment target", token);
@@ -4109,6 +4136,45 @@ fn identifier(self: *Self, token: Token) Error!Node.Index {
     );
 }
 
+fn variableName(self: *Self, token: Token) Error!Node.Index {
+    const token_string = try self.strings.stringValue(&token);
+    if (self.scope.findInCurrentScope(token_string)) |variable| {
+        // ```js
+        // var a = 1;
+        // var a = 1; // this is ok!
+        // ```
+        // ```
+        // var a = 1;
+        // let a = 1; // this is not
+        // ```
+        if (variable.kind == .lexical_binding or
+            self.context.parsing_declarator == .lexical)
+        {
+            try self.emitDiagnostic(
+                token.startCoord(self.source),
+                "Identifier '{s}' has already been declared",
+                .{token.toByteSlice(self.source)},
+            );
+            return Error.DuplicateBinding;
+        }
+    }
+
+    const id = try self.addNode(
+        .{ .identifier = token_string },
+        token.start,
+        token.start + token.len,
+    );
+
+    const decl_kind: ScopeManager.Variable.Kind =
+        if (self.context.parsing_declarator == .lexical)
+        .lexical_binding
+    else
+        .variable_binding;
+
+    try self.scope.addVariable(token_string, id, decl_kind);
+    return id;
+}
+
 fn makeSuper(self: *Self, super_token: *const Token) Error!Node.Index {
     std.debug.assert(super_token.tag == .kw_super);
     return self.addNode(
@@ -4165,7 +4231,7 @@ fn completeArrowFunction(
             const context = self.context;
             defer self.context = context;
             self.context.@"return" = true;
-            break :blk try self.blockStatement();
+            break :blk try self.functionBody();
         }
 
         const context = self.context;
@@ -4835,10 +4901,10 @@ fn functionExpression(
     self.context.is_await_reserved = false;
     self.context.is_yield_reserved = false;
 
-    const name_token: ?Token.Index =
+    const name_token: ?Node.Index =
         if (self.current_token.tag.isIdentifier() or
         self.isKeywordIdentifier(self.current_token.tag))
-        try self.addToken(try self.next())
+        try self.functionName()
     else
         null;
 
@@ -4853,7 +4919,7 @@ fn functionExpression(
 fn parseFunctionBody(
     self: *Self,
     start_pos: u32,
-    name_token: ?Token.Index,
+    func_name: ?Node.Index,
     flags: ast.FunctionFlags,
     is_decl: bool,
 ) Error!Node.Index {
@@ -4866,8 +4932,10 @@ fn parseFunctionBody(
     self.context.@"break" = false;
     self.context.@"continue" = false;
 
+    try self.scope.enterScope(.function, self.context.strict);
+    defer self.scope.exitScope();
+
     const params = try self.parseFormalParameters();
-    if (flags.is_arrow) unreachable; // not supported yet :)
 
     // Allow return statements inside function
     const ctx = self.context;
@@ -4875,13 +4943,13 @@ fn parseFunctionBody(
     self.context.@"return" = true;
 
     // TODO: make the body a statement list.
-    const body = try self.blockStatement();
+    const body = try self.functionBody();
     const end_pos = self.nodeSpan(body).end;
 
     const function_data = try self.addExtraData(
         ast.ExtraData{
             .function = .{
-                .name = name_token,
+                .name = func_name,
                 .flags = flags,
             },
         },
@@ -4898,6 +4966,32 @@ fn parseFunctionBody(
     else
         .{ .function_expr = function };
     return self.addNode(node_data, start_pos, end_pos);
+}
+
+fn functionBody(self: *Self) Error!Node.Index {
+    const lbrac = try self.expect(.@"{");
+    const start_pos = lbrac.start;
+
+    const prev_scratch_len = self.scratch.items.len;
+    defer self.scratch.items.len = prev_scratch_len;
+
+    while (self.current_token.tag != .@"}") {
+        const stmt = try self.statementOrDeclaration();
+        try self.scratch.append(stmt);
+    }
+
+    const rbrace = try self.next();
+    std.debug.assert(rbrace.tag == .@"}");
+    const end_pos = rbrace.start + rbrace.len;
+
+    const statements = self.scratch.items[prev_scratch_len..];
+    if (statements.len == 0) {
+        return self.addNode(.{ .block_statement = null }, start_pos, end_pos);
+    }
+
+    const stmt_list_node = try self.addSubRange(statements);
+    const block_node = ast.NodeData{ .block_statement = stmt_list_node };
+    return self.addNode(block_node, start_pos, end_pos);
 }
 
 fn parseParameter(self: *Self) Error!Node.Index {
@@ -4942,6 +5036,10 @@ fn parseParameter(self: *Self) Error!Node.Index {
 
 /// Starting with the '(' token , parse formal parameters of a function.
 fn parseFormalParameters(self: *Self) Error!Node.Index {
+    const context = self.context;
+    defer self.context = context;
+    self.context.parsing_declarator = .@"var";
+
     const lparen = try self.expect(.@"(");
     const start_pos = lparen.start;
 

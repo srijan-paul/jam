@@ -8,7 +8,8 @@ const String = StringPool.String;
 
 const Self = @This();
 
-const Variable = struct {
+pub const Variable = struct {
+    pub const Kind = enum { lexical_binding, variable_binding };
     pub const Index = enum(u32) { _ };
     /// Name of the variable, after processing any escapes codes
     /// in the identifier.
@@ -16,7 +17,10 @@ const Variable = struct {
     /// AST node that declared this variable.
     /// Usually a parameter, or a variable declarator.
     def_node: ast.Node.Index,
+    kind: Kind,
 };
+
+const AllocError = std.mem.Allocator.Error;
 
 const Scope = struct {
     pub const Kind = enum {
@@ -32,7 +36,11 @@ const Scope = struct {
     is_strict: bool,
     /// Returns a slice of the variables in this scope.
     pub fn asSlice(self: *const Scope, all_variables: []Variable) []Variable {
-        return all_variables[@intFromEnum(self.start)..];
+        const start_idx = @intFromEnum(self.start);
+        if (start_idx >= all_variables.len)
+            return &.{};
+
+        return all_variables[start_idx..];
     }
 };
 
@@ -44,7 +52,7 @@ variables: std.ArrayList(Variable),
 scope_stack: std.ArrayList(Scope),
 current_scope: *Scope,
 
-pub fn init(al: std.mem.Allocator, root_scope_kind: Scope.Kind) std.mem.Allocator.Error!Self {
+pub fn init(al: std.mem.Allocator, root_scope_kind: Scope.Kind) AllocError!Self {
     const current_scope = Scope{
         .start = @enumFromInt(0),
         .kind = root_scope_kind,
@@ -68,7 +76,7 @@ pub fn deinit(self: *Self) void {
     self.scope_stack.deinit();
 }
 
-pub fn enterScope(self: *Self, kind: Scope.Kind, is_strict: bool) std.mem.Allocator.Error!void {
+pub fn enterScope(self: *Self, kind: Scope.Kind, is_strict: bool) AllocError!void {
     const scope = Scope{
         .start = @enumFromInt(self.variables.items.len),
         .kind = kind,
@@ -76,13 +84,14 @@ pub fn enterScope(self: *Self, kind: Scope.Kind, is_strict: bool) std.mem.Alloca
     };
 
     try self.scope_stack.append(scope);
-    self.current_scope = self.scope_stack.items[self.scope_stack.items.len - 1];
+    self.current_scope = &self.scope_stack.items[self.scope_stack.items.len - 1];
 }
 
 pub fn exitScope(self: *Self) void {
     std.debug.assert(self.scope_stack.items.len > 1);
-    const cur_scope = self.scope_stack.pop();
-    self.variables.items.len = @intFromEnum(cur_scope.start);
+    const removed_scope = self.scope_stack.pop();
+    self.current_scope = &self.scope_stack.items[self.scope_stack.items.len - 1];
+    self.variables.items.len = @intFromEnum(removed_scope.start);
 }
 
 pub fn findInCurrentScope(self: *Self, name: String) ?*const Variable {
@@ -94,4 +103,19 @@ pub fn findInCurrentScope(self: *Self, name: String) ?*const Variable {
     }
 
     return null;
+}
+
+pub fn addVariable(
+    self: *Self,
+    name: String,
+    def_node: ast.Node.Index,
+    kind: Variable.Kind,
+) AllocError!void {
+    const variable = Variable{
+        .name = name,
+        .def_node = def_node,
+        .kind = kind,
+    };
+
+    try self.variables.append(variable);
 }

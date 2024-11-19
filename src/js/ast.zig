@@ -127,12 +127,10 @@ pub const Function = struct {
     /// Get the name of this function, if it has one,
     /// directly from the source buffer.
     pub fn getName(self: *const Function, tree: *const Tree) ?[]const u8 {
-        const maybe_name_token = tree.getExtraData(self.info).function.name;
-        if (maybe_name_token) |name_token| {
-            const token = tree.getToken(name_token);
-            return token.toByteSlice(tree.source);
-        }
-        return null;
+        const name_id = tree.getExtraData(self.info).function.name orelse
+            return null;
+        const name = tree.nodes.items(.data)[@intFromEnum(name_id)];
+        return tree.string_pool.toByteSlice(name.identifier);
     }
 
     /// Returns a slice containing all the parameter nodes in the function.
@@ -513,8 +511,8 @@ pub const ClassInfo = struct {
 pub const ExtraData = union {
     pub const Index = enum(u32) { none = 0, _ };
     function: struct {
-        /// Name of the function, if present (always an identifier token).
-        name: ?Token.Index,
+        /// Name of the function, if present (always an identifier node).
+        name: ?Node.Index,
         /// Flags: generator, async, arrow, etc.
         flags: FunctionFlags,
     },
@@ -679,7 +677,11 @@ pub const NodePretty = union(enum) {
 };
 
 pub const ExtraPretty = union(enum) {
-    function: Pretty(std.meta.FieldType(ExtraData, .function)),
+    function: struct {
+        name: ?[]const u8,
+        flags: Pretty(FunctionFlags),
+    },
+
     for_iterator: Pretty(ForIterator),
     class: Pretty(ClassInfo),
 };
