@@ -7,6 +7,7 @@ const Tokenizer = @import("./tokenize.zig");
 const Token = @import("./token.zig").Token;
 const ast = @import("./ast.zig");
 const StringHelper = @import("./strings.zig");
+const ScopeManager = @import("./scope.zig");
 
 const util = @import("util");
 const types = util.types;
@@ -235,6 +236,7 @@ jsx: bool = false,
 typescript: bool = false,
 /// The parse result
 tree: *Tree,
+scope: ScopeManager,
 /// Bit-flags to keep track of whether the
 /// most recently parsed expression can be destructured.
 const DestructureKind = packed struct(u8) {
@@ -352,6 +354,7 @@ pub fn init(
         .diagnostics = try std.ArrayList(Diagnostic).initCapacity(allocator, 2),
         .scratch = try std.ArrayList(Node.Index).initCapacity(allocator, 32),
         .strings = try StringHelper.init(allocator, source),
+        .scope = try ScopeManager.init(allocator, if (config.source_type == .module) .module else .script),
     };
     errdefer self.deinit();
 
@@ -388,6 +391,7 @@ pub fn deinit(self: *Self) void {
     }
     self.diagnostics.deinit();
     self.strings.deinit();
+    self.scope.deinit();
 }
 
 pub fn parse(self: *Self) !Node.Index {

@@ -1,62 +1,97 @@
-// A scope analyzer for JavaScript.
-// Consider this a zig port of eslint/eslint-scope.
-
+// Some rudimentary scope analysis needed for parsing.
 const std = @import("std");
 const util = @import("util");
-
-const ast = @import("./ast.zig");
+const ast = @import("ast.zig");
 
 const StringPool = util.StringPool;
 const String = StringPool.String;
 
-const Scope = @This();
+const Self = @This();
 
-const ScopeKind = enum {
-    global,
-    module,
-    function,
-    block,
-    @"switch",
-    @"catch",
-    @"for",
-    with,
-    class,
-};
-
-/// Definition for a `Variable`.
-const Definition = struct {
-    pub const Kind = enum { parameter, variable };
-    /// Whether the definition is a parameter or variable declaration.
-    kind: Kind,
-    /// the AST node that defines this variable.
-    /// Usually an identifier/pattern that represents a  parameter,
-    /// or a variable_declarator node.
-    node: ast.Node.Index,
-};
-
-/// A parameter, function, or variable declared in a scope.
 const Variable = struct {
+    pub const Index = enum(u32) { _ };
     /// Name of the variable, after processing any escapes codes
     /// in the identifier.
     name: String,
-    /// References to the variable in the program.
-    /// Only stores `ast.Node.identifier` nodes.
-    refs: std.ArrayList(ast.Node.Index),
-    /// Information about the variable's definition.
-    definition: Definition,
+    /// AST node that declared this variable.
+    /// Usually a parameter, or a variable declarator.
+    def_node: ast.Node.Index,
 };
 
-kind: ScopeKind,
-/// Reference to the node that defines this scope
-/// in the program.
-node: ast.Node.Index,
-/// List of variables declared in this scope.
+const Scope = struct {
+    pub const Kind = enum {
+        function,
+        block,
+        module,
+        script,
+    };
+
+    start: Variable.Index,
+    kind: Kind,
+    /// `true` if this scope is in strict mode.
+    is_strict: bool,
+    /// Returns a slice of the variables in this scope.
+    pub fn asSlice(self: *const Scope, all_variables: []Variable) []Variable {
+        return all_variables[@intFromEnum(self.start)..];
+    }
+};
+
+al: std.mem.Allocator,
+
+/// All variables declared in the program are stored in this flat array.
+/// A "scope" is just a view into this array.
 variables: std.ArrayList(Variable),
-/// Unresolved references in this scope.
-unresolved: std.ArrayList(ast.Node.Index),
-/// The surrounding scope that encloses this scope
-upper: *Scope,
-/// Whether this scope is in strict mode or not.
-is_strict: bool,
-/// Child scopes enclosed by this scope.
-children: std.ArrayList(Scope),
+scope_stack: std.ArrayList(Scope),
+current_scope: *Scope,
+
+pub fn init(al: std.mem.Allocator, root_scope_kind: Scope.Kind) std.mem.Allocator.Error!Self {
+    const current_scope = Scope{
+        .start = @enumFromInt(0),
+        .kind = root_scope_kind,
+        .is_strict = root_scope_kind == .module,
+    };
+
+    var self = Self{
+        .al = al,
+        .current_scope = undefined, // initialized below
+        .variables = try std.ArrayList(Variable).initCapacity(al, 16),
+        .scope_stack = try std.ArrayList(Scope).initCapacity(al, 4),
+    };
+
+    try self.scope_stack.append(current_scope);
+    self.current_scope = &self.scope_stack.items[0];
+    return self;
+}
+
+pub fn deinit(self: *Self) void {
+    self.variables.deinit();
+    self.scope_stack.deinit();
+}
+
+pub fn enterScope(self: *Self, kind: Scope.Kind, is_strict: bool) std.mem.Allocator.Error!void {
+    const scope = Scope{
+        .start = @enumFromInt(self.variables.items.len),
+        .kind = kind,
+        .is_strict = is_strict,
+    };
+
+    try self.scope_stack.append(scope);
+    self.current_scope = self.scope_stack.items[self.scope_stack.items.len - 1];
+}
+
+pub fn exitScope(self: *Self) void {
+    std.debug.assert(self.scope_stack.items.len > 1);
+    const cur_scope = self.scope_stack.pop();
+    self.variables.items.len = @intFromEnum(cur_scope.start);
+}
+
+pub fn findInCurrentScope(self: *Self, name: String) ?*const Variable {
+    const vars: []Variable = self.current_scope.asSlice(self.variables.items);
+    for (vars) |*variable| {
+        if (variable.name.eql(name)) {
+            return variable;
+        }
+    }
+
+    return null;
+}

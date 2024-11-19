@@ -40,7 +40,7 @@ pub fn stringValue(self: *Self, token: Token) !String {
     std.debug.assert(token.tag.isIdentifier());
     const str = token.toByteSlice(self.source);
 
-    // If the string is enturely ASCII and has no escape codes,
+    // If the string is entirely ASCII and has no escape codes,
     // we can just return the slice as is
     // Non-ASCII identifiers are tagged with ".non_ascii_identifier"
     if (token.tag == .identifier) {
