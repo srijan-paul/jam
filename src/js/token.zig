@@ -151,6 +151,7 @@ pub const JsTokenTag = enum(u32) {
     kw_typeof,
     kw_void,
     kw_delete,
+    kw_enum,
 
     // strict mode keywords
     strict_mode_kw_start,
@@ -177,7 +178,6 @@ pub const JsTokenTag = enum(u32) {
     kw_set,
     kw_from,
     kw_of,
-    kw_enum,
     contextual_keywords_end,
 
     keywords_end,

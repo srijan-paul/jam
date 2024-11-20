@@ -3400,12 +3400,12 @@ fn completeNewExpression(self: *Self, new_token: *const Token) Error!Node.Index 
 /// also has productions that parse member expressions:
 /// https://262.ecma-international.org/15.0/index.html#prod-CallExpression
 fn tryCallExpression(self: *Self, callee: Node.Index) Error!?Node.Index {
-    const token = self.peek();
-    if (token.tag != .@"(") return null;
+    if (self.current_token.tag != .@"(") return null;
 
     var call_expr = try self.coverCallAndAsyncArrowHead(callee);
-    var cur_token = self.peek();
+
     var destruct_kind = self.current_destructure_kind;
+    var cur_token = self.peek();
     while (cur_token.tag != .eof) : (cur_token = self.peek()) {
         switch (cur_token.tag) {
             .@"(" => {
@@ -3456,6 +3456,8 @@ fn coverCallAndAsyncArrowHead(self: *Self, callee: Node.Index) Error!Node.Index 
     const call_args = try self.args();
     const start_pos = self.nodes.items(.start)[@intFromEnum(callee)];
     const end_pos = self.nodes.items(.end)[@intFromEnum(call_args)];
+
+    self.current_destructure_kind.setNoAssignOrDestruct();
 
     return self.addNode(.{
         .call_expr = .{
