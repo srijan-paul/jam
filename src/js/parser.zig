@@ -167,8 +167,7 @@ fn relationalExpr(self: *Self) Error!Node.Index {
                 break;
             }
 
-            self.current_destructure_kind.can_be_assigned_to = false;
-            self.current_destructure_kind.can_destruct = false;
+            self.current_destructure_kind.setNoAssignOrDestruct();
 
             const op_token = try self.next();
             const rhs = try shiftExpr(self);
@@ -254,12 +253,14 @@ const DestructureKind = packed struct(u8) {
         .can_destruct = true,
         .can_be_assigned_to = true,
         .must_destruct = true,
+        .is_simple_expression = false,
     };
 
     pub const CannotDestruct = DestructureKind{
         .can_destruct = false,
         .must_destruct = false,
         .can_be_assigned_to = false,
+        .is_simple_expression = false,
     };
 
     /// `true` for any expression that is a valid destructuring target.
@@ -290,14 +291,29 @@ const DestructureKind = packed struct(u8) {
     /// Used to differentiate between BindingPattern and AssignmentPattern
     /// grammar productions.
     can_be_assigned_to: bool = true,
+    /// Whether the expression matches one of the following productions:
+    /// ```
+    /// Identifier
+    /// CallExpression [ Expression ]
+    /// CallExpression . IdentifierName
+    /// CallExpression . PrivateIdentifier
+    /// MemberExpression [ Expression ]
+    /// MemberExpression . IdentifierName
+    /// SuperProperty
+    /// MemberExpression . PrivateIdentifier
+    /// ```
+    /// This is used to figure out the "AssignmentTargetType" of an expression:
+    /// https://tc39.es/ecma262/#sec-static-semantics-assignmenttargettype
+    is_simple_expression: bool = true,
     /// padding
-    _: u5 = 0,
+    _: u4 = 0,
 
     /// Update the flags to indiciate that the current expression
     /// can neither be destructured nor assigned to.
     pub inline fn setNoAssignOrDestruct(self: *DestructureKind) void {
         self.can_destruct = false;
         self.can_be_assigned_to = false;
+        self.is_simple_expression = false;
     }
 
     /// Sets it to a state where that implies an expression
@@ -307,6 +323,7 @@ const DestructureKind = packed struct(u8) {
             .can_destruct = false,
             .can_be_assigned_to = false,
             .must_destruct = false,
+            .is_simple_expression = false,
         };
     }
 
@@ -321,6 +338,7 @@ const DestructureKind = packed struct(u8) {
         if (!other.can_be_assigned_to) self.can_be_assigned_to = false;
         if (!other.can_destruct) self.can_destruct = false;
         if (other.must_destruct) self.must_destruct = true;
+        if (!other.is_simple_expression) self.is_simple_expression = false;
     }
 
     pub fn isMalformed(self: *DestructureKind) bool {
@@ -1360,13 +1378,13 @@ fn ifStatement(self: *Self) Error!Node.Index {
     const cond = try self.expression();
     _ = try self.expect(.@")");
 
-    const consequent = try self.stmtNotLabeledFunction();
+    const consequent = try self.statement();
     var end_pos = self.nodeSpan(consequent).end;
 
     var alternate = Node.Index.empty;
     if (self.peek().tag == .kw_else) {
         _ = try self.next();
-        alternate = try self.stmtNotLabeledFunction();
+        alternate = try self.statement();
         end_pos = self.nodeSpan(alternate).end;
     }
 
@@ -2079,12 +2097,12 @@ fn throwStatement(self: *Self) Error!Node.Index {
 }
 
 /// Parse a statement that starts with the `let` keyword.
-/// This may not necessarily be a variable declaration, as `let`
-/// is also a valid identifier.
+/// This cannot be a variable declaration, let is either an identifier
+/// or a label here.
 fn letStatement(self: *Self) Error!Node.Index {
     std.debug.assert(self.current_token.tag == .kw_let);
     const let_kw = try self.startLetBinding() orelse {
-        // If the `let` keyword doesn't start an identifier,
+        // If the `let` keyword doesn't start a declaration,
         // then its an identifier.
         if ((try self.lookAhead()).tag == .@":") {
             // This is a labeled statement: 'let: ...'
@@ -2094,17 +2112,12 @@ fn letStatement(self: *Self) Error!Node.Index {
         return self.expressionStatement();
     };
 
-    if (self.isInStrictMode()) {
-        // TODO: disallow 'let' to be bound lexically.
-        try self.emitDiagnostic(
-            self.current_token.startCoord(self.source),
-            "'let' cannot be used as a variable name in strict mode",
-            .{},
-        );
-        return Error.LetInStrictMode;
-    }
-
-    return self.variableStatement(let_kw);
+    try self.emitDiagnosticOnToken(
+        let_kw,
+        "Variable declaration is not permitted here",
+        .{},
+    );
+    return Error.UnexpectedToken;
 }
 
 /// Checks if the parser is at the beginning of let binding,
@@ -2810,6 +2823,14 @@ fn assignmentExpression(self: *Self) Error!Node.Index {
     self.reinterpretAsPattern(lhs);
 
     const op_token = try self.next(); // eat assignment operator
+    if (op_token.tag != .@"=" and !self.current_destructure_kind.is_simple_expression) {
+        try self.emitDiagnosticOnToken(
+            op_token,
+            "Invalid target for '{s}'. Did you mean to use '=' instead?",
+            .{op_token.toByteSlice(self.source)},
+        );
+        return Error.InvalidAssignmentTarget;
+    }
 
     const rhs = try self.assignmentExpression();
     const start = self.nodes.items(.start)[@intFromEnum(lhs)];
@@ -3347,8 +3368,16 @@ fn updateExpression(self: *Self) Error!Node.Index {
     if (token.tag == .@"++" or token.tag == .@"--") {
         const op_token = try self.next();
         const expr = try self.unaryExpression();
+
+        const is_operand_simple = self.current_destructure_kind.is_simple_expression;
+        if (!is_operand_simple) {
+            try self.emitDiagnosticOnToken(op_token, "Invalid operand for update expression", .{});
+            return Error.UnexpectedToken;
+        }
+
         const expr_end_pos = self.nodes.items(.end)[@intFromEnum(expr)];
         self.current_destructure_kind.setNoAssignOrDestruct();
+
         return self.addNode(.{
             .update_expr = ast.UnaryPayload{
                 .operand = expr,
@@ -3359,11 +3388,19 @@ fn updateExpression(self: *Self) Error!Node.Index {
 
     // post increment / decrement
     const expr_start_line = self.peek().line;
+
     const expr = try self.lhsExpression();
-    const cur_token = self.peek();
+    const is_operand_simple = self.current_destructure_kind.is_simple_expression;
+
+    const cur_token = self.current_token;
     if ((cur_token.tag == .@"++" or cur_token.tag == .@"--") and
         cur_token.line == expr_start_line)
     {
+        if (!is_operand_simple) {
+            try self.emitDiagnosticOnToken(cur_token, "Invalid operand for update expression", .{});
+            return Error.UnexpectedToken;
+        }
+
         self.current_destructure_kind.setNoAssignOrDestruct();
         const op_token = try self.next();
         const expr_end_pos = self.nodes.items(.end)[@intFromEnum(expr)];
@@ -3379,12 +3416,15 @@ fn updateExpression(self: *Self) Error!Node.Index {
 }
 
 fn lhsExpression(self: *Self) Error!Node.Index {
+    self.current_destructure_kind.is_simple_expression = true;
+
     var lhs_expr = try self.memberExpression();
     if (try self.tryCallExpression(lhs_expr)) |call_expr| {
         lhs_expr = call_expr;
     }
 
     if (self.isAtToken(.@"?.")) {
+        self.current_destructure_kind.is_simple_expression = false;
         lhs_expr = try self.optionalExpression(lhs_expr);
     }
     return lhs_expr;
@@ -3450,11 +3490,13 @@ fn tryCallExpression(self: *Self, callee: Node.Index) Error!?Node.Index {
                 call_expr = try self.completeComputedMemberExpression(call_expr);
                 destruct_kind.can_destruct = false;
                 destruct_kind.can_be_assigned_to = true;
+                destruct_kind.is_simple_expression = true;
             },
             .@"." => {
                 call_expr = try self.completeMemberExpression(call_expr);
                 destruct_kind.can_destruct = false;
                 destruct_kind.can_be_assigned_to = true;
+                destruct_kind.is_simple_expression = true;
             },
             .template_literal_part => {
                 call_expr = try self.completeTaggedTemplate(call_expr);
@@ -3772,6 +3814,7 @@ fn completeMemberExpression(self: *Self, object: Node.Index) Error!Node.Index {
     const end_pos = property_token.start + property_token.len;
     self.current_destructure_kind.can_destruct = false;
     self.current_destructure_kind.can_be_assigned_to = true;
+    self.current_destructure_kind.is_simple_expression = true;
     return self.addNode(.{ .member_expr = property_access }, start_pos, end_pos);
 }
 
@@ -3797,6 +3840,7 @@ fn completeComputedMemberExpression(self: *Self, object: Node.Index) Error!Node.
     const end_pos = self.nodes.items(.end)[@intFromEnum(property)];
     self.current_destructure_kind.can_destruct = false;
     self.current_destructure_kind.can_be_assigned_to = true;
+    self.current_destructure_kind.is_simple_expression = true;
     return self.addNode(.{ .computed_member_expr = property_access }, start_pos, end_pos);
 }
 
@@ -4087,6 +4131,7 @@ fn callArgsOrAsyncArrowFunc(
         .can_destruct = true,
         .must_destruct = false,
         .can_be_assigned_to = true,
+        .is_simple_expression = false,
     };
 
     // store a aa spread-element that isn't immediately
@@ -4553,6 +4598,7 @@ fn propertyDefinitionList(self: *Self) Error!?ast.SubRange {
     defer self.scratch.items.len = scratch_start;
 
     var destructure_kind = self.current_destructure_kind;
+    destructure_kind.is_simple_expression = false;
 
     while (true) {
         switch (self.current_token.tag) {
@@ -4923,6 +4969,7 @@ fn arrayLiteral(self: *Self, start_pos: u32) Error!Node.Index {
     defer self.scratch.items.len = scratch_start;
 
     var destructure_kind = self.current_destructure_kind;
+    destructure_kind.is_simple_expression = false;
 
     var end_pos = start_pos;
     while (true) {
