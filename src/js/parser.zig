@@ -4485,6 +4485,7 @@ fn completeArrowParamsOrGroupingExpr(self: *Self, lparen: *const Token) Error!No
                     try self.restParamNotLastError(&self.current_token);
                 }
 
+                destructure_kind.must_destruct = true;
                 break;
             }
 
