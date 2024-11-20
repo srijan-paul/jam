@@ -864,6 +864,10 @@ fn statement(self: *Self) Error!Node.Index {
         .kw_switch => self.switchStatement(),
         .kw_with => self.withStatement(),
         .kw_throw => self.throwStatement(),
+        .kw_function => {
+            try self.emitBadTokenDiagnostic("statement", &self.current_token);
+            return Error.UnexpectedToken;
+        },
         else => self.labeledOrExpressionStatement(),
     };
 }
