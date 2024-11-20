@@ -904,9 +904,18 @@ fn statement(self: *Self) Error!Node.Index {
         .kw_switch => self.switchStatement(),
         .kw_with => self.withStatement(),
         .kw_throw => self.throwStatement(),
-        .kw_function => {
+        .kw_function, .kw_class => {
             try self.emitBadTokenDiagnostic("statement", &self.current_token);
             return Error.UnexpectedToken;
+        },
+        .kw_async => {
+            const lookahead = try self.lookAhead();
+            if (lookahead.tag == .kw_function) {
+                try self.emitBadTokenDiagnostic("statement", &self.current_token);
+                return Error.UnexpectedToken;
+            }
+
+            return self.labeledOrExpressionStatement();
         },
         else => self.labeledOrExpressionStatement(),
     };
@@ -1587,7 +1596,11 @@ fn completeVarDeclLoopIterator(self: *Self, decl_kw: Token, loop_kind: *ForLoopK
         decl_kw.tag == .kw_var or
         decl_kw.tag == .kw_const);
 
+    const ctx = self.context;
+    self.context.parsing_declarator = if (decl_kw.tag == .kw_var) .@"var" else .lexical;
     const lhs = try self.assignmentLhsExpr();
+    self.context = ctx;
+
     const lhs_span = self.nodeSpan(lhs);
     switch (self.current_token.tag) {
         .kw_in, .kw_of => {
@@ -1630,6 +1643,12 @@ fn completeVarDeclLoopIterator(self: *Self, decl_kw: Token, loop_kind: *ForLoopK
 
                 end_pos = self.nodeSpan(init_expr).end;
                 rhs = init_expr;
+            } else if (self.nodeTag(lhs) != .identifier) {
+                try self.emitDiagnosticOnNode(lhs, "Complex binding patterns require an initializer");
+                return Error.MissingInitializer;
+            } else if (decl_kw.tag == .kw_const) {
+                try self.emitDiagnosticOnNode(lhs, "Missing initializer in const declaration");
+                return Error.MissingInitializer;
             }
 
             const first_decl = try self.addNode(
@@ -4267,7 +4286,12 @@ fn bindingIdentifier(self: *Self) Error!Node.Index {
 
 /// Save `token` as an identifier node.
 fn identifier(self: *Self, token: Token) Error!Node.Index {
+    if (self.context.parsing_declarator != .none) {
+        return self.variableName(token);
+    }
+
     const token_string = try self.strings.stringValue(&token);
+
     return self.addNode(
         .{ .identifier = token_string },
         token.start,
@@ -4296,6 +4320,15 @@ fn variableName(self: *Self, token: Token) Error!Node.Index {
             );
             return Error.DuplicateBinding;
         }
+    }
+
+    if (self.context.parsing_declarator == .lexical and token.tag == .kw_let) {
+        try self.emitDiagnostic(
+            token.startCoord(self.source),
+            "'let' is not allowed as a lexically bound name",
+            .{},
+        );
+        return Error.DuplicateBinding;
     }
 
     const id = try self.addNode(

@@ -18,6 +18,7 @@ pub const Error = error{
     BadPunctuator,
     BadRegexLiteral,
     UnterminatedRegexClass,
+    UnterminatedRegexLiteral,
     UnterminatedComment,
     BadEscapeSequence,
     UnterminatedString,
@@ -500,6 +501,7 @@ fn consumeRegexCharacterClass(self: *Self) Error!void {
 fn consumeRegexPart(self: *Self) Error!void {
     const byte = self.source[self.index];
     if (std.ascii.isAscii(byte)) {
+        @branchHint(.likely);
         if (isNewline(byte))
             return Error.BadRegexLiteral;
 
@@ -557,6 +559,8 @@ fn regexLiteral(self: *Self) Error!Token {
         }
 
         try self.consumeRegexPart();
+    } else {
+        return Error.UnterminatedRegexLiteral;
     }
 
     return Token{
