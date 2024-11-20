@@ -2777,7 +2777,7 @@ fn assignmentExpression(self: *Self) Error!Node.Index {
     // in `Parser.identifierProperty`
     self.current_destructure_kind = .{
         .can_destruct = op_token.tag == .@"=",
-        .can_be_assigned_to = true,
+        .can_be_assigned_to = op_token.tag == .@"=",
         .must_destruct = false,
     };
 
