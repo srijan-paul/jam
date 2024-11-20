@@ -1412,6 +1412,8 @@ fn forStatement(self: *Self) Error!Node.Index {
 fn forLoopIterator(self: *Self) Error!struct { ForLoopKind, ast.ExtraData.Index } {
     _ = try self.expect(.@"(");
 
+    var lhs_starts_with_let = false;
+
     // Check for productions that start with a variable declarator.
     // for (var/let/const x = 0; x < 10; x++)
     // for (var/let/const x in y)
@@ -1423,6 +1425,7 @@ fn forLoopIterator(self: *Self) Error!struct { ForLoopKind, ast.ExtraData.Index 
         }
 
         if (curr == .kw_let) {
+            lhs_starts_with_let = true;
             break :blk try self.startLetBinding();
         }
 
@@ -1484,6 +1487,15 @@ fn forLoopIterator(self: *Self) Error!struct { ForLoopKind, ast.ExtraData.Index 
                     .{},
                 );
                 return Error.InvalidLoopLhs;
+            }
+
+            if (self.isAtToken(.kw_of) and lhs_starts_with_let) {
+                try self.emitDiagnosticOnToken(
+                    self.current_token,
+                    "Left-hand side of for-of loop cannot start with 'let'",
+                    .{},
+                );
+                return Error.UnexpectedToken;
             }
 
             self.reinterpretAsPattern(expr);
