@@ -1,8 +1,8 @@
 {
   "fail_percent": 0,
   "pass_percent": 100,
-  "malformed_pass_percent": 90.6721536351166,
-  "malformed_fail_percent": 9.327846364883403,
+  "malformed_pass_percent": 90.94650205761316,
+  "malformed_fail_percent": 9.053497942386832,
   "unmatching_ast_count": 0,
   "test_cases": {
     "2db5219f0ac5dd71.js": "pass",
@@ -2473,7 +2473,7 @@
     "0131cd88c5774915.js": "pass",
     "ff7e007caeff659d.js": "malformed_file_parsed",
     "73d061b5d635a807.js": "pass",
-    "aae5dc521eff47c4.js": "malformed_file_parsed",
+    "aae5dc521eff47c4.js": "pass",
     "412beffc411b3cb1.js": "pass",
     "0f512c4376a62de8.js": "pass",
     "b88ab70205263170.module.js": "pass",
@@ -2679,7 +2679,7 @@
     "6a7197b11e9847ed.js": "pass",
     "12a3250154ea8ef5.js": "pass",
     "27e55098f070e9ef.js": "pass",
-    "2f95824f19005b11.js": "malformed_file_parsed",
+    "2f95824f19005b11.js": "pass",
     "1bc43dd97a16b9bb.module.js": "pass",
     "4e880c0482d146e0.js": "pass",
     "dc4aa6a1fb2c6317.js": "pass",

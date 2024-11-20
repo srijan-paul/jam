@@ -4921,13 +4921,25 @@ fn checkGetterOrSetterParams(
         return Error.InvalidGetter;
     }
 
-    if (kind == .set and n_params != 1) {
-        try self.emitDiagnostic(
-            self.current_token.startCoord(self.source),
-            "A 'set' accessor should have exaclty one parameters, but got {d}",
-            .{n_params},
-        );
-        return Error.InvalidSetter;
+    if (kind == .set) {
+        if (n_params != 1) {
+            try self.emitDiagnostic(
+                self.current_token.startCoord(self.source),
+                "A 'set' accessor should have exaclty one parameters, but got {d}",
+                .{n_params},
+            );
+            return Error.InvalidSetter;
+        }
+
+        const param = func.getParameterSlice(self.tree)[0];
+        if (self.nodeTag(param) == .rest_element) {
+            try self.emitDiagnostic(
+                self.nodeStartCoord(param),
+                "A 'set' accessor cannot have a rest parameter",
+                .{},
+            );
+            return Error.InvalidSetter;
+        }
     }
 }
 
@@ -5318,6 +5330,12 @@ fn nodeSpan(self: *const Self, index: Node.Index) types.Span {
     const start = self.nodes.items(.start)[@intFromEnum(index)];
     const end = self.nodes.items(.end)[@intFromEnum(index)];
     return .{ .start = start, .end = end };
+}
+
+/// Get the start and end byte offset of a node in the source file.
+fn nodeStartCoord(self: *const Self, index: Node.Index) types.Coordinate {
+    const start = self.nodes.items(.start)[@intFromEnum(index)];
+    return util.offsets.byteIndexToCoordinate(self.source, start);
 }
 
 /// Return the tag that identifies the type of a node.
