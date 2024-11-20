@@ -951,15 +951,16 @@ fn labeledStatement(self: *Self) Error!Node.Index {
 
 fn labeledItem(self: *Self) Error!Node.Index {
     if (self.isAtToken(.kw_function)) {
-        if (self.context.strict or self.source_type == .script) {
+        const lookahead = try self.lookAhead();
+        if ((self.context.strict or self.source_type == .script) and lookahead.tag != .@"*") {
             const fn_token = try self.next();
             return self.functionDeclaration(fn_token.start, .{});
         }
 
         try self.emitDiagnosticOnToken(
             self.current_token,
-            "Function declarations cannot be labeled",
-            .{},
+            "{s} cannot be labeled",
+            .{if (lookahead.tag == .@"*") "generators" else "function declarations"},
         );
 
         return Error.UnexpectedToken;
@@ -2841,7 +2842,7 @@ fn assignmentExpression(self: *Self) Error!Node.Index {
         return Error.InvalidAssignmentTarget;
     }
 
-    const rhs = try self.assignmentExpression();
+    const rhs = try self.assignExpressionNoPattern();
     const start = self.nodes.items(.start)[@intFromEnum(lhs)];
     const end = self.nodes.items(.end)[@intFromEnum(rhs)];
 
@@ -5082,9 +5083,9 @@ fn functionExpression(
 
     const saved_ctx = self.context;
     // 'await' and 'yield' are always allowed as
-    // function expression names
+    // function expression names, except if the function is a generator
     self.context.is_await_reserved = false;
-    self.context.is_yield_reserved = false;
+    self.context.is_yield_reserved = fn_flags.is_generator;
 
     const name_token: ?Node.Index =
         if (self.current_token.tag.isIdentifier() or

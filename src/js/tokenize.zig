@@ -20,7 +20,7 @@ pub const Error = error{
     UnterminatedRegexClass,
     UnterminatedComment,
     BadEscapeSequence,
-    NonTerminatedString,
+    UnterminatedString,
     NonTerminatedTemplateLiteral,
     MalformedIdentifier,
 };
@@ -595,7 +595,11 @@ fn consumeEscape(self: *Self) !void {
             const byte = self.source[self.index];
             if (std.ascii.isAscii(byte)) {
                 self.index += 1;
-                if (isNewline(byte)) self.bumpLine();
+                if (isNewline(byte)) {
+                    self.bumpLine();
+                    // escaping a \r\n
+                    if (byte == '\r' and self.peekByte() == '\n') self.index += 1;
+                }
             } else {
                 try self.consumeUtf8CodePoint();
             }
@@ -617,6 +621,8 @@ fn stringLiteral(self: *Self) Error!Token {
     while (!self.eof()) {
         const byte = self.source[self.index];
         if (!std.ascii.isAscii(byte)) {
+            // most code will be ASCII
+            @branchHint(.cold);
             try self.consumeUtf8CodePoint();
             continue;
         }
@@ -629,12 +635,14 @@ fn stringLiteral(self: *Self) Error!Token {
             if (byte == quote_char) {
                 found_end_quote = true;
                 break;
+            } else if (isNewline(byte)) {
+                return Error.UnterminatedString;
             }
         }
     }
 
     if (!found_end_quote) {
-        return Error.NonTerminatedString;
+        return Error.UnterminatedString;
     }
 
     return .{
@@ -1594,7 +1602,7 @@ test Self {
     }
 
     const bad_cases = [_]struct { []const u8, anyerror }{
-        .{ "'hello", Error.NonTerminatedString },
+        .{ "'hello", Error.UnterminatedString },
         .{ "1._5", Error.InvalidNumericLiteral },
         .{ "1.5_", Error.InvalidNumericLiteral },
         .{ "1.5aaaA", Error.InvalidNumericLiteral },
