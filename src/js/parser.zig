@@ -2442,8 +2442,8 @@ fn isInStrictMode(self: *const Self) bool {
 /// in the current context.
 fn isKeywordIdentifier(self: *const Self, tag: Token.Tag) bool {
     switch (tag) {
-        .kw_await => return !self.context.is_await_reserved,
-        .kw_yield => return !self.context.is_yield_reserved,
+        .kw_await => return !(self.context.is_await_reserved or self.source_type == .module),
+        .kw_yield => return !(self.context.is_yield_reserved or self.context.strict),
         else => {
             if (tag.isContextualKeyword()) return true;
             if (self.isInStrictMode()) return false;
