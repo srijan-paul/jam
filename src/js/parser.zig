@@ -2054,7 +2054,7 @@ fn withStatement(self: *Self) Error!Node.Index {
     const obj = try self.expression();
     _ = try self.expect(.@")");
 
-    const body = try self.stmtNotLabeledFunction();
+    const body = try self.statement();
     const end_pos = self.nodeSpan(body).end;
 
     const stmt = try self.addNode(
