@@ -89,7 +89,6 @@ const pass_exceptions = [_][]const u8{
     "aeca992c7be882ba.js",
     "0eb53d0e06cd5417.js",
     "24557730b5076325.js",
-    "ef81b93cf9bdb4ec.js",
     // The spec's grammar says `if (foo) function f() { }` is invalid,
     // but the test suite has these tests as "pass" for some reason. WTF?
     "1c1e2a43fe5515b6.js",
@@ -102,6 +101,7 @@ const pass_exceptions = [_][]const u8{
 
 const fail_exceptions = [_][]const u8{
     "98204d734f8c72b3.js",
+    "ef81b93cf9bdb4ec.js",
 };
 
 /// For a given file name, check whether `pass/<file>` and `pass-explicit/<file>`

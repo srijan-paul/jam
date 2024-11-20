@@ -246,6 +246,10 @@ typescript: bool = false,
 /// The parse result
 tree: *Tree,
 scope: ScopeManager,
+/// Used in `asyncExpression`.
+/// Reset to `false` after an async arrow function is parsed.
+is_current_arrow_func_async: bool = false,
+
 /// Bit-flags to keep track of whether the
 /// most recently parsed expression can be destructured.
 const DestructureKind = packed struct(u8) {
@@ -2806,8 +2810,13 @@ fn assignmentExpression(self: *Self) Error!Node.Index {
     };
 
     const lhs = try yieldOrConditionalExpression(self);
-
     if (!self.current_token.tag.isAssignmentOperator()) {
+        if (self.current_token.tag == .@"=>") {
+            return self.completeArrowFunction(lhs);
+        } else {
+            const lhs_tag = self.nodeTag(lhs);
+            std.debug.assert(lhs_tag != .parameters);
+        }
         return lhs;
     }
 
@@ -3875,7 +3884,7 @@ fn primaryExpression(self: *Self) Error!Node.Index {
             if (self.isAtToken(.@"=>")) {
                 // arrow function starting with an identifier:
                 // 'x => 1'.
-                return self.identifierArrowFunction(&token);
+                return self.identifierArrowParameter(&token);
             }
             return self.identifier(token);
         },
@@ -3889,7 +3898,7 @@ fn primaryExpression(self: *Self) Error!Node.Index {
         => return self.parseLiteral(&token),
         .@"[" => return self.arrayLiteral(token.start),
         .@"{" => return self.objectLiteral(token.start),
-        .@"(" => return self.groupingExprOrArrowFunction(&token),
+        .@"(" => return self.groupingExprOrArrowParameters(&token),
         .kw_async => return self.asyncExpression(&token),
         .kw_function => return self.functionExpression(token.start, .{}),
         else => {},
@@ -3898,7 +3907,7 @@ fn primaryExpression(self: *Self) Error!Node.Index {
     if (self.isKeywordIdentifier(token.tag)) {
         if (self.isAtToken(.@"=>")) {
             // arrow function starting with keyword identifier: 'yield => 1'
-            return self.identifierArrowFunction(&token);
+            return self.identifierArrowParameter(&token);
         }
         return self.identifier(token);
     }
@@ -3975,7 +3984,7 @@ fn stringLiteralFromToken(self: *Self, token: Token) Error!Node.Index {
 
 /// Parse an arrow function that starts with an identifier token.
 /// E.g: `x => 1` or `yield => 2`
-fn identifierArrowFunction(self: *Self, token: *const Token) Error!Node.Index {
+fn identifierArrowParameter(self: *Self, token: *const Token) Error!Node.Index {
     const id = try self.identifier(token.*);
     const params_range = try self.addSubRange(&[_]Node.Index{id});
     // TODO: should functions with single parameters just not store a SubRange and store the
@@ -3985,7 +3994,8 @@ fn identifierArrowFunction(self: *Self, token: *const Token) Error!Node.Index {
         token.start,
         token.start + token.len,
     );
-    return self.completeArrowFunction(token, token, params, .{ .is_arrow = true });
+    try self.ensureFatArrow(token, token);
+    return params;
 }
 
 /// Parse a template literal expression.
@@ -4068,7 +4078,6 @@ fn asyncExpression(self: *Self, async_token: *const Token) Error!Node.Index {
 
     if (self.current_token.tag == .@"(") {
         const argsOrArrow = try self.callArgsOrAsyncArrowFunc(
-            async_token,
             ast.FunctionFlags{
                 .is_async = true,
                 .is_arrow = true,
@@ -4091,8 +4100,7 @@ fn asyncExpression(self: *Self, async_token: *const Token) Error!Node.Index {
         }
     }
 
-    if ((self.current_token.tag.isIdentifier() or
-        self.isKeywordIdentifier(self.current_token.tag)) and
+    if (self.isIdentifier(self.current_token.tag) and
         self.current_token.line == async_token.line)
     {
         // async x => ...
@@ -4101,16 +4109,13 @@ fn asyncExpression(self: *Self, async_token: *const Token) Error!Node.Index {
         const params_range = try self.addSubRange(&[_]Node.Index{param});
         const params = try self.addNode(
             .{ .parameters = params_range },
-            id_token.start,
+            async_token.start,
             id_token.start + id_token.len,
         );
 
-        return self.completeArrowFunction(
-            async_token,
-            &id_token,
-            params,
-            .{ .is_async = true, .is_arrow = true },
-        );
+        try self.ensureFatArrow(&id_token, &id_token);
+        self.is_current_arrow_func_async = true;
+        return params;
     }
 
     return self.identifier(async_token.*);
@@ -4118,8 +4123,7 @@ fn asyncExpression(self: *Self, async_token: *const Token) Error!Node.Index {
 
 fn callArgsOrAsyncArrowFunc(
     self: *Self,
-    async_token: *const Token,
-    flags: ast.FunctionFlags,
+    _: ast.FunctionFlags,
 ) Error!Node.Index {
     const lparen = try self.next();
     std.debug.assert(lparen.tag == .@"(");
@@ -4218,12 +4222,9 @@ fn callArgsOrAsyncArrowFunc(
             rparen.start + 1,
         );
 
-        return self.completeArrowFunction(
-            async_token,
-            &rparen,
-            parameters,
-            flags,
-        );
+        try self.ensureFatArrow(&lparen, &rparen);
+        self.is_current_arrow_func_async = true;
+        return parameters;
     }
 
     if (destructure_kind.must_destruct) {
@@ -4321,17 +4322,14 @@ fn makeSuper(self: *Self, super_token: *const Token) Error!Node.Index {
     );
 }
 
-/// Assuming the parameter list has been consumed, parse the body of
-/// an arrow function and return the complete arrow function AST node id.
-fn completeArrowFunction(
+/// Ensures:
+/// 1. That the current token is a '=>'
+/// 2. That '=>' is on the same line as the last token in the parameter list.
+fn ensureFatArrow(
     self: *Self,
-    params_start_token: *const Token, // a '(' or an identifier.
-    params_end_token: *const Token, // a ')' or an identifier.
-    params: Node.Index,
-    flags: ast.FunctionFlags,
-) Error!Node.Index {
-    std.debug.assert(flags.is_arrow);
-
+    params_start_token: *const Token,
+    params_end_token: *const Token,
+) Error!void {
     if (!self.isAtToken(.@"=>")) {
         if (params_start_token.tag == .@"(") {
             try self.emitDiagnostic(
@@ -4350,7 +4348,7 @@ fn completeArrowFunction(
         return Error.InvalidArrowFunction;
     }
 
-    const fat_arrow = try self.next();
+    const fat_arrow = self.current_token;
     if (params_end_token.line != fat_arrow.line) {
         try self.emitDiagnostic(
             fat_arrow.startCoord(self.source),
@@ -4359,6 +4357,22 @@ fn completeArrowFunction(
         );
         return Error.IllegalFatArrow;
     }
+}
+
+/// Assuming the parameter list has been consumed, parse the body of
+/// an arrow function and return the complete arrow function AST node id.
+fn completeArrowFunction(self: *Self, params: Node.Index) Error!Node.Index {
+    std.debug.assert(self.current_token.tag == .@"=>");
+
+    if (self.nodeTag(params) != .parameters) {
+        try self.emitDiagnosticOnToken(self.current_token, "Unexpected '=>'", .{});
+        return Error.UnexpectedToken;
+    }
+
+    _ = try self.next(); // eat '=>'
+
+    const is_async = self.is_current_arrow_func_async;
+    self.is_current_arrow_func_async = false;
 
     const body = blk: {
         const body_start_token = self.current_token;
@@ -4373,8 +4387,9 @@ fn completeArrowFunction(
 
         const context = self.context;
         defer self.context = context;
-        self.context.is_yield_reserved = flags.is_generator;
-        self.context.is_await_reserved = flags.is_async;
+
+        self.context.is_yield_reserved = false; // arrow functions cannot be generators.
+        self.context.is_await_reserved = is_async;
 
         const assignment = try self.assignmentExpression();
         if (self.current_destructure_kind.must_destruct) {
@@ -4394,18 +4409,26 @@ fn completeArrowFunction(
     // cannot be destructured or assigned to.
     self.current_destructure_kind.reset();
 
-    return self.addNode(ast.NodeData{
-        .function_expr = ast.Function{
-            .parameters = params,
-            .body = body,
-            .info = try self.addExtraData(.{
-                .function = .{
-                    .name = null,
-                    .flags = flags,
-                },
-            }),
+    return self.addNode(
+        ast.NodeData{
+            .function_expr = ast.Function{
+                .parameters = params,
+                .body = body,
+                .info = try self.addExtraData(.{
+                    .function = .{
+                        .name = null,
+                        .flags = .{
+                            .is_arrow = true,
+                            .is_async = is_async,
+                            .is_generator = false,
+                        },
+                    },
+                }),
+            },
         },
-    }, params_start_token.start, end_pos);
+        self.nodes.items(.start)[@intFromEnum(params)],
+        end_pos,
+    );
 }
 
 /// Parse a spread element when current_token is '...'
@@ -4427,7 +4450,7 @@ fn restElement(self: *Self) Error!Node.Index {
 }
 
 /// Once a '(' token has been eaten, parse the either an arrow function or a parenthesized expression.
-fn completeArrowFuncOrGroupingExpr(self: *Self, lparen: *const Token) Error!Node.Index {
+fn completeArrowParamsOrGroupingExpr(self: *Self, lparen: *const Token) Error!Node.Index {
     const first_expr = try self.assignmentExpression();
     if (!self.current_destructure_kind.can_destruct) {
         const expr = try self.completeSequenceExpr(first_expr);
@@ -4509,13 +4532,8 @@ fn completeArrowFuncOrGroupingExpr(self: *Self, lparen: *const Token) Error!Node
             lparen.start,
             rparen.start + 1,
         );
-
-        return self.completeArrowFunction(
-            lparen,
-            &rparen,
-            parameters,
-            .{ .is_arrow = true },
-        );
+        try self.ensureFatArrow(lparen, &rparen);
+        return parameters;
     }
 
     // Not at a '=>', so we are parsing a grouping expression.
@@ -4557,28 +4575,30 @@ fn completeArrowFuncOrGroupingExpr(self: *Self, lparen: *const Token) Error!Node
 }
 
 /// Parses either an arrow function or a parenthesized expression.
-fn groupingExprOrArrowFunction(self: *Self, lparen: *const Token) Error!Node.Index {
+fn groupingExprOrArrowParameters(self: *Self, lparen: *const Token) Error!Node.Index {
     if (self.isAtToken(.@")")) {
         const rparen = try self.next();
         const end_pos = rparen.start + rparen.len;
         const params = try self.addNode(.{ .parameters = null }, lparen.start, end_pos);
-        return self.completeArrowFunction(lparen, &rparen, params, .{ .is_arrow = true });
+        try self.ensureFatArrow(lparen, &rparen);
+        return params;
     }
 
     if (self.isAtToken(.@"...")) {
         const rest_elem = try self.restElement();
         const rparen = try self.expect(.@")");
         const params = try self.addSubRange(&[_]Node.Index{rest_elem});
+        try self.ensureFatArrow(lparen, &rparen);
 
         const parameters = try self.addNode(
             .{ .parameters = params },
             lparen.start,
             rparen.start + rparen.len,
         );
-        return self.completeArrowFunction(lparen, &rparen, parameters, .{ .is_arrow = true });
+        return parameters;
     }
 
-    return self.completeArrowFuncOrGroupingExpr(lparen);
+    return self.completeArrowParamsOrGroupingExpr(lparen);
 }
 
 /// Parse an object literal, assuming the `{` has already been consumed.
