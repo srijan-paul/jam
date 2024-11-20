@@ -2410,6 +2410,16 @@ fn isIdentifier(self: *const Self, tag: Token.Tag) bool {
     return tag.isIdentifier() or self.isKeywordIdentifier(tag);
 }
 
+/// Check if `expr` is an invalid assignment target when wrapped in parentheses.
+/// Assumes that `expr` on its own is a valid assignment target *without* '()'.
+fn isBadParenthesizedPattern(self: *const Self, expr: Node.Index) bool {
+    const node = self.nodeTag(expr);
+    return switch (node) {
+        .assignment_expr, .object_literal, .array_literal => true,
+        else => false,
+    };
+}
+
 /// Reserve a slot for node, then return the index of the reserved slot.
 fn reserveSlot(self: *Self) Node.Index {
     try self.nodes.append(self.allocator, undefined);
@@ -4416,7 +4426,7 @@ fn completeArrowFuncOrGroupingExpr(self: *Self, lparen: *const Token) Error!Node
 
     // (a, b) cannot be assigned to or destructured,
     // However, `(a) = 1` is valid, and `(a = 1) = 2` is not.
-    if (nodes.items.len > 1 or self.nodeTag(nodes.items[0]) == .assignment_expr) {
+    if (nodes.items.len > 1 or self.isBadParenthesizedPattern(nodes.items[0])) {
         self.current_destructure_kind.setNoAssignOrDestruct();
     }
 
