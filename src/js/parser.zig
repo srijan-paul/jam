@@ -5052,8 +5052,8 @@ const DirectiveKind = enum {
 /// Check if a given statement is a directive.
 /// If so, return whether its a "use strict" directive or not.
 fn checkDirective(self: *const Self, stmt: Node.Index) DirectiveKind {
-    const nodes_slice = self.nodes.slice();
-    const data: []ast.NodeData = nodes_slice.items(.data);
+    const nodes = self.nodes.slice();
+    const data: []ast.NodeData = nodes.items(.data);
 
     if (std.meta.activeTag(data[@intFromEnum(stmt)]) != .expression_statement)
         return .not_directive;

@@ -18,6 +18,7 @@ pub const Error = error{
     BadPunctuator,
     BadRegexLiteral,
     UnterminatedRegexClass,
+    UnterminatedComment,
     BadEscapeSequence,
     NonTerminatedString,
     NonTerminatedTemplateLiteral,
@@ -395,6 +396,7 @@ fn consumeSingleLineCommentChars(self: *Self) Error!void {
 }
 
 /// Consume all source characters until EOF or a '*/' sequence is found.
+/// returns `Error.UnterminatedComment` on EOF.
 fn consumeMultiLineCommentChars(self: *Self) Error!void {
     while (!self.eof()) {
         const byte = self.source[self.index];
@@ -402,7 +404,7 @@ fn consumeMultiLineCommentChars(self: *Self) Error!void {
             if (byte == '*') {
                 if (self.index + 1 < self.source.len and self.source[self.index + 1] == '/') {
                     self.index += 2;
-                    break;
+                    return;
                 }
             } else if (isNewline(byte)) {
                 // TODO: what if its a /r/n?
@@ -418,6 +420,8 @@ fn consumeMultiLineCommentChars(self: *Self) Error!void {
             }
         }
     }
+
+    return Error.UnterminatedComment;
 }
 
 /// Consume a UTF-8 codepoint from the source string.
