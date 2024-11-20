@@ -4485,10 +4485,13 @@ fn completeArrowFuncOrGroupingExpr(self: *Self, lparen: *const Token) Error!Node
         return Error.UnexpectedPattern;
     }
 
-    // (a, b) cannot be assigned to or destructured,
-    // However, `(a) = 1` is valid, and `(a = 1) = 2` is not.
+    // (Pattern, Pattern) cannot be assigned to or destructured,
+    // However, (Identifier) can be assigned to (but not destructured)
+    // So, `(a) = 1` is valid, `(a = 1) = 2` is not and neither are `((a)) => 1` and `var (a) = 1`
     if (nodes.items.len > 1 or self.isBadParenthesizedPattern(nodes.items[0])) {
         self.current_destructure_kind.setNoAssignOrDestruct();
+    } else {
+        self.current_destructure_kind.can_destruct = false;
     }
 
     if (has_trailing_comma) {
