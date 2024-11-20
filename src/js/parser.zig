@@ -895,7 +895,7 @@ fn statement(self: *Self) Error!Node.Index {
         .kw_break => self.breakStatement(),
         .kw_continue => self.continueStatement(),
         .kw_let => self.letStatement(),
-        .kw_var, .kw_const => self.variableStatement(try self.next()),
+        .kw_var => self.variableStatement(try self.next()),
         .kw_try => self.tryStatement(),
         .kw_switch => self.switchStatement(),
         .kw_with => self.withStatement(),
@@ -989,7 +989,7 @@ fn declarationStatement(self: *Self) Error!?Node.Index {
             const let_kw = try self.startLetBinding() orelse return null;
             return try self.variableStatement(let_kw);
         },
-        .kw_const => return try self.variableStatement(try self.next()),
+        .kw_var, .kw_const => return try self.variableStatement(try self.next()),
         else => return null,
     }
 }
