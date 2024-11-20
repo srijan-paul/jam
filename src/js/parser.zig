@@ -621,7 +621,7 @@ fn importSpecifier(self: *Self) Error!Node.Index {
         break :blk try self.identifier(name_token);
     };
 
-    if (self.isAtToken(.kw_as) or name_token.tag == .string_literal) {
+    if (self.isAtToken(.kw_as) or !self.isIdentifier(name_token.tag)) {
         _ = try self.expect(.kw_as); // eat 'as'
         const alias_token = try self.expectIdentifier();
         const alias = try self.identifier(alias_token);
