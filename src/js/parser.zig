@@ -4798,6 +4798,15 @@ fn identifierProperty(self: *Self) Error!Node.Index {
         },
 
         else => {
+            if (!self.isIdentifier(key_token.tag)) {
+                try self.emitDiagnosticOnToken(
+                    key_token,
+                    "Keywords cannot be used as shorthand properties",
+                    .{},
+                );
+                return Error.UnexpectedToken;
+            }
+
             const kv_node = ast.PropertyDefinition{
                 .key = key,
                 .value = key,
