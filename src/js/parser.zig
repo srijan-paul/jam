@@ -3862,7 +3862,7 @@ fn primaryExpression(self: *Self) Error!Node.Index {
     try self.emitDiagnostic(
         token.startCoord(self.source),
         "Unexpected '{s}'",
-        .{token.toByteSlice(self.source)},
+        .{if (token.tag == .eof) "end of input" else token.toByteSlice(self.source)},
     );
     return Error.UnexpectedToken;
 }

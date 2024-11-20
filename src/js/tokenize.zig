@@ -94,6 +94,11 @@ is_in_strict_mode: bool = false,
 
 config: parser.Config,
 
+/// Whether the current line only contains whitespaces and comments so far.
+/// This is needed because HTML close comments are only allowed in trivial lines.
+/// e.g: `;/* foo */ --> bar` is invalid, but `/* foo */ --> bar` is valid.
+is_trivial_line: bool = true,
+
 pub fn init(source: []const u8, config: parser.Config) Error!Self {
     if (!std.unicode.utf8ValidateSlice(source))
         return Error.InvalidUtf8;
@@ -106,6 +111,13 @@ pub fn init(source: []const u8, config: parser.Config) Error!Self {
 }
 
 pub fn next(self: *Self) Error!Token {
+    const token = try @call(.always_inline, consumeToken, .{self});
+    const is_trivia = (token.tag == .comment or token.tag == .whitespace);
+    self.is_trivial_line = self.is_trivial_line and is_trivia;
+    return token;
+}
+
+fn consumeToken(self: *Self) Error!Token {
     const byte = self.peekByte() orelse {
         return Token{
             .tag = Token.Tag.eof,
@@ -174,10 +186,8 @@ pub fn next(self: *Self) Error!Token {
 
         '-' => {
             if (self.config.source_type == .script) {
-                if (self.index == 0 or isNewline(self.source[self.index - 1])) {
-                    if (try self.singleLineHtmlCommentClose()) |tok|
-                        return tok;
-                }
+                if (try self.singleLineHtmlCommentClose()) |tok|
+                    return tok;
             }
 
             return self.punctuator();
@@ -287,7 +297,7 @@ fn comment(self: *Self) Error!?Token {
         // 2. Then, look for an HTML comment close "-->"
         const ws_len = matchWhiteSpaces(self.source[self.index..]);
         const remaining = self.source[self.index + ws_len ..];
-        if (std.mem.startsWith(u8, remaining, "-->")) {
+        if ((self.line > start_line or self.is_trivial_line) and std.mem.startsWith(u8, remaining, "-->")) {
             self.index += ws_len; // consume whitespaces
             self.index += 3; // consume "-->"
             try self.consumeSingleLineCommentChars();
@@ -358,9 +368,12 @@ fn singleLineHtmlCommentOpen(self: *Self) Error!?Token {
 /// https://tc39.es/ecma262/#prod-annexB-SingleLineHTMLCloseComment
 fn singleLineHtmlCommentClose(self: *Self) Error!?Token {
     std.debug.assert(self.source[self.index] == '-');
-    const start = self.index;
+    // "-->" is only allowed on a line if all preceding characters
+    // are whitespaces or part of a comment.
+    if (!self.is_trivial_line) return null;
 
     if (std.mem.startsWith(u8, self.source[self.index..], "-->")) {
+        const start = self.index;
         self.index += 3;
         try self.consumeSingleLineCommentChars();
         return .{
@@ -380,7 +393,8 @@ fn consumeSingleLineCommentChars(self: *Self) Error!void {
         const byte = self.source[self.index];
         if (std.ascii.isAscii(byte)) {
             if (isNewline(byte)) {
-                self.line += 1;
+                self.index += 1;
+                self.bumpLine();
                 break;
             }
             self.index += 1;
@@ -388,7 +402,7 @@ fn consumeSingleLineCommentChars(self: *Self) Error!void {
             const code_point = utf8.codePointAt(self.source, self.index);
             self.index += code_point.len;
             if (isNewline(code_point.value)) {
-                self.line += 1;
+                self.bumpLine();
                 break;
             }
         }
@@ -401,22 +415,19 @@ fn consumeMultiLineCommentChars(self: *Self) Error!void {
     while (!self.eof()) {
         const byte = self.source[self.index];
         if (std.ascii.isAscii(byte)) {
-            if (byte == '*') {
-                if (self.index + 1 < self.source.len and self.source[self.index + 1] == '/') {
-                    self.index += 2;
-                    return;
-                }
+            self.index += 1;
+            if (byte == '*' and self.peekByte() == '/') {
+                self.index += 1; // eat the '/'
+                return;
             } else if (isNewline(byte)) {
                 // TODO: what if its a /r/n?
-                self.line += 1;
+                self.bumpLine();
             }
-
-            self.index += 1;
         } else {
             const code_point = utf8.codePointAt(self.source, self.index);
             self.index += code_point.len;
             if (isNewline(code_point.value)) {
-                self.line += 1;
+                self.bumpLine();
             }
         }
     }
@@ -584,38 +595,10 @@ fn consumeEscape(self: *Self) !void {
             const byte = self.source[self.index];
             if (std.ascii.isAscii(byte)) {
                 self.index += 1;
-                if (isNewline(byte)) self.line += 1;
+                if (isNewline(byte)) self.bumpLine();
             } else {
                 try self.consumeUtf8CodePoint();
             }
-        },
-    }
-}
-
-fn parseEscape(self: *Self, iter: *std.unicode.Utf8Iterator) !void {
-    const str = iter.bytes[iter.i..];
-    if (str.len < 2 or str[0] != '\\')
-        return Error.BadEscapeSequence;
-
-    switch (str[1]) {
-        'x' => {
-            // \xXX
-            if (str.len >= 4 and std.ascii.isHex(str[2]) and std.ascii.isHex(str[3])) {
-                iter.i += 4;
-            } else {
-                return Error.BadEscapeSequence;
-            }
-        },
-        'u' => {
-            // \uXXXX or \u{X} - \u{XXXXXX}
-            const parsed = utf8.parseUnicodeEscape(str) orelse
-                return Error.BadEscapeSequence;
-            iter.i += parsed.len;
-        },
-        else => {
-            iter.i += 1; // skip /
-            const cp = iter.nextCodepoint() orelse return Error.InvalidUtf8;
-            if (isNewline(cp)) self.line += 1;
         },
     }
 }
@@ -1344,6 +1327,13 @@ pub fn eof(self: *const Self) bool {
     return self.index >= self.source.len;
 }
 
+pub fn bumpLine(self: *Self) void {
+    self.line += 1;
+    // We haven't seen any non-whitespace and non-comment
+    // tokens on this new line yet.
+    self.is_trivial_line = true;
+}
+
 /// Return the next u8 from the source string
 fn nextByte(self: *Self) Error!u8 {
     const byte = self.peekByte() orelse
@@ -1390,7 +1380,7 @@ fn isMultiByteSpace(ch: u21) bool {
 /// re-construct the original source code.
 fn whiteSpaces(self: *Self) Error!Token {
     const start = self.index;
-    const line = self.line;
+    const start_line = self.line;
 
     while (!self.eof()) {
         const ch = self.source[self.index];
@@ -1400,7 +1390,7 @@ fn whiteSpaces(self: *Self) Error!Token {
             const cp = utf8.codePointAt(self.source, self.index);
             if (cp.value == '\u{2028}' or cp.value == '\u{2029}') {
                 self.index += cp.len;
-                self.line += 1;
+                self.bumpLine();
                 continue;
             }
 
@@ -1417,8 +1407,8 @@ fn whiteSpaces(self: *Self) Error!Token {
         if (isSimpleWhitespace(ch)) {
             self.index += 1;
         } else if (isNewline(ch)) {
-            self.line += 1;
             self.index += 1;
+            self.bumpLine();
 
             if (ch == '\r' and
                 self.index + 1 < self.source.len and
@@ -1437,19 +1427,7 @@ fn whiteSpaces(self: *Self) Error!Token {
 
     // HTML comment may appear after whitespaces on the same line:
     // `     --> hello, world!` (Yes, this is valid JS in script mode)
-    if (self.config.source_type == .script and
-        // avoid consuming HTML comment chars if it starts right after a newline.
-        // e.g: In this case:
-        // ```js
-        // x
-        //
-        // --> comment
-        // ```
-        // We should get:  `x`, `whitespace`, `comment`,
-        // and not: `x`, `comment`
-        self.index > 0 and
-        !isNewline(self.source[self.index - 1]))
-    {
+    if (self.config.source_type == .script and self.is_trivial_line) {
         const remaining = self.source[self.index..];
         if (std.mem.startsWith(u8, remaining, "-->")) {
             try self.consumeSingleLineCommentChars();
@@ -1457,7 +1435,7 @@ fn whiteSpaces(self: *Self) Error!Token {
                 .start = start,
                 .len = self.index - start,
                 .tag = .comment,
-                .line = self.line,
+                .line = start_line,
             };
         }
     }
@@ -1466,7 +1444,7 @@ fn whiteSpaces(self: *Self) Error!Token {
         .tag = .whitespace,
         .start = start,
         .len = self.index - start,
-        .line = line,
+        .line = start_line,
     };
 }
 
