@@ -4402,6 +4402,7 @@ fn completeArrowFuncOrGroupingExpr(self: *Self, lparen: *const Token) Error!Node
         );
     }
 
+    // Not at a '=>', so we are parsing a grouping expression.
     if (destructure_kind.must_destruct) {
         // TODO: improve the location of the diagnostic.
         // Which part exaclty forces a destructuring pattern?
@@ -4414,8 +4415,8 @@ fn completeArrowFuncOrGroupingExpr(self: *Self, lparen: *const Token) Error!Node
     }
 
     // (a, b) cannot be assigned to or destructured,
-    // but (a) = 1 is valid.
-    if (nodes.items.len > 1) {
+    // However, `(a) = 1` is valid, and `(a = 1) = 2` is not.
+    if (nodes.items.len > 1 or self.nodeTag(nodes.items[0]) == .assignment_expr) {
         self.current_destructure_kind.setNoAssignOrDestruct();
     }
 
