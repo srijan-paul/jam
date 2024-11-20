@@ -1425,21 +1425,6 @@ fn whiteSpaces(self: *Self) Error!Token {
         }
     }
 
-    // HTML comment may appear after whitespaces on the same line:
-    // `     --> hello, world!` (Yes, this is valid JS in script mode)
-    if (self.config.source_type == .script and self.is_trivial_line) {
-        const remaining = self.source[self.index..];
-        if (std.mem.startsWith(u8, remaining, "-->")) {
-            try self.consumeSingleLineCommentChars();
-            return .{
-                .start = start,
-                .len = self.index - start,
-                .tag = .comment,
-                .line = start_line,
-            };
-        }
-    }
-
     return Token{
         .tag = .whitespace,
         .start = start,
