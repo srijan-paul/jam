@@ -410,12 +410,30 @@ pub fn parse(self: *Self) !Node.Index {
     defer self.scratch.items.len = prev_scratch_len;
 
     if (self.source_type == .module) {
-        while (self.current_token.tag != .eof) {
+        while (!self.isAtToken(.eof)) {
             const stmt = try self.moduleItem();
             try self.scratch.append(stmt);
         }
     } else {
-        while (self.current_token.tag != .eof) {
+        // first, check for "use strict" directive
+        const has_use_strict =
+            blk: while (!self.isAtToken(.eof))
+        {
+            const stmt = try self.statementOrDeclaration();
+            try self.scratch.append(stmt);
+
+            switch (self.checkDirective(stmt)) {
+                .use_strict => break :blk true,
+                .directive => {},
+                .not_directive => break :blk false,
+            }
+        } else break :blk false;
+
+        const context = self.context;
+        defer self.context = context;
+        self.context.strict = has_use_strict;
+
+        while (!self.isAtToken(.eof)) {
             const stmt = try self.statementOrDeclaration();
             try self.scratch.append(stmt);
         }
@@ -3849,14 +3867,39 @@ fn primaryExpression(self: *Self) Error!Node.Index {
     return Error.UnexpectedToken;
 }
 
+/// Check whether a numeric literal is valid in strict mode.
+/// Decimals and legacy octal literals are not allowed (e.g: 01, 09, 023127, etc.).
+fn isValidStrictModeNumber(self: *const Self, token: *const Token) bool {
+    std.debug.assert(token.tag == .numeric_literal);
+    if (token.len == 1) return true; // Just a '0' is fine.
+    // 0x, 0b, 0o are Ok. 09 is not.
+    return !(self.source[token.start] == '0' and std.ascii.isDigit(self.source[token.start + 1]));
+}
+
 fn parseLiteral(self: *Self, token: *const Token) Error!Node.Index {
-    if (self.context.strict and token.tag == .legacy_octal_literal) {
-        try self.emitDiagnostic(
-            token.startCoord(self.source),
-            "Legacy octal literals are not allowed in strict mode",
-            .{},
-        );
-        return Error.UnexpectedToken;
+    if (self.context.strict) {
+        // Disallow 01, 08, etc. in strict mode.
+        switch (token.tag) {
+            .legacy_octal_literal => {
+                try self.emitDiagnostic(
+                    token.startCoord(self.source),
+                    "Legacy octal numbers are not allowed in strict mode",
+                    .{},
+                );
+                return Error.UnexpectedToken;
+            },
+            .numeric_literal => {
+                if (!self.isValidStrictModeNumber(token)) {
+                    try self.emitDiagnostic(
+                        token.startCoord(self.source),
+                        "Numbers with leading '0' are not allowed in strict mode",
+                        .{},
+                    );
+                    return Error.UnexpectedToken;
+                }
+            },
+            else => {},
+        }
     }
 
     self.current_destructure_kind.setNoAssignOrDestruct();
