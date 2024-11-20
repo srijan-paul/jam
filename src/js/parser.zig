@@ -1723,7 +1723,7 @@ fn whileStatement(self: *Self) Error!Node.Index {
     self.context.@"break" = true;
     self.context.@"continue" = true;
 
-    const body = try self.stmtNotLabeledFunction();
+    const body = try self.statement();
     const end_pos = self.nodeSpan(body).end;
 
     return self.addNode(
