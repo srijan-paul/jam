@@ -8,6 +8,21 @@ pub fn build(b: *std.Build) !void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
+    // dependencies
+    const Dep = struct {
+        name: []const u8,
+        module: *std.Build.Module,
+    };
+    var deps = std.ArrayList(Dep).init(allocator);
+    defer deps.deinit();
+
+    const unicode_id = b.dependency("unicode_id", .{});
+    const unicode_id_dep = Dep{
+        .name = "unicode-id",
+        .module = unicode_id.module("unicode-id"),
+    };
+    try deps.appendSlice(&.{unicode_id_dep});
+
     const util_module = b.addModule("util", .{
         .root_source_file = b.path("src/util/root.zig"),
         .target = target,
@@ -28,6 +43,47 @@ pub fn build(b: *std.Build) !void {
     });
     jam_js_module.addImport("util", util_module);
     jam_js_module.addImport("syntax", jam_syntax_module);
+
+    {
+        // wasm
+        const wasm_target = b.resolveTargetQuery(.{
+            .cpu_arch = .wasm32,
+            .os_tag = .freestanding,
+            .cpu_features_add = std.Target.wasm.featureSet(&.{
+                .atomics,
+                .bulk_memory,
+                // .extended_const, not supported by Safari
+                .multivalue,
+                .mutable_globals,
+                .nontrapping_fptoint,
+                .reference_types,
+                //.relaxed_simd, not supported by Firefox or Safari
+                .sign_ext,
+                // observed to cause Error occured during wast conversion :
+                // Unknown operator: 0xfd058 in Firefox 117
+                .simd128,
+                // .tail_call, not supported by Safari
+            }),
+        });
+
+        const js_wasm = b.addExecutable(.{
+            .name = "jam_js",
+            .root_source_file = b.path("src/js/lib_js_wasm.zig"),
+            .target = wasm_target,
+            .optimize = .ReleaseSmall,
+        });
+
+        js_wasm.entry = .disabled;
+        js_wasm.rdynamic = true;
+        js_wasm.root_module.addImport("util", util_module);
+        js_wasm.root_module.addImport("syntax", jam_syntax_module);
+        js_wasm.root_module.addImport(unicode_id_dep.name, unicode_id_dep.module);
+
+        b.installArtifact(js_wasm);
+        const js_wasm_file = b.addInstallFile(js_wasm.getEmittedBin(), js_wasm.out_filename);
+        b.getInstallStep().dependOn(&js_wasm_file.step);
+        // _ = b.step("wasm", "Build the wasm library").dependOn(&wasm_lib.step);
+    }
 
     const jam_css_module = b.addModule("jam-css", .{
         .root_source_file = b.path("src/css/root.zig"),
@@ -106,21 +162,6 @@ pub fn build(b: *std.Build) !void {
     const test_step = b.step("test", "Run unit tests");
     test_step.dependOn(&run_lib_unit_tests.step);
     test_step.dependOn(&run_util_unit_tests.step);
-
-    // dependencies
-    var deps = std.ArrayList(struct {
-        name: []const u8,
-        module: *std.Build.Module,
-    }).init(allocator);
-    defer deps.deinit();
-
-    const unicode_id = b.dependency("unicode_id", .{});
-    try deps.appendSlice(&.{
-        .{
-            .name = "unicode-id",
-            .module = unicode_id.module("unicode-id"),
-        },
-    });
 
     exe.root_module.addImport("js", jam_js_module);
     exe.root_module.addImport("css", jam_css_module);

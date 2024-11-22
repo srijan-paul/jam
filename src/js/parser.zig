@@ -427,7 +427,7 @@ pub fn deinit(self: *Self) void {
     self.scope.deinit();
 }
 
-pub fn parse(self: *Self) !Node.Index {
+pub fn parse(self: *Self) Error!Node.Index {
     const prev_scratch_len = self.scratch.items.len;
     defer self.scratch.items.len = prev_scratch_len;
 
@@ -1767,7 +1767,6 @@ fn doWhileStatement(self: *Self) Error!Node.Index {
     self.context.@"break" = true;
     self.context.@"continue" = true;
 
-    // TODO: Do not allow declarations or labeled functions here.
     const body = try self.statementOrDeclaration();
     _ = try self.expect(.kw_while);
     _ = try self.expect(.@"(");
@@ -4097,7 +4096,7 @@ fn asyncExpression(self: *Self, async_token: *const Token) Error!Node.Index {
     }
 
     if (self.current_token.tag == .@"(") {
-        const argsOrArrow = try self.callArgsOrAsyncArrowFunc(
+        const argsOrArrowParams = try self.callArgsOrAsyncArrowParams(
             ast.FunctionFlags{
                 .is_async = true,
                 .is_arrow = true,
@@ -4105,18 +4104,20 @@ fn asyncExpression(self: *Self, async_token: *const Token) Error!Node.Index {
         );
 
         const node_slice = self.nodes.slice();
-        const parsed: *ast.NodeData = &node_slice.items(.data)[@intFromEnum(argsOrArrow)];
+        const parsed: *ast.NodeData = &node_slice.items(.data)[@intFromEnum(argsOrArrowParams)];
         switch (parsed.*) {
-            .function_expr => return argsOrArrow,
+            .parameters => return argsOrArrowParams,
             .arguments => {
                 const async_identifier = try self.identifier(async_token.*);
                 return self.addNode(
-                    .{ .call_expr = .{ .callee = async_identifier, .arguments = argsOrArrow } },
+                    .{ .call_expr = .{ .callee = async_identifier, .arguments = argsOrArrowParams } },
                     async_token.start,
-                    node_slice.items(.end)[@intFromEnum(argsOrArrow)],
+                    node_slice.items(.end)[@intFromEnum(argsOrArrowParams)],
                 );
             },
-            else => unreachable,
+            else => {
+                std.debug.panic("Unexpected node type: {s}\n", .{@tagName(parsed.*)});
+            },
         }
     }
 
@@ -4141,7 +4142,7 @@ fn asyncExpression(self: *Self, async_token: *const Token) Error!Node.Index {
     return self.identifier(async_token.*);
 }
 
-fn callArgsOrAsyncArrowFunc(
+fn callArgsOrAsyncArrowParams(
     self: *Self,
     _: ast.FunctionFlags,
 ) Error!Node.Index {

@@ -5,8 +5,8 @@ pub const Tokenizer = @import("tokenize.zig");
 pub const pretty = @import("./pretty.zig");
 
 test {
-    const std = @import("std");
     const util = @import("util");
+    const std = @import("std");
 
     std.testing.refAllDeclsRecursive(@This());
     std.testing.refAllDeclsRecursive(util);

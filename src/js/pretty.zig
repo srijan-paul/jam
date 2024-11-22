@@ -67,14 +67,13 @@ fn escapeUtf8(allocator: std.mem.Allocator, str: []const u8) ![]const u8 {
     return buf.toOwnedSlice();
 }
 
-/// Convert an AST Node to a struct that can be JSON serialized
-/// in a human readable form.
-fn toPretty(
+fn toPrettyPayload(
     self: *const Parser,
     al: std.mem.Allocator,
     node_id: Node.Index,
-) !ast.NodePretty {
+) error{OutOfMemory}!ast.NodeDataPretty {
     const node = self.nodes.get(@intFromEnum(node_id));
+
     switch (node.data) {
         .binary_expr,
         .assignment_expr,
@@ -87,15 +86,15 @@ fn toPretty(
             const operator = token.toByteSlice(self.source);
 
             return if (checkActiveField(node.data, "binary_expr"))
-                .{
+                ast.NodeDataPretty{
                     .binary_expression = .{ .lhs = lhs, .rhs = rhs, .operator = operator },
                 }
             else if (checkActiveField(node.data, "assignment_expr"))
-                .{
+                ast.NodeDataPretty{
                     .assignment_expression = .{ .lhs = lhs, .rhs = rhs, .operator = operator },
                 }
             else
-                .{
+                ast.NodeDataPretty{
                     .assignment_pattern = .{ .lhs = lhs, .rhs = rhs, .operator = operator },
                 };
         },
@@ -339,7 +338,7 @@ fn toPretty(
                 try copy(al, try toPretty(self, al, v))
             else
                 null;
-            return ast.NodePretty{
+            return ast.NodeDataPretty{
                 .yield_expression = .{
                     .value = value,
                     .is_delegated = pl.is_delegated,
@@ -396,7 +395,7 @@ fn toPretty(
             .object_pattern = try prettySubRange(al, self, properties),
         },
 
-        .object_property => |prop| return ast.NodePretty{
+        .object_property => |prop| return ast.NodeDataPretty{
             .object_property = .{
                 .key = try copy(al, try toPretty(self, al, prop.key)),
                 .value = try copy(al, try toPretty(self, al, prop.value)),
@@ -430,7 +429,7 @@ fn toPretty(
             };
         },
 
-        .class_field => |field| return ast.NodePretty{
+        .class_field => |field| return ast.NodeDataPretty{
             .class_field = .{
                 .key = try copy(al, try toPretty(self, al, field.key)),
                 .value = try copy(al, try toPretty(self, al, field.value)),
@@ -442,7 +441,7 @@ fn toPretty(
             },
         },
 
-        .class_method => |field| return ast.NodePretty{
+        .class_method => |field| return ast.NodeDataPretty{
             .class_method = .{
                 .key = try copy(al, try toPretty(self, al, field.key)),
                 .value = try copy(al, try toPretty(self, al, field.value)),
@@ -555,8 +554,8 @@ fn toPretty(
                 .body = body,
             };
             if (std.meta.activeTag(node.data) == .for_of_statement)
-                return ast.NodePretty{ .for_of_statement = pl };
-            return ast.NodePretty{ .for_in_statement = pl };
+                return ast.NodeDataPretty{ .for_of_statement = pl };
+            return ast.NodeDataPretty{ .for_in_statement = pl };
         },
 
         .expression_statement => |expr| {
@@ -674,7 +673,30 @@ fn toPretty(
     }
 }
 
-pub fn toJsonString(allocator: std.mem.Allocator, parser: *const Parser, node: ast.Node.Index) error{OutOfMemory}![]const u8 {
+/// Convert an AST Node to a struct that can be JSON serialized
+/// in a human readable form.
+fn toPretty(
+    self: *const Parser,
+    al: std.mem.Allocator,
+    node_id: Node.Index,
+) !ast.NodePretty {
+    const node = self.nodes.get(@intFromEnum(node_id));
+    const start = node.start;
+    const end = node.end;
+
+    const payload = try toPrettyPayload(self, al, node_id);
+    return ast.NodePretty{
+        .start = start,
+        .end = end,
+        .data = payload,
+    };
+}
+
+pub fn toJsonString(
+    allocator: std.mem.Allocator,
+    parser: *const Parser,
+    node: ast.Node.Index,
+) error{OutOfMemory}![]u8 {
     var arena = std.heap.ArenaAllocator.init(allocator);
     const al = arena.allocator();
     defer arena.deinit();

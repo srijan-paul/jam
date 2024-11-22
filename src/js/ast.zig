@@ -545,7 +545,7 @@ pub const PrettyForInOfStatement = struct {
 };
 
 /// Used for pretty printing and debugging.
-pub const NodePretty = union(enum) {
+pub const NodeDataPretty = union(enum) {
     const BinaryPayload_ = Pretty(BinaryPayload);
     const PropertyAccess_ = Pretty(PropertyAccess);
     const ComputedPropertyAccess_ = Pretty(ComputedPropertyAccess);
@@ -674,6 +674,12 @@ pub const NodePretty = union(enum) {
 
     // helpers
     parameters: Pretty(SubRange),
+};
+
+pub const NodePretty = struct {
+    data: NodeDataPretty,
+    start: u32,
+    end: u32,
 };
 
 pub const ExtraPretty = union(enum) {
