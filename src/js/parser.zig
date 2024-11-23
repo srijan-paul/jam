@@ -4410,21 +4410,22 @@ fn completeArrowFunction(self: *Self, params: Node.Index) Error!Node.Index {
     self.is_current_arrow_func_async = false;
 
     const body = blk: {
-        const body_start_token = self.current_token;
-        // If an arrow function body starts with a '{',
-        // we will attempt to parse it as a block statement, and not an object literal.
-        if (body_start_token.tag == .@"{") {
-            const context = self.context;
-            defer self.context = context;
-            self.context.@"return" = true;
-            break :blk try self.functionBody();
-        }
-
         const context = self.context;
+
         defer self.context = context;
+        const body_start_token = self.current_token;
 
         self.context.is_yield_reserved = false; // arrow functions cannot be generators.
         self.context.is_await_reserved = is_async;
+
+        // If an arrow function body starts with a '{',
+        // we will attempt to parse it as a block statement, and not an object literal.
+        if (body_start_token.tag == .@"{") {
+            self.context.@"return" = true;
+            try self.scope.enterScope(.function, self.context.strict);
+            defer self.scope.exitScope();
+            break :blk try self.functionBody();
+        }
 
         const assignment = try self.assignmentExpression();
         if (self.current_destructure_kind.must_destruct) {
@@ -5188,7 +5189,7 @@ fn parseFunctionBody(
     return self.addNode(node_data, start_pos, end_pos);
 }
 
-/// Parse a  list of statements surrounded by '{}'.
+/// Parse a list of statements surrounded by '{}'.
 /// Does not introduce a new scope.
 fn functionBody(self: *Self) Error!Node.Index {
     const lbrac = try self.expect(.@"{");
