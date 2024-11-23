@@ -1,80 +1,144 @@
 {
-  "program": [
-    {
-      "function": {
-        "parameters": {
-          "parameters": []
-        },
-        "body": {
-          "block_statement": [
-            {
-              "variable_declaration": {
-                "declarators": [
-                  {
-                    "variable_declarator": {
-                      "lhs": {
-                        "identifier": "await"
-                      },
-                      "init": {
-                        "literal": "123"
-                      }
-                    }
-                  }
-                ],
-                "kind": "let"
-              }
-            },
-            {
-              "return_statement": {
-                "identifier": "await"
-              }
-            }
-          ]
-        },
-        "info": {
+  "data": {
+    "program": [
+      {
+        "data": {
           "function": {
-            "name": "async",
-            "flags": {
-              "is_generator": false,
-              "is_async": false,
-              "is_arrow": false,
-              "_": 0
-            }
-          }
-        }
-      }
-    },
-    {
-      "function": {
-        "parameters": {
-          "parameters": []
-        },
-        "body": {
-          "block_statement": [
-            {
-              "return_statement": {
-                "await_expression": {
-                  "operand": {
-                    "literal": "123"
+            "parameters": {
+              "data": {
+                "parameters": []
+              },
+              "start": 14,
+              "end": 16
+            },
+            "body": {
+              "data": {
+                "block_statement": [
+                  {
+                    "data": {
+                      "variable_declaration": {
+                        "declarators": [
+                          {
+                            "data": {
+                              "variable_declarator": {
+                                "lhs": {
+                                  "data": {
+                                    "identifier": "await"
+                                  },
+                                  "start": 24,
+                                  "end": 29
+                                },
+                                "init": {
+                                  "data": {
+                                    "literal": "123"
+                                  },
+                                  "start": 32,
+                                  "end": 35
+                                }
+                              }
+                            },
+                            "start": 24,
+                            "end": 35
+                          }
+                        ],
+                        "kind": "let"
+                      }
+                    },
+                    "start": 20,
+                    "end": 36
                   },
-                  "operator": "await"
+                  {
+                    "data": {
+                      "return_statement": {
+                        "data": {
+                          "identifier": "await"
+                        },
+                        "start": 45,
+                        "end": 50
+                      }
+                    },
+                    "start": 38,
+                    "end": 51
+                  }
+                ]
+              },
+              "start": 17,
+              "end": 53
+            },
+            "info": {
+              "function": {
+                "name": "async",
+                "flags": {
+                  "is_generator": false,
+                  "is_async": false,
+                  "is_arrow": false,
+                  "_": 0
                 }
               }
             }
-          ]
+          }
         },
-        "info": {
+        "start": 0,
+        "end": 53
+      },
+      {
+        "data": {
           "function": {
-            "name": "async",
-            "flags": {
-              "is_generator": false,
-              "is_async": true,
-              "is_arrow": false,
-              "_": 0
+            "parameters": {
+              "data": {
+                "parameters": []
+              },
+              "start": 75,
+              "end": 77
+            },
+            "body": {
+              "data": {
+                "block_statement": [
+                  {
+                    "data": {
+                      "return_statement": {
+                        "data": {
+                          "await_expression": {
+                            "operand": {
+                              "data": {
+                                "literal": "123"
+                              },
+                              "start": 94,
+                              "end": 97
+                            },
+                            "operator": "await"
+                          }
+                        },
+                        "start": 88,
+                        "end": 97
+                      }
+                    },
+                    "start": 81,
+                    "end": 98
+                  }
+                ]
+              },
+              "start": 78,
+              "end": 100
+            },
+            "info": {
+              "function": {
+                "name": "async",
+                "flags": {
+                  "is_generator": false,
+                  "is_async": true,
+                  "is_arrow": false,
+                  "_": 0
+                }
+              }
             }
           }
-        }
+        },
+        "start": 55,
+        "end": 100
       }
-    }
-  ]
+    ]
+  },
+  "start": 0,
+  "end": 102
 }

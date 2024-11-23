@@ -1,118 +1,210 @@
 {
-  "program": [
-    {
-      "variable_declaration": {
-        "declarators": [
-          {
-            "variable_declarator": {
-              "lhs": {
-                "identifier": "f"
-              },
-              "init": {
-                "function": {
-                  "parameters": {
-                    "parameters": []
-                  },
-                  "body": {
-                    "literal": "1"
-                  },
-                  "info": {
-                    "function": {
-                      "flags": {
-                        "is_generator": false,
-                        "is_async": false,
-                        "is_arrow": true,
-                        "_": 0
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        ],
-        "kind": "const"
-      }
-    },
-    {
-      "variable_declaration": {
-        "declarators": [
-          {
-            "variable_declarator": {
-              "lhs": {
-                "identifier": "f2"
-              },
-              "init": {
-                "function": {
-                  "parameters": {
-                    "parameters": []
-                  },
-                  "body": {
-                    "block_statement": [
-                      {
-                        "variable_declaration": {
-                          "declarators": [
-                            {
-                              "variable_declarator": {
-                                "lhs": {
-                                  "identifier": "f3"
-                                },
-                                "init": {
-                                  "function": {
-                                    "parameters": {
-                                      "parameters": []
-                                    },
-                                    "body": {
-                                      "block_statement": [
-                                        {
-                                          "return_statement": {
-                                            "literal": "456"
-                                          }
-                                        }
-                                      ]
-                                    },
-                                    "info": {
-                                      "function": {
-                                        "flags": {
-                                          "is_generator": false,
-                                          "is_async": false,
-                                          "is_arrow": true,
-                                          "_": 0
-                                        }
-                                      }
-                                    }
-                                  }
-                                }
+  "data": {
+    "program": [
+      {
+        "data": {
+          "variable_declaration": {
+            "declarators": [
+              {
+                "data": {
+                  "variable_declarator": {
+                    "lhs": {
+                      "data": {
+                        "identifier": "f"
+                      },
+                      "start": 6,
+                      "end": 7
+                    },
+                    "init": {
+                      "data": {
+                        "function": {
+                          "parameters": {
+                            "data": {
+                              "parameters": []
+                            },
+                            "start": 10,
+                            "end": 12
+                          },
+                          "body": {
+                            "data": {
+                              "literal": "1"
+                            },
+                            "start": 16,
+                            "end": 17
+                          },
+                          "info": {
+                            "function": {
+                              "flags": {
+                                "is_generator": false,
+                                "is_async": false,
+                                "is_arrow": true,
+                                "_": 0
                               }
                             }
-                          ],
-                          "kind": "const"
+                          }
                         }
                       },
-                      {
-                        "return_statement": {
-                          "identifier": "f3"
-                        }
-                      }
-                    ]
-                  },
-                  "info": {
-                    "function": {
-                      "flags": {
-                        "is_generator": false,
-                        "is_async": false,
-                        "is_arrow": true,
-                        "_": 0
-                      }
+                      "start": 10,
+                      "end": 17
                     }
                   }
-                }
+                },
+                "start": 6,
+                "end": 17
               }
-            }
+            ],
+            "kind": "const"
           }
-        ],
-        "kind": "const"
+        },
+        "start": 0,
+        "end": 17
+      },
+      {
+        "data": {
+          "variable_declaration": {
+            "declarators": [
+              {
+                "data": {
+                  "variable_declarator": {
+                    "lhs": {
+                      "data": {
+                        "identifier": "f2"
+                      },
+                      "start": 24,
+                      "end": 26
+                    },
+                    "init": {
+                      "data": {
+                        "function": {
+                          "parameters": {
+                            "data": {
+                              "parameters": []
+                            },
+                            "start": 29,
+                            "end": 31
+                          },
+                          "body": {
+                            "data": {
+                              "block_statement": [
+                                {
+                                  "data": {
+                                    "variable_declaration": {
+                                      "declarators": [
+                                        {
+                                          "data": {
+                                            "variable_declarator": {
+                                              "lhs": {
+                                                "data": {
+                                                  "identifier": "f3"
+                                                },
+                                                "start": 44,
+                                                "end": 46
+                                              },
+                                              "init": {
+                                                "data": {
+                                                  "function": {
+                                                    "parameters": {
+                                                      "data": {
+                                                        "parameters": []
+                                                      },
+                                                      "start": 49,
+                                                      "end": 51
+                                                    },
+                                                    "body": {
+                                                      "data": {
+                                                        "block_statement": [
+                                                          {
+                                                            "data": {
+                                                              "return_statement": {
+                                                                "data": {
+                                                                  "literal": "456"
+                                                                },
+                                                                "start": 66,
+                                                                "end": 69
+                                                              }
+                                                            },
+                                                            "start": 59,
+                                                            "end": 70
+                                                          }
+                                                        ]
+                                                      },
+                                                      "start": 55,
+                                                      "end": 73
+                                                    },
+                                                    "info": {
+                                                      "function": {
+                                                        "flags": {
+                                                          "is_generator": false,
+                                                          "is_async": false,
+                                                          "is_arrow": true,
+                                                          "_": 0
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                },
+                                                "start": 49,
+                                                "end": 73
+                                              }
+                                            }
+                                          },
+                                          "start": 44,
+                                          "end": 73
+                                        }
+                                      ],
+                                      "kind": "const"
+                                    }
+                                  },
+                                  "start": 38,
+                                  "end": 73
+                                },
+                                {
+                                  "data": {
+                                    "return_statement": {
+                                      "data": {
+                                        "identifier": "f3"
+                                      },
+                                      "start": 82,
+                                      "end": 84
+                                    }
+                                  },
+                                  "start": 75,
+                                  "end": 85
+                                }
+                              ]
+                            },
+                            "start": 35,
+                            "end": 87
+                          },
+                          "info": {
+                            "function": {
+                              "flags": {
+                                "is_generator": false,
+                                "is_async": false,
+                                "is_arrow": true,
+                                "_": 0
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "start": 29,
+                      "end": 87
+                    }
+                  }
+                },
+                "start": 24,
+                "end": 87
+              }
+            ],
+            "kind": "const"
+          }
+        },
+        "start": 18,
+        "end": 87
       }
-    }
-  ]
+    ]
+  },
+  "start": 0,
+  "end": 88
 }

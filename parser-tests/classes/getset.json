@@ -1,245 +1,417 @@
 {
-  "program": [
-    {
-      "class_declaration": {
-        "name": "A",
-        "body": [
-          {
-            "class_method": {
-              "key": {
-                "identifier": "x"
-              },
-              "value": {
-                "function": {
-                  "parameters": {
-                    "parameters": []
-                  },
-                  "body": {
-                    "block_statement": [
-                      {
-                        "return_statement": {
-                          "literal": "1"
-                        }
-                      }
-                    ]
-                  },
-                  "info": {
-                    "function": {
-                      "flags": {
-                        "is_generator": false,
-                        "is_async": false,
-                        "is_arrow": false,
-                        "_": 0
-                      }
-                    }
-                  }
-                }
-              },
-              "flags": {
-                "is_static": false,
-                "is_computed": false,
-                "kind": "get",
-                "_": false
-              }
-            }
-          },
-          {
-            "class_method": {
-              "key": {
-                "literal": "'x'"
-              },
-              "value": {
-                "function": {
-                  "parameters": {
-                    "parameters": []
-                  },
-                  "body": {
-                    "block_statement": [
-                      {
-                        "return_statement": {
-                          "literal": "1"
-                        }
-                      }
-                    ]
-                  },
-                  "info": {
-                    "function": {
-                      "flags": {
-                        "is_generator": false,
-                        "is_async": false,
-                        "is_arrow": false,
-                        "_": 0
-                      }
-                    }
-                  }
-                }
-              },
-              "flags": {
-                "is_static": false,
-                "is_computed": false,
-                "kind": "get",
-                "_": false
-              }
-            }
-          },
-          {
-            "class_method": {
-              "key": {
-                "literal": "'y'"
-              },
-              "value": {
-                "function": {
-                  "parameters": {
-                    "parameters": [
-                      {
+  "data": {
+    "program": [
+      {
+        "data": {
+          "class_declaration": {
+            "name": "A",
+            "body": [
+              {
+                "data": {
+                  "class_method": {
+                    "key": {
+                      "data": {
                         "identifier": "x"
-                      }
-                    ]
-                  },
-                  "body": {
-                    "block_statement": []
-                  },
-                  "info": {
-                    "function": {
-                      "flags": {
-                        "is_generator": false,
-                        "is_async": false,
-                        "is_arrow": false,
-                        "_": 0
-                      }
-                    }
-                  }
-                }
-              },
-              "flags": {
-                "is_static": false,
-                "is_computed": false,
-                "kind": "set",
-                "_": false
-              }
-            }
-          },
-          {
-            "class_method": {
-              "key": {
-                "identifier": "x"
-              },
-              "value": {
-                "function": {
-                  "parameters": {
-                    "parameters": [
-                      {
-                        "identifier": "x"
-                      }
-                    ]
-                  },
-                  "body": {
-                    "block_statement": [
-                      {
-                        "return_statement": {
-                          "literal": "1"
+                      },
+                      "start": 27,
+                      "end": 28
+                    },
+                    "value": {
+                      "data": {
+                        "function": {
+                          "parameters": {
+                            "data": {
+                              "parameters": []
+                            },
+                            "start": 28,
+                            "end": 30
+                          },
+                          "body": {
+                            "data": {
+                              "block_statement": [
+                                {
+                                  "data": {
+                                    "return_statement": {
+                                      "data": {
+                                        "literal": "1"
+                                      },
+                                      "start": 40,
+                                      "end": 41
+                                    }
+                                  },
+                                  "start": 33,
+                                  "end": 41
+                                }
+                              ]
+                            },
+                            "start": 31,
+                            "end": 43
+                          },
+                          "info": {
+                            "function": {
+                              "flags": {
+                                "is_generator": false,
+                                "is_async": false,
+                                "is_arrow": false,
+                                "_": 0
+                              }
+                            }
+                          }
                         }
-                      }
-                    ]
-                  },
-                  "info": {
-                    "function": {
-                      "flags": {
-                        "is_generator": false,
-                        "is_async": false,
-                        "is_arrow": false,
-                        "_": 0
-                      }
+                      },
+                      "start": 28,
+                      "end": 43
+                    },
+                    "flags": {
+                      "is_static": false,
+                      "is_computed": false,
+                      "kind": "get",
+                      "_": false
                     }
                   }
-                }
+                },
+                "start": 27,
+                "end": 43
               },
-              "flags": {
-                "is_static": false,
-                "is_computed": false,
-                "kind": "set",
-                "_": false
-              }
-            }
-          },
-          {
-            "class_method": {
-              "key": {
-                "identifier": "static"
-              },
-              "value": {
-                "function": {
-                  "parameters": {
-                    "parameters": []
-                  },
-                  "body": {
-                    "block_statement": [
-                      {
-                        "return_statement": {
-                          "literal": "1"
+              {
+                "data": {
+                  "class_method": {
+                    "key": {
+                      "data": {
+                        "literal": "'x'"
+                      },
+                      "start": 50,
+                      "end": 53
+                    },
+                    "value": {
+                      "data": {
+                        "function": {
+                          "parameters": {
+                            "data": {
+                              "parameters": []
+                            },
+                            "start": 54,
+                            "end": 56
+                          },
+                          "body": {
+                            "data": {
+                              "block_statement": [
+                                {
+                                  "data": {
+                                    "return_statement": {
+                                      "data": {
+                                        "literal": "1"
+                                      },
+                                      "start": 66,
+                                      "end": 67
+                                    }
+                                  },
+                                  "start": 59,
+                                  "end": 67
+                                }
+                              ]
+                            },
+                            "start": 57,
+                            "end": 69
+                          },
+                          "info": {
+                            "function": {
+                              "flags": {
+                                "is_generator": false,
+                                "is_async": false,
+                                "is_arrow": false,
+                                "_": 0
+                              }
+                            }
+                          }
                         }
-                      }
-                    ]
-                  },
-                  "info": {
-                    "function": {
-                      "flags": {
-                        "is_generator": false,
-                        "is_async": false,
-                        "is_arrow": false,
-                        "_": 0
-                      }
+                      },
+                      "start": 54,
+                      "end": 69
+                    },
+                    "flags": {
+                      "is_static": false,
+                      "is_computed": false,
+                      "kind": "get",
+                      "_": false
                     }
                   }
-                }
+                },
+                "start": 50,
+                "end": 69
               },
-              "flags": {
-                "is_static": true,
-                "is_computed": false,
-                "kind": "get",
-                "_": false
-              }
-            }
-          },
-          {
-            "class_method": {
-              "key": {
-                "identifier": "static"
+              {
+                "data": {
+                  "class_method": {
+                    "key": {
+                      "data": {
+                        "literal": "'y'"
+                      },
+                      "start": 76,
+                      "end": 79
+                    },
+                    "value": {
+                      "data": {
+                        "function": {
+                          "parameters": {
+                            "data": {
+                              "parameters": [
+                                {
+                                  "data": {
+                                    "identifier": "x"
+                                  },
+                                  "start": 81,
+                                  "end": 82
+                                }
+                              ]
+                            },
+                            "start": 80,
+                            "end": 83
+                          },
+                          "body": {
+                            "data": {
+                              "block_statement": []
+                            },
+                            "start": 84,
+                            "end": 86
+                          },
+                          "info": {
+                            "function": {
+                              "flags": {
+                                "is_generator": false,
+                                "is_async": false,
+                                "is_arrow": false,
+                                "_": 0
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "start": 80,
+                      "end": 86
+                    },
+                    "flags": {
+                      "is_static": false,
+                      "is_computed": false,
+                      "kind": "set",
+                      "_": false
+                    }
+                  }
+                },
+                "start": 76,
+                "end": 86
               },
-              "value": {
-                "function": {
-                  "parameters": {
-                    "parameters": [
-                      {
+              {
+                "data": {
+                  "class_method": {
+                    "key": {
+                      "data": {
                         "identifier": "x"
-                      }
-                    ]
-                  },
-                  "body": {
-                    "block_statement": []
-                  },
-                  "info": {
-                    "function": {
-                      "flags": {
-                        "is_generator": false,
-                        "is_async": false,
-                        "is_arrow": false,
-                        "_": 0
-                      }
+                      },
+                      "start": 92,
+                      "end": 93
+                    },
+                    "value": {
+                      "data": {
+                        "function": {
+                          "parameters": {
+                            "data": {
+                              "parameters": [
+                                {
+                                  "data": {
+                                    "identifier": "x"
+                                  },
+                                  "start": 94,
+                                  "end": 95
+                                }
+                              ]
+                            },
+                            "start": 93,
+                            "end": 96
+                          },
+                          "body": {
+                            "data": {
+                              "block_statement": [
+                                {
+                                  "data": {
+                                    "return_statement": {
+                                      "data": {
+                                        "literal": "1"
+                                      },
+                                      "start": 106,
+                                      "end": 107
+                                    }
+                                  },
+                                  "start": 99,
+                                  "end": 107
+                                }
+                              ]
+                            },
+                            "start": 97,
+                            "end": 109
+                          },
+                          "info": {
+                            "function": {
+                              "flags": {
+                                "is_generator": false,
+                                "is_async": false,
+                                "is_arrow": false,
+                                "_": 0
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "start": 93,
+                      "end": 109
+                    },
+                    "flags": {
+                      "is_static": false,
+                      "is_computed": false,
+                      "kind": "set",
+                      "_": false
                     }
                   }
-                }
+                },
+                "start": 92,
+                "end": 109
               },
-              "flags": {
-                "is_static": true,
-                "is_computed": false,
-                "kind": "set",
-                "_": false
+              {
+                "data": {
+                  "class_method": {
+                    "key": {
+                      "data": {
+                        "identifier": "static"
+                      },
+                      "start": 122,
+                      "end": 128
+                    },
+                    "value": {
+                      "data": {
+                        "function": {
+                          "parameters": {
+                            "data": {
+                              "parameters": []
+                            },
+                            "start": 128,
+                            "end": 130
+                          },
+                          "body": {
+                            "data": {
+                              "block_statement": [
+                                {
+                                  "data": {
+                                    "return_statement": {
+                                      "data": {
+                                        "literal": "1"
+                                      },
+                                      "start": 140,
+                                      "end": 141
+                                    }
+                                  },
+                                  "start": 133,
+                                  "end": 141
+                                }
+                              ]
+                            },
+                            "start": 131,
+                            "end": 143
+                          },
+                          "info": {
+                            "function": {
+                              "flags": {
+                                "is_generator": false,
+                                "is_async": false,
+                                "is_arrow": false,
+                                "_": 0
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "start": 128,
+                      "end": 143
+                    },
+                    "flags": {
+                      "is_static": true,
+                      "is_computed": false,
+                      "kind": "get",
+                      "_": false
+                    }
+                  }
+                },
+                "start": 122,
+                "end": 143
+              },
+              {
+                "data": {
+                  "class_method": {
+                    "key": {
+                      "data": {
+                        "identifier": "static"
+                      },
+                      "start": 156,
+                      "end": 162
+                    },
+                    "value": {
+                      "data": {
+                        "function": {
+                          "parameters": {
+                            "data": {
+                              "parameters": [
+                                {
+                                  "data": {
+                                    "identifier": "x"
+                                  },
+                                  "start": 163,
+                                  "end": 164
+                                }
+                              ]
+                            },
+                            "start": 162,
+                            "end": 165
+                          },
+                          "body": {
+                            "data": {
+                              "block_statement": []
+                            },
+                            "start": 166,
+                            "end": 169
+                          },
+                          "info": {
+                            "function": {
+                              "flags": {
+                                "is_generator": false,
+                                "is_async": false,
+                                "is_arrow": false,
+                                "_": 0
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "start": 162,
+                      "end": 169
+                    },
+                    "flags": {
+                      "is_static": true,
+                      "is_computed": false,
+                      "kind": "set",
+                      "_": false
+                    }
+                  }
+                },
+                "start": 156,
+                "end": 169
               }
-            }
+            ]
           }
-        ]
+        },
+        "start": 0,
+        "end": 171
       }
-    }
-  ]
+    ]
+  },
+  "start": 0,
+  "end": 173
 }

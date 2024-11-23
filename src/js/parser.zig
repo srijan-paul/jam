@@ -5536,6 +5536,7 @@ fn makeLeftAssoc(
 const t = std.testing;
 
 const pretty = @import("./pretty.zig");
+
 fn runTestOnFile(tests_dir: std.fs.Dir, file_path: []const u8) !void {
     const source_code = try tests_dir.readFileAlloc(
         t.allocator,
@@ -5586,10 +5587,8 @@ fn runTestOnFile(tests_dir: std.fs.Dir, file_path: []const u8) !void {
     };
     defer t.allocator.free(expected_ast_json);
 
-    const expected_ast_json_trimmed = std.mem.trim(u8, expected_ast_json, "\n\t ");
-
     // 3. ensure the AST JSON is equal to the expected JSON
-    try t.expectEqualStrings(expected_ast_json_trimmed, ast_json);
+    try t.expectEqualStrings(expected_ast_json, ast_json);
 }
 
 test StringHelper {

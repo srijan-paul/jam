@@ -1,170 +1,326 @@
 {
-  "program": [
-    {
-      "expression_statement": {
-        "function": {
-          "parameters": {
-            "parameters": [
-              {
-                "identifier": "a"
-              },
-              {
-                "identifier": "b"
-              },
-              {
-                "rest_element": {
-                  "identifier": "c"
-                }
-              }
-            ]
-          },
-          "body": {
-            "binary_expression": {
-              "lhs": {
-                "binary_expression": {
-                  "lhs": {
-                    "identifier": "a"
-                  },
-                  "rhs": {
-                    "identifier": "b"
-                  },
-                  "operator": "+"
-                }
-              },
-              "rhs": {
-                "identifier": "c"
-              },
-              "operator": "+"
-            }
-          },
-          "info": {
-            "function": {
-              "flags": {
-                "is_generator": false,
-                "is_async": false,
-                "is_arrow": true,
-                "_": 0
-              }
-            }
-          }
-        }
-      }
-    },
-    {
-      "expression_statement": {
-        "function": {
-          "parameters": {
-            "parameters": [
-              {
-                "identifier": "a"
-              },
-              {
-                "identifier": "b"
-              },
-              {
-                "identifier": "c"
-              }
-            ]
-          },
-          "body": {
-            "binary_expression": {
-              "lhs": {
-                "binary_expression": {
-                  "lhs": {
-                    "identifier": "a"
-                  },
-                  "rhs": {
-                    "identifier": "b"
-                  },
-                  "operator": "+"
-                }
-              },
-              "rhs": {
-                "identifier": "c"
-              },
-              "operator": "+"
-            }
-          },
-          "info": {
-            "function": {
-              "flags": {
-                "is_generator": false,
-                "is_async": false,
-                "is_arrow": true,
-                "_": 0
-              }
-            }
-          }
-        }
-      }
-    },
-    {
-      "expression_statement": {
-        "function": {
-          "parameters": {
-            "parameters": [
-              {
-                "rest_element": {
-                  "array_pattern": []
-                }
-              }
-            ]
-          },
-          "body": {
-            "array": []
-          },
-          "info": {
-            "function": {
-              "flags": {
-                "is_generator": false,
-                "is_async": false,
-                "is_arrow": true,
-                "_": 0
-              }
-            }
-          }
-        }
-      }
-    },
-    {
-      "expression_statement": {
-        "function": {
-          "parameters": {
-            "parameters": [
-              {
-                "rest_element": {
-                  "object_pattern": [
-                    {
-                      "assignment_pattern": {
-                        "lhs": {
-                          "identifier": "x"
+  "data": {
+    "program": [
+      {
+        "data": {
+          "expression_statement": {
+            "data": {
+              "function": {
+                "parameters": {
+                  "data": {
+                    "parameters": [
+                      {
+                        "data": {
+                          "identifier": "a"
                         },
-                        "rhs": {
-                          "literal": "1"
+                        "start": 1,
+                        "end": 2
+                      },
+                      {
+                        "data": {
+                          "identifier": "b"
                         },
-                        "operator": "="
+                        "start": 4,
+                        "end": 5
+                      },
+                      {
+                        "data": {
+                          "rest_element": {
+                            "data": {
+                              "identifier": "c"
+                            },
+                            "start": 10,
+                            "end": 11
+                          }
+                        },
+                        "start": 7,
+                        "end": 11
                       }
+                    ]
+                  },
+                  "start": 0,
+                  "end": 12
+                },
+                "body": {
+                  "data": {
+                    "binary_expression": {
+                      "lhs": {
+                        "data": {
+                          "binary_expression": {
+                            "lhs": {
+                              "data": {
+                                "identifier": "a"
+                              },
+                              "start": 16,
+                              "end": 17
+                            },
+                            "rhs": {
+                              "data": {
+                                "identifier": "b"
+                              },
+                              "start": 20,
+                              "end": 21
+                            },
+                            "operator": "+"
+                          }
+                        },
+                        "start": 16,
+                        "end": 21
+                      },
+                      "rhs": {
+                        "data": {
+                          "identifier": "c"
+                        },
+                        "start": 24,
+                        "end": 25
+                      },
+                      "operator": "+"
                     }
-                  ]
+                  },
+                  "start": 16,
+                  "end": 25
+                },
+                "info": {
+                  "function": {
+                    "flags": {
+                      "is_generator": false,
+                      "is_async": false,
+                      "is_arrow": true,
+                      "_": 0
+                    }
+                  }
                 }
               }
-            ]
-          },
-          "body": {
-            "block_statement": []
-          },
-          "info": {
-            "function": {
-              "flags": {
-                "is_generator": false,
-                "is_async": false,
-                "is_arrow": true,
-                "_": 0
-              }
-            }
+            },
+            "start": 0,
+            "end": 25
           }
-        }
+        },
+        "start": 0,
+        "end": 26
+      },
+      {
+        "data": {
+          "expression_statement": {
+            "data": {
+              "function": {
+                "parameters": {
+                  "data": {
+                    "parameters": [
+                      {
+                        "data": {
+                          "identifier": "a"
+                        },
+                        "start": 28,
+                        "end": 29
+                      },
+                      {
+                        "data": {
+                          "identifier": "b"
+                        },
+                        "start": 31,
+                        "end": 32
+                      },
+                      {
+                        "data": {
+                          "identifier": "c"
+                        },
+                        "start": 34,
+                        "end": 35
+                      }
+                    ]
+                  },
+                  "start": 27,
+                  "end": 37
+                },
+                "body": {
+                  "data": {
+                    "binary_expression": {
+                      "lhs": {
+                        "data": {
+                          "binary_expression": {
+                            "lhs": {
+                              "data": {
+                                "identifier": "a"
+                              },
+                              "start": 41,
+                              "end": 42
+                            },
+                            "rhs": {
+                              "data": {
+                                "identifier": "b"
+                              },
+                              "start": 45,
+                              "end": 46
+                            },
+                            "operator": "+"
+                          }
+                        },
+                        "start": 41,
+                        "end": 46
+                      },
+                      "rhs": {
+                        "data": {
+                          "identifier": "c"
+                        },
+                        "start": 49,
+                        "end": 50
+                      },
+                      "operator": "+"
+                    }
+                  },
+                  "start": 41,
+                  "end": 50
+                },
+                "info": {
+                  "function": {
+                    "flags": {
+                      "is_generator": false,
+                      "is_async": false,
+                      "is_arrow": true,
+                      "_": 0
+                    }
+                  }
+                }
+              }
+            },
+            "start": 27,
+            "end": 50
+          }
+        },
+        "start": 27,
+        "end": 51
+      },
+      {
+        "data": {
+          "expression_statement": {
+            "data": {
+              "function": {
+                "parameters": {
+                  "data": {
+                    "parameters": [
+                      {
+                        "data": {
+                          "rest_element": {
+                            "data": {
+                              "array_pattern": []
+                            },
+                            "start": 56,
+                            "end": 58
+                          }
+                        },
+                        "start": 53,
+                        "end": 58
+                      }
+                    ]
+                  },
+                  "start": 52,
+                  "end": 59
+                },
+                "body": {
+                  "data": {
+                    "array": []
+                  },
+                  "start": 63,
+                  "end": 65
+                },
+                "info": {
+                  "function": {
+                    "flags": {
+                      "is_generator": false,
+                      "is_async": false,
+                      "is_arrow": true,
+                      "_": 0
+                    }
+                  }
+                }
+              }
+            },
+            "start": 52,
+            "end": 65
+          }
+        },
+        "start": 52,
+        "end": 66
+      },
+      {
+        "data": {
+          "expression_statement": {
+            "data": {
+              "function": {
+                "parameters": {
+                  "data": {
+                    "parameters": [
+                      {
+                        "data": {
+                          "rest_element": {
+                            "data": {
+                              "object_pattern": [
+                                {
+                                  "data": {
+                                    "assignment_pattern": {
+                                      "lhs": {
+                                        "data": {
+                                          "identifier": "x"
+                                        },
+                                        "start": 72,
+                                        "end": 73
+                                      },
+                                      "rhs": {
+                                        "data": {
+                                          "literal": "1"
+                                        },
+                                        "start": 74,
+                                        "end": 75
+                                      },
+                                      "operator": "="
+                                    }
+                                  },
+                                  "start": 72,
+                                  "end": 75
+                                }
+                              ]
+                            },
+                            "start": 71,
+                            "end": 76
+                          }
+                        },
+                        "start": 68,
+                        "end": 76
+                      }
+                    ]
+                  },
+                  "start": 67,
+                  "end": 77
+                },
+                "body": {
+                  "data": {
+                    "block_statement": []
+                  },
+                  "start": 81,
+                  "end": 83
+                },
+                "info": {
+                  "function": {
+                    "flags": {
+                      "is_generator": false,
+                      "is_async": false,
+                      "is_arrow": true,
+                      "_": 0
+                    }
+                  }
+                }
+              }
+            },
+            "start": 67,
+            "end": 83
+          }
+        },
+        "start": 67,
+        "end": 84
       }
-    }
-  ]
+    ]
+  },
+  "start": 0,
+  "end": 112
 }

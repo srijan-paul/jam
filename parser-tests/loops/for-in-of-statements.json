@@ -1,341 +1,685 @@
 {
-  "program": [
-    {
-      "for_statement": {
-        "init": {
-          "variable_declaration": {
-            "declarators": [
-              {
-                "variable_declarator": {
-                  "lhs": {
-                    "identifier": "x"
-                  },
-                  "init": {
-                    "literal": "1"
-                  }
-                }
-              }
-            ],
-            "kind": "let"
-          }
-        },
-        "condition": {
-          "binary_expression": {
-            "lhs": {
-              "identifier": "x"
-            },
-            "rhs": {
-              "literal": "100"
-            },
-            "operator": "<"
-          }
-        },
-        "update": {
-          "post_unary_expression": {
-            "operand": {
-              "identifier": "x"
-            },
-            "operator": "++"
-          }
-        },
-        "body": {
-          "empty_statement": {}
-        }
-      }
-    },
-    {
-      "for_of_statement": {
-        "lhs": {
-          "identifier": "x"
-        },
-        "rhs": {
-          "array": [
-            {
-              "literal": "1"
-            },
-            {
-              "literal": "2"
-            },
-            {
-              "literal": "3"
-            }
-          ]
-        },
-        "body": {
-          "empty_statement": {}
-        }
-      }
-    },
-    {
-      "for_of_statement": {
-        "lhs": {
-          "variable_declaration": {
-            "declarators": [
-              {
-                "variable_declarator": {
-                  "lhs": {
-                    "identifier": "x"
-                  }
-                }
-              }
-            ],
-            "kind": "let"
-          }
-        },
-        "rhs": {
-          "array": [
-            {
-              "literal": "1"
-            },
-            {
-              "literal": "2"
-            },
-            {
-              "literal": "3"
-            }
-          ]
-        },
-        "body": {
-          "empty_statement": {}
-        }
-      }
-    },
-    {
-      "for_of_statement": {
-        "lhs": {
-          "variable_declaration": {
-            "declarators": [
-              {
-                "variable_declarator": {
-                  "lhs": {
-                    "array_pattern": [
-                      {
-                        "identifier": "a"
+  "data": {
+    "program": [
+      {
+        "data": {
+          "for_statement": {
+            "init": {
+              "data": {
+                "variable_declaration": {
+                  "declarators": [
+                    {
+                      "data": {
+                        "variable_declarator": {
+                          "lhs": {
+                            "data": {
+                              "identifier": "x"
+                            },
+                            "start": 9,
+                            "end": 10
+                          },
+                          "init": {
+                            "data": {
+                              "literal": "1"
+                            },
+                            "start": 13,
+                            "end": 14
+                          }
+                        }
                       },
-                      {
-                        "identifier": "b"
-                      },
-                      {
-                        "identifier": "c"
-                      }
-                    ]
-                  }
-                }
-              }
-            ],
-            "kind": "let"
-          }
-        },
-        "rhs": {
-          "array": [
-            {
-              "literal": "1"
-            },
-            {
-              "literal": "2"
-            },
-            {
-              "literal": "3"
-            }
-          ]
-        },
-        "body": {
-          "empty_statement": {}
-        }
-      }
-    },
-    {
-      "for_statement": {
-        "init": {
-          "binary_expression": {
-            "lhs": {
-              "literal": "1"
-            },
-            "rhs": {
-              "literal": "1"
-            },
-            "operator": "+"
-          }
-        },
-        "body": {
-          "empty_statement": {}
-        }
-      }
-    },
-    {
-      "for_statement": {
-        "init": {
-          "variable_declaration": {
-            "declarators": [
-              {
-                "variable_declarator": {
-                  "lhs": {
-                    "identifier": "x"
-                  }
+                      "start": 5,
+                      "end": 14
+                    }
+                  ],
+                  "kind": "let"
                 }
               },
-              {
-                "variable_declarator": {
-                  "lhs": {
-                    "identifier": "y"
-                  }
-                }
-              }
-            ],
-            "kind": "let"
-          }
-        },
-        "body": {
-          "empty_statement": {}
-        }
-      }
-    },
-    {
-      "for_statement": {
-        "init": {
-          "variable_declaration": {
-            "declarators": [
-              {
-                "variable_declarator": {
-                  "lhs": {
-                    "identifier": "x"
-                  }
-                }
-              }
-            ],
-            "kind": "let"
-          }
-        },
-        "body": {
-          "empty_statement": {}
-        }
-      }
-    },
-    {
-      "for_in_statement": {
-        "lhs": {
-          "object_pattern": [
-            {
-              "object_property": {
-                "key": {
-                  "identifier": "x"
-                },
-                "value": {
-                  "identifier": "x"
-                },
-                "flags": {
-                  "is_method": false,
-                  "is_shorthand": true,
-                  "is_computed": false,
-                  "kind": "init"
-                }
-              }
+              "start": 5,
+              "end": 14
             },
-            {
-              "object_property": {
-                "key": {
-                  "identifier": "y"
-                },
-                "value": {
-                  "identifier": "y"
-                },
-                "flags": {
-                  "is_method": false,
-                  "is_shorthand": true,
-                  "is_computed": false,
-                  "kind": "init"
+            "condition": {
+              "data": {
+                "binary_expression": {
+                  "lhs": {
+                    "data": {
+                      "identifier": "x"
+                    },
+                    "start": 16,
+                    "end": 17
+                  },
+                  "rhs": {
+                    "data": {
+                      "literal": "100"
+                    },
+                    "start": 20,
+                    "end": 23
+                  },
+                  "operator": "<"
                 }
-              }
+              },
+              "start": 16,
+              "end": 23
             },
-            {
-              "object_property": {
-                "key": {
-                  "identifier": "z"
-                },
-                "value": {
-                  "identifier": "z"
-                },
-                "flags": {
-                  "is_method": false,
-                  "is_shorthand": true,
-                  "is_computed": false,
-                  "kind": "init"
+            "update": {
+              "data": {
+                "post_unary_expression": {
+                  "operand": {
+                    "data": {
+                      "identifier": "x"
+                    },
+                    "start": 25,
+                    "end": 26
+                  },
+                  "operator": "++"
                 }
-              }
+              },
+              "start": 26,
+              "end": 26
+            },
+            "body": {
+              "data": {
+                "empty_statement": {}
+              },
+              "start": 29,
+              "end": 30
             }
-          ]
+          }
         },
-        "rhs": {
-          "object_literal": []
-        },
-        "body": {
-          "empty_statement": {}
-        }
-      }
-    },
-    {
-      "for_in_statement": {
-        "lhs": {
-          "identifier": "x"
-        },
-        "rhs": {
-          "binary_expression": {
+        "start": 0,
+        "end": 30
+      },
+      {
+        "data": {
+          "for_of_statement": {
             "lhs": {
-              "identifier": "z"
+              "data": {
+                "identifier": "x"
+              },
+              "start": 36,
+              "end": 37
             },
             "rhs": {
-              "identifier": "y"
+              "data": {
+                "array": [
+                  {
+                    "data": {
+                      "literal": "1"
+                    },
+                    "start": 42,
+                    "end": 43
+                  },
+                  {
+                    "data": {
+                      "literal": "2"
+                    },
+                    "start": 45,
+                    "end": 46
+                  },
+                  {
+                    "data": {
+                      "literal": "3"
+                    },
+                    "start": 48,
+                    "end": 49
+                  }
+                ]
+              },
+              "start": 41,
+              "end": 50
             },
-            "operator": "in"
+            "body": {
+              "data": {
+                "empty_statement": {}
+              },
+              "start": 51,
+              "end": 52
+            }
           }
         },
-        "body": {
-          "empty_statement": {}
-        }
-      }
-    },
-    {
-      "for_in_statement": {
-        "lhs": {
-          "object_pattern": [
-            {
-              "object_property": {
-                "key": {
-                  "identifier": "x"
-                },
-                "value": {
-                  "member_expression": {
-                    "object": {
+        "start": 31,
+        "end": 52
+      },
+      {
+        "data": {
+          "for_of_statement": {
+            "lhs": {
+              "data": {
+                "variable_declaration": {
+                  "declarators": [
+                    {
+                      "data": {
+                        "variable_declarator": {
+                          "lhs": {
+                            "data": {
+                              "identifier": "x"
+                            },
+                            "start": 62,
+                            "end": 63
+                          }
+                        }
+                      },
+                      "start": 62,
+                      "end": 63
+                    }
+                  ],
+                  "kind": "let"
+                }
+              },
+              "start": 58,
+              "end": 63
+            },
+            "rhs": {
+              "data": {
+                "array": [
+                  {
+                    "data": {
+                      "literal": "1"
+                    },
+                    "start": 68,
+                    "end": 69
+                  },
+                  {
+                    "data": {
+                      "literal": "2"
+                    },
+                    "start": 71,
+                    "end": 72
+                  },
+                  {
+                    "data": {
+                      "literal": "3"
+                    },
+                    "start": 74,
+                    "end": 75
+                  }
+                ]
+              },
+              "start": 67,
+              "end": 76
+            },
+            "body": {
+              "data": {
+                "empty_statement": {}
+              },
+              "start": 77,
+              "end": 78
+            }
+          }
+        },
+        "start": 53,
+        "end": 78
+      },
+      {
+        "data": {
+          "for_of_statement": {
+            "lhs": {
+              "data": {
+                "variable_declaration": {
+                  "declarators": [
+                    {
+                      "data": {
+                        "variable_declarator": {
+                          "lhs": {
+                            "data": {
+                              "array_pattern": [
+                                {
+                                  "data": {
+                                    "identifier": "a"
+                                  },
+                                  "start": 89,
+                                  "end": 90
+                                },
+                                {
+                                  "data": {
+                                    "identifier": "b"
+                                  },
+                                  "start": 92,
+                                  "end": 93
+                                },
+                                {
+                                  "data": {
+                                    "identifier": "c"
+                                  },
+                                  "start": 95,
+                                  "end": 96
+                                }
+                              ]
+                            },
+                            "start": 88,
+                            "end": 97
+                          }
+                        }
+                      },
+                      "start": 88,
+                      "end": 97
+                    }
+                  ],
+                  "kind": "let"
+                }
+              },
+              "start": 84,
+              "end": 97
+            },
+            "rhs": {
+              "data": {
+                "array": [
+                  {
+                    "data": {
+                      "literal": "1"
+                    },
+                    "start": 102,
+                    "end": 103
+                  },
+                  {
+                    "data": {
+                      "literal": "2"
+                    },
+                    "start": 105,
+                    "end": 106
+                  },
+                  {
+                    "data": {
+                      "literal": "3"
+                    },
+                    "start": 108,
+                    "end": 109
+                  }
+                ]
+              },
+              "start": 101,
+              "end": 110
+            },
+            "body": {
+              "data": {
+                "empty_statement": {}
+              },
+              "start": 111,
+              "end": 112
+            }
+          }
+        },
+        "start": 79,
+        "end": 112
+      },
+      {
+        "data": {
+          "for_statement": {
+            "init": {
+              "data": {
+                "binary_expression": {
+                  "lhs": {
+                    "data": {
+                      "literal": "1"
+                    },
+                    "start": 118,
+                    "end": 119
+                  },
+                  "rhs": {
+                    "data": {
+                      "literal": "1"
+                    },
+                    "start": 122,
+                    "end": 123
+                  },
+                  "operator": "+"
+                }
+              },
+              "start": 118,
+              "end": 123
+            },
+            "body": {
+              "data": {
+                "empty_statement": {}
+              },
+              "start": 127,
+              "end": 128
+            }
+          }
+        },
+        "start": 113,
+        "end": 128
+      },
+      {
+        "data": {
+          "for_statement": {
+            "init": {
+              "data": {
+                "variable_declaration": {
+                  "declarators": [
+                    {
+                      "data": {
+                        "variable_declarator": {
+                          "lhs": {
+                            "data": {
+                              "identifier": "x"
+                            },
+                            "start": 138,
+                            "end": 139
+                          }
+                        }
+                      },
+                      "start": 134,
+                      "end": 139
+                    },
+                    {
+                      "data": {
+                        "variable_declarator": {
+                          "lhs": {
+                            "data": {
+                              "identifier": "y"
+                            },
+                            "start": 141,
+                            "end": 142
+                          }
+                        }
+                      },
+                      "start": 141,
+                      "end": 142
+                    }
+                  ],
+                  "kind": "let"
+                }
+              },
+              "start": 134,
+              "end": 142
+            },
+            "body": {
+              "data": {
+                "empty_statement": {}
+              },
+              "start": 146,
+              "end": 147
+            }
+          }
+        },
+        "start": 129,
+        "end": 147
+      },
+      {
+        "data": {
+          "for_statement": {
+            "init": {
+              "data": {
+                "variable_declaration": {
+                  "declarators": [
+                    {
+                      "data": {
+                        "variable_declarator": {
+                          "lhs": {
+                            "data": {
+                              "identifier": "x"
+                            },
+                            "start": 157,
+                            "end": 158
+                          }
+                        }
+                      },
+                      "start": 153,
+                      "end": 158
+                    }
+                  ],
+                  "kind": "let"
+                }
+              },
+              "start": 153,
+              "end": 158
+            },
+            "body": {
+              "data": {
+                "empty_statement": {}
+              },
+              "start": 162,
+              "end": 163
+            }
+          }
+        },
+        "start": 148,
+        "end": 163
+      },
+      {
+        "data": {
+          "for_in_statement": {
+            "lhs": {
+              "data": {
+                "object_pattern": [
+                  {
+                    "data": {
+                      "object_property": {
+                        "key": {
+                          "data": {
+                            "identifier": "x"
+                          },
+                          "start": 171,
+                          "end": 172
+                        },
+                        "value": {
+                          "data": {
+                            "identifier": "x"
+                          },
+                          "start": 171,
+                          "end": 172
+                        },
+                        "flags": {
+                          "is_method": false,
+                          "is_shorthand": true,
+                          "is_computed": false,
+                          "kind": "init"
+                        }
+                      }
+                    },
+                    "start": 171,
+                    "end": 172
+                  },
+                  {
+                    "data": {
+                      "object_property": {
+                        "key": {
+                          "data": {
+                            "identifier": "y"
+                          },
+                          "start": 174,
+                          "end": 175
+                        },
+                        "value": {
+                          "data": {
+                            "identifier": "y"
+                          },
+                          "start": 174,
+                          "end": 175
+                        },
+                        "flags": {
+                          "is_method": false,
+                          "is_shorthand": true,
+                          "is_computed": false,
+                          "kind": "init"
+                        }
+                      }
+                    },
+                    "start": 174,
+                    "end": 175
+                  },
+                  {
+                    "data": {
+                      "object_property": {
+                        "key": {
+                          "data": {
+                            "identifier": "z"
+                          },
+                          "start": 177,
+                          "end": 178
+                        },
+                        "value": {
+                          "data": {
+                            "identifier": "z"
+                          },
+                          "start": 177,
+                          "end": 178
+                        },
+                        "flags": {
+                          "is_method": false,
+                          "is_shorthand": true,
+                          "is_computed": false,
+                          "kind": "init"
+                        }
+                      }
+                    },
+                    "start": 177,
+                    "end": 178
+                  }
+                ]
+              },
+              "start": 169,
+              "end": 180
+            },
+            "rhs": {
+              "data": {
+                "object_literal": []
+              },
+              "start": 184,
+              "end": 186
+            },
+            "body": {
+              "data": {
+                "empty_statement": {}
+              },
+              "start": 187,
+              "end": 188
+            }
+          }
+        },
+        "start": 164,
+        "end": 188
+      },
+      {
+        "data": {
+          "for_in_statement": {
+            "lhs": {
+              "data": {
+                "identifier": "x"
+              },
+              "start": 194,
+              "end": 195
+            },
+            "rhs": {
+              "data": {
+                "binary_expression": {
+                  "lhs": {
+                    "data": {
+                      "identifier": "z"
+                    },
+                    "start": 199,
+                    "end": 200
+                  },
+                  "rhs": {
+                    "data": {
                       "identifier": "y"
                     },
-                    "property": "z"
-                  }
-                },
-                "flags": {
-                  "is_method": false,
-                  "is_shorthand": false,
-                  "is_computed": false,
-                  "kind": "init"
+                    "start": 204,
+                    "end": 205
+                  },
+                  "operator": "in"
                 }
-              }
+              },
+              "start": 199,
+              "end": 205
+            },
+            "body": {
+              "data": {
+                "empty_statement": {}
+              },
+              "start": 206,
+              "end": 207
             }
-          ]
-        },
-        "rhs": {
-          "binary_expression": {
-            "lhs": {
-              "identifier": "z"
-            },
-            "rhs": {
-              "identifier": "y"
-            },
-            "operator": "in"
           }
         },
-        "body": {
-          "empty_statement": {}
-        }
+        "start": 189,
+        "end": 207
+      },
+      {
+        "data": {
+          "for_in_statement": {
+            "lhs": {
+              "data": {
+                "object_pattern": [
+                  {
+                    "data": {
+                      "object_property": {
+                        "key": {
+                          "data": {
+                            "identifier": "x"
+                          },
+                          "start": 214,
+                          "end": 215
+                        },
+                        "value": {
+                          "data": {
+                            "member_expression": {
+                              "object": {
+                                "data": {
+                                  "identifier": "y"
+                                },
+                                "start": 216,
+                                "end": 217
+                              },
+                              "property": "z"
+                            }
+                          },
+                          "start": 216,
+                          "end": 219
+                        },
+                        "flags": {
+                          "is_method": false,
+                          "is_shorthand": false,
+                          "is_computed": false,
+                          "kind": "init"
+                        }
+                      }
+                    },
+                    "start": 214,
+                    "end": 219
+                  }
+                ]
+              },
+              "start": 213,
+              "end": 220
+            },
+            "rhs": {
+              "data": {
+                "binary_expression": {
+                  "lhs": {
+                    "data": {
+                      "identifier": "z"
+                    },
+                    "start": 224,
+                    "end": 225
+                  },
+                  "rhs": {
+                    "data": {
+                      "identifier": "y"
+                    },
+                    "start": 229,
+                    "end": 230
+                  },
+                  "operator": "in"
+                }
+              },
+              "start": 224,
+              "end": 230
+            },
+            "body": {
+              "data": {
+                "empty_statement": {}
+              },
+              "start": 231,
+              "end": 232
+            }
+          }
+        },
+        "start": 208,
+        "end": 232
       }
-    }
-  ]
+    ]
+  },
+  "start": 0,
+  "end": 235
 }

@@ -1,86 +1,150 @@
 {
-  "program": [
-    {
-      "function": {
-        "parameters": {
-          "parameters": []
-        },
-        "body": {
-          "block_statement": [
-            {
-              "return_statement": {
-                "literal": "123"
-              }
-            }
-          ]
-        },
-        "info": {
+  "data": {
+    "program": [
+      {
+        "data": {
           "function": {
-            "name": "f1",
-            "flags": {
-              "is_generator": false,
-              "is_async": false,
-              "is_arrow": false,
-              "_": 0
-            }
-          }
-        }
-      }
-    },
-    {
-      "function": {
-        "parameters": {
-          "parameters": []
-        },
-        "body": {
-          "block_statement": [
-            {
-              "return_statement": null
+            "parameters": {
+              "data": {
+                "parameters": []
+              },
+              "start": 11,
+              "end": 13
             },
-            {
-              "expression_statement": {
-                "literal": "123"
+            "body": {
+              "data": {
+                "block_statement": [
+                  {
+                    "data": {
+                      "return_statement": {
+                        "data": {
+                          "literal": "123"
+                        },
+                        "start": 24,
+                        "end": 27
+                      }
+                    },
+                    "start": 17,
+                    "end": 28
+                  }
+                ]
+              },
+              "start": 14,
+              "end": 30
+            },
+            "info": {
+              "function": {
+                "name": "f1",
+                "flags": {
+                  "is_generator": false,
+                  "is_async": false,
+                  "is_arrow": false,
+                  "_": 0
+                }
               }
             }
-          ]
+          }
         },
-        "info": {
+        "start": 0,
+        "end": 30
+      },
+      {
+        "data": {
           "function": {
-            "name": "f2",
-            "flags": {
-              "is_generator": false,
-              "is_async": false,
-              "is_arrow": false,
-              "_": 0
+            "parameters": {
+              "data": {
+                "parameters": []
+              },
+              "start": 43,
+              "end": 45
+            },
+            "body": {
+              "data": {
+                "block_statement": [
+                  {
+                    "data": {
+                      "return_statement": null
+                    },
+                    "start": 49,
+                    "end": 55
+                  },
+                  {
+                    "data": {
+                      "expression_statement": {
+                        "data": {
+                          "literal": "123"
+                        },
+                        "start": 60,
+                        "end": 63
+                      }
+                    },
+                    "start": 60,
+                    "end": 63
+                  }
+                ]
+              },
+              "start": 46,
+              "end": 65
+            },
+            "info": {
+              "function": {
+                "name": "f2",
+                "flags": {
+                  "is_generator": false,
+                  "is_async": false,
+                  "is_arrow": false,
+                  "_": 0
+                }
+              }
             }
           }
-        }
-      }
-    },
-    {
-      "function": {
-        "parameters": {
-          "parameters": []
         },
-        "body": {
-          "block_statement": [
-            {
-              "return_statement": null
-            }
-          ]
-        },
-        "info": {
+        "start": 32,
+        "end": 65
+      },
+      {
+        "data": {
           "function": {
-            "name": "f3",
-            "flags": {
-              "is_generator": false,
-              "is_async": false,
-              "is_arrow": false,
-              "_": 0
+            "parameters": {
+              "data": {
+                "parameters": []
+              },
+              "start": 78,
+              "end": 80
+            },
+            "body": {
+              "data": {
+                "block_statement": [
+                  {
+                    "data": {
+                      "return_statement": null
+                    },
+                    "start": 84,
+                    "end": 90
+                  }
+                ]
+              },
+              "start": 81,
+              "end": 91
+            },
+            "info": {
+              "function": {
+                "name": "f3",
+                "flags": {
+                  "is_generator": false,
+                  "is_async": false,
+                  "is_arrow": false,
+                  "_": 0
+                }
+              }
             }
           }
-        }
+        },
+        "start": 67,
+        "end": 91
       }
-    }
-  ]
+    ]
+  },
+  "start": 0,
+  "end": 92
 }

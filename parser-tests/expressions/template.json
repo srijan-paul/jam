@@ -1,93 +1,205 @@
 {
-  "program": [
-    {
-      "expression_statement": {
-        "template_literal": [
-          {
-            "template_element": "``"
-          }
-        ]
-      }
-    },
-    {
-      "expression_statement": {
-        "template_literal": [
-          {
-            "template_element": "`12`"
-          }
-        ]
-      }
-    },
-    {
-      "expression_statement": {
-        "template_literal": [
-          {
-            "template_element": "`\\x61`"
-          }
-        ]
-      }
-    },
-    {
-      "expression_statement": {
-        "template_literal": [
-          {
-            "template_element": "`\"abc\"'xyz'`"
-          }
-        ]
-      }
-    },
-    {
-      "expression_statement": {
-        "template_literal": [
-          {
-            "template_element": "`abc${"
-          },
-          {
-            "object_literal": [
-              {
-                "object_property": {
-                  "key": {
-                    "identifier": "x"
+  "data": {
+    "program": [
+      {
+        "data": {
+          "expression_statement": {
+            "data": {
+              "template_literal": [
+                {
+                  "data": {
+                    "template_element": "``"
                   },
-                  "value": {
+                  "start": 0,
+                  "end": 2
+                }
+              ]
+            },
+            "start": 0,
+            "end": 2
+          }
+        },
+        "start": 0,
+        "end": 3
+      },
+      {
+        "data": {
+          "expression_statement": {
+            "data": {
+              "template_literal": [
+                {
+                  "data": {
+                    "template_element": "`12`"
+                  },
+                  "start": 4,
+                  "end": 8
+                }
+              ]
+            },
+            "start": 4,
+            "end": 8
+          }
+        },
+        "start": 4,
+        "end": 9
+      },
+      {
+        "data": {
+          "expression_statement": {
+            "data": {
+              "template_literal": [
+                {
+                  "data": {
+                    "template_element": "`\\x61`"
+                  },
+                  "start": 10,
+                  "end": 16
+                }
+              ]
+            },
+            "start": 10,
+            "end": 16
+          }
+        },
+        "start": 10,
+        "end": 17
+      },
+      {
+        "data": {
+          "expression_statement": {
+            "data": {
+              "template_literal": [
+                {
+                  "data": {
+                    "template_element": "`\"abc\"'xyz'`"
+                  },
+                  "start": 18,
+                  "end": 30
+                }
+              ]
+            },
+            "start": 18,
+            "end": 30
+          }
+        },
+        "start": 18,
+        "end": 31
+      },
+      {
+        "data": {
+          "expression_statement": {
+            "data": {
+              "template_literal": [
+                {
+                  "data": {
+                    "template_element": "`abc${"
+                  },
+                  "start": 32,
+                  "end": 38
+                },
+                {
+                  "data": {
+                    "object_literal": [
+                      {
+                        "data": {
+                          "object_property": {
+                            "key": {
+                              "data": {
+                                "identifier": "x"
+                              },
+                              "start": 39,
+                              "end": 40
+                            },
+                            "value": {
+                              "data": {
+                                "literal": "1"
+                              },
+                              "start": 41,
+                              "end": 42
+                            },
+                            "flags": {
+                              "is_method": false,
+                              "is_shorthand": false,
+                              "is_computed": false,
+                              "kind": "init"
+                            }
+                          }
+                        },
+                        "start": 39,
+                        "end": 42
+                      }
+                    ]
+                  },
+                  "start": 38,
+                  "end": 43
+                },
+                {
+                  "data": {
+                    "template_element": "}abc`"
+                  },
+                  "start": 43,
+                  "end": 48
+                }
+              ]
+            },
+            "start": 32,
+            "end": 48
+          }
+        },
+        "start": 32,
+        "end": 49
+      },
+      {
+        "data": {
+          "expression_statement": {
+            "data": {
+              "template_literal": [
+                {
+                  "data": {
+                    "template_element": "`hello ${"
+                  },
+                  "start": 50,
+                  "end": 59
+                },
+                {
+                  "data": {
+                    "identifier": "world"
+                  },
+                  "start": 59,
+                  "end": 64
+                },
+                {
+                  "data": {
+                    "template_element": "}. ${"
+                  },
+                  "start": 64,
+                  "end": 69
+                },
+                {
+                  "data": {
                     "literal": "1"
                   },
-                  "flags": {
-                    "is_method": false,
-                    "is_shorthand": false,
-                    "is_computed": false,
-                    "kind": "init"
-                  }
+                  "start": 69,
+                  "end": 70
+                },
+                {
+                  "data": {
+                    "template_element": "} foo $`"
+                  },
+                  "start": 70,
+                  "end": 78
                 }
-              }
-            ]
-          },
-          {
-            "template_element": "}abc`"
+              ]
+            },
+            "start": 50,
+            "end": 78
           }
-        ]
+        },
+        "start": 50,
+        "end": 79
       }
-    },
-    {
-      "expression_statement": {
-        "template_literal": [
-          {
-            "template_element": "`hello ${"
-          },
-          {
-            "identifier": "world"
-          },
-          {
-            "template_element": "}. ${"
-          },
-          {
-            "literal": "1"
-          },
-          {
-            "template_element": "} foo $`"
-          }
-        ]
-      }
-    }
-  ]
+    ]
+  },
+  "start": 0,
+  "end": 80
 }
