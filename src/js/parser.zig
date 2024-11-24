@@ -169,14 +169,14 @@ fn relationalExpr(self: *Self) Error!Node.Index {
 
             self.current_destructure_kind.setNoAssignOrDestruct();
 
-            const op_token = try self.next();
+            _, const op_token_id = try self.next();
             const rhs = try shiftExpr(self);
             const start_pos = self.nodes.items(.start)[@intFromEnum(node)];
             const end_pos = self.nodes.items(.end)[@intFromEnum(rhs)];
             const binary_pl: ast.BinaryPayload = .{
                 .lhs = node,
                 .rhs = rhs,
-                .operator = try self.addToken(op_token),
+                .operator = op_token_id,
             };
 
             node = try self.addNode(.{ .binary_expr = binary_pl }, start_pos, end_pos);
@@ -224,7 +224,10 @@ diagnostics: std.ArrayList(Diagnostic),
 scratch: std.ArrayList(Node.Index),
 /// The token that we're currently at.
 /// Calling `next()` or `peek()` will return this token.
-current_token: Token,
+current: struct {
+    token: Token,
+    id: Token.Index,
+},
 /// Line number of the token that was consumed previously.
 /// When being accessed, this property can be thought of as the starting line
 /// of the first token in the expression/statement that was last parsed.
@@ -370,8 +373,8 @@ pub fn init(
 
     var self = Self{
         .tokenizer = try Tokenizer.init(source, config),
-        // initialized below in the call to `self.next()`
-        .current_token = undefined,
+        // initialized below in the call to `self.startTokenizer()`
+        .current = undefined,
 
         .allocator = allocator,
         .source = source,
@@ -410,7 +413,7 @@ pub fn init(
     std.debug.assert(i == Node.Index.empty);
 
     // this call will initialize `current_token`.
-    _ = try self.next();
+    try self.startTokenizer();
     return self;
 }
 
@@ -471,7 +474,7 @@ pub fn parse(self: *Self) Error!Node.Index {
 }
 
 pub fn moduleItem(self: *Self) Error!Node.Index {
-    return switch (self.current_token.tag) {
+    return switch (self.current.token.tag) {
         .kw_import => self.importDeclaration(),
         .kw_export => self.exportDeclaration(),
         else => self.statementOrDeclaration(),
@@ -484,7 +487,7 @@ pub fn moduleItem(self: *Self) Error!Node.Index {
 // ----------------------------------------------------------------------------
 
 pub fn importDeclaration(self: *Self) Error!Node.Index {
-    const import_kw = try self.next();
+    const import_kw = try self.nextToken();
     std.debug.assert(import_kw.tag == .kw_import);
 
     // import "foo";
@@ -503,7 +506,7 @@ pub fn importDeclaration(self: *Self) Error!Node.Index {
     // This is to avoid parsing `import from "foo";` as a valid import statement.
     var has_imports = false;
 
-    const cur = self.current_token.tag;
+    const cur = self.current.token.tag;
     if (cur.isIdentifier() or self.isKeywordIdentifier(cur)) {
         has_imports = true;
         const default_specifier = try self.defaultImportSpecifier();
@@ -511,7 +514,7 @@ pub fn importDeclaration(self: *Self) Error!Node.Index {
 
         trailing_comma = self.isAtToken(.@",");
         if (trailing_comma) {
-            _ = try self.next();
+            _ = try self.nextToken();
         }
     }
 
@@ -521,7 +524,7 @@ pub fn importDeclaration(self: *Self) Error!Node.Index {
         const specifier = try self.starImportSpecifier();
         try self.scratch.append(specifier);
 
-        _ = try self.expect(.kw_from);
+        _ = try self.expectToken(.kw_from);
         return self.completeImportDeclaration(
             import_kw.start,
             self.scratch.items[prev_scratch_len..],
@@ -530,22 +533,22 @@ pub fn importDeclaration(self: *Self) Error!Node.Index {
 
     if (trailing_comma or self.isAtToken(.@"{")) {
         has_imports = true;
-        _ = try self.expect(.@"{");
+        _ = try self.expectToken(.@"{");
 
-        while (self.current_token.tag != .@"}") {
+        while (self.current.token.tag != .@"}") {
             const specifier = try self.importSpecifier();
             try self.scratch.append(specifier);
             const comma_or_rb = try self.expect2(.@",", .@"}");
             if (comma_or_rb.tag == .@"}")
                 break;
         } else {
-            _ = try self.next(); // eat '}'
+            _ = try self.nextToken(); // eat '}'
         }
     }
 
     if (!has_imports) {
         try self.emitDiagnosticOnToken(
-            self.current_token,
+            self.current.token,
             "Expected an import specifier, '*', or a default import",
             .{},
         );
@@ -553,15 +556,15 @@ pub fn importDeclaration(self: *Self) Error!Node.Index {
     }
 
     const specifiers = self.scratch.items[prev_scratch_len..];
-    _ = try self.expect(.kw_from);
+    _ = try self.expectToken(.kw_from);
     return self.completeImportDeclaration(import_kw.start, specifiers);
 }
 
 /// Assuming 'current_token' is '*', parse a import namespace specifier
 /// like `* as Identifier`
 fn starImportSpecifier(self: *Self) Error!Node.Index {
-    const star_token = try self.expect(.@"*");
-    _ = try self.expect(.kw_as);
+    const star_token = try self.expectToken(.@"*");
+    _ = try self.expectToken(.kw_as);
 
     const name_token = try self.expectIdentifier();
     const name = try self.identifier(name_token);
@@ -602,7 +605,7 @@ fn completeImportDeclaration(
 
 /// Parse the next identifier token as a default import specifier.
 fn defaultImportSpecifier(self: *Self) Error!Node.Index {
-    const name_token = try self.next();
+    const name_token = try self.nextToken();
     const name = try self.identifier(name_token);
     return self.addNode(
         .{
@@ -617,8 +620,8 @@ fn importSpecifier(self: *Self) Error!Node.Index {
     var name_token: Token = undefined; // assigned in the 'blk' block
     const name = blk: {
         if (self.isAtToken(.string_literal)) {
-            name_token = try self.next();
-            break :blk try self.stringLiteralFromToken(name_token);
+            name_token, const name_token_id = try self.next();
+            break :blk try self.stringLiteralFromToken(&name_token, name_token_id);
         }
 
         name_token = try self.expectIdOrKeyword();
@@ -626,7 +629,7 @@ fn importSpecifier(self: *Self) Error!Node.Index {
     };
 
     if (self.isAtToken(.kw_as) or !self.isIdentifier(name_token.tag)) {
-        _ = try self.expect(.kw_as); // eat 'as'
+        _ = try self.expectToken(.kw_as); // eat 'as'
         const alias_token = try self.expectIdentifier();
         const alias = try self.identifier(alias_token);
 
@@ -653,7 +656,7 @@ fn moduleExportName(self: *Self) Error!Node.Index {
     if (self.isAtToken(.string_literal))
         return self.stringLiteral();
 
-    const name_token = try self.next();
+    const name_token = try self.nextToken();
     if (!name_token.tag.isIdentifier() and
         name_token.tag != .kw_default and
         !self.isKeywordIdentifier(name_token.tag))
@@ -668,7 +671,7 @@ fn moduleExportName(self: *Self) Error!Node.Index {
 /// Parse an 'export' declaration:
 /// https://tc39.es/ecma262/#prod-ExportDeclaration
 fn exportDeclaration(self: *Self) Error!Node.Index {
-    const export_kw = try self.next();
+    const export_kw = try self.nextToken();
     std.debug.assert(export_kw.tag == .kw_export);
 
     if (self.isAtToken(.kw_default)) {
@@ -676,9 +679,9 @@ fn exportDeclaration(self: *Self) Error!Node.Index {
     }
 
     const maybe_decl = blk: {
-        switch (self.current_token.tag) {
+        switch (self.current.token.tag) {
             .kw_var, .kw_let, .kw_const => {
-                const var_kw = try self.next();
+                const var_kw = try self.nextToken();
                 break :blk try self.variableStatement(var_kw);
             },
             else => break :blk try self.declarationStatement(),
@@ -694,9 +697,9 @@ fn exportDeclaration(self: *Self) Error!Node.Index {
     }
 
     if (self.isAtToken(.@"{")) {
-        _ = try self.expect(.@"{");
+        _ = try self.expectToken(.@"{");
         const specifiers = try self.namedExportList();
-        const rbrace = try self.expect(.@"}");
+        const rbrace = try self.expectToken(.@"}");
         var end_pos = rbrace.start + rbrace.len;
 
         // A "from" after an export specifier list implies
@@ -705,8 +708,8 @@ fn exportDeclaration(self: *Self) Error!Node.Index {
         // export { x, y } from "foo";
         // ```
         if (self.isAtToken(.kw_from)) {
-            _ = try self.expect(.kw_from);
-            end_pos = self.current_token.start + self.current_token.len;
+            _ = try self.expectToken(.kw_from);
+            end_pos = self.current.token.start + self.current.token.len;
             const source = try self.stringLiteral();
 
             end_pos = try self.semiColon(end_pos);
@@ -733,7 +736,7 @@ fn exportDeclaration(self: *Self) Error!Node.Index {
     }
 
     try self.emitDiagnosticOnToken(
-        self.current_token,
+        self.current.token,
         "Expected an export declaration",
         .{},
     );
@@ -744,12 +747,12 @@ fn exportDeclaration(self: *Self) Error!Node.Index {
 /// Parse an export all statement, assuming the `export` token has been consumed already
 /// `export * as foo from "module"`
 fn starExportDeclaration(self: *Self, export_kw: Token) Error!Node.Index {
-    _ = try self.expect(.@"*");
+    _ = try self.expectToken(.@"*");
 
     const name = blk: {
         if (self.isAtToken(.kw_as)) {
-            _ = try self.next();
-            const name_token = try self.next();
+            _ = try self.nextToken();
+            const name_token = try self.nextToken();
             if (!(name_token.tag.isIdentifier() or self.isKeywordIdentifier(name_token.tag))) {
                 try self.emitBadTokenDiagnostic("an identifier", &name_token);
                 return Error.UnexpectedToken;
@@ -761,7 +764,7 @@ fn starExportDeclaration(self: *Self, export_kw: Token) Error!Node.Index {
         break :blk null;
     };
 
-    _ = try self.expect(.kw_from);
+    _ = try self.expectToken(.kw_from);
 
     const source = try self.stringLiteral();
     var end_pos = self.nodes.items(.end)[@intFromEnum(source)];
@@ -780,30 +783,30 @@ fn starExportDeclaration(self: *Self, export_kw: Token) Error!Node.Index {
 }
 
 fn defaultExport(self: *Self, export_kw: *const Token) Error!Node.Index {
-    const default_kw = try self.next();
+    const default_kw = try self.nextToken();
     std.debug.assert(default_kw.tag == .kw_default);
     var end_pos = default_kw.start + default_kw.len;
 
     const exported = blk: {
-        switch (self.current_token.tag) {
+        switch (self.current.token.tag) {
             .kw_class => {
-                const class_kw = try self.next();
+                const class_kw = try self.nextToken();
                 const class = try self.classExpression(class_kw);
                 end_pos = self.nodes.items(.end)[@intFromEnum(class)];
                 break :blk class;
             },
             .kw_function => {
-                const fn_token = try self.next();
+                const fn_token = try self.nextToken();
                 const func = try self.functionExpression(fn_token.start, .{});
                 end_pos = self.nodes.items(.end)[@intFromEnum(func)];
                 break :blk func;
             },
             .kw_async => {
-                const async_line = self.current_token.line;
+                const async_line = self.current.token.line;
                 const lookahead = try self.lookAhead();
                 if (lookahead.tag == .kw_function and lookahead.line == async_line) {
-                    const async_token = try self.next(); // eat 'async'
-                    _ = try self.next(); // eat 'function'
+                    const async_token = try self.nextToken(); // eat 'async'
+                    _ = try self.nextToken(); // eat 'function'
                     const func = try self.functionExpression(
                         async_token.start,
                         .{ .is_async = true },
@@ -841,11 +844,11 @@ pub fn namedExportList(self: *Self) Error!ast.SubRange {
     const prev_scratch_len = self.scratch.items.len;
     defer self.scratch.items.len = prev_scratch_len;
 
-    while (self.current_token.tag != .@"}") {
+    while (self.current.token.tag != .@"}") {
         const specifier = try self.exportSpecifier();
         try self.scratch.append(specifier);
         if (self.isAtToken(.@"}")) break;
-        _ = try self.expect(.@",");
+        _ = try self.expectToken(.@",");
     }
 
     const specifiers = self.scratch.items[prev_scratch_len..];
@@ -862,7 +865,7 @@ fn exportSpecifier(self: *Self) Error!Node.Index {
     const alias = blk: {
         if (!self.isAtToken(.kw_as)) break :blk null;
 
-        _ = try self.next(); // eat 'as'
+        _ = try self.nextToken(); // eat 'as'
         const alias_ = try self.moduleExportName();
         end_pos = self.nodes.items(.end)[@intFromEnum(alias_)];
         break :blk alias_;
@@ -887,7 +890,7 @@ fn statementOrDeclaration(self: *Self) Error!Node.Index {
 }
 
 fn statement(self: *Self) Error!Node.Index {
-    return switch (self.current_token.tag) {
+    return switch (self.current.token.tag) {
         .@"{" => self.blockStatement(),
         .@";" => self.emptyStatement(),
         .kw_if => self.ifStatement(),
@@ -899,19 +902,19 @@ fn statement(self: *Self) Error!Node.Index {
         .kw_break => self.breakStatement(),
         .kw_continue => self.continueStatement(),
         .kw_let => self.letStatement(),
-        .kw_var => self.variableStatement(try self.next()),
+        .kw_var => self.variableStatement(try self.nextToken()),
         .kw_try => self.tryStatement(),
         .kw_switch => self.switchStatement(),
         .kw_with => self.withStatement(),
         .kw_throw => self.throwStatement(),
         .kw_function, .kw_class => {
-            try self.emitBadTokenDiagnostic("statement", &self.current_token);
+            try self.emitBadTokenDiagnostic("statement", &self.current.token);
             return Error.UnexpectedToken;
         },
         .kw_async => {
             const lookahead = try self.lookAhead();
             if (lookahead.tag == .kw_function) {
-                try self.emitBadTokenDiagnostic("statement", &self.current_token);
+                try self.emitBadTokenDiagnostic("statement", &self.current.token);
                 return Error.UnexpectedToken;
             }
 
@@ -924,7 +927,7 @@ fn statement(self: *Self) Error!Node.Index {
 /// If the input starts with `Identifier :`, parse a labeled statement,
 /// otherwise parse an expression statement.
 fn labeledOrExpressionStatement(self: *Self) Error!Node.Index {
-    const cur = self.current_token.tag;
+    const cur = self.current.token.tag;
     if ((cur.isIdentifier() or self.isKeywordIdentifier(cur)) and
         (try self.lookAhead()).tag == .@":")
     {
@@ -935,8 +938,8 @@ fn labeledOrExpressionStatement(self: *Self) Error!Node.Index {
 }
 
 fn labeledStatement(self: *Self) Error!Node.Index {
-    const label = try self.next();
-    _ = try self.expect(.@":");
+    const label = try self.nextToken();
+    _ = try self.expectToken(.@":");
 
     const ctx = self.context;
     defer self.context = ctx;
@@ -962,12 +965,12 @@ fn labeledItem(self: *Self) Error!Node.Index {
     if (self.isAtToken(.kw_function)) {
         const lookahead = try self.lookAhead();
         if ((self.context.strict or self.source_type == .script) and lookahead.tag != .@"*") {
-            const fn_token = try self.next();
+            const fn_token = try self.nextToken();
             return self.functionDeclaration(fn_token.start, .{});
         }
 
         try self.emitDiagnosticOnToken(
-            self.current_token,
+            self.current.token,
             "{s} cannot be labeled",
             .{if (lookahead.tag == .@"*") "generators" else "function declarations"},
         );
@@ -985,16 +988,16 @@ fn labeledItem(self: *Self) Error!Node.Index {
 ///     ClassDeclaration
 ///     LexicalDeclaration
 fn declarationStatement(self: *Self) Error!?Node.Index {
-    switch (self.current_token.tag) {
+    switch (self.current.token.tag) {
         .kw_class => return try self.classDeclaration(),
         .kw_function => {
-            const fn_token = try self.next();
+            const fn_token = try self.nextToken();
             return try self.functionDeclaration(fn_token.start, .{});
         },
         .kw_async => {
             if ((try self.lookAhead()).tag == .kw_function) {
-                const async_token = try self.next(); // eat 'async'
-                _ = try self.next(); // eat 'function'
+                const async_token = try self.nextToken(); // eat 'async'
+                _ = try self.nextToken(); // eat 'function'
                 return try self.functionDeclaration(async_token.start, .{ .is_async = true });
             }
             return null;
@@ -1003,17 +1006,17 @@ fn declarationStatement(self: *Self) Error!?Node.Index {
             const let_kw = try self.startLetBinding() orelse return null;
             return try self.variableStatement(let_kw);
         },
-        .kw_var, .kw_const => return try self.variableStatement(try self.next()),
+        .kw_var, .kw_const => return try self.variableStatement(try self.nextToken()),
         else => return null,
     }
 }
 
 /// https://tc39.es/ecma262/#sec-class-definitions
 fn classDeclaration(self: *Self) Error!Node.Index {
-    const class_kw = try self.next();
+    const class_kw = try self.nextToken();
     std.debug.assert(class_kw.tag == .kw_class);
 
-    const name_token = try self.next();
+    const name_token = try self.nextToken();
     if (!name_token.tag.isIdentifier() and !self.isKeywordIdentifier(name_token.tag)) {
         try self.emitBadTokenDiagnostic("a class name", &name_token);
         return Error.UnexpectedToken;
@@ -1021,13 +1024,13 @@ fn classDeclaration(self: *Self) Error!Node.Index {
 
     const name = try self.identifier(name_token);
 
-    const super_class = if (self.current_token.tag == .kw_extends)
+    const super_class = if (self.current.token.tag == .kw_extends)
         try self.classHeritage()
     else
         Node.Index.empty;
 
     const class_body = try self.classBody();
-    const rb = try self.expect(.@"}");
+    const rb = try self.expectToken(.@"}");
 
     const info = try self.addExtraData(ast.ExtraData{
         .class = .{
@@ -1045,9 +1048,9 @@ fn classDeclaration(self: *Self) Error!Node.Index {
 
 fn classExpression(self: *Self, class_kw: Token) Error!Node.Index {
     const name = blk: {
-        const cur = self.current_token.tag;
+        const cur = self.current.token.tag;
         if (cur.isIdentifier() or self.isKeywordIdentifier(cur)) {
-            const name_token = try self.next();
+            const name_token = try self.nextToken();
             break :blk try self.identifier(name_token);
         }
 
@@ -1060,7 +1063,7 @@ fn classExpression(self: *Self, class_kw: Token) Error!Node.Index {
         Node.Index.empty;
 
     const class_body = try self.classBody();
-    const rb = try self.expect(.@"}");
+    const rb = try self.expectToken(.@"}");
 
     const info = try self.addExtraData(ast.ExtraData{
         .class = .{
@@ -1077,7 +1080,7 @@ fn classExpression(self: *Self, class_kw: Token) Error!Node.Index {
 }
 
 fn classHeritage(self: *Self) Error!Node.Index {
-    _ = try self.expect(.kw_extends);
+    _ = try self.expectToken(.kw_extends);
     const super_class = try self.lhsExpression();
     return super_class;
 }
@@ -1091,12 +1094,12 @@ fn classBody(self: *Self) Error!ast.SubRange {
     const prev_scratch_len = self.scratch.items.len;
     defer self.scratch.items.len = prev_scratch_len;
 
-    _ = try self.expect(.@"{");
+    _ = try self.expectToken(.@"{");
 
     var n_constructors: usize = 0;
-    while (self.current_token.tag != .@"}") {
-        if (self.current_token.tag == .@";") {
-            _ = try self.next(); // eat ';'
+    while (self.current.token.tag != .@"}") {
+        if (self.current.token.tag == .@";") {
+            _ = try self.nextToken(); // eat ';'
             continue;
         }
 
@@ -1120,10 +1123,10 @@ fn classBody(self: *Self) Error!ast.SubRange {
 
 // `saw_constructor` is an in-out parameter that is set to true if a constructor was seen.
 fn classElement(self: *Self, saw_constructor_inout: *bool) Error!Node.Index {
-    switch (self.current_token.tag) {
+    switch (self.current.token.tag) {
         .kw_constructor => {
             saw_constructor_inout.* = true;
-            const ctor_key = try self.identifier(try self.next());
+            const ctor_key = try self.identifier(try self.nextToken());
             return self.parseClassMethodBody(
                 ctor_key,
                 .{ .is_static = false, .kind = .constructor },
@@ -1138,12 +1141,12 @@ fn classElement(self: *Self, saw_constructor_inout: *bool) Error!Node.Index {
 /// This function is called when the parser is at the start of a class element, i.e the first modifier token
 /// (or name token, if the field has no modifiers).
 fn classPropertyWithModifier(self: *Self, flags: ast.ClassFieldFlags, fn_flags: ast.FunctionFlags) Error!Node.Index {
-    switch (self.current_token.tag) {
+    switch (self.current.token.tag) {
         .kw_async => {
-            const async_token = try self.next();
-            if ((canStartClassElementName(&self.current_token) or
-                self.current_token.tag == .@"*") and
-                self.current_token.line == async_token.line)
+            const async_token = try self.nextToken();
+            if ((canStartClassElementName(&self.current.token) or
+                self.current.token.tag == .@"*") and
+                self.current.token.line == async_token.line)
             {
                 if (fn_flags.is_async) {
                     try self.emitBadTokenDiagnostic("Duplicate 'async' modifier", &async_token);
@@ -1165,10 +1168,10 @@ fn classPropertyWithModifier(self: *Self, flags: ast.ClassFieldFlags, fn_flags: 
         },
 
         .kw_static => {
-            const static_token = try self.next();
-            if ((canStartClassElementName(&self.current_token) or
-                self.current_token.tag == .@"*") and
-                self.current_token.line == static_token.line)
+            const static_token = try self.nextToken();
+            if ((canStartClassElementName(&self.current.token) or
+                self.current.token.tag == .@"*") and
+                self.current.token.line == static_token.line)
             {
                 if (flags.is_static) {
                     try self.emitDiagnosticOnToken(
@@ -1203,12 +1206,12 @@ fn classPropertyWithModifier(self: *Self, flags: ast.ClassFieldFlags, fn_flags: 
         },
 
         .@"*" => {
-            _ = try self.next();
+            _ = try self.nextToken();
 
-            if (!canStartClassElementName(&self.current_token)) {
+            if (!canStartClassElementName(&self.current.token)) {
                 try self.emitBadTokenDiagnostic(
                     "a method name after '*'",
-                    &self.current_token,
+                    &self.current.token,
                 );
                 return Error.UnexpectedToken;
             }
@@ -1224,7 +1227,7 @@ fn classPropertyWithModifier(self: *Self, flags: ast.ClassFieldFlags, fn_flags: 
         else => {
             // Check for 'get' or 'set'
             const kind: ast.ClassFieldKind = blk: {
-                const token_str = self.current_token.toByteSlice(self.source);
+                const token_str = self.current.token.toByteSlice(self.source);
                 if (std.mem.eql(u8, token_str, "get"))
                     break :blk .get;
                 if (std.mem.eql(u8, token_str, "set"))
@@ -1233,8 +1236,8 @@ fn classPropertyWithModifier(self: *Self, flags: ast.ClassFieldFlags, fn_flags: 
             };
 
             if (kind == .get or kind == .set) {
-                const get_or_set = try self.next(); // eat 'get' or 'set'
-                if (canStartClassElementName(&self.current_token)) {
+                const get_or_set = try self.nextToken(); // eat 'get' or 'set'
+                if (canStartClassElementName(&self.current.token)) {
                     // Getter or Setter.
                     const key = try self.classElementName();
                     var field_flags = flags;
@@ -1262,7 +1265,7 @@ fn completeClassFieldDef(
     flags: ast.ClassFieldFlags,
     fn_flags: ast.FunctionFlags,
 ) Error!Node.Index {
-    if (self.current_token.tag == .@"(") {
+    if (self.current.token.tag == .@"(") {
         self.current_destructure_kind.setNoAssignOrDestruct();
         return self.parseClassMethodBody(key, flags, fn_flags);
     }
@@ -1276,8 +1279,8 @@ fn completeClassFieldDef(
         return Error.IllegalModifier;
     }
 
-    if (self.current_token.tag == .@"=") {
-        _ = try self.next();
+    if (self.current.token.tag == .@"=") {
+        _ = try self.nextToken();
         const value = try self.assignExpressionNoPattern();
         const start_pos = self.nodes.items(.start)[@intFromEnum(key)];
         var end_pos = self.nodes.items(.end)[@intFromEnum(value)];
@@ -1314,9 +1317,9 @@ fn parseClassMethodBody(
     flags: ast.ClassFieldFlags,
     fn_flags: ast.FunctionFlags,
 ) Error!Node.Index {
-    std.debug.assert(self.current_token.tag == .@"(");
+    std.debug.assert(self.current.token.tag == .@"(");
 
-    const start_pos = self.current_token.start;
+    const start_pos = self.current.token.start;
     const func_expr = try self.parseFunctionBody(
         start_pos,
         null,
@@ -1385,19 +1388,19 @@ fn stmtNotLabeledFunction(self: *Self) Error!Node.Index {
 }
 
 fn ifStatement(self: *Self) Error!Node.Index {
-    const if_kw = try self.next();
+    const if_kw = try self.nextToken();
     std.debug.assert(if_kw.tag == .kw_if);
 
-    _ = try self.expect(.@"(");
+    _ = try self.expectToken(.@"(");
     const cond = try self.expression();
-    _ = try self.expect(.@")");
+    _ = try self.expectToken(.@")");
 
     const consequent = try self.statement();
     var end_pos = self.nodeSpan(consequent).end;
 
     var alternate = Node.Index.empty;
     if (self.peek().tag == .kw_else) {
-        _ = try self.next();
+        _ = try self.nextToken();
         alternate = try self.statement();
         end_pos = self.nodeSpan(alternate).end;
     }
@@ -1424,7 +1427,7 @@ const ForLoopKind = enum {
 /// Parse a for loop. Returns an index of:
 /// ForOfStatement / ForInStatement / ForStatement
 fn forStatement(self: *Self) Error!Node.Index {
-    const for_kw = try self.next();
+    const for_kw = try self.nextToken();
     std.debug.assert(for_kw.tag == .kw_for);
 
     try self.scope.enterScope(.block, self.context.strict);
@@ -1460,7 +1463,7 @@ fn forStatement(self: *Self) Error!Node.Index {
 /// Returns a tuple where the first item is the kind of for loop (for-in, for-of, or basic),
 /// and the second item is the iterator (index of an `ast.ExtraData`).
 fn forLoopIterator(self: *Self) Error!struct { ForLoopKind, ast.ExtraData.Index } {
-    _ = try self.expect(.@"(");
+    _ = try self.expectToken(.@"(");
 
     var lhs_starts_with_let = false;
 
@@ -1469,9 +1472,9 @@ fn forLoopIterator(self: *Self) Error!struct { ForLoopKind, ast.ExtraData.Index 
     // for (var/let/const x in y)
     // for (var/let/const x of y)
     const maybe_decl_kw = blk: {
-        const curr = self.current_token.tag;
+        const curr = self.current.token.tag;
         if (curr == .kw_var or curr == .kw_const) {
-            break :blk try self.next();
+            break :blk try self.nextToken();
         }
 
         if (curr == .kw_let) {
@@ -1509,7 +1512,7 @@ fn forLoopIterator(self: *Self) Error!struct { ForLoopKind, ast.ExtraData.Index 
     // `in` expressions are allowed now.
     self.context.in = true;
 
-    switch (self.current_token.tag) {
+    switch (self.current.token.tag) {
         .@";" => {
             // parse <Expression> ; <Expression> ; <Expression>
             if (self.current_destructure_kind.must_destruct) {
@@ -1532,7 +1535,7 @@ fn forLoopIterator(self: *Self) Error!struct { ForLoopKind, ast.ExtraData.Index 
             if (!self.current_destructure_kind.can_be_assigned_to) {
                 try self.emitDiagnostic(
                     // TODO: use the expression's start coordinate instead, use util.offsets
-                    self.current_token.startCoord(self.source),
+                    self.current.token.startCoord(self.source),
                     "left hand side of for-loop must be a name or assignment pattern",
                     .{},
                 );
@@ -1541,7 +1544,7 @@ fn forLoopIterator(self: *Self) Error!struct { ForLoopKind, ast.ExtraData.Index 
 
             if (self.isAtToken(.kw_of) and lhs_starts_with_let) {
                 try self.emitDiagnosticOnToken(
-                    self.current_token,
+                    self.current.token,
                     "Left-hand side of for-of loop cannot start with 'let'",
                     .{},
                 );
@@ -1555,9 +1558,9 @@ fn forLoopIterator(self: *Self) Error!struct { ForLoopKind, ast.ExtraData.Index 
             else
                 ForLoopKind.for_in;
 
-            _ = try self.next();
+            _ = try self.nextToken();
             const rhs = try self.expression();
-            _ = try self.expect(.@")");
+            _ = try self.expectToken(.@")");
 
             const iterator = try self.addExtraData(.{
                 .for_in_of_iterator = .{
@@ -1569,7 +1572,7 @@ fn forLoopIterator(self: *Self) Error!struct { ForLoopKind, ast.ExtraData.Index 
         },
 
         else => {
-            try self.emitBadTokenDiagnostic("'of', 'in' or ';'", &self.current_token);
+            try self.emitBadTokenDiagnostic("'of', 'in' or ';'", &self.current.token);
             return Error.UnexpectedToken;
         },
     }
@@ -1602,9 +1605,9 @@ fn completeVarDeclLoopIterator(self: *Self, decl_kw: Token, loop_kind: *ForLoopK
     self.context = ctx;
 
     const lhs_span = self.nodeSpan(lhs);
-    switch (self.current_token.tag) {
+    switch (self.current.token.tag) {
         .kw_in, .kw_of => {
-            loop_kind.* = if (self.current_token.tag == .kw_in)
+            loop_kind.* = if (self.current.token.tag == .kw_in)
                 ForLoopKind.for_in
             else
                 ForLoopKind.for_of;
@@ -1622,9 +1625,9 @@ fn completeVarDeclLoopIterator(self: *Self, decl_kw: Token, loop_kind: *ForLoopK
                 lhs_span.end,
             );
 
-            _ = try self.next(); // eat 'in' or 'of'
+            _ = try self.nextToken(); // eat 'in' or 'of'
             const rhs = try self.expression();
-            _ = try self.expect(.@")");
+            _ = try self.expectToken(.@")");
             return self.addExtraData(.{
                 .for_in_of_iterator = .{ .left = declaration, .right = rhs },
             });
@@ -1633,7 +1636,7 @@ fn completeVarDeclLoopIterator(self: *Self, decl_kw: Token, loop_kind: *ForLoopK
             var end_pos = lhs_span.end;
             var rhs: ?Node.Index = null;
             if (self.isAtToken(.@"=")) {
-                _ = try self.next();
+                _ = try self.nextToken();
                 const init_expr = try self.assignmentExpression();
 
                 if (self.current_destructure_kind.must_destruct) {
@@ -1667,21 +1670,21 @@ fn completeVarDeclLoopIterator(self: *Self, decl_kw: Token, loop_kind: *ForLoopK
 /// Given the `init` expression or statement, this function parses the rest of the iterator
 /// upto the closing ')'.
 fn completeBasicLoopIterator(self: *Self, for_init: Node.Index) Error!ast.ExtraData.Index {
-    _ = try self.expect(.@";");
+    _ = try self.expectToken(.@";");
 
-    const for_cond = switch (self.current_token.tag) {
+    const for_cond = switch (self.current.token.tag) {
         .@";" => Node.Index.empty,
         else => try self.expression(),
     };
 
-    _ = try self.expect(.@";");
+    _ = try self.expectToken(.@";");
 
-    const for_update = switch (self.current_token.tag) {
+    const for_update = switch (self.current.token.tag) {
         .@")" => Node.Index.empty,
         else => try self.expression(),
     };
 
-    _ = try self.expect(.@")");
+    _ = try self.expectToken(.@")");
 
     return self.addExtraData(ast.ExtraData{
         .for_iterator = ast.ForIterator{
@@ -1709,8 +1712,8 @@ fn completeLoopInitializer(self: *Self, kw: Token, first_decl: Node.Index) Error
     try self.scratch.append(first_decl);
     const var_kind = varDeclKind(kw.tag);
 
-    while (self.current_token.tag == .@",") {
-        _ = try self.next();
+    while (self.current.token.tag == .@",") {
+        _ = try self.nextToken();
         const decl = try self.variableDeclarator(var_kind);
         try self.scratch.append(decl);
     }
@@ -1734,12 +1737,12 @@ fn completeLoopInitializer(self: *Self, kw: Token, first_decl: Node.Index) Error
 }
 
 fn whileStatement(self: *Self) Error!Node.Index {
-    const while_kw = try self.next();
+    const while_kw = try self.nextToken();
     std.debug.assert(while_kw.tag == .kw_while);
 
-    _ = try self.expect(.@"(");
+    _ = try self.expectToken(.@"(");
     const cond = try self.expression();
-    _ = try self.expect(.@")");
+    _ = try self.expectToken(.@")");
 
     const saved_context = self.context;
     defer self.context = saved_context;
@@ -1758,7 +1761,7 @@ fn whileStatement(self: *Self) Error!Node.Index {
 }
 
 fn doWhileStatement(self: *Self) Error!Node.Index {
-    const do_kw = try self.next();
+    const do_kw = try self.nextToken();
     std.debug.assert(do_kw.tag == .kw_do);
 
     const saved_context = self.context;
@@ -1768,15 +1771,15 @@ fn doWhileStatement(self: *Self) Error!Node.Index {
     self.context.@"continue" = true;
 
     const body = try self.statementOrDeclaration();
-    _ = try self.expect(.kw_while);
-    _ = try self.expect(.@"(");
+    _ = try self.expectToken(.kw_while);
+    _ = try self.expectToken(.@"(");
     const cond = try self.expression();
-    const rb = try self.expect(.@")");
+    const rb = try self.expectToken(.@")");
 
     var end_pos = rb.start + rb.len;
 
     if (self.isAtToken(.@";")) {
-        const semi = try self.next();
+        const semi = try self.nextToken();
         end_pos = semi.start + semi.len;
     }
 
@@ -1789,7 +1792,7 @@ fn doWhileStatement(self: *Self) Error!Node.Index {
 
 /// DebuggerStatement: 'debugger' ';'
 fn debuggerStatement(self: *Self) Error!Node.Index {
-    const token = try self.next();
+    const token = try self.nextToken();
     const end_pos = try self.semiColon(token.start + token.len);
     return self.addNode(
         .{ .debugger_statement = {} },
@@ -1830,8 +1833,8 @@ fn variableDeclaratorList(self: *Self, kind: ast.VarDeclKind) Error!ast.SubRange
     while (true) {
         const decl = try self.variableDeclarator(kind);
         try self.scratch.append(decl);
-        if (self.current_token.tag == .@",") {
-            _ = try self.next();
+        if (self.current.token.tag == .@",") {
+            _ = try self.nextToken();
         } else {
             break;
         }
@@ -1854,7 +1857,7 @@ fn varDeclKind(tag: Token.Tag) ast.VarDeclKind {
 
 /// Parse a 'try'..'catch'..'finally' statement.
 fn tryStatement(self: *Self) Error!Node.Index {
-    const try_kw = try self.next();
+    const try_kw = try self.nextToken();
     const start_pos = try_kw.start;
     std.debug.assert(try_kw.tag == .kw_try);
 
@@ -1864,7 +1867,7 @@ fn tryStatement(self: *Self) Error!Node.Index {
     var catch_clause = Node.Index.empty;
     var finalizer = Node.Index.empty;
 
-    switch (self.current_token.tag) {
+    switch (self.current.token.tag) {
         .kw_catch => {
             catch_clause = try self.catchClause();
             if (self.isAtToken(.kw_finally)) {
@@ -1881,7 +1884,7 @@ fn tryStatement(self: *Self) Error!Node.Index {
         },
 
         else => {
-            try self.emitBadTokenDiagnostic("'catch' or 'finally'", &self.current_token);
+            try self.emitBadTokenDiagnostic("'catch' or 'finally'", &self.current.token);
             return Error.UnexpectedToken;
         },
     }
@@ -1896,12 +1899,12 @@ fn tryStatement(self: *Self) Error!Node.Index {
 }
 
 fn catchClause(self: *Self) Error!Node.Index {
-    const catch_kw = try self.expect(.kw_catch);
+    const catch_kw = try self.expectToken(.kw_catch);
     const param = blk: {
         if (self.isAtToken(.@"(")) {
-            _ = try self.next();
+            _ = try self.nextToken();
             const binding = try self.assignmentLhsExpr();
-            _ = try self.expect(.@")");
+            _ = try self.expectToken(.@")");
             break :blk binding;
         }
 
@@ -1918,21 +1921,21 @@ fn catchClause(self: *Self) Error!Node.Index {
 }
 
 fn finallyBlock(self: *Self) Error!Node.Index {
-    const finally_kw = try self.next();
+    const finally_kw = try self.nextToken();
     std.debug.assert(finally_kw.tag == .kw_finally);
     const body = try self.blockStatement();
     return body;
 }
 
 fn switchStatement(self: *Self) Error!Node.Index {
-    const switch_kw = try self.next();
+    const switch_kw = try self.nextToken();
     std.debug.assert(switch_kw.tag == .kw_switch);
 
-    _ = try self.expect(.@"(");
+    _ = try self.expectToken(.@"(");
     const discriminant = try self.expression();
-    _ = try self.expect(.@")");
+    _ = try self.expectToken(.@")");
 
-    _ = try self.expect(.@"{");
+    _ = try self.expectToken(.@"{");
 
     // allow break statements inside switch-case.
     const ctx = self.context;
@@ -1940,7 +1943,7 @@ fn switchStatement(self: *Self) Error!Node.Index {
     self.context.@"break" = true;
 
     const cases = try self.caseBlock();
-    const rbrace = try self.expect(.@"}");
+    const rbrace = try self.expectToken(.@"}");
     const end_pos = rbrace.start + rbrace.len;
 
     return self.addNode(
@@ -1954,20 +1957,19 @@ fn switchStatement(self: *Self) Error!Node.Index {
 // Does not consume the opening '{' and closing '}',
 // assumes the opening '{' has already been consumed.
 fn caseBlock(self: *Self) Error!ast.SubRange {
-
     // restore the scratch space after parsing the case-block.
     const scratch_prev_len = self.scratch.items.len;
     defer self.scratch.items.len = scratch_prev_len;
 
     var saw_default = false;
-    while (self.current_token.tag != .@"}") {
+    while (self.current.token.tag != .@"}") {
         const case_node = blk: {
-            switch (self.current_token.tag) {
+            switch (self.current.token.tag) {
                 .kw_case => break :blk try self.caseClause(),
                 .kw_default => {
                     if (saw_default) {
                         try self.emitDiagnostic(
-                            self.current_token.startCoord(self.source),
+                            self.current.token.startCoord(self.source),
                             "Multiple 'default' clauses are not allowed in a switch statement",
                             .{},
                         );
@@ -1978,7 +1980,7 @@ fn caseBlock(self: *Self) Error!ast.SubRange {
                     break :blk try self.defaultCase();
                 },
                 else => {
-                    try self.emitBadTokenDiagnostic("'case' or 'default'", &self.current_token);
+                    try self.emitBadTokenDiagnostic("'case' or 'default'", &self.current.token);
                     return Error.UnexpectedToken;
                 },
             }
@@ -1996,7 +1998,7 @@ fn caseBlock(self: *Self) Error!ast.SubRange {
 /// A case clause begins with the 'case' (or 'default')  keyword:
 /// 'case' Expression ':' StatementList
 fn caseClause(self: *Self) Error!Node.Index {
-    const case_kw = try self.next();
+    const case_kw = try self.nextToken();
     std.debug.assert(case_kw.tag == .kw_case);
 
     const test_expr = try self.expression();
@@ -2004,10 +2006,10 @@ fn caseClause(self: *Self) Error!Node.Index {
     const prev_scratch_len = self.scratch.items.len;
     defer self.scratch.items.len = prev_scratch_len;
 
-    _ = try self.expect(.@":");
-    while (self.current_token.tag != .@"}" and
-        self.current_token.tag != .kw_case and
-        self.current_token.tag != .kw_default)
+    _ = try self.expectToken(.@":");
+    while (self.current.token.tag != .@"}" and
+        self.current.token.tag != .kw_case and
+        self.current.token.tag != .kw_default)
     {
         const stmt = try self.statementOrDeclaration();
         try self.scratch.append(stmt);
@@ -2037,16 +2039,16 @@ fn caseClause(self: *Self) Error!Node.Index {
 
 /// Parse the 'default' case inside a switch statement.
 fn defaultCase(self: *Self) Error!Node.Index {
-    const default_kw = try self.next();
+    const default_kw = try self.nextToken();
     std.debug.assert(default_kw.tag == .kw_default);
 
-    _ = try self.expect(.@":");
+    _ = try self.expectToken(.@":");
 
     const prev_scratch_len = self.scratch.items.len;
     defer self.scratch.items.len = prev_scratch_len;
 
-    var cur = self.current_token.tag;
-    while (cur != .@"}" and cur != .kw_case and cur != .kw_default) : (cur = self.current_token.tag) {
+    var cur = self.current.token.tag;
+    while (cur != .@"}" and cur != .kw_case and cur != .kw_default) : (cur = self.current.token.tag) {
         const stmt = try self.statementOrDeclaration();
         try self.scratch.append(stmt);
     }
@@ -2070,12 +2072,12 @@ fn defaultCase(self: *Self) Error!Node.Index {
 }
 
 fn withStatement(self: *Self) Error!Node.Index {
-    const with_kw = try self.next();
+    const with_kw = try self.nextToken();
     std.debug.assert(with_kw.tag == .kw_with);
 
-    _ = try self.expect(.@"(");
+    _ = try self.expectToken(.@"(");
     const obj = try self.expression();
-    _ = try self.expect(.@")");
+    _ = try self.expectToken(.@")");
 
     const body = try self.statement();
     const end_pos = self.nodeSpan(body).end;
@@ -2096,10 +2098,10 @@ fn withStatement(self: *Self) Error!Node.Index {
 }
 
 fn throwStatement(self: *Self) Error!Node.Index {
-    const throw_kw = try self.next();
+    const throw_kw = try self.nextToken();
     std.debug.assert(throw_kw.tag == .kw_throw);
 
-    if (self.current_token.line != throw_kw.line) {
+    if (self.current.token.line != throw_kw.line) {
         try self.emitDiagnostic(
             throw_kw.startCoord(self.source),
             "Illegal newline after 'throw'",
@@ -2123,7 +2125,7 @@ fn throwStatement(self: *Self) Error!Node.Index {
 /// This cannot be a variable declaration, let is either an identifier
 /// or a label here.
 fn letStatement(self: *Self) Error!Node.Index {
-    std.debug.assert(self.current_token.tag == .kw_let);
+    std.debug.assert(self.current.token.tag == .kw_let);
     const let_kw = try self.startLetBinding() orelse {
         // If the `let` keyword doesn't start a declaration,
         // then its an identifier.
@@ -2147,14 +2149,14 @@ fn letStatement(self: *Self) Error!Node.Index {
 /// consumes the `let` token if so, and then returns it.
 /// Otherwise, it returns `null` and consumes nothing.
 ///
-/// Must be called when `self.current_token` is a 'let' keyword.
+/// Must be called when `self.current.token` is a 'let' keyword.
 fn startLetBinding(self: *Self) Error!?Token {
-    std.debug.assert(self.current_token.tag == .kw_let);
+    std.debug.assert(self.current.token.tag == .kw_let);
 
     const lookahead = try self.lookAhead();
     if (self.isDeclaratorStart(lookahead.tag)) {
         // TODO: disallow `let let = ...`, `const [let] = ...` etc.
-        return try self.next();
+        return try self.nextToken();
     }
 
     return null;
@@ -2182,7 +2184,7 @@ fn variableDeclarator(self: *Self, kind: ast.VarDeclKind) Error!Node.Index {
 
     const rhs: ?Node.Index = blk: {
         if (self.isAtToken(.@"=")) {
-            _ = try self.next();
+            _ = try self.nextToken();
             const init_expr = try self.assignExpressionNoPattern();
             end_pos = self.nodeSpan(init_expr).end;
             break :blk init_expr;
@@ -2208,7 +2210,7 @@ fn variableDeclarator(self: *Self, kind: ast.VarDeclKind) Error!Node.Index {
 
 /// EmptyStatement: ';'
 fn emptyStatement(self: *Self) Error!Node.Index {
-    const semicolon = try self.next();
+    const semicolon = try self.nextToken();
     std.debug.assert(semicolon.tag == .@";");
 
     return addNode(
@@ -2237,7 +2239,7 @@ fn expressionStatement(self: *Self) Error!Node.Index {
 /// BlockStatement:
 ///   '{' StatementList? '}'
 fn blockStatement(self: *Self) Error!Node.Index {
-    const lbrac = try self.expect(.@"{");
+    const lbrac = try self.expectToken(.@"{");
     const start_pos = lbrac.start;
 
     const prev_scratch_len = self.scratch.items.len;
@@ -2246,12 +2248,12 @@ fn blockStatement(self: *Self) Error!Node.Index {
     try self.scope.enterScope(.block, self.context.strict);
     defer self.scope.exitScope();
 
-    while (self.current_token.tag != .@"}") {
+    while (self.current.token.tag != .@"}") {
         const stmt = try self.statementOrDeclaration();
         try self.scratch.append(stmt);
     }
 
-    const rbrace = try self.next();
+    const rbrace = try self.nextToken();
     std.debug.assert(rbrace.tag == .@"}");
     const end_pos = rbrace.start + rbrace.len;
 
@@ -2274,7 +2276,7 @@ fn functionDeclaration(
 ) Error!Node.Index {
     var fn_flags = flags;
     if (self.isAtToken(.@"*")) {
-        _ = try self.next();
+        _ = try self.nextToken();
         fn_flags.is_generator = true;
     }
 
@@ -2287,7 +2289,7 @@ fn functionName(self: *Self) Error!Node.Index {
     defer self.context = context;
     self.context.parsing_declarator = .@"var"; // functions are hoisted
 
-    const token = try self.next();
+    const token = try self.nextToken();
     if (self.isIdentifier(token.tag)) {
         return self.variableName(token);
     }
@@ -2300,7 +2302,7 @@ fn functionName(self: *Self) Error!Node.Index {
 ///    'return' ';'
 ///    'return' [no LineTerminator here] Expression? ';'
 fn returnStatement(self: *Self) Error!Node.Index {
-    const return_kw = try self.next();
+    const return_kw = try self.nextToken();
     std.debug.assert(return_kw.tag == .kw_return);
 
     if (!self.context.@"return") {
@@ -2314,9 +2316,9 @@ fn returnStatement(self: *Self) Error!Node.Index {
         return Error.IllegalReturn;
     }
 
-    if (self.current_token.line != return_kw.line or
-        self.current_token.tag == .@";" or
-        self.current_token.tag == .@"}")
+    if (self.current.token.line != return_kw.line or
+        self.current.token.tag == .@";" or
+        self.current.token.tag == .@"}")
     {
         const end_pos = try self.semiColon(return_kw.start + return_kw.len);
         return self.addNode(.{ .return_statement = null }, return_kw.start, end_pos);
@@ -2329,7 +2331,7 @@ fn returnStatement(self: *Self) Error!Node.Index {
 
 /// BreakStatement: 'break' ';'
 fn breakStatement(self: *Self) Error!Node.Index {
-    const break_kw = try self.next();
+    const break_kw = try self.nextToken();
     std.debug.assert(break_kw.tag == .kw_break);
 
     if (!self.context.@"break") {
@@ -2345,12 +2347,12 @@ fn breakStatement(self: *Self) Error!Node.Index {
     var end_pos = break_kw.start + break_kw.len;
 
     const label = blk: {
-        const cur = self.current_token;
+        const cur = self.current.token;
         if ((cur.tag.isIdentifier() or self.isKeywordIdentifier(cur.tag)) and
             cur.line == break_kw.line)
         {
             // TODO: check if this label exists.
-            const token = try self.next();
+            const token = try self.nextToken();
             const id = try self.identifier(token);
             end_pos = token.start + token.len;
             break :blk id;
@@ -2369,7 +2371,7 @@ fn breakStatement(self: *Self) Error!Node.Index {
 
 /// ContinueStatement: 'continue' ';'
 fn continueStatement(self: *Self) Error!Node.Index {
-    const continue_kw = try self.next();
+    const continue_kw = try self.nextToken();
     std.debug.assert(continue_kw.tag == .kw_continue);
 
     if (!self.context.@"continue") {
@@ -2385,12 +2387,12 @@ fn continueStatement(self: *Self) Error!Node.Index {
     var end_pos = continue_kw.start + continue_kw.len;
 
     const label = blk: {
-        const cur = self.current_token;
+        const cur = self.current.token;
         if ((cur.tag.isIdentifier() or self.isKeywordIdentifier(cur.tag)) and
             cur.line == continue_kw.line)
         {
             // TODO: check if this label exists.
-            const token = try self.next();
+            const token = try self.nextToken();
             const id = try self.identifier(token);
             end_pos = token.start + token.len;
             break :blk id;
@@ -2432,20 +2434,20 @@ fn semiColon(self: *Self, end_pos: u32) Error!u32 {
 /// https://tc39.es/ecma262/multipage/ecmascript-language-lexical-grammar.html#sec-automatic-semicolon-insertion
 /// If no semi-colon can be inserted, a parse error is returned instead.
 fn eatSemiAsi(self: *Self) Error!?types.Span {
-    if (self.current_token.tag == .@";") {
-        const semicolon = try self.next();
+    if (self.current.token.tag == .@";") {
+        const semicolon = try self.nextToken();
         return .{
             .start = semicolon.start,
             .end = semicolon.start + semicolon.len,
         };
     }
 
-    if (self.current_token.line != self.prev_token_line or
-        self.current_token.tag == .@"}" or
-        self.current_token.tag == .eof)
+    if (self.current.token.line != self.prev_token_line or
+        self.current.token.tag == .@"}" or
+        self.current.token.tag == .eof)
         return null;
 
-    try self.emitBadTokenDiagnostic("a ';' or a newline", &self.current_token);
+    try self.emitBadTokenDiagnostic("a ';' or a newline", &self.current.token);
     return Error.ExpectedSemicolon;
 }
 
@@ -2506,6 +2508,10 @@ fn addSubRange(self: *Self, nodes: []const Node.Index) error{OutOfMemory}!ast.Su
 fn addToken(self: *Self, token: Token) error{OutOfMemory}!Token.Index {
     try self.tokens.append(token);
     return @enumFromInt(self.tokens.items.len - 1);
+}
+
+fn saveToken(self: *Self, token: Token) error{OutOfMemory}!void {
+    try self.tokens.append(token);
 }
 
 /// Append a node to the flat node list.
@@ -2588,16 +2594,29 @@ fn emitDiagnosticOnToken(
     });
 }
 
-/// Emit a parse error if the current token does not match `tag`.
-fn expect(self: *Self, tag: Token.Tag) Error!Token {
-    if (self.current_token.tag == tag) {
+fn expect(self: *Self, tag: Token.Tag) Error!struct { Token, Token.Index } {
+    if (self.current.token.tag == tag) {
         return try self.next();
     }
 
     try self.emitDiagnostic(
-        self.current_token.startCoord(self.source),
+        self.current.token.startCoord(self.source),
         "Expected a '{s}', but found a '{s}'",
-        .{ @tagName(tag), self.current_token.toByteSlice(self.source) },
+        .{ @tagName(tag), self.current.token.toByteSlice(self.source) },
+    );
+    return Error.UnexpectedToken;
+}
+
+/// Emit a parse error if the current token does not match `tag`.
+fn expectToken(self: *Self, tag: Token.Tag) Error!Token {
+    if (self.current.token.tag == tag) {
+        return try self.nextToken();
+    }
+
+    try self.emitDiagnostic(
+        self.current.token.startCoord(self.source),
+        "Expected a '{s}', but found a '{s}'",
+        .{ @tagName(tag), self.current.token.toByteSlice(self.source) },
     );
     return Error.UnexpectedToken;
 }
@@ -2605,20 +2624,20 @@ fn expect(self: *Self, tag: Token.Tag) Error!Token {
 /// Emit a parse error if the current token is not an identifier.
 /// If the current token is an identifier, consume and return it.
 fn expectIdentifier(self: *Self) Error!Token {
-    if (self.current_token.tag.isIdentifier()) {
-        return try self.next();
+    if (self.current.token.tag.isIdentifier()) {
+        return try self.nextToken();
     }
 
     try self.emitDiagnostic(
-        self.current_token.startCoord(self.source),
+        self.current.token.startCoord(self.source),
         "Expected an identifier, but found a '{s}'",
-        .{self.current_token.toByteSlice(self.source)},
+        .{self.current.token.toByteSlice(self.source)},
     );
     return Error.UnexpectedToken;
 }
 
 fn expectIdOrKeyword(self: *Self) Error!Token {
-    const token = try self.next();
+    const token = try self.nextToken();
     if (token.tag.isIdentifier() or token.tag.isKeyword()) {
         return token;
     }
@@ -2629,7 +2648,7 @@ fn expectIdOrKeyword(self: *Self) Error!Token {
 
 /// Emit a parse error if the current token does not match `tag1` or `tag2`.
 fn expect2(self: *Self, tag1: Token.Tag, tag2: Token.Tag) Error!Token {
-    const token = try self.next();
+    const token = try self.nextToken();
     if (token.tag == tag1 or token.tag == tag2) {
         return token;
     }
@@ -2647,18 +2666,42 @@ fn expect2(self: *Self, tag1: Token.Tag, tag2: Token.Tag) Error!Token {
 }
 
 /// Consume the next token from the lexer, skipping all comments.
-fn next(self: *Self) Error!Token {
+fn next(self: *Self) Error!struct { Token, Token.Index } {
     var next_token = try self.tokenizer.next();
     while (next_token.tag == .comment or
         next_token.tag == .whitespace) : (next_token = try self.tokenizer.next())
     {
-        // TODO: store comments as trivia.
+        try self.saveToken(next_token);
     }
 
-    const current = self.current_token;
-    self.current_token = next_token;
+    try self.saveToken(next_token);
+
+    const current = self.current.token;
+    const current_id = self.current.id;
+
+    self.current.token = next_token;
+    self.current.id = @enumFromInt(self.tokens.items.len - 1);
     self.prev_token_line = current.line;
-    return current;
+    return .{ current, current_id };
+}
+
+/// Intialize `self.current` by consuming the first token.
+fn startTokenizer(self: *Self) Error!void {
+    var token = try self.tokenizer.next();
+    while (token.tag == .comment or
+        token.tag == .whitespace) : (token = try self.tokenizer.next())
+    {
+        try self.saveToken(token);
+    }
+
+    try self.saveToken(token);
+    self.current.token = token;
+    self.current.id = @enumFromInt(self.tokens.items.len - 1);
+    self.prev_token_line = 0;
+}
+
+inline fn nextToken(self: *Self) Error!Token {
+    return (try self.next())[0];
 }
 
 /// Return the next non-whitespace and non-comment token,
@@ -2681,11 +2724,11 @@ fn lookAhead(self: *Self) Error!Token {
 }
 
 inline fn peek(self: *Self) Token {
-    return self.current_token;
+    return self.current.token;
 }
 
 fn isAtToken(self: *Self, tag: Token.Tag) bool {
-    return self.current_token.tag == tag;
+    return self.current.token.tag == tag;
 }
 
 // --------------------------------------------------------------------------------------
@@ -2722,7 +2765,7 @@ fn completeSequenceExpr(self: *Self, first_expr: Node.Index) Error!Node.Index {
     var end_pos = self.nodes.items(.start)[@intFromEnum(first_expr)];
 
     while (self.isAtToken(.@",")) {
-        _ = try self.next(); // eat ','
+        _ = try self.nextToken(); // eat ','
         const rhs = try self.assignExpressionNoPattern();
         end_pos = self.nodes.items(.start)[@intFromEnum(rhs)];
         try self.scratch.append(rhs);
@@ -2742,13 +2785,13 @@ fn assignmentLhsExpr(self: *Self) Error!Node.Index {
         .must_destruct = false,
     };
 
-    const token: *const Token = &self.current_token;
+    const token: *const Token = &self.current.token;
     switch (token.tag) {
         .@"{" => return self.objectAssignmentPattern(),
         .@"[" => return self.arrayAssignmentPattern(),
         else => {
             if (token.tag.isIdentifier() or self.isKeywordIdentifier(token.tag)) {
-                return self.variableName(try self.next());
+                return self.variableName(try self.nextToken());
             }
 
             try self.emitBadTokenDiagnostic("assignment target", token);
@@ -2829,8 +2872,8 @@ fn assignmentExpression(self: *Self) Error!Node.Index {
     };
 
     const lhs = try yieldOrConditionalExpression(self);
-    if (!self.current_token.tag.isAssignmentOperator()) {
-        if (self.current_token.tag == .@"=>") {
+    if (!self.current.token.tag.isAssignmentOperator()) {
+        if (self.current.token.tag == .@"=>") {
             return self.completeArrowFunction(lhs);
         } else {
             const lhs_tag = self.nodeTag(lhs);
@@ -2841,7 +2884,7 @@ fn assignmentExpression(self: *Self) Error!Node.Index {
 
     if (!self.current_destructure_kind.can_be_assigned_to) {
         try self.emitDiagnostic(
-            self.current_token.startCoord(self.source),
+            self.current.token.startCoord(self.source),
             "Invalid assignment target",
             .{},
         );
@@ -2850,7 +2893,7 @@ fn assignmentExpression(self: *Self) Error!Node.Index {
 
     self.reinterpretAsPattern(lhs);
 
-    const op_token = try self.next(); // eat assignment operator
+    const op_token, const op_token_id = try self.next(); // eat assignment operator
     if (op_token.tag != .@"=" and !self.current_destructure_kind.is_simple_expression) {
         try self.emitDiagnosticOnToken(
             op_token,
@@ -2879,7 +2922,7 @@ fn assignmentExpression(self: *Self) Error!Node.Index {
             .assignment_expr = .{
                 .lhs = lhs,
                 .rhs = rhs,
-                .operator = try self.addToken(op_token),
+                .operator = op_token_id,
             },
         },
         start,
@@ -2914,7 +2957,7 @@ fn coalesceExpression(self: *Self, start_expr: Node.Index) Error!Node.Index {
 
     var expr: Node.Index = start_expr;
     while (self.isAtToken(.@"??")) {
-        const op = try self.next(); // eat '??'
+        _, const op_id = try self.next(); // eat '??'
         const rhs = try bOrExpr(self);
         end_pos = self.nodeSpan(rhs).end;
 
@@ -2925,7 +2968,7 @@ fn coalesceExpression(self: *Self, start_expr: Node.Index) Error!Node.Index {
                 .binary_expr = .{
                     .lhs = expr,
                     .rhs = rhs,
-                    .operator = try self.addToken(op),
+                    .operator = op_id,
                 },
             },
             start_pos,
@@ -2956,7 +2999,7 @@ fn shortCircuitExpresion(self: *Self) Error!Node.Index {
 }
 
 fn yieldOrConditionalExpression(self: *Self) Error!Node.Index {
-    if (!(self.current_token.tag == .kw_yield and self.context.is_yield_reserved)) {
+    if (!(self.current.token.tag == .kw_yield and self.context.is_yield_reserved)) {
         return self.conditionalExpression();
     }
 
@@ -2965,21 +3008,21 @@ fn yieldOrConditionalExpression(self: *Self) Error!Node.Index {
 }
 
 fn yieldExpression(self: *Self) Error!Node.Index {
-    const yield_kw = try self.next();
+    const yield_kw = try self.nextToken();
     std.debug.assert(yield_kw.tag == .kw_yield and self.context.is_yield_reserved);
 
     var has_operand = false;
     var is_delegated = false;
-    if (self.current_token.line == yield_kw.line) {
-        if (self.current_token.tag == .@"*") {
-            _ = try self.next();
+    if (self.current.token.line == yield_kw.line) {
+        if (self.current.token.tag == .@"*") {
+            _ = try self.nextToken();
             is_delegated = true;
             has_operand = true;
         } else {
             // `[ a = yield ] = 5;` is valid JS syntax,
             // and we shouldn't try to parse an expression
             // even though the '}' and 'yield' are on the same line.
-            has_operand = switch (self.current_token.tag) {
+            has_operand = switch (self.current.token.tag) {
                 .@"]", .@"}", .@",", .@")", .@";" => false,
                 else => true,
             };
@@ -3014,9 +3057,9 @@ fn conditionalExpression(self: *Self) Error!Node.Index {
 
     self.current_destructure_kind.setNoAssignOrDestruct();
 
-    _ = try self.next(); // eat '?'
+    _ = try self.nextToken(); // eat '?'
     const true_expr = try self.assignExpressionNoPattern();
-    _ = try self.expect(.@":");
+    _ = try self.expectToken(.@":");
 
     // [+In] grammar parameter
     const context = self.context;
@@ -3045,7 +3088,7 @@ fn assignmentPattern(self: *Self) Error!Node.Index {
     const lhs = try self.lhsExpression();
     if (!self.isAtToken(.@"=")) return lhs;
 
-    const op_token = try self.next(); // eat '='
+    _, const op_token_id = try self.next(); // eat '='
 
     const context = self.context;
     self.context.in = true;
@@ -3063,7 +3106,7 @@ fn assignmentPattern(self: *Self) Error!Node.Index {
             .assignment_pattern = .{
                 .lhs = lhs,
                 .rhs = rhs,
-                .operator = try self.addToken(op_token),
+                .operator = op_token_id,
             },
         },
         lhs_start_pos,
@@ -3073,7 +3116,7 @@ fn assignmentPattern(self: *Self) Error!Node.Index {
 
 /// https://tc39.es/ecma262/#prod-ArrayAssignmentPattern
 fn arrayAssignmentPattern(self: *Self) Error!Node.Index {
-    const lbrac = try self.next(); // eat '['
+    const lbrac = try self.nextToken(); // eat '['
     std.debug.assert(lbrac.tag == .@"[");
 
     const prev_scratch_len = self.scratch.items.len;
@@ -3083,7 +3126,7 @@ fn arrayAssignmentPattern(self: *Self) Error!Node.Index {
     while (true) : (token = self.peek()) {
         switch (token.tag) {
             .@"," => {
-                const comma = try self.next(); // eat ','
+                const comma = try self.nextToken(); // eat ','
                 if (self.isAtToken(.@"]")) break;
                 try self.scratch.append(try self.addNode(
                     .{ .empty_array_item = {} },
@@ -3095,7 +3138,7 @@ fn arrayAssignmentPattern(self: *Self) Error!Node.Index {
             .@"..." => {
                 try self.scratch.append(try self.restElement());
                 if (self.isAtToken(.@",")) {
-                    const comma_tok = try self.next();
+                    const comma_tok = try self.nextToken();
                     try self.emitDiagnostic(
                         comma_tok.startCoord(self.source),
                         "Comma not permitted after spread element in array pattern",
@@ -3114,14 +3157,14 @@ fn arrayAssignmentPattern(self: *Self) Error!Node.Index {
             },
         }
 
-        if (self.current_token.tag == .@",") {
-            _ = try self.next();
-        } else if (self.current_token.tag == .@"]") {
+        if (self.current.token.tag == .@",") {
+            _ = try self.nextToken();
+        } else if (self.current.token.tag == .@"]") {
             break;
         }
     }
 
-    const rbrac = try self.expect(.@"]"); // eat ']'
+    const rbrac = try self.expectToken(.@"]"); // eat ']'
     const items = self.scratch.items[prev_scratch_len..];
     const array_items = try self.addSubRange(items);
     return try self.addNode(
@@ -3132,7 +3175,7 @@ fn arrayAssignmentPattern(self: *Self) Error!Node.Index {
 }
 
 fn completePropertyPatternDef(self: *Self, key: Node.Index) Error!Node.Index {
-    _ = try self.expect(.@":");
+    _ = try self.expectToken(.@":");
 
     const value = try self.assignmentPattern();
     const start_pos = self.nodes.items(.start)[@intFromEnum(key)];
@@ -3146,24 +3189,24 @@ fn completePropertyPatternDef(self: *Self, key: Node.Index) Error!Node.Index {
 }
 
 fn destructuredPropertyDefinition(self: *Self) Error!Node.Index {
-    switch (self.current_token.tag) {
+    switch (self.current.token.tag) {
         .string_literal,
         .numeric_literal,
         .legacy_octal_literal,
         => {
-            const key_token = try self.next();
-            const key = try self.parseLiteral(&key_token);
+            const key_token, const key_token_id = try self.next();
+            const key = try self.parseLiteral(&key_token, key_token_id);
             return self.completePropertyPatternDef(key);
         },
         .@"[" => {
-            _ = try self.next(); // eat '['
+            _ = try self.nextToken(); // eat '['
             const key = try self.assignmentExpression();
-            _ = try self.expect(.@"]");
+            _ = try self.expectToken(.@"]");
             return self.completePropertyPatternDef(key);
         },
         else => {
-            if (self.current_token.tag.isIdentifier() or
-                self.current_token.tag.isKeyword())
+            if (self.current.token.tag.isIdentifier() or
+                self.current.token.tag.isKeyword())
             {
                 return self.destructuredIdentifierProperty();
             }
@@ -3174,14 +3217,14 @@ fn destructuredPropertyDefinition(self: *Self) Error!Node.Index {
 }
 
 /// Parse a destructured object property starting with an identifier.
-/// Assumes that self.current_token is the .identifier.
+/// Assumes that self.current.token is the .identifier.
 fn destructuredIdentifierProperty(self: *Self) Error!Node.Index {
-    const key_token = try self.next();
+    const key_token = try self.nextToken();
     const key = try self.identifier(key_token);
 
     const cur_token = self.peek();
     if (cur_token.tag == .@"=") {
-        const eq_token = try self.next(); // eat '='
+        _, const eq_token_id = try self.next(); // eat '='
         const rhs = try self.assignmentExpression();
         const end_pos = self.getNode(rhs).end;
 
@@ -3194,7 +3237,7 @@ fn destructuredIdentifierProperty(self: *Self) Error!Node.Index {
                 .assignment_pattern = .{
                     .lhs = key,
                     .rhs = rhs,
-                    .operator = try self.addToken(eq_token),
+                    .operator = eq_token_id,
                 },
             },
             key_token.start,
@@ -3232,7 +3275,7 @@ fn destructuredIdentifierProperty(self: *Self) Error!Node.Index {
 
 /// https://tc39.es/ecma262/#prod-ObjectAssignmentPattern
 fn objectAssignmentPattern(self: *Self) Error!Node.Index {
-    const lbrace = try self.next(); // eat '{'
+    const lbrace = try self.nextToken(); // eat '{'
     std.debug.assert(lbrace.tag == .@"{");
 
     const prev_scratch_len = self.scratch.items.len;
@@ -3242,7 +3285,7 @@ fn objectAssignmentPattern(self: *Self) Error!Node.Index {
 
     var destruct_kind = self.current_destructure_kind;
 
-    var cur_token = self.current_token;
+    var cur_token = self.current.token;
     while (cur_token.tag != .@"}") : (cur_token = self.peek()) {
         switch (cur_token.tag) {
             .@"..." => {
@@ -3251,7 +3294,7 @@ fn objectAssignmentPattern(self: *Self) Error!Node.Index {
 
                 // TODO: we should continue parsing after the rest element,
                 // and report this error later.
-                const rb = try self.expect(.@"}");
+                const rb = try self.expectToken(.@"}");
                 end_pos = rb.start + rb.len;
                 break;
             },
@@ -3291,7 +3334,7 @@ fn objectAssignmentPattern(self: *Self) Error!Node.Index {
             break;
         }
     } else {
-        const rbrace = try self.next();
+        const rbrace = try self.nextToken();
         end_pos = rbrace.start + rbrace.len;
     }
 
@@ -3317,7 +3360,7 @@ fn unaryExpression(self: *Self) Error!Node.Index {
         .@"~",
         .@"!",
         => {
-            const op_token = try self.next();
+            const op_token, const op_token_id = try self.next();
             const expr = try self.unaryExpression();
 
             // Ensure that "delete Identifier" is not used in
@@ -3343,7 +3386,7 @@ fn unaryExpression(self: *Self) Error!Node.Index {
             return try self.addNode(.{
                 .unary_expr = ast.UnaryPayload{
                     .operand = expr,
-                    .operator = try self.addToken(op_token),
+                    .operator = op_token_id,
                 },
             }, op_token.start, expr_end_pos);
         },
@@ -3357,10 +3400,10 @@ fn unaryExpression(self: *Self) Error!Node.Index {
     }
 }
 
-/// Parse an await expression when `self.current_token`
+/// Parse an await expression when `self.current.token`
 /// is the `await` keyword.
 fn awaitExpression(self: *Self) Error!Node.Index {
-    const await_token = try self.next();
+    const await_token, const await_token_id = try self.next();
     std.debug.assert(await_token.tag == .kw_await);
 
     if (!self.context.is_await_reserved) {
@@ -3378,7 +3421,7 @@ fn awaitExpression(self: *Self) Error!Node.Index {
     self.current_destructure_kind.setNoAssignOrDestruct();
     return self.addNode(.{
         .await_expr = ast.UnaryPayload{
-            .operator = try self.addToken(await_token),
+            .operator = await_token_id,
             .operand = operand,
         },
     }, await_token.start, end_pos);
@@ -3394,7 +3437,7 @@ fn isExprSimple(self: *Self) Error!Node.Index {
 fn updateExpression(self: *Self) Error!Node.Index {
     const token = self.peek();
     if (token.tag == .@"++" or token.tag == .@"--") {
-        const op_token = try self.next();
+        const op_token, const op_token_id = try self.next();
         const expr = try self.unaryExpression();
 
         const is_operand_simple = self.current_destructure_kind.is_simple_expression;
@@ -3409,7 +3452,7 @@ fn updateExpression(self: *Self) Error!Node.Index {
         return self.addNode(.{
             .update_expr = ast.UnaryPayload{
                 .operand = expr,
-                .operator = try self.addToken(op_token),
+                .operator = op_token_id,
             },
         }, op_token.start, expr_end_pos);
     }
@@ -3420,7 +3463,7 @@ fn updateExpression(self: *Self) Error!Node.Index {
     const expr = try self.lhsExpression();
     const is_operand_simple = self.current_destructure_kind.is_simple_expression;
 
-    const cur_token = self.current_token;
+    const cur_token = self.current.token;
     if ((cur_token.tag == .@"++" or cur_token.tag == .@"--") and
         cur_token.line == expr_start_line)
     {
@@ -3430,12 +3473,12 @@ fn updateExpression(self: *Self) Error!Node.Index {
         }
 
         self.current_destructure_kind.setNoAssignOrDestruct();
-        const op_token = try self.next();
+        const op_token, const op_token_id = try self.next();
         const expr_end_pos = self.nodes.items(.end)[@intFromEnum(expr)];
         return self.addNode(.{
             .post_unary_expr = .{
                 .operand = expr,
-                .operator = try self.addToken(op_token),
+                .operator = op_token_id,
             },
         }, op_token.start, expr_end_pos);
     }
@@ -3459,7 +3502,7 @@ fn lhsExpression(self: *Self) Error!Node.Index {
 }
 
 fn superExpression(self: *Self) Error!Node.Index {
-    const super_token = try self.next();
+    const super_token = try self.nextToken();
     // TODO: check if we're in a surrounding class.
     std.debug.assert(super_token.tag == .kw_super);
 
@@ -3471,7 +3514,7 @@ fn superExpression(self: *Self) Error!Node.Index {
 /// otherwise return `null`.
 fn tryNewExpression(self: *Self) Error!?Node.Index {
     if (self.isAtToken(.kw_new)) {
-        const new_token = try self.next();
+        const new_token = try self.nextToken();
         return try self.completeNewExpression(&new_token);
     }
     return null;
@@ -3502,7 +3545,7 @@ fn completeNewExpression(self: *Self, new_token: *const Token) Error!Node.Index 
 /// also has productions that parse member expressions:
 /// https://262.ecma-international.org/15.0/index.html#prod-CallExpression
 fn tryCallExpression(self: *Self, callee: Node.Index) Error!?Node.Index {
-    if (self.current_token.tag != .@"(") return null;
+    if (self.current.token.tag != .@"(") return null;
 
     var call_expr = try self.coverCallAndAsyncArrowHead(callee);
 
@@ -3626,7 +3669,7 @@ fn completeOptionalChain(self: *Self, prev_expr: Node.Index) Error!Node.Index {
 fn optionalChain(self: *Self, object: Node.Index) Error!Node.Index {
     const start_pos = self.nodes.items(.start)[@intFromEnum(object)];
 
-    const chain_op = try self.next();
+    const chain_op = try self.nextToken();
     std.debug.assert(chain_op.tag == .@"?.");
 
     const cur_token = self.peek();
@@ -3649,8 +3692,8 @@ fn optionalChain(self: *Self, object: Node.Index) Error!Node.Index {
             return self.addNode(.{ .optional_expr = expr }, start_pos, end_pos);
         },
         else => {
-            if (self.current_token.tag.isIdentifier() or self.current_token.tag.isKeyword()) {
-                const property_name_token = try self.next(); // eat the property name
+            if (self.current.token.tag.isIdentifier() or self.current.token.tag.isKeyword()) {
+                const property_name_token = try self.nextToken(); // eat the property name
                 const end_pos = property_name_token.start + property_name_token.len;
                 const expr = try self.addNode(.{ .member_expr = .{
                     .object = object,
@@ -3670,14 +3713,14 @@ fn optionalChain(self: *Self, object: Node.Index) Error!Node.Index {
 }
 
 fn memberExpression(self: *Self) Error!Node.Index {
-    var member_expr = switch (self.current_token.tag) {
+    var member_expr = switch (self.current.token.tag) {
         .kw_new => try self.newTargetOrExpression(),
         .kw_import => try self.importMetaOrCall(),
         .kw_super => try self.superPropertyOrCall(),
         else => try self.primaryExpression(),
     };
 
-    var token = self.current_token;
+    var token = self.current.token;
     while (token.tag != .eof) : (token = self.peek()) {
         switch (token.tag) {
             .@"." => member_expr = try self.completeMemberExpression(member_expr),
@@ -3693,7 +3736,7 @@ fn memberExpression(self: *Self) Error!Node.Index {
 /// https://tc39.es/ecma262/#prod-NewTarget
 /// https://tc39.es/ecma262/#prod-NewExpression
 fn newTargetOrExpression(self: *Self) Error!Node.Index {
-    const new_token = try self.next();
+    const new_token = try self.nextToken();
     std.debug.assert(new_token.tag == .kw_new);
     if (self.isAtToken(.@"."))
         return self.parseMetaProperty(&new_token, "target");
@@ -3706,7 +3749,7 @@ fn newTargetOrExpression(self: *Self) Error!Node.Index {
 /// https://tc39.es/ecma262/#prod-ImportMeta
 /// https://tc39.es/ecma262/#prod-ImportCall
 fn importMetaOrCall(self: *Self) Error!Node.Index {
-    const import_token = try self.next();
+    const import_token = try self.nextToken();
     if (self.isAtToken(.@"."))
         return try self.parseMetaProperty(&import_token, "meta");
 
@@ -3726,16 +3769,16 @@ fn importMetaOrCall(self: *Self) Error!Node.Index {
 ///  super Arguments
 fn superPropertyOrCall(self: *Self) Error!Node.Index {
     // TODO: disallow super outside classes that have a super class
-    const super_token = try self.next();
+    const super_token, const super_token_id = try self.next();
     std.debug.assert(super_token.tag == .kw_super);
 
-    switch (self.current_token.tag) {
+    switch (self.current.token.tag) {
         .@"[" => {
-            const super = try self.makeSuper(&super_token);
+            const super = try self.makeSuper(&super_token, super_token_id);
             return self.completeComputedMemberExpression(super);
         },
         .@"." => {
-            const super = try self.makeSuper(&super_token);
+            const super = try self.makeSuper(&super_token, super_token_id);
             return self.completeMemberExpression(super);
         },
         else => {
@@ -3746,14 +3789,14 @@ fn superPropertyOrCall(self: *Self) Error!Node.Index {
 }
 
 /// Parse a 'MetaProperty' like `new.target` or `import.meta`.
-/// Assumes that `self.current_token` is the `new` or `import` keyword,
+/// Assumes that `self.current.token` is the `new` or `import` keyword,
 /// and that current_token is a '.'
 fn parseMetaProperty(
     self: *Self,
     meta_token: *const Token,
     wanted_property_name: []const u8,
 ) Error!Node.Index {
-    const dot = try self.next();
+    const dot = try self.nextToken();
     std.debug.assert(dot.tag == .@".");
 
     const property_token = try self.expectIdentifier();
@@ -3813,13 +3856,13 @@ fn completeTaggedTemplate(self: *Self, tag: Node.Index) Error!Node.Index {
 }
 
 fn completeMemberExpression(self: *Self, object: Node.Index) Error!Node.Index {
-    const dot = try self.next(); // eat "."
+    const dot = try self.nextToken(); // eat "."
     std.debug.assert(dot.tag == .@".");
 
     const start_pos = self.nodes.items(.start)[@intFromEnum(object)];
 
     const property_id: Node.Index = blk: {
-        const tok = try self.next();
+        const tok = try self.nextToken();
         // Yes, keywords are valid property names...
         if (tok.tag.isIdentifier() or tok.tag.isKeyword()) {
             break :blk try self.identifier(tok);
@@ -3852,11 +3895,11 @@ fn completeComputedMemberExpression(self: *Self, object: Node.Index) Error!Node.
     self.context.in = true;
     defer self.context = old_ctx;
 
-    const tok = try self.next(); // eat "["
+    const tok = try self.nextToken(); // eat "["
     std.debug.assert(tok.tag == .@"[");
 
     const property = try self.expression();
-    _ = try self.expect(.@"]");
+    _ = try self.expectToken(.@"]");
 
     const property_access = ast.ComputedPropertyAccess{
         .object = object,
@@ -3875,24 +3918,28 @@ fn primaryExpression(self: *Self) Error!Node.Index {
     // If we're currently at a '/' or '/=' token,
     // we probably have mistaken a regex literal's opening '/' for an operator.
     // We'll rewind the tokenizer and try to parse a regex literal instead.
-    const cur = &self.current_token;
+    const cur = &self.current.token;
     if (cur.tag == .@"/" or cur.tag == .@"/=") {
         // Go back to the beginning of '/'
         self.tokenizer.rewind(cur.start, cur.line);
         self.tokenizer.assume_bslash_starts_regex = true;
-        self.current_token = try self.tokenizer.next();
+
+        self.current.token = try self.tokenizer.next();
+        self.current.id = @enumFromInt(self.tokens.items.len);
+        try self.saveToken(self.current.token);
+
         self.tokenizer.assume_bslash_starts_regex = false;
     }
 
     if (cur.tag == .template_literal_part) return self.templateLiteral();
 
-    const token = try self.next();
+    const token, const token_id = try self.next();
     switch (token.tag) {
         .kw_class => return self.classExpression(token),
         .kw_this => {
             self.current_destructure_kind.setNoAssignOrDestruct();
             return self.addNode(
-                .{ .this = try self.addToken(token) },
+                .{ .this = token_id },
                 token.start,
                 token.start + token.len,
             );
@@ -3913,7 +3960,7 @@ fn primaryExpression(self: *Self) Error!Node.Index {
         .kw_true,
         .kw_false,
         .kw_null,
-        => return self.parseLiteral(&token),
+        => return self.parseLiteral(&token, token_id),
         .@"[" => return self.arrayLiteral(token.start),
         .@"{" => return self.objectLiteral(token.start),
         .@"(" => return self.groupingExprOrArrowParameters(&token),
@@ -3947,7 +3994,7 @@ fn isValidStrictModeNumber(self: *const Self, token: *const Token) bool {
     return !(self.source[token.start] == '0' and std.ascii.isDigit(self.source[token.start + 1]));
 }
 
-fn parseLiteral(self: *Self, token: *const Token) Error!Node.Index {
+fn parseLiteral(self: *Self, token: *const Token, token_id: Token.Index) Error!Node.Index {
     if (self.context.strict) {
         // Disallow 01, 08, etc. in strict mode.
         switch (token.tag) {
@@ -3975,26 +4022,30 @@ fn parseLiteral(self: *Self, token: *const Token) Error!Node.Index {
 
     self.current_destructure_kind.setNoAssignOrDestruct();
     return self.addNode(
-        .{ .literal = try self.addToken(token.*) },
+        .{ .literal = token_id },
         token.start,
         token.start + token.len,
     );
 }
 
 fn stringLiteral(self: *Self) Error!Node.Index {
-    const token = try self.expect(.string_literal);
+    const token, const token_id = try self.expect(.string_literal);
     self.current_destructure_kind.setNoAssignOrDestruct();
     return self.addNode(
-        .{ .literal = try self.addToken(token) },
+        .{ .literal = token_id },
         token.start,
         token.start + token.len,
     );
 }
 
-fn stringLiteralFromToken(self: *Self, token: Token) Error!Node.Index {
+fn stringLiteralFromToken(
+    self: *Self,
+    token: *const Token,
+    token_id: Token.Index,
+) Error!Node.Index {
     self.current_destructure_kind.setNoAssignOrDestruct();
     return self.addNode(
-        .{ .literal = try self.addToken(token) },
+        .{ .literal = token_id },
         token.start,
         token.start + token.len,
     );
@@ -4027,13 +4078,13 @@ fn templateLiteral(self: *Self) Error!Node.Index {
     const prev_scratch_len = self.scratch.items.len;
     defer self.scratch.items.len = prev_scratch_len;
 
-    var template_token = try self.next();
+    var template_token, var template_token_id = try self.next();
     std.debug.assert(template_token.tag == .template_literal_part);
     const start_pos = template_token.start;
     var end_pos = template_token.start + template_token.len;
 
     try self.scratch.append(try self.addNode(
-        .{ .template_element = try self.addToken(template_token) },
+        .{ .template_element = template_token_id },
         start_pos,
         end_pos,
     ));
@@ -4045,16 +4096,20 @@ fn templateLiteral(self: *Self) Error!Node.Index {
         // The most recently processed (but unconsumed) token should be a '}'.
         // We want to rewind back one character, and make the tokenizer treat the '}'
         // as a part of a template literal.
-        self.tokenizer.rewind(self.current_token.start, self.current_token.line);
+        self.tokenizer.rewind(self.current.token.start, self.current.token.line);
         self.tokenizer.assume_rbrace_is_template_part = true;
-        self.current_token = try self.tokenizer.next();
+
+        self.current.token = try self.tokenizer.next();
+        try self.saveToken(self.current.token);
+        self.current.id = @enumFromInt(self.tokens.items.len - 1);
+
         self.tokenizer.assume_rbrace_is_template_part = false;
 
-        template_token = try self.expect(.template_literal_part);
+        template_token, template_token_id = try self.expect(.template_literal_part);
 
         // Now, parse the template part that follows
         try self.scratch.append(try self.addNode(
-            .{ .template_element = try self.addToken(template_token) },
+            .{ .template_element = template_token_id },
             template_token.start,
             template_token.start + template_token.len,
         ));
@@ -4089,12 +4144,12 @@ fn isTemplateEndToken(self: *const Self, token: *const Token) bool {
 /// ```
 fn asyncExpression(self: *Self, async_token: *const Token) Error!Node.Index {
     const async_line = async_token.line;
-    if (self.current_token.tag == .kw_function and async_line == self.current_token.line) {
-        _ = try self.next(); // eat 'function keyword'
+    if (self.current.token.tag == .kw_function and async_line == self.current.token.line) {
+        _ = try self.nextToken(); // eat 'function keyword'
         return self.functionExpression(async_token.start, .{ .is_async = true });
     }
 
-    if (self.current_token.tag == .@"(") {
+    if (self.current.token.tag == .@"(") {
         const argsOrArrowParams = try self.callArgsOrAsyncArrowParams(
             ast.FunctionFlags{
                 .is_async = true,
@@ -4120,11 +4175,11 @@ fn asyncExpression(self: *Self, async_token: *const Token) Error!Node.Index {
         }
     }
 
-    if (self.isIdentifier(self.current_token.tag) and
-        self.current_token.line == async_token.line)
+    if (self.isIdentifier(self.current.token.tag) and
+        self.current.token.line == async_token.line)
     {
         // async x => ...
-        const id_token = try self.next();
+        const id_token = try self.nextToken();
         const param = try self.identifier(id_token);
         const params_range = try self.addSubRange(&[_]Node.Index{param});
         const params = try self.addNode(
@@ -4145,7 +4200,7 @@ fn callArgsOrAsyncArrowParams(
     self: *Self,
     _: ast.FunctionFlags,
 ) Error!Node.Index {
-    const lparen = try self.next();
+    const lparen = try self.nextToken();
     std.debug.assert(lparen.tag == .@"(");
 
     const scratch_start = self.scratch.items.len;
@@ -4199,12 +4254,12 @@ fn callArgsOrAsyncArrowParams(
         }
 
         if (self.isAtToken(.@","))
-            _ = try self.next()
+            _ = try self.nextToken()
         else
             break;
     }
 
-    const rparen = try self.expect(.@")");
+    const rparen = try self.expectToken(.@")");
     const sub_exprs = self.scratch.items[scratch_start..];
 
     if (self.isAtToken(.@"=>")) {
@@ -4271,7 +4326,7 @@ fn callArgsOrAsyncArrowParams(
 }
 
 fn bindingIdentifier(self: *Self) Error!Node.Index {
-    const token = try self.next();
+    const token = try self.nextToken();
     if (!token.tag.isIdentifier() and !self.isKeywordIdentifier(token.tag)) {
         try self.emitDiagnostic(
             token.startCoord(self.source),
@@ -4347,10 +4402,14 @@ fn variableName(self: *Self, token: Token) Error!Node.Index {
     return id;
 }
 
-fn makeSuper(self: *Self, super_token: *const Token) Error!Node.Index {
+fn makeSuper(
+    self: *Self,
+    super_token: *const Token,
+    super_token_id: Token.Index,
+) Error!Node.Index {
     std.debug.assert(super_token.tag == .kw_super);
     return self.addNode(
-        .{ .super = try self.addToken(super_token.*) },
+        .{ .super = super_token_id },
         super_token.start,
         super_token.start + super_token.len,
     );
@@ -4382,7 +4441,7 @@ fn ensureFatArrow(
         return Error.InvalidArrowFunction;
     }
 
-    const fat_arrow = self.current_token;
+    const fat_arrow = self.current.token;
     if (params_end_token.line != fat_arrow.line) {
         try self.emitDiagnostic(
             fat_arrow.startCoord(self.source),
@@ -4396,14 +4455,14 @@ fn ensureFatArrow(
 /// Assuming the parameter list has been consumed, parse the body of
 /// an arrow function and return the complete arrow function AST node id.
 fn completeArrowFunction(self: *Self, params: Node.Index) Error!Node.Index {
-    std.debug.assert(self.current_token.tag == .@"=>");
+    std.debug.assert(self.current.token.tag == .@"=>");
 
     if (self.nodeTag(params) != .parameters) {
-        try self.emitDiagnosticOnToken(self.current_token, "Unexpected '=>'", .{});
+        try self.emitDiagnosticOnToken(self.current.token, "Unexpected '=>'", .{});
         return Error.UnexpectedToken;
     }
 
-    _ = try self.next(); // eat '=>'
+    _ = try self.nextToken(); // eat '=>'
 
     const is_async = self.is_current_arrow_func_async;
     self.is_current_arrow_func_async = false;
@@ -4412,7 +4471,7 @@ fn completeArrowFunction(self: *Self, params: Node.Index) Error!Node.Index {
         const context = self.context;
 
         defer self.context = context;
-        const body_start_token = self.current_token;
+        const body_start_token = self.current.token;
 
         self.context.is_yield_reserved = false; // arrow functions cannot be generators.
         self.context.is_await_reserved = is_async;
@@ -4468,7 +4527,7 @@ fn completeArrowFunction(self: *Self, params: Node.Index) Error!Node.Index {
 
 /// Parse a spread element when current_token is '...'
 fn spreadElement(self: *Self) Error!Node.Index {
-    const dotdotdot = try self.next();
+    const dotdotdot = try self.nextToken();
     std.debug.assert(dotdotdot.tag == .@"...");
     const rest_arg = try self.assignExpressionNoPattern();
     const end_pos = self.nodes.items(.end)[@intFromEnum(rest_arg)];
@@ -4477,7 +4536,7 @@ fn spreadElement(self: *Self) Error!Node.Index {
 
 /// Parse a RestElement, assuming we're at the `...` token
 fn restElement(self: *Self) Error!Node.Index {
-    const dotdotdot = try self.next();
+    const dotdotdot = try self.nextToken();
     std.debug.assert(dotdotdot.tag == .@"...");
     const rest_arg = try self.assignmentLhsExpr();
     const end_pos = self.nodes.items(.end)[@intFromEnum(rest_arg)];
@@ -4489,7 +4548,7 @@ fn completeArrowParamsOrGroupingExpr(self: *Self, lparen: *const Token) Error!No
     const first_expr = try self.assignmentExpression();
     if (!self.current_destructure_kind.can_destruct) {
         const expr = try self.completeSequenceExpr(first_expr);
-        _ = try self.expect(.@")");
+        _ = try self.expectToken(.@")");
         return expr;
     }
 
@@ -4502,7 +4561,7 @@ fn completeArrowParamsOrGroupingExpr(self: *Self, lparen: *const Token) Error!No
 
     var destructure_kind = self.current_destructure_kind;
     while (self.isAtToken(.@",")) {
-        const comma_token = try self.next(); // eat ','
+        const comma_token = try self.nextToken(); // eat ','
         // A ')' after comma is allowed in arrow function parameters,
         // but not in regular comma-separated expressions.
         if (self.isAtToken(.@")") and destructure_kind.can_destruct) {
@@ -4517,7 +4576,7 @@ fn completeArrowParamsOrGroupingExpr(self: *Self, lparen: *const Token) Error!No
                 try nodes.append(rest_elem);
 
                 if (!self.isAtToken(.@")")) {
-                    try self.restParamNotLastError(&self.current_token);
+                    try self.restParamNotLastError(&self.current.token);
                 }
 
                 destructure_kind.must_destruct = true;
@@ -4544,7 +4603,7 @@ fn completeArrowParamsOrGroupingExpr(self: *Self, lparen: *const Token) Error!No
         try nodes.append(rhs);
     }
 
-    const rparen = try self.expect(.@")");
+    const rparen = try self.expectToken(.@")");
 
     if (self.isAtToken(.@"=>")) {
         if (!destructure_kind.can_destruct) {
@@ -4613,7 +4672,7 @@ fn completeArrowParamsOrGroupingExpr(self: *Self, lparen: *const Token) Error!No
 /// Parses either an arrow function or a parenthesized expression.
 fn groupingExprOrArrowParameters(self: *Self, lparen: *const Token) Error!Node.Index {
     if (self.isAtToken(.@")")) {
-        const rparen = try self.next();
+        const rparen = try self.nextToken();
         const end_pos = rparen.start + rparen.len;
         const params = try self.addNode(.{ .parameters = null }, lparen.start, end_pos);
         try self.ensureFatArrow(lparen, &rparen);
@@ -4622,7 +4681,7 @@ fn groupingExprOrArrowParameters(self: *Self, lparen: *const Token) Error!Node.I
 
     if (self.isAtToken(.@"...")) {
         const rest_elem = try self.restElement();
-        const rparen = try self.expect(.@")");
+        const rparen = try self.expectToken(.@")");
         const params = try self.addSubRange(&[_]Node.Index{rest_elem});
         try self.ensureFatArrow(lparen, &rparen);
 
@@ -4641,7 +4700,7 @@ fn groupingExprOrArrowParameters(self: *Self, lparen: *const Token) Error!Node.I
 /// https://262.ecma-international.org/15.0/index.html#prod-ObjectLiteral
 fn objectLiteral(self: *Self, start_pos: u32) Error!Node.Index {
     const properties = try self.propertyDefinitionList();
-    const closing_brace = try self.expect(.@"}");
+    const closing_brace = try self.expectToken(.@"}");
     const end_pos = closing_brace.start + closing_brace.len;
     return self.addNode(.{ .object_literal = properties }, start_pos, end_pos);
 }
@@ -4657,16 +4716,16 @@ fn propertyDefinitionList(self: *Self) Error!?ast.SubRange {
     destructure_kind.is_simple_expression = false;
 
     while (true) {
-        switch (self.current_token.tag) {
+        switch (self.current.token.tag) {
             .non_ascii_identifier, .identifier => {
                 try self.scratch.append(try self.identifierProperty());
                 destructure_kind.update(self.current_destructure_kind);
             },
 
             .@"[" => {
-                _ = try self.next();
+                _ = try self.nextToken();
                 const key = try self.assignExpressionNoPattern();
-                _ = try self.expect(.@"]");
+                _ = try self.expectToken(.@"]");
 
                 const property = try self.completePropertyDef(
                     key,
@@ -4680,9 +4739,9 @@ fn propertyDefinitionList(self: *Self) Error!?ast.SubRange {
             .string_literal,
             .legacy_octal_literal,
             => {
-                const key_token = try self.next();
+                const key_token, const key_token_id = try self.next();
                 const key = try self.addNode(
-                    .{ .literal = try self.addToken(key_token) },
+                    .{ .literal = key_token_id },
                     key_token.start,
                     key_token.start + key_token.len,
                 );
@@ -4694,7 +4753,7 @@ fn propertyDefinitionList(self: *Self) Error!?ast.SubRange {
 
             // generator method
             .@"*" => {
-                _ = try self.next(); // eat '*'
+                _ = try self.nextToken(); // eat '*'
                 const key = try self.classElementName();
                 const generator_method = try self.parseMethodBody(
                     key,
@@ -4706,7 +4765,7 @@ fn propertyDefinitionList(self: *Self) Error!?ast.SubRange {
             },
 
             .@"..." => {
-                const ellipsis_tok = try self.next();
+                const ellipsis_tok = try self.nextToken();
                 const expr = try self.assignmentExpression();
 
                 destructure_kind.update(self.current_destructure_kind);
@@ -4721,7 +4780,7 @@ fn propertyDefinitionList(self: *Self) Error!?ast.SubRange {
                 }
             },
             else => {
-                if (self.current_token.tag.isKeyword()) {
+                if (self.current.token.tag.isKeyword()) {
                     const id_property = try self.identifierProperty();
                     try self.scratch.append(id_property);
                     destructure_kind.update(self.current_destructure_kind);
@@ -4733,7 +4792,7 @@ fn propertyDefinitionList(self: *Self) Error!?ast.SubRange {
 
         const maybe_comma = self.peek();
         if (maybe_comma.tag == .@",") {
-            _ = try self.next();
+            _ = try self.nextToken();
         } else {
             break;
         }
@@ -4753,17 +4812,17 @@ fn propertyDefinitionList(self: *Self) Error!?ast.SubRange {
 
 /// Parse an the property of an object literal or object pattern that starts with an identifier.
 fn identifierProperty(self: *Self) Error!Node.Index {
-    const key_token = try self.next();
+    const key_token = try self.nextToken();
     std.debug.assert(key_token.tag.isIdentifier() or key_token.tag.isKeyword());
 
-    const cur_token = self.current_token;
+    const cur_token = self.current.token;
     if (cur_token.tag != .@":" and cur_token.tag != .@"(" and
         cur_token.tag != .@"," and cur_token.tag != .@"}" and
         cur_token.tag != .@"=")
     {
         if (key_token.tag == .kw_async and key_token.tag.isValidPropertyName()) {
             // handle `async f() { ... }`
-            const property_key = try self.identifier(try self.next());
+            const property_key = try self.identifier(try self.nextToken());
             const property_val = try self.parseMethodBody(
                 property_key,
                 .{ .is_method = true },
@@ -4790,9 +4849,9 @@ fn identifierProperty(self: *Self) Error!Node.Index {
         }
 
         try self.emitDiagnostic(
-            self.current_token.startCoord(self.source),
+            self.current.token.startCoord(self.source),
             "Unexpected '{s}' in property definition",
-            .{self.current_token.toByteSlice(self.source)},
+            .{self.current.token.toByteSlice(self.source)},
         );
         return Error.UnexpectedToken;
     }
@@ -4800,7 +4859,7 @@ fn identifierProperty(self: *Self) Error!Node.Index {
     const key_end_pos = key_token.start + key_token.len;
     const key = try self.identifier(key_token);
 
-    const cur_token_tag = self.current_token.tag;
+    const cur_token_tag = self.current.token.tag;
     switch (cur_token_tag) {
         .@":", .@"(" => {
             return self.completePropertyDef(key, .{
@@ -4809,7 +4868,7 @@ fn identifierProperty(self: *Self) Error!Node.Index {
         },
 
         .@"=" => {
-            const op_token = try self.next(); // eat '='
+            _, const op_token_id = try self.next(); // eat '='
             if (!key_token.tag.isValidPropertyName()) {
                 try self.emitBadTokenDiagnostic("property name", &key_token);
                 return Error.UnexpectedToken;
@@ -4823,7 +4882,7 @@ fn identifierProperty(self: *Self) Error!Node.Index {
                 .assignment_pattern = .{
                     .lhs = key,
                     .rhs = value,
-                    .operator = try self.addToken(op_token),
+                    .operator = op_token_id,
                 },
             };
 
@@ -4895,7 +4954,7 @@ fn canStartClassElementName(token: *const Token) bool {
 
 /// https://tc39.es/ecma262/#prod-ClassElementName
 fn classElementName(self: *Self) Error!Node.Index {
-    const token = try self.next();
+    const token, const token_id = try self.next();
     switch (token.tag) {
         .non_ascii_identifier,
         .identifier,
@@ -4903,7 +4962,7 @@ fn classElementName(self: *Self) Error!Node.Index {
         => return self.identifier(token),
         .@"[" => {
             const expr = try self.assignmentExpression();
-            _ = try self.expect(.@"]");
+            _ = try self.expectToken(.@"]");
             return expr;
         },
         .string_literal,
@@ -4911,7 +4970,7 @@ fn classElementName(self: *Self) Error!Node.Index {
         .legacy_octal_literal,
         => {
             return self.addNode(
-                .{ .literal = try self.addToken(token) },
+                .{ .literal = token_id },
                 token.start,
                 token.start + token.len,
             );
@@ -4938,7 +4997,7 @@ fn parseMethodBody(
     flags: ast.PropertyDefinitionFlags,
     fn_flags: ast.FunctionFlags,
 ) Error!Node.Index {
-    const start_pos = self.current_token.start;
+    const start_pos = self.current.token.start;
     const func_expr = try self.parseFunctionBody(
         start_pos,
         null,
@@ -4979,7 +5038,7 @@ fn checkGetterOrSetterParams(
 
     if (kind == .get and n_params != 0) {
         try self.emitDiagnostic(
-            self.current_token.startCoord(self.source),
+            self.current.token.startCoord(self.source),
             "A 'get' accessor should have no parameter, but got {d}",
             .{n_params},
         );
@@ -4989,7 +5048,7 @@ fn checkGetterOrSetterParams(
     if (kind == .set) {
         if (n_params != 1) {
             try self.emitDiagnostic(
-                self.current_token.startCoord(self.source),
+                self.current.token.startCoord(self.source),
                 "A 'set' accessor should have exaclty one parameters, but got {d}",
                 .{n_params},
             );
@@ -5014,7 +5073,7 @@ fn completePropertyDef(
     key: Node.Index,
     flags: ast.PropertyDefinitionFlags,
 ) Error!Node.Index {
-    if (self.current_token.tag == .@"(") {
+    if (self.current.token.tag == .@"(") {
         self.current_destructure_kind.setNoAssignOrDestruct();
         return self.parseMethodBody(key, .{
             .is_method = true,
@@ -5024,7 +5083,7 @@ fn completePropertyDef(
         }, .{});
     }
 
-    _ = try self.expect(.@":");
+    _ = try self.expectToken(.@":");
 
     const value = try self.assignmentExpression();
     // the assignmentExpression() will have updated self.current_destructure_kind
@@ -5052,7 +5111,7 @@ fn arrayLiteral(self: *Self, start_pos: u32) Error!Node.Index {
     while (true) {
         while (self.isAtToken(.@",")) {
             // elision: https://262.ecma-international.org/15.0/index.html#prod-Elision
-            const comma = try self.next();
+            const comma = try self.nextToken();
             try self.scratch.append(try self.addNode(
                 .{ .empty_array_item = {} },
                 comma.start,
@@ -5061,7 +5120,7 @@ fn arrayLiteral(self: *Self, start_pos: u32) Error!Node.Index {
         }
 
         if (self.isAtToken(.@"]")) {
-            const end_tok = try self.next();
+            const end_tok = try self.nextToken();
             end_pos = end_tok.start + end_tok.len;
             break;
         }
@@ -5069,7 +5128,7 @@ fn arrayLiteral(self: *Self, start_pos: u32) Error!Node.Index {
         switch (self.peek().tag) {
             // Spread element
             .@"..." => {
-                const ellipsis_tok = try self.next();
+                const ellipsis_tok = try self.nextToken();
                 const expr = try self.assignmentExpression();
                 const start = ellipsis_tok.start;
                 const end = self.nodes.items(.end)[@intFromEnum(expr)];
@@ -5111,7 +5170,7 @@ fn functionExpression(
 ) Error!Node.Index {
     var fn_flags = flags;
     if (self.isAtToken(.@"*")) {
-        _ = try self.next(); // eat '*'
+        _ = try self.nextToken(); // eat '*'
         fn_flags.is_generator = true;
     }
 
@@ -5122,8 +5181,8 @@ fn functionExpression(
     self.context.is_yield_reserved = fn_flags.is_generator;
 
     const name_token: ?Node.Index =
-        if (self.current_token.tag.isIdentifier() or
-        self.isKeywordIdentifier(self.current_token.tag))
+        if (self.current.token.tag.isIdentifier() or
+        self.isKeywordIdentifier(self.current.token.tag))
         try self.functionName()
     else
         null;
@@ -5191,7 +5250,7 @@ fn parseFunctionBody(
 /// Parse a list of statements surrounded by '{}'.
 /// Does not introduce a new scope.
 fn functionBody(self: *Self) Error!Node.Index {
-    const lbrac = try self.expect(.@"{");
+    const lbrac = try self.expectToken(.@"{");
     const start_pos = lbrac.start;
 
     const prev_scratch_len = self.scratch.items.len;
@@ -5219,12 +5278,12 @@ fn functionBody(self: *Self) Error!Node.Index {
         self.context.strict = true;
     }
 
-    while (self.current_token.tag != .@"}") {
+    while (self.current.token.tag != .@"}") {
         const stmt = try self.statementOrDeclaration();
         try self.scratch.append(stmt);
     }
 
-    const rbrace = try self.next();
+    const rbrace = try self.nextToken();
     std.debug.assert(rbrace.tag == .@"}");
     const end_pos = rbrace.start + rbrace.len;
 
@@ -5288,7 +5347,7 @@ fn parseParameter(self: *Self) Error!Node.Index {
 
     if (!self.isAtToken(.@"=")) return param;
 
-    const eq_op = try self.next(); // eat '='
+    _, const eq_token_id = try self.next(); // eat '='
 
     const defaultValue = try self.assignmentExpression();
     if (self.current_destructure_kind.must_destruct) {
@@ -5305,7 +5364,7 @@ fn parseParameter(self: *Self) Error!Node.Index {
     const assignment_pattern: ast.BinaryPayload = .{
         .lhs = param,
         .rhs = defaultValue,
-        .operator = try self.addToken(eq_op),
+        .operator = eq_token_id,
     };
 
     return self.addNode(
@@ -5321,14 +5380,14 @@ fn parseFormalParameters(self: *Self) Error!Node.Index {
     defer self.context = context;
     self.context.parsing_declarator = .@"var";
 
-    const lparen = try self.expect(.@"(");
+    const lparen = try self.expectToken(.@"(");
     const start_pos = lparen.start;
 
     const scratch_start = self.scratch.items.len;
     defer self.scratch.items.len = scratch_start;
 
     const rparen = blk: {
-        if (self.isAtToken(.@")")) break :blk try self.next();
+        if (self.isAtToken(.@")")) break :blk try self.nextToken();
 
         while (true) {
             if (self.isAtToken(.@"...")) {
@@ -5336,10 +5395,10 @@ fn parseFormalParameters(self: *Self) Error!Node.Index {
                 try self.scratch.append(rest_elem);
 
                 if (!self.isAtToken(.@")")) {
-                    try self.restParamNotLastError(&self.current_token);
+                    try self.restParamNotLastError(&self.current.token);
                 }
 
-                break :blk try self.next();
+                break :blk try self.nextToken();
             }
 
             const param = try self.parseParameter();
@@ -5426,7 +5485,7 @@ fn parseArgs(self: *Self) Error!struct { ast.SubRange, u32, u32 } {
     self.context.in = true;
     defer self.context = old_ctx;
 
-    const start_pos = (try self.expect(.@"(")).start;
+    const start_pos = (try self.expectToken(.@"(")).start;
 
     const scratch_start = self.scratch.items.len;
     defer self.scratch.items.len = scratch_start;
@@ -5441,10 +5500,10 @@ fn parseArgs(self: *Self) Error!struct { ast.SubRange, u32, u32 } {
         }
         if (!self.isAtToken(.@","))
             break;
-        _ = try self.next(); // eat ','
+        _ = try self.nextToken(); // eat ','
     }
 
-    const close_paren = try self.expect(.@")"); // eat closing ')'
+    const close_paren = try self.expectToken(.@")"); // eat closing ')'
     const end_pos = close_paren.start + close_paren.len;
 
     const arg_list = self.scratch.items[scratch_start..];
@@ -5464,7 +5523,7 @@ fn makeRightAssoc(
             var token = self.peek();
             while (true) : (token = self.peek()) {
                 if (token.tag != toktag) break;
-                _ = try self.next();
+                _, const token_id = try self.next();
 
                 const rhs = try parseFn(self);
                 const start_pos = self.nodes.items(.start)[@intFromEnum(node)];
@@ -5473,7 +5532,7 @@ fn makeRightAssoc(
                     .binary_expr = .{
                         .lhs = node,
                         .rhs = rhs,
-                        .operator = try self.addToken(token),
+                        .operator = token_id,
                     },
                 }, start_pos, end_pos);
             }
@@ -5505,7 +5564,7 @@ fn makeLeftAssoc(
                 if (itag >= min and itag <= max) {
                     self.current_destructure_kind.setNoAssignOrDestruct();
 
-                    _ = try self.next();
+                    _, const op_token_id = try self.next();
                     const rhs = try nextFn(self);
                     const start_pos = self.nodes.items(.start)[@intFromEnum(node)];
                     const end_pos = self.nodes.items(.end)[@intFromEnum(rhs)];
@@ -5513,7 +5572,7 @@ fn makeLeftAssoc(
                         .binary_expr = .{
                             .lhs = node,
                             .rhs = rhs,
-                            .operator = try self.addToken(token),
+                            .operator = op_token_id,
                         },
                     }, start_pos, end_pos);
                 } else {
@@ -5586,8 +5645,10 @@ fn runTestOnFile(tests_dir: std.fs.Dir, file_path: []const u8) !void {
     };
     defer t.allocator.free(expected_ast_json);
 
+    const trimmed_ast_json = std.mem.trim(u8, expected_ast_json, "\n\t ");
+
     // 3. ensure the AST JSON is equal to the expected JSON
-    try t.expectEqualStrings(expected_ast_json, ast_json);
+    try t.expectEqualStrings(trimmed_ast_json, ast_json);
 }
 
 test StringHelper {

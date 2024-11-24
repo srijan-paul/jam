@@ -22,6 +22,9 @@
             "type": "FunctionExpression",
             "start": 10,
             "end": 17,
+            "async": false,
+            "generator": false,
+            "arrow": true,
             "params": [],
             "body": {
               "type": "Literal",
@@ -53,6 +56,9 @@
             "type": "FunctionExpression",
             "start": 29,
             "end": 87,
+            "async": false,
+            "generator": false,
+            "arrow": true,
             "params": [],
             "body": {
               "type": "BlockStatement",
@@ -78,6 +84,9 @@
                         "type": "FunctionExpression",
                         "start": 49,
                         "end": 73,
+                        "async": false,
+                        "generator": false,
+                        "arrow": true,
                         "params": [],
                         "body": {
                           "type": "BlockStatement",

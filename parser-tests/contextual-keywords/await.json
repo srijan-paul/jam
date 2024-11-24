@@ -13,6 +13,9 @@
         "end": 14,
         "name": "async"
       },
+      "async": false,
+      "generator": false,
+      "arrow": false,
       "params": [],
       "body": {
         "type": "BlockStatement",
@@ -68,6 +71,9 @@
         "end": 75,
         "name": "async"
       },
+      "async": true,
+      "generator": false,
+      "arrow": false,
       "params": [],
       "body": {
         "type": "BlockStatement",

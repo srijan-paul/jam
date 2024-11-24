@@ -13,6 +13,9 @@
         "end": 11,
         "name": "f1"
       },
+      "async": false,
+      "generator": false,
+      "arrow": false,
       "params": [],
       "body": {
         "type": "BlockStatement",
@@ -43,6 +46,9 @@
         "end": 43,
         "name": "f2"
       },
+      "async": false,
+      "generator": false,
+      "arrow": false,
       "params": [],
       "body": {
         "type": "BlockStatement",
@@ -78,6 +84,9 @@
         "end": 78,
         "name": "f3"
       },
+      "async": false,
+      "generator": false,
+      "arrow": false,
       "params": [],
       "body": {
         "type": "BlockStatement",
