@@ -52,8 +52,8 @@
       },
       "update": {
         "type": "UnaryExpression",
-        "start": 26,
-        "end": 26,
+        "start": 25,
+        "end": 28,
         "operator": "++",
         "argument": {
           "type": "Identifier",

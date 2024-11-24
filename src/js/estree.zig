@@ -157,8 +157,9 @@ fn nodeToEstree(
     var o = std.json.ObjectMap.init(al);
     const tag = jamToEstreeTag(node.data);
     try o.put("type", JsonValue{ .string = tag });
-    try o.put("start", JsonValue{ .integer = @intCast(node.start) });
-    try o.put("end", JsonValue{ .integer = @intCast(node.end) });
+    try o.put("start", JsonValue{ .integer = @intCast(self.getToken(node.start).start) });
+    const end_token = self.getToken(node.end);
+    try o.put("end", JsonValue{ .integer = @intCast(end_token.start + end_token.len) });
 
     switch (node.data) {
         .binary_expr,

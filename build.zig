@@ -82,7 +82,6 @@ pub fn build(b: *std.Build) !void {
         b.installArtifact(js_wasm);
         const js_wasm_file = b.addInstallFile(js_wasm.getEmittedBin(), js_wasm.out_filename);
         b.getInstallStep().dependOn(&js_wasm_file.step);
-        // _ = b.step("wasm", "Build the wasm library").dependOn(&wasm_lib.step);
     }
 
     const jam_css_module = b.addModule("jam-css", .{
@@ -109,6 +108,20 @@ pub fn build(b: *std.Build) !void {
         .target = target,
         .optimize = optimize,
     });
+
+    const exe_check = b.addExecutable(.{
+        .name = "jam_check",
+        .root_source_file = b.path("src/main.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+
+    exe_check.root_module.addImport("js", jam_js_module);
+    exe_check.root_module.addImport("css", jam_css_module);
+    exe_check.root_module.addImport("syntax", jam_syntax_module);
+
+    const check = b.step("check", "Check if foo compiles");
+    check.dependOn(&exe_check.step);
 
     b.installArtifact(exe);
 
@@ -171,6 +184,7 @@ pub fn build(b: *std.Build) !void {
         lib_unit_tests.root_module.addImport(dep.name, dep.module);
         lib.root_module.addImport(dep.name, dep.module);
         exe.root_module.addImport(dep.name, dep.module);
+        exe_check.root_module.addImport(dep.name, dep.module);
         jam_js_module.addImport(dep.name, dep.module);
         jam_css_module.addImport(dep.name, dep.module);
     }

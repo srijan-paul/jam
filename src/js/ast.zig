@@ -300,7 +300,8 @@ pub const Class = struct {
         const maybe_name_node = p.getExtraData(self.class_information).class.name;
         if (maybe_name_node) |name_node| {
             const node = p.getNode(name_node);
-            return p.source[node.start..node.end];
+            const start_token = p.getToken(node.start);
+            return start_token.toByteSlice(p.source);
         }
         return null;
     }
@@ -525,220 +526,17 @@ pub const ExtraData = union {
     class: ClassInfo,
 };
 
-const Type = std.builtin.Type;
-
 pub const Node = struct {
     /// An index into the AST's `nodes` array list.
     pub const Index = enum(u32) { empty = 0, _ };
     /// The actual data stored by this node.
     data: NodeData,
-    /// Byte offset into the source file where this node begins.
-    start: u32,
-    /// Byte offset into the source file where this node ends.
-    end: u32,
+    /// The start token for this node.
+    start: Token.Index,
+    /// The end token for this node.
+    end: Token.Index,
 
     comptime {
         std.debug.assert(@bitSizeOf(Node) <= 196);
     }
 };
-
-pub const PrettyForInOfStatement = struct {
-    lhs: *NodePretty,
-    rhs: *NodePretty,
-    body: *NodePretty,
-};
-
-/// Used for pretty printing and debugging.
-pub const NodeDataPretty = union(enum) {
-    const BinaryPayload_ = Pretty(BinaryPayload);
-    const PropertyAccess_ = Pretty(PropertyAccess);
-    const ComputedPropertyAccess_ = Pretty(ComputedPropertyAccess);
-    const UnaryPayload_ = Pretty(UnaryPayload);
-    const Token_ = Pretty(Token.Index);
-
-    program: Pretty(SubRange),
-
-    assignment_expression: BinaryPayload_,
-    binary_expression: BinaryPayload_,
-    member_expression: PropertyAccess_,
-    computed_member_expression: ComputedPropertyAccess_,
-    optional_expression: Pretty(Node.Index),
-    tagged_template_expression: Pretty(TaggedTemplateExpression),
-    meta_property: Pretty(MetaProperty),
-    arguments: Pretty(SubRange),
-    new_expression: Pretty(CallExpr),
-    call_expression: Pretty(CallExpr),
-    super_call_expression: Pretty(SubRange),
-    super,
-    spread_element: Pretty(Node.Index),
-    rest_element: Pretty(Node.Index),
-
-    post_unary_expression: UnaryPayload_,
-    unary_expression: UnaryPayload_,
-    await_expression: UnaryPayload_,
-    yield_expression: Pretty(YieldPayload),
-    update_expression: UnaryPayload_,
-
-    identifier: Token_,
-    literal: Token_,
-    this,
-    empty_array_item,
-    array: Pretty(SubRange),
-    array_pattern: Pretty(SubRange),
-    object_pattern: Pretty(SubRange),
-    assignment_pattern: BinaryPayload_,
-    object_literal: Pretty(SubRange),
-    object_property: Pretty(PropertyDefinition),
-    class_expression: struct {
-        name: ?[]const u8,
-        body: Pretty(SubRange),
-    },
-    class_declaration: struct {
-        name: []const u8,
-        body: Pretty(SubRange),
-    },
-    class_field: Pretty(ClassFieldDefinition),
-    class_method: Pretty(ClassFieldDefinition),
-    sequence_expression: Pretty(SubRange),
-    conditional_expression: Pretty(Conditional),
-
-    catch_clause: struct {
-        param: ?Pretty(Node.Index),
-        body: Pretty(Node.Index),
-    },
-    try_statement: struct {
-        body: Pretty(Node.Index),
-        catch_clause: Pretty(Node.Index),
-        finalizer: Pretty(Node.Index),
-    },
-    with_statement: struct {
-        object: Pretty(Node.Index),
-        body: Pretty(Node.Index),
-    },
-    throw_statement: Pretty(Node.Index),
-    function: struct {
-        parameters: Pretty(Node.Index),
-        body: Pretty(Node.Index),
-        info: Pretty(ExtraData.Index),
-    },
-
-    empty_statement,
-    debugger_statement,
-    labeled_statement: Pretty(LabeledStatement),
-    expression_statement: Pretty(Node.Index),
-    block_statement: Pretty(SubRange),
-    if_statement: Pretty(Conditional),
-    for_statement: struct {
-        init: ?*NodePretty,
-        condition: ?*NodePretty,
-        update: ?*NodePretty,
-        body: Pretty(Node.Index),
-    },
-    for_of_statement: PrettyForInOfStatement,
-    for_in_statement: PrettyForInOfStatement,
-    do_while_statement: Pretty(WhileStatement),
-    while_statement: Pretty(WhileStatement),
-    switch_statement: struct {
-        discriminant: *NodePretty,
-        cases: Pretty(SubRange),
-    },
-    switch_case: struct {
-        expression: *NodePretty,
-        consequent: Pretty(SubRange),
-    },
-    default_case: struct {
-        consequent: Pretty(SubRange),
-    },
-    break_statement: struct { label: Pretty(?Node.Index) },
-    continue_statement: struct { label: Pretty(?Node.Index) },
-    variable_declaration: Pretty(VariableDeclaration),
-    variable_declarator: Pretty(VariableDeclarator),
-    import_declaration: Pretty(ImportDeclaration),
-    import_default_specifier: Pretty(ImportDefaultSpecifier),
-    import_specifier: Pretty(ImportSpecifier),
-    import_namespace_specifier: Pretty(ImportNamespaceSpecifier),
-
-    export_declaration: struct { declaration: *NodePretty, default: bool },
-    export_specifier: Pretty(ExportSpecifier),
-    export_list_declaration: struct { specifiers: Pretty(SubRange) },
-    export_from_declaration: struct {
-        source: *NodePretty,
-        specifiers: Pretty(SubRange),
-    },
-    export_all_declaration: struct {
-        source: *NodePretty,
-        name: ?*NodePretty,
-    },
-
-    return_statement: Pretty(?Node.Index),
-    template_element: Token_,
-    template_literal: Pretty(SubRange),
-
-    none: void,
-
-    // helpers
-    parameters: Pretty(SubRange),
-};
-
-pub const NodePretty = struct {
-    data: NodeDataPretty,
-    start: u32,
-    end: u32,
-};
-
-pub const ExtraPretty = union(enum) {
-    function: struct {
-        name: ?[]const u8,
-        flags: Pretty(FunctionFlags),
-    },
-
-    for_iterator: Pretty(ForIterator),
-    class: Pretty(ClassInfo),
-};
-
-pub fn Pretty(T: type) type {
-    if (T == Node.Index) return *NodePretty;
-    if (T == ?Node.Index) return ?*NodePretty;
-    if (T == Token.Index) return []const u8;
-    if (T == ?Token.Index) return ?[]const u8;
-    if (T == SubRange) return []NodePretty;
-    if (T == ?SubRange) return []NodePretty;
-    if (T == ExtraData.Index) return ExtraPretty;
-
-    switch (@typeInfo(T)) {
-        .@"struct" => |s| {
-            const fields: []const Type.StructField = s.fields;
-            var new_fields: [fields.len]Type.StructField = undefined;
-            for (0.., fields) |i, field| {
-                new_fields[i] = field;
-                new_fields[i].type = Pretty(field.type);
-            }
-            var new_struct_info = s;
-            new_struct_info.fields = &new_fields;
-            return @Type(.{ .@"struct" = new_struct_info });
-        },
-        else => {
-            return T;
-        },
-    }
-}
-
-// Dependency loop that shouldn't exist.
-// The zig compiler caches types to tie loops.
-// Why does this happen? I should submit a bug report to ziglang/zig.
-// pub const NodePretty =
-//     switch (@typeInfo(Node)) {
-//     .@"union" => |struct_info| {
-//         const fields: []const Type.UnionField = struct_info.fields;
-//         var new_fields: [fields.len]Type.UnionField = undefined;
-//         for (0.., fields) |i, field| {
-//             new_fields[i] = field;
-//             new_fields[i].type = ToPrettyPayload(field.type);
-//         }
-
-//         var new_union_info = struct_info;
-//         new_union_info.fields = &new_fields;
-//         @Type(.{ .@"union" = new_union_info });
-//     },
-//     else => unreachable,
-// };

@@ -52,8 +52,8 @@
       },
       "update": {
         "type": "UnaryExpression",
-        "start": 25,
-        "end": 25,
+        "start": 24,
+        "end": 27,
         "operator": "++",
         "argument": {
           "type": "Identifier",
@@ -120,8 +120,8 @@
       "end": 77,
       "test": {
         "type": "UnaryExpression",
-        "start": 72,
-        "end": 72,
+        "start": 71,
+        "end": 74,
         "operator": "++",
         "argument": {
           "type": "Identifier",
@@ -291,7 +291,7 @@
       "test": {
         "type": "SequenceExpression",
         "start": 162,
-        "end": 169,
+        "end": 183,
         "expressions": [
           {
             "type": "BinaryExpression",
@@ -357,13 +357,13 @@
       },
       "update": {
         "type": "SequenceExpression",
-        "start": 186,
-        "end": 191,
+        "start": 185,
+        "end": 193,
         "expressions": [
           {
             "type": "UnaryExpression",
-            "start": 186,
-            "end": 186,
+            "start": 185,
+            "end": 188,
             "operator": "++",
             "argument": {
               "type": "Identifier",
@@ -374,8 +374,8 @@
           },
           {
             "type": "UnaryExpression",
-            "start": 191,
-            "end": 191,
+            "start": 190,
+            "end": 193,
             "operator": "++",
             "argument": {
               "type": "Identifier",
