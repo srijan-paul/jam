@@ -30,7 +30,7 @@ fn parseModuleImpl(source: []const u8) ![*]const u8 {
             return err;
         };
 
-        const json_str = try root.pretty.toJsonString(wasm_allocator, &parser, root_id);
+        const json_str = try root.estree.toJsonString(wasm_allocator, &parser, root_id);
         break :blk json_str;
     };
 

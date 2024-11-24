@@ -270,7 +270,7 @@ fn toPrettyPayload(
         },
 
         .labeled_statement => |labeled_stmt| {
-            const label = self.getToken(labeled_stmt.label).toByteSlice(self.source);
+            const label = try copy(al, try toPretty(self, al, labeled_stmt.label));
             const body = try copy(al, try toPretty(self, al, labeled_stmt.body));
             return .{
                 .labeled_statement = .{
@@ -296,10 +296,10 @@ fn toPrettyPayload(
         },
         .member_expr => |payload| {
             const obj = try copy(al, try toPretty(self, al, payload.object));
-            const member = self.tokens.items[@intFromEnum(payload.property)];
+            const member = try copy(al, try toPretty(self, al, payload.property));
             return .{ .member_expression = .{
                 .object = obj,
-                .property = member.toByteSlice(self.source),
+                .property = member,
             } };
         },
 

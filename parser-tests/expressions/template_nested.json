@@ -1,120 +1,94 @@
 {
-  "data": {
-    "program": [
-      {
-        "data": {
-          "expression_statement": {
-            "data": {
-              "template_literal": [
+  "type": "Program",
+  "start": 0,
+  "end": 42,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 41,
+      "expression": {
+        "type": "TemplateLiteral",
+        "start": 0,
+        "end": 41,
+        "quasis": [
+          {
+            "type": "TemplateElement",
+            "start": 0,
+            "end": 10,
+            "value": "`hello, ${",
+            "tail": false
+          },
+          {
+            "type": "TemplateElement",
+            "start": 33,
+            "end": 41,
+            "value": "} world`",
+            "tail": false
+          }
+        ],
+        "expressions": [
+          {
+            "type": "FunctionExpression",
+            "start": 10,
+            "end": 33,
+            "params": [],
+            "body": {
+              "type": "BlockStatement",
+              "start": 16,
+              "end": 33,
+              "body": [
                 {
-                  "data": {
-                    "template_element": "`hello, ${"
-                  },
-                  "start": 0,
-                  "end": 10
-                },
-                {
-                  "data": {
-                    "function": {
-                      "parameters": {
-                        "data": {
-                          "parameters": []
-                        },
-                        "start": 10,
-                        "end": 12
+                  "type": "ExpressionStatement",
+                  "start": 17,
+                  "end": 32,
+                  "expression": {
+                    "type": "TemplateLiteral",
+                    "start": 17,
+                    "end": 32,
+                    "quasis": [
+                      {
+                        "type": "TemplateElement",
+                        "start": 17,
+                        "end": 25,
+                        "value": "`what ${",
+                        "tail": false
                       },
-                      "body": {
-                        "data": {
-                          "block_statement": [
-                            {
-                              "data": {
-                                "expression_statement": {
-                                  "data": {
-                                    "template_literal": [
-                                      {
-                                        "data": {
-                                          "template_element": "`what ${"
-                                        },
-                                        "start": 17,
-                                        "end": 25
-                                      },
-                                      {
-                                        "data": {
-                                          "binary_expression": {
-                                            "lhs": {
-                                              "data": {
-                                                "literal": "1"
-                                              },
-                                              "start": 25,
-                                              "end": 26
-                                            },
-                                            "rhs": {
-                                              "data": {
-                                                "literal": "1"
-                                              },
-                                              "start": 29,
-                                              "end": 30
-                                            },
-                                            "operator": "+"
-                                          }
-                                        },
-                                        "start": 25,
-                                        "end": 30
-                                      },
-                                      {
-                                        "data": {
-                                          "template_element": "}`"
-                                        },
-                                        "start": 30,
-                                        "end": 32
-                                      }
-                                    ]
-                                  },
-                                  "start": 17,
-                                  "end": 32
-                                }
-                              },
-                              "start": 17,
-                              "end": 32
-                            }
-                          ]
+                      {
+                        "type": "TemplateElement",
+                        "start": 30,
+                        "end": 32,
+                        "value": "}`",
+                        "tail": false
+                      }
+                    ],
+                    "expressions": [
+                      {
+                        "type": "BinaryExpression",
+                        "start": 25,
+                        "end": 30,
+                        "operator": "+",
+                        "left": {
+                          "type": "Literal",
+                          "start": 25,
+                          "end": 26,
+                          "value": "1"
                         },
-                        "start": 16,
-                        "end": 33
-                      },
-                      "info": {
-                        "function": {
-                          "flags": {
-                            "is_generator": false,
-                            "is_async": false,
-                            "is_arrow": true,
-                            "_": 0
-                          }
+                        "right": {
+                          "type": "Literal",
+                          "start": 29,
+                          "end": 30,
+                          "value": "1"
                         }
                       }
-                    }
-                  },
-                  "start": 10,
-                  "end": 33
-                },
-                {
-                  "data": {
-                    "template_element": "} world`"
-                  },
-                  "start": 33,
-                  "end": 41
+                    ]
+                  }
                 }
               ]
-            },
-            "start": 0,
-            "end": 41
+            }
           }
-        },
-        "start": 0,
-        "end": 41
+        ]
       }
-    ]
-  },
-  "start": 0,
-  "end": 42
+    }
+  ]
 }

@@ -1,205 +1,190 @@
 {
-  "data": {
-    "program": [
-      {
-        "data": {
-          "expression_statement": {
-            "data": {
-              "template_literal": [
-                {
-                  "data": {
-                    "template_element": "``"
-                  },
-                  "start": 0,
-                  "end": 2
-                }
-              ]
-            },
-            "start": 0,
-            "end": 2
-          }
-        },
-        "start": 0,
-        "end": 3
-      },
-      {
-        "data": {
-          "expression_statement": {
-            "data": {
-              "template_literal": [
-                {
-                  "data": {
-                    "template_element": "`12`"
-                  },
-                  "start": 4,
-                  "end": 8
-                }
-              ]
-            },
-            "start": 4,
-            "end": 8
-          }
-        },
-        "start": 4,
-        "end": 9
-      },
-      {
-        "data": {
-          "expression_statement": {
-            "data": {
-              "template_literal": [
-                {
-                  "data": {
-                    "template_element": "`\\x61`"
-                  },
-                  "start": 10,
-                  "end": 16
-                }
-              ]
-            },
-            "start": 10,
-            "end": 16
-          }
-        },
-        "start": 10,
-        "end": 17
-      },
-      {
-        "data": {
-          "expression_statement": {
-            "data": {
-              "template_literal": [
-                {
-                  "data": {
-                    "template_element": "`\"abc\"'xyz'`"
-                  },
-                  "start": 18,
-                  "end": 30
-                }
-              ]
-            },
-            "start": 18,
-            "end": 30
-          }
-        },
-        "start": 18,
-        "end": 31
-      },
-      {
-        "data": {
-          "expression_statement": {
-            "data": {
-              "template_literal": [
-                {
-                  "data": {
-                    "template_element": "`abc${"
-                  },
-                  "start": 32,
-                  "end": 38
-                },
-                {
-                  "data": {
-                    "object_literal": [
-                      {
-                        "data": {
-                          "object_property": {
-                            "key": {
-                              "data": {
-                                "identifier": "x"
-                              },
-                              "start": 39,
-                              "end": 40
-                            },
-                            "value": {
-                              "data": {
-                                "literal": "1"
-                              },
-                              "start": 41,
-                              "end": 42
-                            },
-                            "flags": {
-                              "is_method": false,
-                              "is_shorthand": false,
-                              "is_computed": false,
-                              "kind": "init"
-                            }
-                          }
-                        },
-                        "start": 39,
-                        "end": 42
-                      }
-                    ]
-                  },
-                  "start": 38,
-                  "end": 43
-                },
-                {
-                  "data": {
-                    "template_element": "}abc`"
-                  },
-                  "start": 43,
-                  "end": 48
-                }
-              ]
-            },
-            "start": 32,
-            "end": 48
-          }
-        },
-        "start": 32,
-        "end": 49
-      },
-      {
-        "data": {
-          "expression_statement": {
-            "data": {
-              "template_literal": [
-                {
-                  "data": {
-                    "template_element": "`hello ${"
-                  },
-                  "start": 50,
-                  "end": 59
-                },
-                {
-                  "data": {
-                    "identifier": "world"
-                  },
-                  "start": 59,
-                  "end": 64
-                },
-                {
-                  "data": {
-                    "template_element": "}. ${"
-                  },
-                  "start": 64,
-                  "end": 69
-                },
-                {
-                  "data": {
-                    "literal": "1"
-                  },
-                  "start": 69,
-                  "end": 70
-                },
-                {
-                  "data": {
-                    "template_element": "} foo $`"
-                  },
-                  "start": 70,
-                  "end": 78
-                }
-              ]
-            },
-            "start": 50,
-            "end": 78
-          }
-        },
-        "start": 50,
-        "end": 79
-      }
-    ]
-  },
+  "type": "Program",
   "start": 0,
-  "end": 80
+  "end": 80,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 3,
+      "expression": {
+        "type": "TemplateLiteral",
+        "start": 0,
+        "end": 2,
+        "quasis": [
+          {
+            "type": "TemplateElement",
+            "start": 0,
+            "end": 2,
+            "value": "``",
+            "tail": false
+          }
+        ],
+        "expressions": []
+      }
+    },
+    {
+      "type": "ExpressionStatement",
+      "start": 4,
+      "end": 9,
+      "expression": {
+        "type": "TemplateLiteral",
+        "start": 4,
+        "end": 8,
+        "quasis": [
+          {
+            "type": "TemplateElement",
+            "start": 4,
+            "end": 8,
+            "value": "`12`",
+            "tail": false
+          }
+        ],
+        "expressions": []
+      }
+    },
+    {
+      "type": "ExpressionStatement",
+      "start": 10,
+      "end": 17,
+      "expression": {
+        "type": "TemplateLiteral",
+        "start": 10,
+        "end": 16,
+        "quasis": [
+          {
+            "type": "TemplateElement",
+            "start": 10,
+            "end": 16,
+            "value": "`\\x61`",
+            "tail": false
+          }
+        ],
+        "expressions": []
+      }
+    },
+    {
+      "type": "ExpressionStatement",
+      "start": 18,
+      "end": 31,
+      "expression": {
+        "type": "TemplateLiteral",
+        "start": 18,
+        "end": 30,
+        "quasis": [
+          {
+            "type": "TemplateElement",
+            "start": 18,
+            "end": 30,
+            "value": "`\"abc\"'xyz'`",
+            "tail": false
+          }
+        ],
+        "expressions": []
+      }
+    },
+    {
+      "type": "ExpressionStatement",
+      "start": 32,
+      "end": 49,
+      "expression": {
+        "type": "TemplateLiteral",
+        "start": 32,
+        "end": 48,
+        "quasis": [
+          {
+            "type": "TemplateElement",
+            "start": 32,
+            "end": 38,
+            "value": "`abc${",
+            "tail": false
+          },
+          {
+            "type": "TemplateElement",
+            "start": 43,
+            "end": 48,
+            "value": "}abc`",
+            "tail": false
+          }
+        ],
+        "expressions": [
+          {
+            "type": "ObjectExpression",
+            "start": 38,
+            "end": 43,
+            "properties": [
+              {
+                "type": "Property",
+                "start": 39,
+                "end": 42,
+                "key": {
+                  "type": "Identifier",
+                  "start": 39,
+                  "end": 40,
+                  "name": "x"
+                },
+                "value": {
+                  "type": "Literal",
+                  "start": 41,
+                  "end": 42,
+                  "value": "1"
+                },
+                "kind": "init",
+                "computed": false,
+                "shorthand": false,
+                "method": false
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "type": "ExpressionStatement",
+      "start": 50,
+      "end": 79,
+      "expression": {
+        "type": "TemplateLiteral",
+        "start": 50,
+        "end": 78,
+        "quasis": [
+          {
+            "type": "TemplateElement",
+            "start": 50,
+            "end": 59,
+            "value": "`hello ${",
+            "tail": false
+          },
+          {
+            "type": "TemplateElement",
+            "start": 64,
+            "end": 69,
+            "value": "}. ${",
+            "tail": false
+          },
+          {
+            "type": "TemplateElement",
+            "start": 70,
+            "end": 78,
+            "value": "} foo $`",
+            "tail": false
+          }
+        ],
+        "expressions": [
+          {
+            "type": "Identifier",
+            "start": 59,
+            "end": 64,
+            "name": "world"
+          },
+          {
+            "type": "Literal",
+            "start": 69,
+            "end": 70,
+            "value": "1"
+          }
+        ]
+      }
+    }
+  ]
 }

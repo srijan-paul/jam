@@ -1,417 +1,266 @@
 {
-  "data": {
-    "program": [
-      {
-        "data": {
-          "class_declaration": {
-            "name": "A",
-            "body": [
-              {
-                "data": {
-                  "class_method": {
-                    "key": {
-                      "data": {
-                        "identifier": "x"
-                      },
-                      "start": 27,
-                      "end": 28
-                    },
-                    "value": {
-                      "data": {
-                        "function": {
-                          "parameters": {
-                            "data": {
-                              "parameters": []
-                            },
-                            "start": 28,
-                            "end": 30
-                          },
-                          "body": {
-                            "data": {
-                              "block_statement": [
-                                {
-                                  "data": {
-                                    "return_statement": {
-                                      "data": {
-                                        "literal": "1"
-                                      },
-                                      "start": 40,
-                                      "end": 41
-                                    }
-                                  },
-                                  "start": 33,
-                                  "end": 41
-                                }
-                              ]
-                            },
-                            "start": 31,
-                            "end": 43
-                          },
-                          "info": {
-                            "function": {
-                              "flags": {
-                                "is_generator": false,
-                                "is_async": false,
-                                "is_arrow": false,
-                                "_": 0
-                              }
-                            }
-                          }
-                        }
-                      },
-                      "start": 28,
-                      "end": 43
-                    },
-                    "flags": {
-                      "is_static": false,
-                      "is_computed": false,
-                      "kind": "get",
-                      "_": false
-                    }
-                  }
-                },
-                "start": 27,
-                "end": 43
-              },
-              {
-                "data": {
-                  "class_method": {
-                    "key": {
-                      "data": {
-                        "literal": "'x'"
-                      },
-                      "start": 50,
-                      "end": 53
-                    },
-                    "value": {
-                      "data": {
-                        "function": {
-                          "parameters": {
-                            "data": {
-                              "parameters": []
-                            },
-                            "start": 54,
-                            "end": 56
-                          },
-                          "body": {
-                            "data": {
-                              "block_statement": [
-                                {
-                                  "data": {
-                                    "return_statement": {
-                                      "data": {
-                                        "literal": "1"
-                                      },
-                                      "start": 66,
-                                      "end": 67
-                                    }
-                                  },
-                                  "start": 59,
-                                  "end": 67
-                                }
-                              ]
-                            },
-                            "start": 57,
-                            "end": 69
-                          },
-                          "info": {
-                            "function": {
-                              "flags": {
-                                "is_generator": false,
-                                "is_async": false,
-                                "is_arrow": false,
-                                "_": 0
-                              }
-                            }
-                          }
-                        }
-                      },
-                      "start": 54,
-                      "end": 69
-                    },
-                    "flags": {
-                      "is_static": false,
-                      "is_computed": false,
-                      "kind": "get",
-                      "_": false
-                    }
-                  }
-                },
-                "start": 50,
-                "end": 69
-              },
-              {
-                "data": {
-                  "class_method": {
-                    "key": {
-                      "data": {
-                        "literal": "'y'"
-                      },
-                      "start": 76,
-                      "end": 79
-                    },
-                    "value": {
-                      "data": {
-                        "function": {
-                          "parameters": {
-                            "data": {
-                              "parameters": [
-                                {
-                                  "data": {
-                                    "identifier": "x"
-                                  },
-                                  "start": 81,
-                                  "end": 82
-                                }
-                              ]
-                            },
-                            "start": 80,
-                            "end": 83
-                          },
-                          "body": {
-                            "data": {
-                              "block_statement": []
-                            },
-                            "start": 84,
-                            "end": 86
-                          },
-                          "info": {
-                            "function": {
-                              "flags": {
-                                "is_generator": false,
-                                "is_async": false,
-                                "is_arrow": false,
-                                "_": 0
-                              }
-                            }
-                          }
-                        }
-                      },
-                      "start": 80,
-                      "end": 86
-                    },
-                    "flags": {
-                      "is_static": false,
-                      "is_computed": false,
-                      "kind": "set",
-                      "_": false
-                    }
-                  }
-                },
-                "start": 76,
-                "end": 86
-              },
-              {
-                "data": {
-                  "class_method": {
-                    "key": {
-                      "data": {
-                        "identifier": "x"
-                      },
-                      "start": 92,
-                      "end": 93
-                    },
-                    "value": {
-                      "data": {
-                        "function": {
-                          "parameters": {
-                            "data": {
-                              "parameters": [
-                                {
-                                  "data": {
-                                    "identifier": "x"
-                                  },
-                                  "start": 94,
-                                  "end": 95
-                                }
-                              ]
-                            },
-                            "start": 93,
-                            "end": 96
-                          },
-                          "body": {
-                            "data": {
-                              "block_statement": [
-                                {
-                                  "data": {
-                                    "return_statement": {
-                                      "data": {
-                                        "literal": "1"
-                                      },
-                                      "start": 106,
-                                      "end": 107
-                                    }
-                                  },
-                                  "start": 99,
-                                  "end": 107
-                                }
-                              ]
-                            },
-                            "start": 97,
-                            "end": 109
-                          },
-                          "info": {
-                            "function": {
-                              "flags": {
-                                "is_generator": false,
-                                "is_async": false,
-                                "is_arrow": false,
-                                "_": 0
-                              }
-                            }
-                          }
-                        }
-                      },
-                      "start": 93,
-                      "end": 109
-                    },
-                    "flags": {
-                      "is_static": false,
-                      "is_computed": false,
-                      "kind": "set",
-                      "_": false
-                    }
-                  }
-                },
-                "start": 92,
-                "end": 109
-              },
-              {
-                "data": {
-                  "class_method": {
-                    "key": {
-                      "data": {
-                        "identifier": "static"
-                      },
-                      "start": 122,
-                      "end": 128
-                    },
-                    "value": {
-                      "data": {
-                        "function": {
-                          "parameters": {
-                            "data": {
-                              "parameters": []
-                            },
-                            "start": 128,
-                            "end": 130
-                          },
-                          "body": {
-                            "data": {
-                              "block_statement": [
-                                {
-                                  "data": {
-                                    "return_statement": {
-                                      "data": {
-                                        "literal": "1"
-                                      },
-                                      "start": 140,
-                                      "end": 141
-                                    }
-                                  },
-                                  "start": 133,
-                                  "end": 141
-                                }
-                              ]
-                            },
-                            "start": 131,
-                            "end": 143
-                          },
-                          "info": {
-                            "function": {
-                              "flags": {
-                                "is_generator": false,
-                                "is_async": false,
-                                "is_arrow": false,
-                                "_": 0
-                              }
-                            }
-                          }
-                        }
-                      },
-                      "start": 128,
-                      "end": 143
-                    },
-                    "flags": {
-                      "is_static": true,
-                      "is_computed": false,
-                      "kind": "get",
-                      "_": false
-                    }
-                  }
-                },
-                "start": 122,
-                "end": 143
-              },
-              {
-                "data": {
-                  "class_method": {
-                    "key": {
-                      "data": {
-                        "identifier": "static"
-                      },
-                      "start": 156,
-                      "end": 162
-                    },
-                    "value": {
-                      "data": {
-                        "function": {
-                          "parameters": {
-                            "data": {
-                              "parameters": [
-                                {
-                                  "data": {
-                                    "identifier": "x"
-                                  },
-                                  "start": 163,
-                                  "end": 164
-                                }
-                              ]
-                            },
-                            "start": 162,
-                            "end": 165
-                          },
-                          "body": {
-                            "data": {
-                              "block_statement": []
-                            },
-                            "start": 166,
-                            "end": 169
-                          },
-                          "info": {
-                            "function": {
-                              "flags": {
-                                "is_generator": false,
-                                "is_async": false,
-                                "is_arrow": false,
-                                "_": 0
-                              }
-                            }
-                          }
-                        }
-                      },
-                      "start": 162,
-                      "end": 169
-                    },
-                    "flags": {
-                      "is_static": true,
-                      "is_computed": false,
-                      "kind": "set",
-                      "_": false
-                    }
-                  }
-                },
-                "start": 156,
-                "end": 169
-              }
-            ]
-          }
-        },
-        "start": 0,
-        "end": 171
-      }
-    ]
-  },
+  "type": "Program",
   "start": 0,
-  "end": 173
+  "end": 173,
+  "body": [
+    {
+      "type": "ClassDeclaration",
+      "start": 0,
+      "end": 171,
+      "superClass": {
+        "type": "MemberExpression",
+        "start": 16,
+        "end": 19,
+        "object": {
+          "type": "Identifier",
+          "start": 16,
+          "end": 17,
+          "name": "B"
+        },
+        "property": {
+          "type": "Identifier",
+          "start": 18,
+          "end": 19,
+          "name": "C"
+        },
+        "computed": false
+      },
+      "id": {
+        "type": "Identifier",
+        "start": 6,
+        "end": 7,
+        "name": "A"
+      },
+      "body": {
+        "type": "ClassBody",
+        "body": [
+          {
+            "type": "MethodDefinition",
+            "start": 27,
+            "end": 43,
+            "key": {
+              "type": "Identifier",
+              "start": 27,
+              "end": 28,
+              "name": "x"
+            },
+            "value": {
+              "type": "FunctionExpression",
+              "start": 28,
+              "end": 43,
+              "params": [],
+              "body": {
+                "type": "BlockStatement",
+                "start": 31,
+                "end": 43,
+                "body": [
+                  {
+                    "type": "ReturnStatement",
+                    "start": 33,
+                    "end": 41,
+                    "argument": {
+                      "type": "Literal",
+                      "start": 40,
+                      "end": 41,
+                      "value": "1"
+                    }
+                  }
+                ]
+              }
+            },
+            "computed": false,
+            "static": false,
+            "kind": "get"
+          },
+          {
+            "type": "MethodDefinition",
+            "start": 50,
+            "end": 69,
+            "key": {
+              "type": "Literal",
+              "start": 50,
+              "end": 53,
+              "value": "'x'"
+            },
+            "value": {
+              "type": "FunctionExpression",
+              "start": 54,
+              "end": 69,
+              "params": [],
+              "body": {
+                "type": "BlockStatement",
+                "start": 57,
+                "end": 69,
+                "body": [
+                  {
+                    "type": "ReturnStatement",
+                    "start": 59,
+                    "end": 67,
+                    "argument": {
+                      "type": "Literal",
+                      "start": 66,
+                      "end": 67,
+                      "value": "1"
+                    }
+                  }
+                ]
+              }
+            },
+            "computed": false,
+            "static": false,
+            "kind": "get"
+          },
+          {
+            "type": "MethodDefinition",
+            "start": 76,
+            "end": 86,
+            "key": {
+              "type": "Literal",
+              "start": 76,
+              "end": 79,
+              "value": "'y'"
+            },
+            "value": {
+              "type": "FunctionExpression",
+              "start": 80,
+              "end": 86,
+              "params": [
+                {
+                  "type": "Identifier",
+                  "start": 81,
+                  "end": 82,
+                  "name": "x"
+                }
+              ],
+              "body": {
+                "type": "BlockStatement",
+                "start": 84,
+                "end": 86,
+                "body": []
+              }
+            },
+            "computed": false,
+            "static": false,
+            "kind": "set"
+          },
+          {
+            "type": "MethodDefinition",
+            "start": 92,
+            "end": 109,
+            "key": {
+              "type": "Identifier",
+              "start": 92,
+              "end": 93,
+              "name": "x"
+            },
+            "value": {
+              "type": "FunctionExpression",
+              "start": 93,
+              "end": 109,
+              "params": [
+                {
+                  "type": "Identifier",
+                  "start": 94,
+                  "end": 95,
+                  "name": "x"
+                }
+              ],
+              "body": {
+                "type": "BlockStatement",
+                "start": 97,
+                "end": 109,
+                "body": [
+                  {
+                    "type": "ReturnStatement",
+                    "start": 99,
+                    "end": 107,
+                    "argument": {
+                      "type": "Literal",
+                      "start": 106,
+                      "end": 107,
+                      "value": "1"
+                    }
+                  }
+                ]
+              }
+            },
+            "computed": false,
+            "static": false,
+            "kind": "set"
+          },
+          {
+            "type": "MethodDefinition",
+            "start": 122,
+            "end": 143,
+            "key": {
+              "type": "Identifier",
+              "start": 122,
+              "end": 128,
+              "name": "static"
+            },
+            "value": {
+              "type": "FunctionExpression",
+              "start": 128,
+              "end": 143,
+              "params": [],
+              "body": {
+                "type": "BlockStatement",
+                "start": 131,
+                "end": 143,
+                "body": [
+                  {
+                    "type": "ReturnStatement",
+                    "start": 133,
+                    "end": 141,
+                    "argument": {
+                      "type": "Literal",
+                      "start": 140,
+                      "end": 141,
+                      "value": "1"
+                    }
+                  }
+                ]
+              }
+            },
+            "computed": false,
+            "static": true,
+            "kind": "get"
+          },
+          {
+            "type": "MethodDefinition",
+            "start": 156,
+            "end": 169,
+            "key": {
+              "type": "Identifier",
+              "start": 156,
+              "end": 162,
+              "name": "static"
+            },
+            "value": {
+              "type": "FunctionExpression",
+              "start": 162,
+              "end": 169,
+              "params": [
+                {
+                  "type": "Identifier",
+                  "start": 163,
+                  "end": 164,
+                  "name": "x"
+                }
+              ],
+              "body": {
+                "type": "BlockStatement",
+                "start": 166,
+                "end": 169,
+                "body": []
+              }
+            },
+            "computed": false,
+            "static": true,
+            "kind": "set"
+          }
+        ]
+      }
+    }
+  ]
 }

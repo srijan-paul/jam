@@ -30,7 +30,7 @@ fn jsFileToJsonAst(allocator: std.mem.Allocator, file_name: []const u8) ![]const
         return err;
     };
 
-    return try js.pretty.toJsonString(allocator, &parser, node_idx);
+    return try js.estree.toJsonString(allocator, &parser, node_idx);
 }
 
 /// Parse a javascript file and return a stringified JSON representation of the AST.

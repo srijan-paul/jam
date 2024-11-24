@@ -1,685 +1,476 @@
 {
-  "data": {
-    "program": [
-      {
-        "data": {
-          "for_statement": {
+  "type": "Program",
+  "start": 0,
+  "end": 235,
+  "body": [
+    {
+      "type": "ForStatement",
+      "start": 0,
+      "end": 30,
+      "init": {
+        "type": "VariableDeclaration",
+        "start": 5,
+        "end": 14,
+        "declarations": [
+          {
+            "type": "VariableDeclarator",
+            "start": 5,
+            "end": 14,
+            "id": {
+              "type": "Identifier",
+              "start": 9,
+              "end": 10,
+              "name": "x"
+            },
             "init": {
-              "data": {
-                "variable_declaration": {
-                  "declarators": [
-                    {
-                      "data": {
-                        "variable_declarator": {
-                          "lhs": {
-                            "data": {
-                              "identifier": "x"
-                            },
-                            "start": 9,
-                            "end": 10
-                          },
-                          "init": {
-                            "data": {
-                              "literal": "1"
-                            },
-                            "start": 13,
-                            "end": 14
-                          }
-                        }
-                      },
-                      "start": 5,
-                      "end": 14
-                    }
-                  ],
-                  "kind": "let"
-                }
-              },
-              "start": 5,
-              "end": 14
-            },
-            "condition": {
-              "data": {
-                "binary_expression": {
-                  "lhs": {
-                    "data": {
-                      "identifier": "x"
-                    },
-                    "start": 16,
-                    "end": 17
-                  },
-                  "rhs": {
-                    "data": {
-                      "literal": "100"
-                    },
-                    "start": 20,
-                    "end": 23
-                  },
-                  "operator": "<"
-                }
-              },
-              "start": 16,
-              "end": 23
-            },
-            "update": {
-              "data": {
-                "post_unary_expression": {
-                  "operand": {
-                    "data": {
-                      "identifier": "x"
-                    },
-                    "start": 25,
-                    "end": 26
-                  },
-                  "operator": "++"
-                }
-              },
-              "start": 26,
-              "end": 26
-            },
-            "body": {
-              "data": {
-                "empty_statement": {}
-              },
-              "start": 29,
-              "end": 30
+              "type": "Literal",
+              "start": 13,
+              "end": 14,
+              "value": "1"
             }
           }
+        ],
+        "kind": "let"
+      },
+      "test": {
+        "type": "BinaryExpression",
+        "start": 16,
+        "end": 23,
+        "operator": "<",
+        "left": {
+          "type": "Identifier",
+          "start": 16,
+          "end": 17,
+          "name": "x"
         },
-        "start": 0,
+        "right": {
+          "type": "Literal",
+          "start": 20,
+          "end": 23,
+          "value": "100"
+        }
+      },
+      "update": {
+        "type": "UnaryExpression",
+        "start": 26,
+        "end": 26,
+        "operator": "++",
+        "argument": {
+          "type": "Identifier",
+          "start": 25,
+          "end": 26,
+          "name": "x"
+        }
+      },
+      "body": {
+        "type": "EmptyStatement",
+        "start": 29,
         "end": 30
+      }
+    },
+    {
+      "type": "ForOfStatement",
+      "start": 31,
+      "end": 52,
+      "left": {
+        "type": "Identifier",
+        "start": 36,
+        "end": 37,
+        "name": "x"
       },
-      {
-        "data": {
-          "for_of_statement": {
-            "lhs": {
-              "data": {
-                "identifier": "x"
-              },
-              "start": 36,
-              "end": 37
-            },
-            "rhs": {
-              "data": {
-                "array": [
-                  {
-                    "data": {
-                      "literal": "1"
-                    },
-                    "start": 42,
-                    "end": 43
-                  },
-                  {
-                    "data": {
-                      "literal": "2"
-                    },
-                    "start": 45,
-                    "end": 46
-                  },
-                  {
-                    "data": {
-                      "literal": "3"
-                    },
-                    "start": 48,
-                    "end": 49
-                  }
-                ]
-              },
-              "start": 41,
-              "end": 50
-            },
-            "body": {
-              "data": {
-                "empty_statement": {}
-              },
-              "start": 51,
-              "end": 52
-            }
+      "right": {
+        "type": "ArrayExpression",
+        "start": 41,
+        "end": 50,
+        "elements": [
+          {
+            "type": "Literal",
+            "start": 42,
+            "end": 43,
+            "value": "1"
+          },
+          {
+            "type": "Literal",
+            "start": 45,
+            "end": 46,
+            "value": "2"
+          },
+          {
+            "type": "Literal",
+            "start": 48,
+            "end": 49,
+            "value": "3"
           }
-        },
-        "start": 31,
+        ]
+      },
+      "body": {
+        "type": "EmptyStatement",
+        "start": 51,
         "end": 52
-      },
-      {
-        "data": {
-          "for_of_statement": {
-            "lhs": {
-              "data": {
-                "variable_declaration": {
-                  "declarators": [
-                    {
-                      "data": {
-                        "variable_declarator": {
-                          "lhs": {
-                            "data": {
-                              "identifier": "x"
-                            },
-                            "start": 62,
-                            "end": 63
-                          }
-                        }
-                      },
-                      "start": 62,
-                      "end": 63
-                    }
-                  ],
-                  "kind": "let"
-                }
-              },
-              "start": 58,
-              "end": 63
-            },
-            "rhs": {
-              "data": {
-                "array": [
-                  {
-                    "data": {
-                      "literal": "1"
-                    },
-                    "start": 68,
-                    "end": 69
-                  },
-                  {
-                    "data": {
-                      "literal": "2"
-                    },
-                    "start": 71,
-                    "end": 72
-                  },
-                  {
-                    "data": {
-                      "literal": "3"
-                    },
-                    "start": 74,
-                    "end": 75
-                  }
-                ]
-              },
-              "start": 67,
-              "end": 76
-            },
-            "body": {
-              "data": {
-                "empty_statement": {}
-              },
-              "start": 77,
-              "end": 78
-            }
+      }
+    },
+    {
+      "type": "ForOfStatement",
+      "start": 53,
+      "end": 78,
+      "left": {
+        "type": "VariableDeclaration",
+        "start": 58,
+        "end": 63,
+        "declarations": [
+          {
+            "type": "VariableDeclarator",
+            "start": 62,
+            "end": 63
           }
-        },
-        "start": 53,
+        ],
+        "kind": "let"
+      },
+      "right": {
+        "type": "ArrayExpression",
+        "start": 67,
+        "end": 76,
+        "elements": [
+          {
+            "type": "Literal",
+            "start": 68,
+            "end": 69,
+            "value": "1"
+          },
+          {
+            "type": "Literal",
+            "start": 71,
+            "end": 72,
+            "value": "2"
+          },
+          {
+            "type": "Literal",
+            "start": 74,
+            "end": 75,
+            "value": "3"
+          }
+        ]
+      },
+      "body": {
+        "type": "EmptyStatement",
+        "start": 77,
         "end": 78
-      },
-      {
-        "data": {
-          "for_of_statement": {
-            "lhs": {
-              "data": {
-                "variable_declaration": {
-                  "declarators": [
-                    {
-                      "data": {
-                        "variable_declarator": {
-                          "lhs": {
-                            "data": {
-                              "array_pattern": [
-                                {
-                                  "data": {
-                                    "identifier": "a"
-                                  },
-                                  "start": 89,
-                                  "end": 90
-                                },
-                                {
-                                  "data": {
-                                    "identifier": "b"
-                                  },
-                                  "start": 92,
-                                  "end": 93
-                                },
-                                {
-                                  "data": {
-                                    "identifier": "c"
-                                  },
-                                  "start": 95,
-                                  "end": 96
-                                }
-                              ]
-                            },
-                            "start": 88,
-                            "end": 97
-                          }
-                        }
-                      },
-                      "start": 88,
-                      "end": 97
-                    }
-                  ],
-                  "kind": "let"
-                }
-              },
-              "start": 84,
-              "end": 97
-            },
-            "rhs": {
-              "data": {
-                "array": [
-                  {
-                    "data": {
-                      "literal": "1"
-                    },
-                    "start": 102,
-                    "end": 103
-                  },
-                  {
-                    "data": {
-                      "literal": "2"
-                    },
-                    "start": 105,
-                    "end": 106
-                  },
-                  {
-                    "data": {
-                      "literal": "3"
-                    },
-                    "start": 108,
-                    "end": 109
-                  }
-                ]
-              },
-              "start": 101,
-              "end": 110
-            },
-            "body": {
-              "data": {
-                "empty_statement": {}
-              },
-              "start": 111,
-              "end": 112
-            }
+      }
+    },
+    {
+      "type": "ForOfStatement",
+      "start": 79,
+      "end": 112,
+      "left": {
+        "type": "VariableDeclaration",
+        "start": 84,
+        "end": 97,
+        "declarations": [
+          {
+            "type": "VariableDeclarator",
+            "start": 88,
+            "end": 97
           }
-        },
-        "start": 79,
+        ],
+        "kind": "let"
+      },
+      "right": {
+        "type": "ArrayExpression",
+        "start": 101,
+        "end": 110,
+        "elements": [
+          {
+            "type": "Literal",
+            "start": 102,
+            "end": 103,
+            "value": "1"
+          },
+          {
+            "type": "Literal",
+            "start": 105,
+            "end": 106,
+            "value": "2"
+          },
+          {
+            "type": "Literal",
+            "start": 108,
+            "end": 109,
+            "value": "3"
+          }
+        ]
+      },
+      "body": {
+        "type": "EmptyStatement",
+        "start": 111,
         "end": 112
-      },
-      {
-        "data": {
-          "for_statement": {
-            "init": {
-              "data": {
-                "binary_expression": {
-                  "lhs": {
-                    "data": {
-                      "literal": "1"
-                    },
-                    "start": 118,
-                    "end": 119
-                  },
-                  "rhs": {
-                    "data": {
-                      "literal": "1"
-                    },
-                    "start": 122,
-                    "end": 123
-                  },
-                  "operator": "+"
-                }
-              },
-              "start": 118,
-              "end": 123
-            },
-            "body": {
-              "data": {
-                "empty_statement": {}
-              },
-              "start": 127,
-              "end": 128
-            }
-          }
+      }
+    },
+    {
+      "type": "ForStatement",
+      "start": 113,
+      "end": 128,
+      "init": {
+        "type": "BinaryExpression",
+        "start": 118,
+        "end": 123,
+        "operator": "+",
+        "left": {
+          "type": "Literal",
+          "start": 118,
+          "end": 119,
+          "value": "1"
         },
-        "start": 113,
+        "right": {
+          "type": "Literal",
+          "start": 122,
+          "end": 123,
+          "value": "1"
+        }
+      },
+      "body": {
+        "type": "EmptyStatement",
+        "start": 127,
         "end": 128
-      },
-      {
-        "data": {
-          "for_statement": {
-            "init": {
-              "data": {
-                "variable_declaration": {
-                  "declarators": [
-                    {
-                      "data": {
-                        "variable_declarator": {
-                          "lhs": {
-                            "data": {
-                              "identifier": "x"
-                            },
-                            "start": 138,
-                            "end": 139
-                          }
-                        }
-                      },
-                      "start": 134,
-                      "end": 139
-                    },
-                    {
-                      "data": {
-                        "variable_declarator": {
-                          "lhs": {
-                            "data": {
-                              "identifier": "y"
-                            },
-                            "start": 141,
-                            "end": 142
-                          }
-                        }
-                      },
-                      "start": 141,
-                      "end": 142
-                    }
-                  ],
-                  "kind": "let"
-                }
-              },
-              "start": 134,
-              "end": 142
-            },
-            "body": {
-              "data": {
-                "empty_statement": {}
-              },
-              "start": 146,
-              "end": 147
-            }
+      }
+    },
+    {
+      "type": "ForStatement",
+      "start": 129,
+      "end": 147,
+      "init": {
+        "type": "VariableDeclaration",
+        "start": 134,
+        "end": 142,
+        "declarations": [
+          {
+            "type": "VariableDeclarator",
+            "start": 134,
+            "end": 139
+          },
+          {
+            "type": "VariableDeclarator",
+            "start": 141,
+            "end": 142
           }
-        },
-        "start": 129,
+        ],
+        "kind": "let"
+      },
+      "body": {
+        "type": "EmptyStatement",
+        "start": 146,
         "end": 147
-      },
-      {
-        "data": {
-          "for_statement": {
-            "init": {
-              "data": {
-                "variable_declaration": {
-                  "declarators": [
-                    {
-                      "data": {
-                        "variable_declarator": {
-                          "lhs": {
-                            "data": {
-                              "identifier": "x"
-                            },
-                            "start": 157,
-                            "end": 158
-                          }
-                        }
-                      },
-                      "start": 153,
-                      "end": 158
-                    }
-                  ],
-                  "kind": "let"
-                }
-              },
-              "start": 153,
-              "end": 158
-            },
-            "body": {
-              "data": {
-                "empty_statement": {}
-              },
-              "start": 162,
-              "end": 163
-            }
+      }
+    },
+    {
+      "type": "ForStatement",
+      "start": 148,
+      "end": 163,
+      "init": {
+        "type": "VariableDeclaration",
+        "start": 153,
+        "end": 158,
+        "declarations": [
+          {
+            "type": "VariableDeclarator",
+            "start": 153,
+            "end": 158
           }
-        },
-        "start": 148,
+        ],
+        "kind": "let"
+      },
+      "body": {
+        "type": "EmptyStatement",
+        "start": 162,
         "end": 163
-      },
-      {
-        "data": {
-          "for_in_statement": {
-            "lhs": {
-              "data": {
-                "object_pattern": [
-                  {
-                    "data": {
-                      "object_property": {
-                        "key": {
-                          "data": {
-                            "identifier": "x"
-                          },
-                          "start": 171,
-                          "end": 172
-                        },
-                        "value": {
-                          "data": {
-                            "identifier": "x"
-                          },
-                          "start": 171,
-                          "end": 172
-                        },
-                        "flags": {
-                          "is_method": false,
-                          "is_shorthand": true,
-                          "is_computed": false,
-                          "kind": "init"
-                        }
-                      }
-                    },
-                    "start": 171,
-                    "end": 172
-                  },
-                  {
-                    "data": {
-                      "object_property": {
-                        "key": {
-                          "data": {
-                            "identifier": "y"
-                          },
-                          "start": 174,
-                          "end": 175
-                        },
-                        "value": {
-                          "data": {
-                            "identifier": "y"
-                          },
-                          "start": 174,
-                          "end": 175
-                        },
-                        "flags": {
-                          "is_method": false,
-                          "is_shorthand": true,
-                          "is_computed": false,
-                          "kind": "init"
-                        }
-                      }
-                    },
-                    "start": 174,
-                    "end": 175
-                  },
-                  {
-                    "data": {
-                      "object_property": {
-                        "key": {
-                          "data": {
-                            "identifier": "z"
-                          },
-                          "start": 177,
-                          "end": 178
-                        },
-                        "value": {
-                          "data": {
-                            "identifier": "z"
-                          },
-                          "start": 177,
-                          "end": 178
-                        },
-                        "flags": {
-                          "is_method": false,
-                          "is_shorthand": true,
-                          "is_computed": false,
-                          "kind": "init"
-                        }
-                      }
-                    },
-                    "start": 177,
-                    "end": 178
-                  }
-                ]
-              },
-              "start": 169,
-              "end": 180
+      }
+    },
+    {
+      "type": "ForInStatement",
+      "start": 164,
+      "end": 188,
+      "left": {
+        "type": "ObjectPattern",
+        "start": 169,
+        "end": 180,
+        "properties": [
+          {
+            "type": "Property",
+            "start": 171,
+            "end": 172,
+            "key": {
+              "type": "Identifier",
+              "start": 171,
+              "end": 172,
+              "name": "x"
             },
-            "rhs": {
-              "data": {
-                "object_literal": []
-              },
-              "start": 184,
-              "end": 186
+            "value": {
+              "type": "Identifier",
+              "start": 171,
+              "end": 172,
+              "name": "x"
             },
-            "body": {
-              "data": {
-                "empty_statement": {}
-              },
-              "start": 187,
-              "end": 188
-            }
+            "kind": "init",
+            "computed": false,
+            "shorthand": true,
+            "method": false
+          },
+          {
+            "type": "Property",
+            "start": 174,
+            "end": 175,
+            "key": {
+              "type": "Identifier",
+              "start": 174,
+              "end": 175,
+              "name": "y"
+            },
+            "value": {
+              "type": "Identifier",
+              "start": 174,
+              "end": 175,
+              "name": "y"
+            },
+            "kind": "init",
+            "computed": false,
+            "shorthand": true,
+            "method": false
+          },
+          {
+            "type": "Property",
+            "start": 177,
+            "end": 178,
+            "key": {
+              "type": "Identifier",
+              "start": 177,
+              "end": 178,
+              "name": "z"
+            },
+            "value": {
+              "type": "Identifier",
+              "start": 177,
+              "end": 178,
+              "name": "z"
+            },
+            "kind": "init",
+            "computed": false,
+            "shorthand": true,
+            "method": false
           }
-        },
-        "start": 164,
+        ]
+      },
+      "right": {
+        "type": "ObjectExpression",
+        "start": 184,
+        "end": 186,
+        "properties": []
+      },
+      "body": {
+        "type": "EmptyStatement",
+        "start": 187,
         "end": 188
+      }
+    },
+    {
+      "type": "ForInStatement",
+      "start": 189,
+      "end": 207,
+      "left": {
+        "type": "Identifier",
+        "start": 194,
+        "end": 195,
+        "name": "x"
       },
-      {
-        "data": {
-          "for_in_statement": {
-            "lhs": {
-              "data": {
-                "identifier": "x"
-              },
-              "start": 194,
-              "end": 195
-            },
-            "rhs": {
-              "data": {
-                "binary_expression": {
-                  "lhs": {
-                    "data": {
-                      "identifier": "z"
-                    },
-                    "start": 199,
-                    "end": 200
-                  },
-                  "rhs": {
-                    "data": {
-                      "identifier": "y"
-                    },
-                    "start": 204,
-                    "end": 205
-                  },
-                  "operator": "in"
-                }
-              },
-              "start": 199,
-              "end": 205
-            },
-            "body": {
-              "data": {
-                "empty_statement": {}
-              },
-              "start": 206,
-              "end": 207
-            }
-          }
+      "right": {
+        "type": "BinaryExpression",
+        "start": 199,
+        "end": 205,
+        "operator": "in",
+        "left": {
+          "type": "Identifier",
+          "start": 199,
+          "end": 200,
+          "name": "z"
         },
-        "start": 189,
+        "right": {
+          "type": "Identifier",
+          "start": 204,
+          "end": 205,
+          "name": "y"
+        }
+      },
+      "body": {
+        "type": "EmptyStatement",
+        "start": 206,
         "end": 207
-      },
-      {
-        "data": {
-          "for_in_statement": {
-            "lhs": {
-              "data": {
-                "object_pattern": [
-                  {
-                    "data": {
-                      "object_property": {
-                        "key": {
-                          "data": {
-                            "identifier": "x"
-                          },
-                          "start": 214,
-                          "end": 215
-                        },
-                        "value": {
-                          "data": {
-                            "member_expression": {
-                              "object": {
-                                "data": {
-                                  "identifier": "y"
-                                },
-                                "start": 216,
-                                "end": 217
-                              },
-                              "property": "z"
-                            }
-                          },
-                          "start": 216,
-                          "end": 219
-                        },
-                        "flags": {
-                          "is_method": false,
-                          "is_shorthand": false,
-                          "is_computed": false,
-                          "kind": "init"
-                        }
-                      }
-                    },
-                    "start": 214,
-                    "end": 219
-                  }
-                ]
-              },
-              "start": 213,
-              "end": 220
+      }
+    },
+    {
+      "type": "ForInStatement",
+      "start": 208,
+      "end": 232,
+      "left": {
+        "type": "ObjectPattern",
+        "start": 213,
+        "end": 220,
+        "properties": [
+          {
+            "type": "Property",
+            "start": 214,
+            "end": 219,
+            "key": {
+              "type": "Identifier",
+              "start": 214,
+              "end": 215,
+              "name": "x"
             },
-            "rhs": {
-              "data": {
-                "binary_expression": {
-                  "lhs": {
-                    "data": {
-                      "identifier": "z"
-                    },
-                    "start": 224,
-                    "end": 225
-                  },
-                  "rhs": {
-                    "data": {
-                      "identifier": "y"
-                    },
-                    "start": 229,
-                    "end": 230
-                  },
-                  "operator": "in"
-                }
+            "value": {
+              "type": "MemberExpression",
+              "start": 216,
+              "end": 219,
+              "object": {
+                "type": "Identifier",
+                "start": 216,
+                "end": 217,
+                "name": "y"
               },
-              "start": 224,
-              "end": 230
+              "property": {
+                "type": "Identifier",
+                "start": 218,
+                "end": 219,
+                "name": "z"
+              },
+              "computed": false
             },
-            "body": {
-              "data": {
-                "empty_statement": {}
-              },
-              "start": 231,
-              "end": 232
-            }
+            "kind": "init",
+            "computed": false,
+            "shorthand": false,
+            "method": false
           }
+        ]
+      },
+      "right": {
+        "type": "BinaryExpression",
+        "start": 224,
+        "end": 230,
+        "operator": "in",
+        "left": {
+          "type": "Identifier",
+          "start": 224,
+          "end": 225,
+          "name": "z"
         },
-        "start": 208,
+        "right": {
+          "type": "Identifier",
+          "start": 229,
+          "end": 230,
+          "name": "y"
+        }
+      },
+      "body": {
+        "type": "EmptyStatement",
+        "start": 231,
         "end": 232
       }
-    ]
-  },
-  "start": 0,
-  "end": 235
+    }
+  ]
 }

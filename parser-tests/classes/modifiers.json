@@ -1,568 +1,330 @@
 {
-  "data": {
-    "program": [
-      {
-        "data": {
-          "class_declaration": {
-            "name": "A",
-            "body": [
-              {
-                "data": {
-                  "class_method": {
-                    "key": {
-                      "data": {
-                        "identifier": "static"
-                      },
-                      "start": 29,
-                      "end": 35
-                    },
-                    "value": {
-                      "data": {
-                        "function": {
-                          "parameters": {
-                            "data": {
-                              "parameters": []
-                            },
-                            "start": 35,
-                            "end": 37
-                          },
-                          "body": {
-                            "data": {
-                              "block_statement": [
-                                {
-                                  "data": {
-                                    "return_statement": {
-                                      "data": {
-                                        "await_expression": {
-                                          "operand": {
-                                            "data": {
-                                              "literal": "0"
-                                            },
-                                            "start": 53,
-                                            "end": 54
-                                          },
-                                          "operator": "await"
-                                        }
-                                      },
-                                      "start": 47,
-                                      "end": 54
-                                    }
-                                  },
-                                  "start": 40,
-                                  "end": 54
-                                }
-                              ]
-                            },
-                            "start": 38,
-                            "end": 56
-                          },
-                          "info": {
-                            "function": {
-                              "flags": {
-                                "is_generator": false,
-                                "is_async": true,
-                                "is_arrow": false,
-                                "_": 0
-                              }
-                            }
-                          }
-                        }
-                      },
-                      "start": 35,
-                      "end": 56
-                    },
-                    "flags": {
-                      "is_static": false,
-                      "is_computed": false,
-                      "kind": "init",
-                      "_": false
-                    }
-                  }
-                },
-                "start": 29,
-                "end": 56
-              },
-              {
-                "data": {
-                  "class_field": {
-                    "key": {
-                      "data": {
-                        "identifier": "async"
-                      },
-                      "start": 66,
-                      "end": 71
-                    },
-                    "value": {
-                      "data": {
-                        "identifier": "async"
-                      },
-                      "start": 66,
-                      "end": 71
-                    },
-                    "flags": {
-                      "is_static": true,
-                      "is_computed": false,
-                      "kind": "init",
-                      "_": false
-                    }
-                  }
-                },
-                "start": 66,
-                "end": 72
-              },
-              {
-                "data": {
-                  "class_field": {
-                    "key": {
-                      "data": {
-                        "identifier": "async"
-                      },
-                      "start": 81,
-                      "end": 86
-                    },
-                    "value": {
-                      "data": {
-                        "literal": "2"
-                      },
-                      "start": 89,
-                      "end": 90
-                    },
-                    "flags": {
-                      "is_static": true,
-                      "is_computed": false,
-                      "kind": "init",
-                      "_": false
-                    }
-                  }
-                },
-                "start": 81,
-                "end": 91
-              },
-              {
-                "data": {
-                  "class_method": {
-                    "key": {
-                      "data": {
-                        "binary_expression": {
-                          "lhs": {
-                            "data": {
-                              "literal": "\"f\""
-                            },
-                            "start": 107,
-                            "end": 110
-                          },
-                          "rhs": {
-                            "data": {
-                              "literal": "\"gh\""
-                            },
-                            "start": 113,
-                            "end": 117
-                          },
-                          "operator": "+"
-                        }
-                      },
-                      "start": 107,
-                      "end": 117
-                    },
-                    "value": {
-                      "data": {
-                        "function": {
-                          "parameters": {
-                            "data": {
-                              "parameters": []
-                            },
-                            "start": 118,
-                            "end": 120
-                          },
-                          "body": {
-                            "data": {
-                              "block_statement": []
-                            },
-                            "start": 120,
-                            "end": 122
-                          },
-                          "info": {
-                            "function": {
-                              "flags": {
-                                "is_generator": false,
-                                "is_async": true,
-                                "is_arrow": false,
-                                "_": 0
-                              }
-                            }
-                          }
-                        }
-                      },
-                      "start": 118,
-                      "end": 122
-                    },
-                    "flags": {
-                      "is_static": true,
-                      "is_computed": false,
-                      "kind": "init",
-                      "_": false
-                    }
-                  }
-                },
-                "start": 107,
-                "end": 122
-              },
-              {
-                "data": {
-                  "class_method": {
-                    "key": {
-                      "data": {
-                        "identifier": "f"
-                      },
-                      "start": 137,
-                      "end": 138
-                    },
-                    "value": {
-                      "data": {
-                        "function": {
-                          "parameters": {
-                            "data": {
-                              "parameters": []
-                            },
-                            "start": 138,
-                            "end": 140
-                          },
-                          "body": {
-                            "data": {
-                              "block_statement": []
-                            },
-                            "start": 140,
-                            "end": 142
-                          },
-                          "info": {
-                            "function": {
-                              "flags": {
-                                "is_generator": false,
-                                "is_async": true,
-                                "is_arrow": false,
-                                "_": 0
-                              }
-                            }
-                          }
-                        }
-                      },
-                      "start": 138,
-                      "end": 142
-                    },
-                    "flags": {
-                      "is_static": true,
-                      "is_computed": false,
-                      "kind": "init",
-                      "_": false
-                    }
-                  }
-                },
-                "start": 137,
-                "end": 142
-              },
-              {
-                "data": {
-                  "class_method": {
-                    "key": {
-                      "data": {
-                        "literal": "'f'"
-                      },
-                      "start": 159,
-                      "end": 162
-                    },
-                    "value": {
-                      "data": {
-                        "function": {
-                          "parameters": {
-                            "data": {
-                              "parameters": []
-                            },
-                            "start": 163,
-                            "end": 165
-                          },
-                          "body": {
-                            "data": {
-                              "block_statement": []
-                            },
-                            "start": 165,
-                            "end": 167
-                          },
-                          "info": {
-                            "function": {
-                              "flags": {
-                                "is_generator": true,
-                                "is_async": true,
-                                "is_arrow": false,
-                                "_": 0
-                              }
-                            }
-                          }
-                        }
-                      },
-                      "start": 163,
-                      "end": 167
-                    },
-                    "flags": {
-                      "is_static": true,
-                      "is_computed": false,
-                      "kind": "init",
-                      "_": false
-                    }
-                  }
-                },
-                "start": 159,
-                "end": 167
-              },
-              {
-                "data": {
-                  "class_method": {
-                    "key": {
-                      "data": {
-                        "identifier": "fg"
-                      },
-                      "start": 170,
-                      "end": 172
-                    },
-                    "value": {
-                      "data": {
-                        "function": {
-                          "parameters": {
-                            "data": {
-                              "parameters": []
-                            },
-                            "start": 172,
-                            "end": 174
-                          },
-                          "body": {
-                            "data": {
-                              "block_statement": []
-                            },
-                            "start": 174,
-                            "end": 176
-                          },
-                          "info": {
-                            "function": {
-                              "flags": {
-                                "is_generator": true,
-                                "is_async": false,
-                                "is_arrow": false,
-                                "_": 0
-                              }
-                            }
-                          }
-                        }
-                      },
-                      "start": 172,
-                      "end": 176
-                    },
-                    "flags": {
-                      "is_static": false,
-                      "is_computed": false,
-                      "kind": "init",
-                      "_": false
-                    }
-                  }
-                },
-                "start": 170,
-                "end": 176
-              },
-              {
-                "data": {
-                  "class_method": {
-                    "key": {
-                      "data": {
-                        "identifier": "g"
-                      },
-                      "start": 191,
-                      "end": 192
-                    },
-                    "value": {
-                      "data": {
-                        "function": {
-                          "parameters": {
-                            "data": {
-                              "parameters": []
-                            },
-                            "start": 192,
-                            "end": 194
-                          },
-                          "body": {
-                            "data": {
-                              "block_statement": []
-                            },
-                            "start": 194,
-                            "end": 196
-                          },
-                          "info": {
-                            "function": {
-                              "flags": {
-                                "is_generator": false,
-                                "is_async": true,
-                                "is_arrow": false,
-                                "_": 0
-                              }
-                            }
-                          }
-                        }
-                      },
-                      "start": 192,
-                      "end": 196
-                    },
-                    "flags": {
-                      "is_static": true,
-                      "is_computed": false,
-                      "kind": "init",
-                      "_": false
-                    }
-                  }
-                },
-                "start": 191,
-                "end": 196
-              },
-              {
-                "data": {
-                  "class_method": {
-                    "key": {
-                      "data": {
-                        "identifier": "h"
-                      },
-                      "start": 197,
-                      "end": 198
-                    },
-                    "value": {
-                      "data": {
-                        "function": {
-                          "parameters": {
-                            "data": {
-                              "parameters": []
-                            },
-                            "start": 198,
-                            "end": 200
-                          },
-                          "body": {
-                            "data": {
-                              "block_statement": []
-                            },
-                            "start": 201,
-                            "end": 203
-                          },
-                          "info": {
-                            "function": {
-                              "flags": {
-                                "is_generator": false,
-                                "is_async": false,
-                                "is_arrow": false,
-                                "_": 0
-                              }
-                            }
-                          }
-                        }
-                      },
-                      "start": 198,
-                      "end": 203
-                    },
-                    "flags": {
-                      "is_static": false,
-                      "is_computed": false,
-                      "kind": "init",
-                      "_": false
-                    }
-                  }
-                },
-                "start": 197,
-                "end": 203
-              },
-              {
-                "data": {
-                  "class_method": {
-                    "key": {
-                      "data": {
-                        "literal": "123"
-                      },
-                      "start": 205,
-                      "end": 208
-                    },
-                    "value": {
-                      "data": {
-                        "function": {
-                          "parameters": {
-                            "data": {
-                              "parameters": []
-                            },
-                            "start": 208,
-                            "end": 210
-                          },
-                          "body": {
-                            "data": {
-                              "block_statement": []
-                            },
-                            "start": 210,
-                            "end": 212
-                          },
-                          "info": {
-                            "function": {
-                              "flags": {
-                                "is_generator": false,
-                                "is_async": false,
-                                "is_arrow": false,
-                                "_": 0
-                              }
-                            }
-                          }
-                        }
-                      },
-                      "start": 208,
-                      "end": 212
-                    },
-                    "flags": {
-                      "is_static": false,
-                      "is_computed": false,
-                      "kind": "init",
-                      "_": false
-                    }
-                  }
-                },
-                "start": 205,
-                "end": 212
-              },
-              {
-                "data": {
-                  "class_field": {
-                    "key": {
-                      "data": {
-                        "identifier": "x"
-                      },
-                      "start": 214,
-                      "end": 215
-                    },
-                    "value": {
-                      "data": {
-                        "class_expression": {
-                          "body": []
-                        }
-                      },
-                      "start": 218,
-                      "end": 226
-                    },
-                    "flags": {
-                      "is_static": false,
-                      "is_computed": false,
-                      "kind": "init",
-                      "_": false
-                    }
-                  }
-                },
-                "start": 214,
-                "end": 226
-              }
-            ]
-          }
-        },
-        "start": 0,
-        "end": 228
-      }
-    ]
-  },
+  "type": "Program",
   "start": 0,
-  "end": 230
+  "end": 230,
+  "body": [
+    {
+      "type": "ClassDeclaration",
+      "start": 0,
+      "end": 228,
+      "superClass": {
+        "type": "MemberExpression",
+        "start": 16,
+        "end": 19,
+        "object": {
+          "type": "Identifier",
+          "start": 16,
+          "end": 17,
+          "name": "B"
+        },
+        "property": {
+          "type": "Identifier",
+          "start": 18,
+          "end": 19,
+          "name": "C"
+        },
+        "computed": false
+      },
+      "id": {
+        "type": "Identifier",
+        "start": 6,
+        "end": 7,
+        "name": "A"
+      },
+      "body": {
+        "type": "ClassBody",
+        "body": [
+          {
+            "type": "MethodDefinition",
+            "start": 29,
+            "end": 56,
+            "key": {
+              "type": "Identifier",
+              "start": 29,
+              "end": 35,
+              "name": "static"
+            },
+            "value": {
+              "type": "FunctionExpression",
+              "start": 35,
+              "end": 56,
+              "params": [],
+              "body": {
+                "type": "BlockStatement",
+                "start": 38,
+                "end": 56,
+                "body": [
+                  {
+                    "type": "ReturnStatement",
+                    "start": 40,
+                    "end": 54,
+                    "argument": {
+                      "type": "AwaitExpression",
+                      "start": 47,
+                      "end": 54,
+                      "argument": {
+                        "type": "Literal",
+                        "start": 53,
+                        "end": 54,
+                        "value": "0"
+                      }
+                    }
+                  }
+                ]
+              }
+            },
+            "computed": false,
+            "static": false
+          },
+          {
+            "type": "ClassProperty",
+            "start": 66,
+            "end": 72,
+            "key": {
+              "type": "Identifier",
+              "start": 66,
+              "end": 71,
+              "name": "async"
+            },
+            "value": {
+              "type": "Identifier",
+              "start": 66,
+              "end": 71,
+              "name": "async"
+            },
+            "computed": false,
+            "static": true
+          },
+          {
+            "type": "ClassProperty",
+            "start": 81,
+            "end": 91,
+            "key": {
+              "type": "Identifier",
+              "start": 81,
+              "end": 86,
+              "name": "async"
+            },
+            "value": {
+              "type": "Literal",
+              "start": 89,
+              "end": 90,
+              "value": "2"
+            },
+            "computed": false,
+            "static": true
+          },
+          {
+            "type": "MethodDefinition",
+            "start": 107,
+            "end": 122,
+            "key": {
+              "type": "BinaryExpression",
+              "start": 107,
+              "end": 117,
+              "operator": "+",
+              "left": {
+                "type": "Literal",
+                "start": 107,
+                "end": 110,
+                "value": "\"f\""
+              },
+              "right": {
+                "type": "Literal",
+                "start": 113,
+                "end": 117,
+                "value": "\"gh\""
+              }
+            },
+            "value": {
+              "type": "FunctionExpression",
+              "start": 118,
+              "end": 122,
+              "params": [],
+              "body": {
+                "type": "BlockStatement",
+                "start": 120,
+                "end": 122,
+                "body": []
+              }
+            },
+            "computed": false,
+            "static": true
+          },
+          {
+            "type": "MethodDefinition",
+            "start": 137,
+            "end": 142,
+            "key": {
+              "type": "Identifier",
+              "start": 137,
+              "end": 138,
+              "name": "f"
+            },
+            "value": {
+              "type": "FunctionExpression",
+              "start": 138,
+              "end": 142,
+              "params": [],
+              "body": {
+                "type": "BlockStatement",
+                "start": 140,
+                "end": 142,
+                "body": []
+              }
+            },
+            "computed": false,
+            "static": true
+          },
+          {
+            "type": "MethodDefinition",
+            "start": 159,
+            "end": 167,
+            "key": {
+              "type": "Literal",
+              "start": 159,
+              "end": 162,
+              "value": "'f'"
+            },
+            "value": {
+              "type": "FunctionExpression",
+              "start": 163,
+              "end": 167,
+              "params": [],
+              "body": {
+                "type": "BlockStatement",
+                "start": 165,
+                "end": 167,
+                "body": []
+              }
+            },
+            "computed": false,
+            "static": true
+          },
+          {
+            "type": "MethodDefinition",
+            "start": 170,
+            "end": 176,
+            "key": {
+              "type": "Identifier",
+              "start": 170,
+              "end": 172,
+              "name": "fg"
+            },
+            "value": {
+              "type": "FunctionExpression",
+              "start": 172,
+              "end": 176,
+              "params": [],
+              "body": {
+                "type": "BlockStatement",
+                "start": 174,
+                "end": 176,
+                "body": []
+              }
+            },
+            "computed": false,
+            "static": false
+          },
+          {
+            "type": "MethodDefinition",
+            "start": 191,
+            "end": 196,
+            "key": {
+              "type": "Identifier",
+              "start": 191,
+              "end": 192,
+              "name": "g"
+            },
+            "value": {
+              "type": "FunctionExpression",
+              "start": 192,
+              "end": 196,
+              "params": [],
+              "body": {
+                "type": "BlockStatement",
+                "start": 194,
+                "end": 196,
+                "body": []
+              }
+            },
+            "computed": false,
+            "static": true
+          },
+          {
+            "type": "MethodDefinition",
+            "start": 197,
+            "end": 203,
+            "key": {
+              "type": "Identifier",
+              "start": 197,
+              "end": 198,
+              "name": "h"
+            },
+            "value": {
+              "type": "FunctionExpression",
+              "start": 198,
+              "end": 203,
+              "params": [],
+              "body": {
+                "type": "BlockStatement",
+                "start": 201,
+                "end": 203,
+                "body": []
+              }
+            },
+            "computed": false,
+            "static": false
+          },
+          {
+            "type": "MethodDefinition",
+            "start": 205,
+            "end": 212,
+            "key": {
+              "type": "Literal",
+              "start": 205,
+              "end": 208,
+              "value": "123"
+            },
+            "value": {
+              "type": "FunctionExpression",
+              "start": 208,
+              "end": 212,
+              "params": [],
+              "body": {
+                "type": "BlockStatement",
+                "start": 210,
+                "end": 212,
+                "body": []
+              }
+            },
+            "computed": false,
+            "static": false
+          },
+          {
+            "type": "ClassProperty",
+            "start": 214,
+            "end": 226,
+            "key": {
+              "type": "Identifier",
+              "start": 214,
+              "end": 215,
+              "name": "x"
+            },
+            "value": {
+              "type": "ClassExpression",
+              "start": 218,
+              "end": 226,
+              "body": {
+                "type": "ClassBody",
+                "body": []
+              }
+            },
+            "computed": false,
+            "static": false
+          }
+        ]
+      }
+    }
+  ]
 }

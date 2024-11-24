@@ -1,211 +1,144 @@
 {
-  "data": {
-    "program": [
-      {
-        "data": {
-          "expression_statement": {
-            "data": {
-              "function": {
-                "parameters": {
-                  "data": {
-                    "parameters": [
-                      {
-                        "data": {
-                          "identifier": "a"
-                        },
-                        "start": 1,
-                        "end": 2
-                      },
-                      {
-                        "data": {
-                          "assignment_pattern": {
-                            "lhs": {
-                              "data": {
-                                "identifier": "b"
-                              },
-                              "start": 4,
-                              "end": 5
-                            },
-                            "rhs": {
-                              "data": {
-                                "literal": "1"
-                              },
-                              "start": 8,
-                              "end": 9
-                            },
-                            "operator": "="
-                          }
-                        },
-                        "start": 4,
-                        "end": 9
-                      }
-                    ]
-                  },
-                  "start": 0,
-                  "end": 10
-                },
-                "body": {
-                  "data": {
-                    "binary_expression": {
-                      "lhs": {
-                        "data": {
-                          "identifier": "a"
-                        },
-                        "start": 14,
-                        "end": 15
-                      },
-                      "rhs": {
-                        "data": {
-                          "identifier": "b"
-                        },
-                        "start": 18,
-                        "end": 19
-                      },
-                      "operator": "+"
-                    }
-                  },
-                  "start": 14,
-                  "end": 19
-                },
-                "info": {
-                  "function": {
-                    "flags": {
-                      "is_generator": false,
-                      "is_async": false,
-                      "is_arrow": true,
-                      "_": 0
-                    }
-                  }
-                }
-              }
-            },
-            "start": 0,
-            "end": 19
-          }
-        },
-        "start": 0,
-        "end": 20
-      },
-      {
-        "data": {
-          "expression_statement": {
-            "data": {
-              "function": {
-                "parameters": {
-                  "data": {
-                    "parameters": [
-                      {
-                        "data": {
-                          "identifier": "a"
-                        },
-                        "start": 22,
-                        "end": 23
-                      },
-                      {
-                        "data": {
-                          "array_pattern": [
-                            {
-                              "data": {
-                                "identifier": "b"
-                              },
-                              "start": 26,
-                              "end": 27
-                            },
-                            {
-                              "data": {
-                                "rest_element": {
-                                  "data": {
-                                    "identifier": "_"
-                                  },
-                                  "start": 32,
-                                  "end": 33
-                                }
-                              },
-                              "start": 29,
-                              "end": 33
-                            }
-                          ]
-                        },
-                        "start": 25,
-                        "end": 34
-                      }
-                    ]
-                  },
-                  "start": 21,
-                  "end": 36
-                },
-                "body": {
-                  "data": {
-                    "binary_expression": {
-                      "lhs": {
-                        "data": {
-                          "identifier": "a"
-                        },
-                        "start": 40,
-                        "end": 41
-                      },
-                      "rhs": {
-                        "data": {
-                          "identifier": "b"
-                        },
-                        "start": 44,
-                        "end": 45
-                      },
-                      "operator": "+"
-                    }
-                  },
-                  "start": 40,
-                  "end": 45
-                },
-                "info": {
-                  "function": {
-                    "flags": {
-                      "is_generator": false,
-                      "is_async": false,
-                      "is_arrow": true,
-                      "_": 0
-                    }
-                  }
-                }
-              }
-            },
-            "start": 21,
-            "end": 45
-          }
-        },
-        "start": 21,
-        "end": 46
-      },
-      {
-        "data": {
-          "expression_statement": {
-            "data": {
-              "sequence_expression": [
-                {
-                  "data": {
-                    "identifier": "a"
-                  },
-                  "start": 48,
-                  "end": 49
-                },
-                {
-                  "data": {
-                    "identifier": "b"
-                  },
-                  "start": 51,
-                  "end": 52
-                }
-              ]
-            },
-            "start": 47,
-            "end": 53
-          }
-        },
-        "start": 47,
-        "end": 54
-      }
-    ]
-  },
+  "type": "Program",
   "start": 0,
-  "end": 55
+  "end": 55,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 20,
+      "expression": {
+        "type": "FunctionExpression",
+        "start": 0,
+        "end": 19,
+        "params": [
+          {
+            "type": "Identifier",
+            "start": 1,
+            "end": 2,
+            "name": "a"
+          },
+          {
+            "type": "AssignmentPattern",
+            "start": 4,
+            "end": 9,
+            "left": {
+              "type": "Identifier",
+              "start": 4,
+              "end": 5,
+              "name": "b"
+            },
+            "right": {
+              "type": "Literal",
+              "start": 8,
+              "end": 9,
+              "value": "1"
+            }
+          }
+        ],
+        "body": {
+          "type": "BinaryExpression",
+          "start": 14,
+          "end": 19,
+          "operator": "+",
+          "left": {
+            "type": "Identifier",
+            "start": 14,
+            "end": 15,
+            "name": "a"
+          },
+          "right": {
+            "type": "Identifier",
+            "start": 18,
+            "end": 19,
+            "name": "b"
+          }
+        }
+      }
+    },
+    {
+      "type": "ExpressionStatement",
+      "start": 21,
+      "end": 46,
+      "expression": {
+        "type": "FunctionExpression",
+        "start": 21,
+        "end": 45,
+        "params": [
+          {
+            "type": "Identifier",
+            "start": 22,
+            "end": 23,
+            "name": "a"
+          },
+          {
+            "type": "ArrayPattern",
+            "start": 25,
+            "end": 34,
+            "elements": [
+              {
+                "type": "Identifier",
+                "start": 26,
+                "end": 27,
+                "name": "b"
+              },
+              {
+                "type": "RestElement",
+                "start": 29,
+                "end": 33,
+                "argument": {
+                  "type": "Identifier",
+                  "start": 32,
+                  "end": 33,
+                  "name": "_"
+                }
+              }
+            ]
+          }
+        ],
+        "body": {
+          "type": "BinaryExpression",
+          "start": 40,
+          "end": 45,
+          "operator": "+",
+          "left": {
+            "type": "Identifier",
+            "start": 40,
+            "end": 41,
+            "name": "a"
+          },
+          "right": {
+            "type": "Identifier",
+            "start": 44,
+            "end": 45,
+            "name": "b"
+          }
+        }
+      }
+    },
+    {
+      "type": "ExpressionStatement",
+      "start": 47,
+      "end": 54,
+      "expression": {
+        "type": "SequenceExpression",
+        "start": 47,
+        "end": 53,
+        "expressions": [
+          {
+            "type": "Identifier",
+            "start": 48,
+            "end": 49,
+            "name": "a"
+          },
+          {
+            "type": "Identifier",
+            "start": 51,
+            "end": 52,
+            "name": "b"
+          }
+        ]
+      }
+    }
+  ]
 }

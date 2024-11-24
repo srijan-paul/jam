@@ -1,528 +1,396 @@
 {
-  "data": {
-    "program": [
-      {
-        "data": {
-          "for_statement": {
+  "type": "Program",
+  "start": 0,
+  "end": 196,
+  "body": [
+    {
+      "type": "ForStatement",
+      "start": 0,
+      "end": 32,
+      "init": {
+        "type": "VariableDeclaration",
+        "start": 5,
+        "end": 14,
+        "declarations": [
+          {
+            "type": "VariableDeclarator",
+            "start": 5,
+            "end": 14,
+            "id": {
+              "type": "Identifier",
+              "start": 9,
+              "end": 10,
+              "name": "x"
+            },
             "init": {
-              "data": {
-                "variable_declaration": {
-                  "declarators": [
-                    {
-                      "data": {
-                        "variable_declarator": {
-                          "lhs": {
-                            "data": {
-                              "identifier": "x"
-                            },
-                            "start": 9,
-                            "end": 10
-                          },
-                          "init": {
-                            "data": {
-                              "literal": "1"
-                            },
-                            "start": 13,
-                            "end": 14
-                          }
-                        }
-                      },
-                      "start": 5,
-                      "end": 14
-                    }
-                  ],
-                  "kind": "let"
-                }
-              },
-              "start": 5,
-              "end": 14
-            },
-            "condition": {
-              "data": {
-                "binary_expression": {
-                  "lhs": {
-                    "data": {
-                      "identifier": "x"
-                    },
-                    "start": 16,
-                    "end": 17
-                  },
-                  "rhs": {
-                    "data": {
-                      "literal": "10"
-                    },
-                    "start": 20,
-                    "end": 22
-                  },
-                  "operator": "<"
-                }
-              },
-              "start": 16,
-              "end": 22
-            },
-            "update": {
-              "data": {
-                "post_unary_expression": {
-                  "operand": {
-                    "data": {
-                      "identifier": "x"
-                    },
-                    "start": 24,
-                    "end": 25
-                  },
-                  "operator": "++"
-                }
-              },
-              "start": 25,
-              "end": 25
-            },
-            "body": {
-              "data": {
-                "block_statement": []
-              },
-              "start": 29,
-              "end": 32
+              "type": "Literal",
+              "start": 13,
+              "end": 14,
+              "value": "1"
             }
           }
-        },
-        "start": 0,
-        "end": 32
+        ],
+        "kind": "let"
       },
-      {
-        "data": {
-          "for_statement": {
-            "body": {
-              "data": {
-                "empty_statement": {}
-              },
-              "start": 42,
-              "end": 43
-            }
-          }
+      "test": {
+        "type": "BinaryExpression",
+        "start": 16,
+        "end": 22,
+        "operator": "<",
+        "left": {
+          "type": "Identifier",
+          "start": 16,
+          "end": 17,
+          "name": "x"
         },
-        "start": 33,
+        "right": {
+          "type": "Literal",
+          "start": 20,
+          "end": 22,
+          "value": "10"
+        }
+      },
+      "update": {
+        "type": "UnaryExpression",
+        "start": 25,
+        "end": 25,
+        "operator": "++",
+        "argument": {
+          "type": "Identifier",
+          "start": 24,
+          "end": 25,
+          "name": "x"
+        }
+      },
+      "body": {
+        "type": "BlockStatement",
+        "start": 29,
+        "end": 32,
+        "body": []
+      }
+    },
+    {
+      "type": "ForStatement",
+      "start": 33,
+      "end": 43,
+      "body": {
+        "type": "EmptyStatement",
+        "start": 42,
         "end": 43
-      },
-      {
-        "data": {
-          "for_statement": {
-            "init": {
-              "data": {
-                "variable_declaration": {
-                  "declarators": [
-                    {
-                      "data": {
-                        "variable_declarator": {
-                          "lhs": {
-                            "data": {
-                              "identifier": "x"
-                            },
-                            "start": 53,
-                            "end": 54
-                          },
-                          "init": {
-                            "data": {
-                              "literal": "0"
-                            },
-                            "start": 57,
-                            "end": 58
-                          }
-                        }
-                      },
-                      "start": 49,
-                      "end": 58
-                    }
-                  ],
-                  "kind": "var"
-                }
-              },
-              "start": 49,
-              "end": 58
+      }
+    },
+    {
+      "type": "ForStatement",
+      "start": 44,
+      "end": 63,
+      "init": {
+        "type": "VariableDeclaration",
+        "start": 49,
+        "end": 58,
+        "declarations": [
+          {
+            "type": "VariableDeclarator",
+            "start": 49,
+            "end": 58,
+            "id": {
+              "type": "Identifier",
+              "start": 53,
+              "end": 54,
+              "name": "x"
             },
-            "body": {
-              "data": {
-                "empty_statement": {}
-              },
-              "start": 62,
-              "end": 63
+            "init": {
+              "type": "Literal",
+              "start": 57,
+              "end": 58,
+              "value": "0"
             }
           }
-        },
-        "start": 44,
+        ],
+        "kind": "var"
+      },
+      "body": {
+        "type": "EmptyStatement",
+        "start": 62,
         "end": 63
+      }
+    },
+    {
+      "type": "ForStatement",
+      "start": 64,
+      "end": 77,
+      "test": {
+        "type": "UnaryExpression",
+        "start": 72,
+        "end": 72,
+        "operator": "++",
+        "argument": {
+          "type": "Identifier",
+          "start": 71,
+          "end": 72,
+          "name": "x"
+        }
       },
-      {
-        "data": {
-          "for_statement": {
-            "condition": {
-              "data": {
-                "post_unary_expression": {
-                  "operand": {
-                    "data": {
-                      "identifier": "x"
-                    },
-                    "start": 71,
-                    "end": 72
-                  },
-                  "operator": "++"
-                }
-              },
-              "start": 72,
-              "end": 72
-            },
-            "body": {
-              "data": {
-                "empty_statement": {}
-              },
-              "start": 76,
-              "end": 77
-            }
-          }
-        },
-        "start": 64,
+      "body": {
+        "type": "EmptyStatement",
+        "start": 76,
         "end": 77
+      }
+    },
+    {
+      "type": "ForStatement",
+      "start": 78,
+      "end": 96,
+      "test": {
+        "type": "Identifier",
+        "start": 85,
+        "end": 86,
+        "name": "x"
       },
-      {
-        "data": {
-          "for_statement": {
-            "condition": {
-              "data": {
-                "identifier": "x"
-              },
-              "start": 85,
-              "end": 86
-            },
-            "update": {
-              "data": {
-                "assignment_expression": {
-                  "lhs": {
-                    "data": {
-                      "identifier": "x"
-                    },
-                    "start": 88,
-                    "end": 89
-                  },
-                  "rhs": {
-                    "data": {
-                      "literal": "1"
-                    },
-                    "start": 93,
-                    "end": 94
-                  },
-                  "operator": "+="
-                }
-              },
-              "start": 88,
-              "end": 94
-            },
-            "body": {
-              "data": {
-                "empty_statement": {}
-              },
-              "start": 95,
-              "end": 96
-            }
-          }
+      "update": {
+        "type": "AssignmentExpression",
+        "start": 88,
+        "end": 94,
+        "operator": "+=",
+        "left": {
+          "type": "Identifier",
+          "start": 88,
+          "end": 89,
+          "name": "x"
         },
-        "start": 78,
+        "right": {
+          "type": "Literal",
+          "start": 93,
+          "end": 94,
+          "value": "1"
+        }
+      },
+      "body": {
+        "type": "EmptyStatement",
+        "start": 95,
         "end": 96
-      },
-      {
-        "data": {
-          "for_statement": {
-            "update": {
-              "data": {
-                "assignment_expression": {
-                  "lhs": {
-                    "data": {
-                      "identifier": "x"
-                    },
-                    "start": 106,
-                    "end": 107
-                  },
-                  "rhs": {
-                    "data": {
-                      "literal": "1"
-                    },
-                    "start": 111,
-                    "end": 112
-                  },
-                  "operator": "+="
-                }
-              },
-              "start": 106,
-              "end": 112
-            },
-            "body": {
-              "data": {
-                "empty_statement": {}
-              },
-              "start": 113,
-              "end": 114
-            }
-          }
+      }
+    },
+    {
+      "type": "ForStatement",
+      "start": 97,
+      "end": 114,
+      "update": {
+        "type": "AssignmentExpression",
+        "start": 106,
+        "end": 112,
+        "operator": "+=",
+        "left": {
+          "type": "Identifier",
+          "start": 106,
+          "end": 107,
+          "name": "x"
         },
-        "start": 97,
+        "right": {
+          "type": "Literal",
+          "start": 111,
+          "end": 112,
+          "value": "1"
+        }
+      },
+      "body": {
+        "type": "EmptyStatement",
+        "start": 113,
         "end": 114
-      },
-      {
-        "data": {
-          "for_statement": {
-            "condition": {
-              "data": {
-                "assignment_expression": {
-                  "lhs": {
-                    "data": {
-                      "identifier": "let"
-                    },
-                    "start": 122,
-                    "end": 125
-                  },
-                  "rhs": {
-                    "data": {
-                      "literal": "1"
-                    },
-                    "start": 128,
-                    "end": 129
-                  },
-                  "operator": "="
-                }
-              },
-              "start": 122,
-              "end": 129
-            },
-            "body": {
-              "data": {
-                "empty_statement": {}
-              },
-              "start": 131,
-              "end": 132
-            }
-          }
+      }
+    },
+    {
+      "type": "ForStatement",
+      "start": 115,
+      "end": 132,
+      "test": {
+        "type": "AssignmentExpression",
+        "start": 122,
+        "end": 129,
+        "operator": "=",
+        "left": {
+          "type": "Identifier",
+          "start": 122,
+          "end": 125,
+          "name": "let"
         },
-        "start": 115,
+        "right": {
+          "type": "Literal",
+          "start": 128,
+          "end": 129,
+          "value": "1"
+        }
+      },
+      "body": {
+        "type": "EmptyStatement",
+        "start": 131,
         "end": 132
+      }
+    },
+    {
+      "type": "ForStatement",
+      "start": 133,
+      "end": 144,
+      "init": {
+        "type": "Literal",
+        "start": 138,
+        "end": 139,
+        "value": "1"
       },
-      {
-        "data": {
-          "for_statement": {
-            "init": {
-              "data": {
-                "literal": "1"
-              },
-              "start": 138,
-              "end": 139
-            },
-            "body": {
-              "data": {
-                "empty_statement": {}
-              },
-              "start": 143,
-              "end": 144
-            }
-          }
-        },
-        "start": 133,
+      "body": {
+        "type": "EmptyStatement",
+        "start": 143,
         "end": 144
-      },
-      {
-        "data": {
-          "for_statement": {
+      }
+    },
+    {
+      "type": "ForStatement",
+      "start": 145,
+      "end": 195,
+      "init": {
+        "type": "VariableDeclaration",
+        "start": 150,
+        "end": 161,
+        "declarations": [
+          {
+            "type": "VariableDeclarator",
+            "start": 150,
+            "end": 157,
+            "id": {
+              "type": "Identifier",
+              "start": 154,
+              "end": 155,
+              "name": "x"
+            },
             "init": {
-              "data": {
-                "variable_declaration": {
-                  "declarators": [
-                    {
-                      "data": {
-                        "variable_declarator": {
-                          "lhs": {
-                            "data": {
-                              "identifier": "x"
-                            },
-                            "start": 154,
-                            "end": 155
-                          },
-                          "init": {
-                            "data": {
-                              "literal": "1"
-                            },
-                            "start": 156,
-                            "end": 157
-                          }
-                        }
-                      },
-                      "start": 150,
-                      "end": 157
-                    },
-                    {
-                      "data": {
-                        "variable_declarator": {
-                          "lhs": {
-                            "data": {
-                              "identifier": "y"
-                            },
-                            "start": 158,
-                            "end": 159
-                          },
-                          "init": {
-                            "data": {
-                              "literal": "2"
-                            },
-                            "start": 160,
-                            "end": 161
-                          }
-                        }
-                      },
-                      "start": 158,
-                      "end": 161
-                    }
-                  ],
-                  "kind": "var"
-                }
-              },
-              "start": 150,
-              "end": 161
+              "type": "Literal",
+              "start": 156,
+              "end": 157,
+              "value": "1"
+            }
+          },
+          {
+            "type": "VariableDeclarator",
+            "start": 158,
+            "end": 161,
+            "id": {
+              "type": "Identifier",
+              "start": 158,
+              "end": 159,
+              "name": "y"
             },
-            "condition": {
-              "data": {
-                "sequence_expression": [
-                  {
-                    "data": {
-                      "binary_expression": {
-                        "lhs": {
-                          "data": {
-                            "identifier": "x"
-                          },
-                          "start": 162,
-                          "end": 163
-                        },
-                        "rhs": {
-                          "data": {
-                            "literal": "0"
-                          },
-                          "start": 166,
-                          "end": 167
-                        },
-                        "operator": "<"
-                      }
-                    },
-                    "start": 162,
-                    "end": 167
-                  },
-                  {
-                    "data": {
-                      "binary_expression": {
-                        "lhs": {
-                          "data": {
-                            "binary_expression": {
-                              "lhs": {
-                                "data": {
-                                  "identifier": "y"
-                                },
-                                "start": 169,
-                                "end": 170
-                              },
-                              "rhs": {
-                                "data": {
-                                  "literal": "2"
-                                },
-                                "start": 173,
-                                "end": 174
-                              },
-                              "operator": "<"
-                            }
-                          },
-                          "start": 169,
-                          "end": 174
-                        },
-                        "rhs": {
-                          "data": {
-                            "binary_expression": {
-                              "lhs": {
-                                "data": {
-                                  "identifier": "y"
-                                },
-                                "start": 178,
-                                "end": 179
-                              },
-                              "rhs": {
-                                "data": {
-                                  "literal": "2"
-                                },
-                                "start": 182,
-                                "end": 183
-                              },
-                              "operator": ">"
-                            }
-                          },
-                          "start": 178,
-                          "end": 183
-                        },
-                        "operator": "&&"
-                      }
-                    },
-                    "start": 169,
-                    "end": 183
-                  }
-                ]
-              },
-              "start": 162,
-              "end": 169
-            },
-            "update": {
-              "data": {
-                "sequence_expression": [
-                  {
-                    "data": {
-                      "post_unary_expression": {
-                        "operand": {
-                          "data": {
-                            "identifier": "x"
-                          },
-                          "start": 185,
-                          "end": 186
-                        },
-                        "operator": "++"
-                      }
-                    },
-                    "start": 186,
-                    "end": 186
-                  },
-                  {
-                    "data": {
-                      "post_unary_expression": {
-                        "operand": {
-                          "data": {
-                            "identifier": "y"
-                          },
-                          "start": 190,
-                          "end": 191
-                        },
-                        "operator": "++"
-                      }
-                    },
-                    "start": 191,
-                    "end": 191
-                  }
-                ]
-              },
-              "start": 186,
-              "end": 191
-            },
-            "body": {
-              "data": {
-                "empty_statement": {}
-              },
-              "start": 194,
-              "end": 195
+            "init": {
+              "type": "Literal",
+              "start": 160,
+              "end": 161,
+              "value": "2"
             }
           }
-        },
-        "start": 145,
+        ],
+        "kind": "var"
+      },
+      "test": {
+        "type": "SequenceExpression",
+        "start": 162,
+        "end": 169,
+        "expressions": [
+          {
+            "type": "BinaryExpression",
+            "start": 162,
+            "end": 167,
+            "operator": "<",
+            "left": {
+              "type": "Identifier",
+              "start": 162,
+              "end": 163,
+              "name": "x"
+            },
+            "right": {
+              "type": "Literal",
+              "start": 166,
+              "end": 167,
+              "value": "0"
+            }
+          },
+          {
+            "type": "BinaryExpression",
+            "start": 169,
+            "end": 183,
+            "operator": "&&",
+            "left": {
+              "type": "BinaryExpression",
+              "start": 169,
+              "end": 174,
+              "operator": "<",
+              "left": {
+                "type": "Identifier",
+                "start": 169,
+                "end": 170,
+                "name": "y"
+              },
+              "right": {
+                "type": "Literal",
+                "start": 173,
+                "end": 174,
+                "value": "2"
+              }
+            },
+            "right": {
+              "type": "BinaryExpression",
+              "start": 178,
+              "end": 183,
+              "operator": ">",
+              "left": {
+                "type": "Identifier",
+                "start": 178,
+                "end": 179,
+                "name": "y"
+              },
+              "right": {
+                "type": "Literal",
+                "start": 182,
+                "end": 183,
+                "value": "2"
+              }
+            }
+          }
+        ]
+      },
+      "update": {
+        "type": "SequenceExpression",
+        "start": 186,
+        "end": 191,
+        "expressions": [
+          {
+            "type": "UnaryExpression",
+            "start": 186,
+            "end": 186,
+            "operator": "++",
+            "argument": {
+              "type": "Identifier",
+              "start": 185,
+              "end": 186,
+              "name": "x"
+            }
+          },
+          {
+            "type": "UnaryExpression",
+            "start": 191,
+            "end": 191,
+            "operator": "++",
+            "argument": {
+              "type": "Identifier",
+              "start": 190,
+              "end": 191,
+              "name": "y"
+            }
+          }
+        ]
+      },
+      "body": {
+        "type": "EmptyStatement",
+        "start": 194,
         "end": 195
       }
-    ]
-  },
-  "start": 0,
-  "end": 196
+    }
+  ]
 }

@@ -1,196 +1,150 @@
 {
-  "data": {
-    "program": [
-      {
-        "data": {
-          "variable_declaration": {
-            "declarators": [
-              {
-                "data": {
-                  "variable_declarator": {
-                    "lhs": {
-                      "data": {
-                        "identifier": "a"
-                      },
-                      "start": 4,
-                      "end": 5
-                    }
-                  }
-                },
-                "start": 4,
-                "end": 5
-              }
-            ],
-            "kind": "let"
-          }
-        },
-        "start": 0,
-        "end": 6
-      },
-      {
-        "data": {
-          "variable_declaration": {
-            "declarators": [
-              {
-                "data": {
-                  "variable_declarator": {
-                    "lhs": {
-                      "data": {
-                        "identifier": "let"
-                      },
-                      "start": 11,
-                      "end": 14
-                    },
-                    "init": {
-                      "data": {
-                        "literal": "1"
-                      },
-                      "start": 17,
-                      "end": 18
-                    }
-                  }
-                },
-                "start": 11,
-                "end": 18
-              }
-            ],
-            "kind": "var"
-          }
-        },
-        "start": 7,
-        "end": 19
-      },
-      {
-        "data": {
-          "expression_statement": {
-            "data": {
-              "assignment_expression": {
-                "lhs": {
-                  "data": {
-                    "identifier": "let"
-                  },
-                  "start": 20,
-                  "end": 23
-                },
-                "rhs": {
-                  "data": {
-                    "object_literal": [
-                      {
-                        "data": {
-                          "object_property": {
-                            "key": {
-                              "data": {
-                                "identifier": "let"
-                              },
-                              "start": 28,
-                              "end": 31
-                            },
-                            "value": {
-                              "data": {
-                                "literal": "1"
-                              },
-                              "start": 33,
-                              "end": 34
-                            },
-                            "flags": {
-                              "is_method": false,
-                              "is_shorthand": false,
-                              "is_computed": false,
-                              "kind": "init"
-                            }
-                          }
-                        },
-                        "start": 28,
-                        "end": 34
-                      }
-                    ]
-                  },
-                  "start": 26,
-                  "end": 36
-                },
-                "operator": "="
-              }
-            },
-            "start": 20,
-            "end": 36
-          }
-        },
-        "start": 20,
-        "end": 36
-      },
-      {
-        "data": {
-          "expression_statement": {
-            "data": {
-              "assignment_expression": {
-                "lhs": {
-                  "data": {
-                    "member_expression": {
-                      "object": {
-                        "data": {
-                          "identifier": "let"
-                        },
-                        "start": 37,
-                        "end": 40
-                      },
-                      "property": "let"
-                    }
-                  },
-                  "start": 37,
-                  "end": 44
-                },
-                "rhs": {
-                  "data": {
-                    "literal": "1"
-                  },
-                  "start": 47,
-                  "end": 48
-                },
-                "operator": "="
-              }
-            },
-            "start": 37,
-            "end": 48
-          }
-        },
-        "start": 37,
-        "end": 49
-      },
-      {
-        "data": {
-          "variable_declaration": {
-            "declarators": [
-              {
-                "data": {
-                  "variable_declarator": {
-                    "lhs": {
-                      "data": {
-                        "identifier": "_let"
-                      },
-                      "start": 54,
-                      "end": 58
-                    },
-                    "init": {
-                      "data": {
-                        "identifier": "let"
-                      },
-                      "start": 61,
-                      "end": 64
-                    }
-                  }
-                },
-                "start": 54,
-                "end": 64
-              }
-            ],
-            "kind": "let"
-          }
-        },
-        "start": 50,
-        "end": 65
-      }
-    ]
-  },
+  "type": "Program",
   "start": 0,
-  "end": 67
+  "end": 67,
+  "body": [
+    {
+      "type": "VariableDeclaration",
+      "start": 0,
+      "end": 6,
+      "declarations": [
+        {
+          "type": "VariableDeclarator",
+          "start": 4,
+          "end": 5
+        }
+      ],
+      "kind": "let"
+    },
+    {
+      "type": "VariableDeclaration",
+      "start": 7,
+      "end": 19,
+      "declarations": [
+        {
+          "type": "VariableDeclarator",
+          "start": 11,
+          "end": 18,
+          "id": {
+            "type": "Identifier",
+            "start": 11,
+            "end": 14,
+            "name": "let"
+          },
+          "init": {
+            "type": "Literal",
+            "start": 17,
+            "end": 18,
+            "value": "1"
+          }
+        }
+      ],
+      "kind": "var"
+    },
+    {
+      "type": "ExpressionStatement",
+      "start": 20,
+      "end": 36,
+      "expression": {
+        "type": "AssignmentExpression",
+        "start": 20,
+        "end": 36,
+        "operator": "=",
+        "left": {
+          "type": "Identifier",
+          "start": 20,
+          "end": 23,
+          "name": "let"
+        },
+        "right": {
+          "type": "ObjectExpression",
+          "start": 26,
+          "end": 36,
+          "properties": [
+            {
+              "type": "Property",
+              "start": 28,
+              "end": 34,
+              "key": {
+                "type": "Identifier",
+                "start": 28,
+                "end": 31,
+                "name": "let"
+              },
+              "value": {
+                "type": "Literal",
+                "start": 33,
+                "end": 34,
+                "value": "1"
+              },
+              "kind": "init",
+              "computed": false,
+              "shorthand": false,
+              "method": false
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "ExpressionStatement",
+      "start": 37,
+      "end": 49,
+      "expression": {
+        "type": "AssignmentExpression",
+        "start": 37,
+        "end": 48,
+        "operator": "=",
+        "left": {
+          "type": "MemberExpression",
+          "start": 37,
+          "end": 44,
+          "object": {
+            "type": "Identifier",
+            "start": 37,
+            "end": 40,
+            "name": "let"
+          },
+          "property": {
+            "type": "Identifier",
+            "start": 41,
+            "end": 44,
+            "name": "let"
+          },
+          "computed": false
+        },
+        "right": {
+          "type": "Literal",
+          "start": 47,
+          "end": 48,
+          "value": "1"
+        }
+      }
+    },
+    {
+      "type": "VariableDeclaration",
+      "start": 50,
+      "end": 65,
+      "declarations": [
+        {
+          "type": "VariableDeclarator",
+          "start": 54,
+          "end": 64,
+          "id": {
+            "type": "Identifier",
+            "start": 54,
+            "end": 58,
+            "name": "_let"
+          },
+          "init": {
+            "type": "Identifier",
+            "start": 61,
+            "end": 64,
+            "name": "let"
+          }
+        }
+      ],
+      "kind": "let"
+    }
+  ]
 }

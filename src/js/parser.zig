@@ -950,7 +950,7 @@ fn labeledStatement(self: *Self) Error!Node.Index {
         .{
             .labeled_statement = .{
                 .body = body,
-                .label = try self.addToken(label),
+                .label = try self.identifier(label),
             },
         },
         label.start,
@@ -3654,7 +3654,7 @@ fn optionalChain(self: *Self, object: Node.Index) Error!Node.Index {
                 const end_pos = property_name_token.start + property_name_token.len;
                 const expr = try self.addNode(.{ .member_expr = .{
                     .object = object,
-                    .property = try self.addToken(property_name_token),
+                    .property = try self.identifier(property_name_token),
                 } }, start_pos, end_pos);
                 return self.addNode(.{ .optional_expr = expr }, start_pos, end_pos);
             }
@@ -3818,11 +3818,11 @@ fn completeMemberExpression(self: *Self, object: Node.Index) Error!Node.Index {
 
     const start_pos = self.nodes.items(.start)[@intFromEnum(object)];
 
-    const property_token_idx: Token.Index = blk: {
+    const property_id: Node.Index = blk: {
         const tok = try self.next();
         // Yes, keywords are valid property names...
         if (tok.tag.isIdentifier() or tok.tag.isKeyword()) {
-            break :blk try self.addToken(tok);
+            break :blk try self.identifier(tok);
         }
 
         try self.emitDiagnostic(
@@ -3835,11 +3835,10 @@ fn completeMemberExpression(self: *Self, object: Node.Index) Error!Node.Index {
 
     const property_access = ast.PropertyAccess{
         .object = object,
-        .property = property_token_idx,
+        .property = property_id,
     };
 
-    const property_token = self.tokens.items[@intFromEnum(property_token_idx)];
-    const end_pos = property_token.start + property_token.len;
+    const end_pos = self.nodes.items(.end)[@intFromEnum(property_id)];
     self.current_destructure_kind.can_destruct = false;
     self.current_destructure_kind.can_be_assigned_to = true;
     self.current_destructure_kind.is_simple_expression = true;
@@ -5535,7 +5534,7 @@ fn makeLeftAssoc(
 
 const t = std.testing;
 
-const pretty = @import("./pretty.zig");
+const estree = @import("./estree.zig");
 
 fn runTestOnFile(tests_dir: std.fs.Dir, file_path: []const u8) !void {
     const source_code = try tests_dir.readFileAlloc(
@@ -5566,7 +5565,7 @@ fn runTestOnFile(tests_dir: std.fs.Dir, file_path: []const u8) !void {
     };
 
     // 1. prettify the AST as a JSON string
-    const ast_json = try pretty.toJsonString(t.allocator, &parser, root_node);
+    const ast_json = try estree.toJsonString(t.allocator, &parser, root_node);
     defer t.allocator.free(ast_json);
 
     // 2. For every `<filename>.js`, read the corresponding `<filename>.json` file

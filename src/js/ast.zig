@@ -77,7 +77,7 @@ pub const UnaryPayload = struct {
 // TODO: make `computed` a flag in the `PropertyAccess` struct
 pub const PropertyAccess = struct {
     object: Node.Index,
-    property: Token.Index,
+    property: Node.Index,
 };
 
 pub const ComputedPropertyAccess = struct {
@@ -107,6 +107,10 @@ pub const CallExpr = struct {
     callee: Node.Index,
     // TODO: store the arguments inline
     arguments: Node.Index,
+};
+
+pub const JumpLabel = struct {
+    label: ?Node.Index,
 };
 
 pub const FunctionFlags = packed struct(u8) {
@@ -283,7 +287,7 @@ pub const WithStatement = struct {
 };
 
 pub const LabeledStatement = struct {
-    label: Token.Index,
+    label: Node.Index,
     body: Node.Index,
 };
 
@@ -447,9 +451,9 @@ pub const NodeData = union(enum(u8)) {
     /// The default case in a switch statement.
     default_case: SwitchDefaultCase,
     /// 'break' ';'
-    break_statement: struct { label: ?Node.Index },
+    break_statement: JumpLabel,
     /// 'continue' ';'
-    continue_statement: struct { label: ?Node.Index },
+    continue_statement: JumpLabel,
     parameters: ?SubRange,
     return_statement: ?Node.Index,
     import_declaration: ImportDeclaration,
