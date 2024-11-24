@@ -48,6 +48,9 @@
               "type": "FunctionExpression",
               "start": 28,
               "end": 43,
+              "async": false,
+              "generator": false,
+              "arrow": false,
               "params": [],
               "body": {
                 "type": "BlockStatement",
@@ -86,6 +89,9 @@
               "type": "FunctionExpression",
               "start": 54,
               "end": 69,
+              "async": false,
+              "generator": false,
+              "arrow": false,
               "params": [],
               "body": {
                 "type": "BlockStatement",
@@ -124,6 +130,9 @@
               "type": "FunctionExpression",
               "start": 80,
               "end": 86,
+              "async": false,
+              "generator": false,
+              "arrow": false,
               "params": [
                 {
                   "type": "Identifier",
@@ -157,6 +166,9 @@
               "type": "FunctionExpression",
               "start": 93,
               "end": 109,
+              "async": false,
+              "generator": false,
+              "arrow": false,
               "params": [
                 {
                   "type": "Identifier",
@@ -202,6 +214,9 @@
               "type": "FunctionExpression",
               "start": 128,
               "end": 143,
+              "async": false,
+              "generator": false,
+              "arrow": false,
               "params": [],
               "body": {
                 "type": "BlockStatement",
@@ -240,6 +255,9 @@
               "type": "FunctionExpression",
               "start": 162,
               "end": 169,
+              "async": false,
+              "generator": false,
+              "arrow": false,
               "params": [
                 {
                   "type": "Identifier",
