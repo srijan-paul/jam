@@ -67,8 +67,6 @@ source: []const u8,
 index: u32 = 0,
 /// Current line number (0 indexed).
 line: u32 = 0,
-/// Current column number (0 indexed)
-col: u32 = 0,
 /// When `true`, the tokenizer will attempt to parse any remaining input
 /// starting with '/' (that isn't a comment starter) as a regex literal (e.g: '/[a-zA-Z0-9]/').
 /// Otherwise, '/' (when not starting a comment) is assumed to be either the '/' or '/=' operator.
