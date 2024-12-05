@@ -1,5 +1,7 @@
 const js = @import("js");
 const std = @import("std");
+const ParsedQuery = @import("./parse.zig").ParsedQuery;
+
 /// The payload of a query that has two sub-queries
 const BinaryOpPayload = struct {
     left: Query.Index,
@@ -41,9 +43,18 @@ pub const Query = union(enum) {
     /// Matches when a node matching a specific query is also
     /// the nth child of its parent node.
     nth_child: struct { query: Query.Index, n: u32 },
-    /// Stores the number of attributes in this attribute list.
-    /// Is followed by that many number of sub-queries in the queries array.
-    attribute_list: usize,
+    // A list of sub-queries that are all `attributes` which we
+    // expect to be present on a node that matches.
+    attribute_list: struct {
+        /// Start index of the sub-attributes in a list of queries
+        attrs_start: u32,
+        /// End index of the sub-attributes in a list of queries
+        attrs_end: u32,
+        /// Returns a slice of all attributes in the query
+        pub fn getAttributes(self: *const @This(), p: *const ParsedQuery) []const Query {
+            return p.queries[self.attrs_start..self.attrs_end];
+        }
+    },
     /// Matches (possibly nested) field names on any node kind.
     /// `name` can be a single property like `"id"`, or
     /// nested, like `"id.name"`.

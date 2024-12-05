@@ -14,6 +14,8 @@ const State = struct {
     source: []const u8,
     /// The current byte position in the query string
     index: usize = 0,
+    /// If parsing fails, an error message might be stored here.
+    error_message: ?[]const u8 = null,
 
     /// Returns the next character in the query string without consuming it.
     /// Returns `null` if the end of the query string has been reached.
@@ -82,6 +84,11 @@ const State = struct {
         self.n_queries += n;
         return slice;
     }
+
+    pub fn emitError(self: *State, message: []const u8, err: Error) Error {
+        self.error_message = message;
+        return err;
+    }
 };
 
 pub const Error = error{
@@ -101,44 +108,68 @@ pub const ParsedQuery = struct {
         self.allocator.free(self.queries);
     }
 
-    pub inline fn get(self: *ParsedQuery, id: Query.Index) *Query {
+    pub inline fn get(self: *const ParsedQuery, id: Query.Index) *const Query {
         return &self.queries[@intFromEnum(id)];
     }
 };
 
-pub fn parse(al: std.mem.Allocator, comptime query_str: []const u8) Error!ParsedQuery {
-    // TODO: come up with a routine to more reliably predict
-    // how many nodes there will be in a parsed query.
-    // That way, we don't eat up too much memory even at compile time.
-    // (Though this should honestly be fine considering there's no runtime allocation here)
-    const root_id, const queries = comptime blk: {
-        var queries = [_]Query{undefined} ** query_str.len;
-        var state = State{ .source = query_str, .index = 0, .queries = &queries };
-        const root_id = parseImpl(&state);
-        break :blk .{ root_id, queries[0..state.n_queries] };
-    };
+pub const Parser = struct {
+    allocator: std.mem.Allocator,
+    error_message: ?[]const u8 = null,
 
-    // This .* is necessary, and the only way to
-    // copy a comptime array into a stack allocated runtime array
-    // TODO: can the comptime slice be used directly somehow?
-    const ret_queries = queries.*;
-    return ParsedQuery{
-        .allocator = al,
-        .queries = try al.dupe(Query, &ret_queries),
-        .root_node_id = try root_id,
-    };
-}
+    pub fn init(allocator: std.mem.Allocator) Parser {
+        return Parser{ .allocator = allocator };
+    }
 
-fn parseImpl(s: *State) Error!Query.Index {
+    /// Parse a comptime query string into a runtime `ParsedQuery` structure.
+    pub fn parse(self: *Parser, comptime query_str: []const u8) Error!ParsedQuery {
+        // TODO: come up with a routine to more reliably predict
+        // how many nodes there will be in a parsed query.
+        // That way, we don't eat up too much memory even at compile time.
+        // (Though this should honestly be fine considering there's no runtime allocation here)
+        const maybe_root_id, const queries, const maybe_err_message = comptime blk: {
+            var queries = [_]Query{undefined} ** query_str.len;
+            var state = State{ .source = query_str, .index = 0, .queries = &queries };
+            const root_id = parseQuery(&state);
+            break :blk .{ root_id, queries[0..state.n_queries], state.error_message };
+        };
+
+        self.error_message = maybe_err_message;
+        const root_id = try maybe_root_id;
+
+        // This .* is necessary, and the only way to
+        // copy a comptime array into a stack allocated runtime array
+        // TODO: can the comptime slice be used directly somehow?
+        const ret_queries = queries.*;
+        return ParsedQuery{
+            .allocator = self.allocator,
+            .queries = try self.allocator.dupe(Query, &ret_queries),
+            .root_node_id = root_id,
+        };
+    }
+};
+
+fn parseQuery(s: *State) Error!Query.Index {
     const ch = s.peek() orelse
         return Error.UnexpectedEof;
 
     return switch (ch) {
         '{' => parseAttributeList(s),
-        else => return Error.UnexpectedChar,
+        '0'...'9' => parseNumericLiteral(s),
+        else => {
+            const message = if (@inComptime())
+                "Unexpected character ('" ++ &[_]u8{ch} ++ "'), expecting the start of a query"
+            else
+                // At runtime, we do not have access to an allocator (we could, though. TODO?)
+                "Unexpected character, expecting the start of a query";
+
+            return s.emitError(message, Error.InvalidCharacter);
+        },
     };
 }
 
+/// When on a '{', parse a list of comma separate attributes,
+/// including the closing '}'.
 fn parseAttributeList(s: *State) Error!Query.Index {
     std.debug.assert(s.peek() == '{');
     s.bump(); // eat '{'
@@ -153,10 +184,17 @@ fn parseAttributeList(s: *State) Error!Query.Index {
         std.debug.assert(attrs_count == 0);
         s.bump();
         // empty attribute list
-        return s.addQuery(Query{ .attribute_list = 0 });
+        return s.addQuery(Query{ .attribute_list = .{ .attrs_start = 0, .attrs_end = 0 } });
     }
 
-    const id = try s.addQuery(Query{ .attribute_list = attrs_count });
+    const attr_start_index: usize = s.n_queries + 1;
+    const attr_end_index = attr_start_index + attrs_count;
+    const attr_list_id = try s.addQuery(Query{
+        .attribute_list = .{
+            .attrs_start = attr_start_index,
+            .attrs_end = attr_end_index,
+        },
+    });
 
     // Reserve space for as many attributes as we counted,
     // then parse them.
@@ -176,15 +214,21 @@ fn parseAttributeList(s: *State) Error!Query.Index {
 
         if (s.peek() == ',') {
             // a ',' isn't allowed after the last attribute
-            if (parsed_attrs_count == attrs_count)
-                return Error.InvalidTrailingComma;
+            if (parsed_attrs_count == attrs_count) {
+                return s.emitError(
+                    "A trailing ',' is not allowed in an attribute list",
+                    Error.InvalidTrailingComma,
+                );
+            }
 
             s.bump(); // eat ','
             skipSpaces(s);
         }
+    } else {
+        return s.emitError("Missing closing '}' in attribute list", Error.UnexpectedEof);
     }
 
-    return id;
+    return attr_list_id;
 }
 
 fn countAttribtues(input: []const u8) ?usize {
@@ -202,7 +246,7 @@ fn countAttribtues(input: []const u8) ?usize {
         }
 
         // skip commas inside nested { { } }, [ [ ] ] and " " pairs
-        const maybe_closing_ch = switch (ch) {
+        const maybe_closing_ch: ?u8 = switch (ch) {
             '{' => '}',
             '[' => ']',
             '"', '\'' => ch,
@@ -228,13 +272,13 @@ fn parseAttribute(s: *State) Error!Query {
 
     s.bump(); // eat ':'
     skipSpaces(s);
-    const literal = try parseLiteral(s);
+    const value = try parseQuery(s);
     skipSpaces(s);
 
     return Query{
         .attribute = .{
             .name = try s.addQuery(attr_name),
-            .value = literal,
+            .value = value,
         },
     };
 }
@@ -288,17 +332,83 @@ fn parseNumericLiteral(s: *State) Error!Query.Index {
 }
 
 const t = std.testing;
-test parse {
-    var parsed = parse(t.allocator, "{ value: 123 }") catch |e| {
-        std.debug.print("err>> {any}", .{e});
-        return e;
+
+fn parse(comptime query_string: []const u8) Error!ParsedQuery {
+    var p = Parser.init(t.allocator);
+    return p.parse(query_string) catch |err| {
+        if (p.error_message) |message| {
+            std.debug.print("parse error: {s}\n", .{message});
+        }
+
+        std.debug.print("parse error: {any}\n", .{err});
+        return err;
     };
-    defer parsed.deinit();
+}
 
-    const q = parsed.get(parsed.root_node_id);
-    try t.expectEqual(.attribute_list, std.meta.activeTag(q.*));
+test Parser {
+    {
+        var p = try parse("{value:123}");
+        defer p.deinit();
 
-    const attr = parsed.get(@enumFromInt(1)).attribute;
-    try t.expectEqual(123.0, parsed.get(attr.value).numeric_literal);
-    try t.expectEqualStrings("value", parsed.get(attr.name).attr_name);
+        const attr_list = p.get(p.root_node_id);
+        try t.expectEqual(.attribute_list, std.meta.activeTag(attr_list.*));
+
+        const attrs = attr_list.attribute_list.getAttributes(&p);
+        try t.expectEqual(123.0, p.get(attrs[0].attribute.value).numeric_literal);
+        try t.expectEqualStrings("value", p.get(attrs[0].attribute.name).attr_name);
+    }
+
+    {
+        var p = try parse("{}");
+        defer p.deinit();
+
+        const attr_list = p.get(p.root_node_id);
+        try t.expectEqual(.attribute_list, std.meta.activeTag(attr_list.*));
+
+        const attrs = attr_list.attribute_list.getAttributes(&p);
+        try t.expectEqual(0, attrs.len);
+    }
+
+    {
+        var p = try parse("{a:1, b:2}");
+        defer p.deinit();
+
+        const attr_list = p.get(p.root_node_id);
+        try t.expectEqual(.attribute_list, std.meta.activeTag(attr_list.*));
+
+        const attrs = attr_list.attribute_list.getAttributes(&p);
+        try t.expectEqual(2, attrs.len);
+
+        try t.expectEqual(1.0, p.get(attrs[0].attribute.value).numeric_literal);
+        try t.expectEqualStrings("a", p.get(attrs[0].attribute.name).attr_name);
+
+        try t.expectEqual(2.0, p.get(attrs[1].attribute.value).numeric_literal);
+        try t.expectEqualStrings("b", p.get(attrs[1].attribute.name).attr_name);
+    }
+
+    {
+        var p = try parse("{a:{nested_a: 1, nested_b: 3}, b:2}");
+        defer p.deinit();
+
+        const attr_list = p.get(p.root_node_id);
+        try t.expectEqual(.attribute_list, std.meta.activeTag(attr_list.*));
+
+        const attrs = attr_list.attribute_list.getAttributes(&p);
+        try t.expectEqual(2, attrs.len);
+
+        const nested_attr_list = p.get(attrs[0].attribute.value).*;
+        try t.expectEqual(.attribute_list, std.meta.activeTag(nested_attr_list));
+
+        const nested_attrs = nested_attr_list.attribute_list.getAttributes(&p);
+        try t.expectEqual(2, nested_attrs.len);
+
+        try t.expectEqual(1.0, p.get(nested_attrs[0].attribute.value).numeric_literal);
+        try t.expectEqualStrings("nested_a", p.get(nested_attrs[0].attribute.name).attr_name);
+
+        try t.expectEqual(3.0, p.get(nested_attrs[1].attribute.value).numeric_literal);
+        try t.expectEqualStrings("nested_b", p.get(nested_attrs[1].attribute.name).attr_name);
+
+        try t.expectEqual(2.0, p.get(attrs[1].attribute.value).numeric_literal);
+        try t.expectEqualStrings("b", p.get(attrs[1].attribute.name).attr_name);
+    }
 }
