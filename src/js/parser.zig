@@ -78,6 +78,8 @@ pub const Error = error{
     DuplicateBinding,
     /// Attempt to delete a local variable in strict mode.
     IllegalDeleteInStrictMode,
+    /// Attempt to call `parse` twice.
+    AlreadyParsed,
     /// std.mem.Allocator.Error
     OutOfMemory,
     Overflow,
@@ -260,6 +262,11 @@ scope: ScopeManager,
 /// Used in `asyncExpression`.
 /// Reset to `false` after an async arrow function is parsed.
 is_current_arrow_func_async: bool = false,
+/// Set to `true` automatically when a program
+/// is parsed successfully without any errors.
+/// The `parse` method cannot be called twice,
+/// as the input stream as already been consumed.
+parse_finished: bool = false,
 
 /// Bit-flags to keep track of whether the
 /// most recently parsed expression can be destructured.
@@ -371,6 +378,7 @@ pub fn init(
     parse_tree.* = Tree{
         .allocator = allocator,
         .source = source,
+        // Initialized when `parse()` is called.
         .root = Node.Index.empty,
         .nodes = .{},
         .node_indices = try std.ArrayList(Node.Index).initCapacity(allocator, 32),
@@ -426,8 +434,13 @@ pub fn init(
 }
 
 pub fn deinit(self: *Self) void {
-    self.tree.deinit();
-    self.allocator.destroy(self.tree);
+    if (!self.parse_finished) {
+        // If a successful call to `parse` never happened,
+        // then release all the resources that would've otherwise
+        // been returned to the caller.
+        self.tree.deinit();
+        self.allocator.destroy(self.tree);
+    }
 
     self.scratch.deinit();
     for (self.diagnostics.items) |d| {
@@ -438,7 +451,38 @@ pub fn deinit(self: *Self) void {
     self.scope.deinit();
 }
 
-pub fn parse(self: *Self) Error!Node.Index {
+/// Wrapper around an `ast.Tree`.
+/// This is only necessary to release the resources held in `tree`.
+/// Most of the time, the caller will only access properties of `ParseResult.tree`.
+pub const Result = struct {
+    /// The allocator used to release the resources
+    /// held by this result struct.
+    allocator: std.mem.Allocator,
+    /// Must have been allocated with `allocator`.
+    tree: *Tree,
+
+    pub fn deinit(self: *Result) void {
+        self.tree.deinit();
+        self.allocator.destroy(self.tree);
+    }
+};
+
+/// Parse the input source, then return a `Tree` containing the result.
+/// If an error is returned, the `Parser.diagnostics` field might have
+/// additional information about the error.
+///
+/// Caller owns the returned `Tree`.
+///
+/// ```zig
+/// const source = "let x = 5;";
+/// const parser = try Parser.init(allocator, source, .{});
+/// const result = try parser.parse();
+/// defer result.deinit();
+/// ```
+pub fn parse(self: *Self) Error!Result {
+    // check if the parser has already run.
+    if (self.parse_finished) return Error.AlreadyParsed;
+
     const prev_scratch_len = self.scratch.items.len;
     defer self.scratch.items.len = prev_scratch_len;
 
@@ -474,11 +518,22 @@ pub fn parse(self: *Self) Error!Node.Index {
 
     const statements = self.scratch.items[prev_scratch_len..];
     const stmt_list = try self.addSubRange(statements);
-    return try self.addNode(
+    self.tree.root = try self.addNode(
         .{ .program = stmt_list },
         @enumFromInt(0),
         @enumFromInt(self.tokens.items.len - 1),
     );
+
+    // Setting this flag ensures that the resources
+    // shared between `Parser` and the returned `Result`
+    // are not freed by the parser after they're returned to the caller.
+    // Once `parse()` returns successfully, its the caller's responsibility
+    // to call `result.deinit()`
+    self.parse_finished = true;
+    return Result{
+        .tree = self.tree,
+        .allocator = self.allocator,
+    };
 }
 
 pub fn moduleItem(self: *Self) Error!Node.Index {
@@ -499,9 +554,8 @@ pub fn importDeclaration(self: *Self) Error!Node.Index {
     std.debug.assert(import_kw.token.tag == .kw_import);
 
     // import "foo";
-    if (self.isAtToken(.string_literal)) {
+    if (self.isAtToken(.string_literal))
         return self.completeImportDeclaration(import_kw.id, &.{});
-    }
 
     const prev_scratch_len = self.scratch.items.len;
     defer self.scratch.items.len = prev_scratch_len;
@@ -1100,6 +1154,7 @@ fn classExpression(self: *Self, class_kw_id: Token.Index) Error!Node.Index {
     );
 }
 
+/// `extends` keyword followed by a super class name
 fn classHeritage(self: *Self) Error!Node.Index {
     _ = try self.expectToken(.kw_extends);
     const super_class = try self.lhsExpression();
@@ -2194,7 +2249,6 @@ fn startLetBinding(self: *Self) Error!?TokenWithId {
 
     const lookahead = try self.lookAhead();
     if (self.isDeclaratorStart(lookahead.tag)) {
-        // TODO: disallow `let let = ...`, `const [let] = ...` etc.
         return try self.next();
     }
 
@@ -5671,7 +5725,7 @@ fn runTestOnFile(tests_dir: std.fs.Dir, file_path: []const u8) !void {
     var parser = try Self.init(t.allocator, source_code, .{ .source_type = .script });
     defer parser.deinit();
 
-    const root_node = parser.parse() catch |err| {
+    var result = parser.parse() catch |err| {
         if (std.mem.startsWith(u8, std.mem.trim(u8, source_code, "\n\t "), "// ERROR")) {
             // error was expected.
             // TODO: check the error message as well.
@@ -5687,9 +5741,14 @@ fn runTestOnFile(tests_dir: std.fs.Dir, file_path: []const u8) !void {
         }
         return err;
     };
+    defer result.deinit();
 
     // 1. prettify the AST as a JSON string
-    const ast_json = try estree.toJsonString(t.allocator, &parser, root_node);
+    const ast_json = try estree.toJsonString(
+        t.allocator,
+        &parser,
+        result.tree.root,
+    );
     defer t.allocator.free(ast_json);
 
     // 2. For every `<filename>.js`, read the corresponding `<filename>.json` file
@@ -5710,10 +5769,11 @@ fn runTestOnFile(tests_dir: std.fs.Dir, file_path: []const u8) !void {
     };
     defer t.allocator.free(expected_ast_json);
 
-    const trimmed_ast_json = std.mem.trim(u8, expected_ast_json, "\n\t ");
+    // Remove any leading or trailing whitespaces that might be present in the file.
+    const trimmed_expected_ast_json = std.mem.trim(u8, expected_ast_json, "\n\t ");
 
     // 3. ensure the AST JSON is equal to the expected JSON
-    try t.expectEqualStrings(trimmed_ast_json, ast_json);
+    try t.expectEqualStrings(trimmed_expected_ast_json, ast_json);
 }
 
 test StringHelper {

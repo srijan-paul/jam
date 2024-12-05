@@ -20,7 +20,7 @@ fn jsFileToJsonAst(allocator: std.mem.Allocator, file_name: []const u8) ![]const
     var parser = try Parser.init(allocator, source, .{ .source_type = .script });
     defer parser.deinit();
 
-    const node_idx = parser.parse() catch |err| {
+    var result = parser.parse() catch |err| {
         for (parser.diagnostics.items) |d| {
             std.log.err("{d}:{d} {s}", .{ d.coord.line + 1, d.coord.column, d.message });
         }
@@ -30,7 +30,9 @@ fn jsFileToJsonAst(allocator: std.mem.Allocator, file_name: []const u8) ![]const
         return err;
     };
 
-    return try js.estree.toJsonString(allocator, &parser, node_idx);
+    defer result.deinit();
+
+    return try js.estree.toJsonString(allocator, &parser, result.tree.root);
 }
 
 /// Parse a javascript file and return a stringified JSON representation of the AST.

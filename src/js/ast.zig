@@ -33,6 +33,10 @@ pub const Tree = struct {
         return self.nodes.get(@intFromEnum(index));
     }
 
+    pub fn tag(self: *const Tree, index: Node.Index) std.meta.Tag(NodeData) {
+        return std.meta.activeTag(self.nodes.items(.data)[@intFromEnum(index)]);
+    }
+
     /// Get a token by its index (Token.Index)
     pub fn getToken(self: *const Tree, index: Token.Index) Token {
         return self.tokens.items[@intFromEnum(index)];
@@ -140,6 +144,7 @@ pub const Function = struct {
     /// Returns a slice containing all the parameter nodes in the function.
     pub fn getParameterSlice(self: *const Function, tree: *const Tree) []const Node.Index {
         const params_node = tree.getNode(self.parameters);
+        std.debug.assert(std.meta.activeTag(params_node.data) == .parameters);
         const maybe_params_range = params_node.data.parameters;
         if (maybe_params_range) |params_range| {
             return tree.getSubRange(params_range.from, params_range.to);
@@ -150,6 +155,7 @@ pub const Function = struct {
     /// Returns the number of parameters in the function.
     pub fn getParameterCount(self: *const Function, tree: *const Tree) usize {
         const params_node = tree.getNode(self.parameters);
+        std.debug.assert(std.meta.activeTag(params_node.data) == .parameters);
         const maybe_params_range = params_node.data.parameters;
         if (maybe_params_range) |params_range| {
             const to: usize = @intFromEnum(params_range.to);
@@ -455,6 +461,8 @@ pub const NodeData = union(enum(u8)) {
     break_statement: JumpLabel,
     /// 'continue' ';'
     continue_statement: JumpLabel,
+    // TODO: replace this with `SubRange`.
+    // 0 parameters can just have empty subranges
     parameters: ?SubRange,
     return_statement: ?Node.Index,
     import_declaration: ImportDeclaration,

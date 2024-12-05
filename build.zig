@@ -84,6 +84,15 @@ pub fn build(b: *std.Build) !void {
         b.getInstallStep().dependOn(&js_wasm_file.step);
     }
 
+    const jam_js_query_module = b.addModule("js_query", .{
+        .root_source_file = b.path("src/js_query/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+
+    jam_js_query_module.addImport("util", util_module);
+    jam_js_query_module.addImport("js", jam_js_module);
+
     const jam_css_module = b.addModule("jam-css", .{
         .root_source_file = b.path("src/css/root.zig"),
         .target = target,
@@ -163,6 +172,7 @@ pub fn build(b: *std.Build) !void {
 
     lib_unit_tests.root_module.addImport("util", util_module);
     lib_unit_tests.root_module.addImport("syntax", jam_syntax_module);
+    lib_unit_tests.root_module.addImport("js", jam_js_module);
 
     const util_unit_tests = b.addTest(.{
         .root_source_file = b.path("src/util/root.zig"),
