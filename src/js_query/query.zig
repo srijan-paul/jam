@@ -11,38 +11,14 @@ const BinaryOpPayload = struct {
 const NodeTag = std.meta.Tag(js.ast.NodeData);
 const NodeId = js.ast.Node.Index;
 
-pub const SubRange = struct {
-    /// Index of first item in the sub-query list
-    start_index: Query.Index = @enumFromInt(0),
-    /// 1 + Index of the last item in the sub-query list
-    end_index: Query.Index = @enumFromInt(0),
-};
-
 /// A parsed query on a JS/TS/JSX syntax tree.
 pub const Query = union(enum) {
     /// Used to uniquely identify a query in list of queries
     pub const Index = enum(u32) { _ };
-    /// Matches when `right` is a child of `left`.
-    child: BinaryOpPayload,
-    /// Matches `right when it is` is at the same
-    /// depth as `left`.
-    sibling: BinaryOpPayload,
-    /// Matches the node right next to `left`.
-    adjacent: BinaryOpPayload,
-    /// Matches when `right` is a descendent of `left`.
-    /// `right` doesn't have to be an immediate child.
-    descendent: BinaryOpPayload,
+    /// Matches if a node matches both sub-queries
+    compound: BinaryOpPayload,
     /// Matches a node with a specific tag.
     tag: std.meta.Tag(js.ast.NodeData),
-    /// Matches when a node matching a specific query is also
-    /// the first child of its parent node.
-    first_child: Query.Index,
-    /// Matches when a node matching a specific query is also
-    /// the last child of its parent node.
-    last_child: Query.Index,
-    /// Matches when a node matching a specific query is also
-    /// the nth child of its parent node.
-    nth_child: struct { query: Query.Index, n: u32 },
     // A list of sub-queries that are all `attributes` which we
     // expect to be present on a node that matches.
     attribute_list: struct {
@@ -64,9 +40,6 @@ pub const Query = union(enum) {
         /// Expected value
         value: Query.Index,
     },
-    /// Part of an `attribute` query. (the `name` field)
-    /// E.g: `foo.bar`
-    dot_attr: BinaryOpPayload,
     /// Part of an `attribute` query. (the `name` field)
     attr_name: []const u8,
     /// Matches a literal node with the given value

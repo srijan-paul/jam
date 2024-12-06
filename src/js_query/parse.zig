@@ -97,6 +97,7 @@ pub const Error = error{
     OutOfMemory,
     InvalidCharacter,
     InvalidTrailingComma,
+    UnknownTagName,
 };
 
 pub const ParsedQuery = struct {
@@ -149,13 +150,49 @@ pub const Parser = struct {
     }
 };
 
+/// checks if a character is the valid start char for a query
+fn isValidQueryStart(ch: u8) bool {
+    return switch (ch) {
+        '{',
+        '0'...'9',
+        'a'...'z',
+        'A'...'Z',
+        => true,
+        else => false,
+    };
+}
+
 fn parseQuery(s: *State) Error!Query.Index {
+    skipSpaces(s);
+    var lhs = try parseAtom(s);
+    while (s.peek()) |ch| {
+        if (!std.ascii.isWhitespace(ch)) break;
+        skipSpaces(s);
+
+        if (s.peek()) |next_ch| {
+            if (!isValidQueryStart(next_ch))
+                break;
+        } else {
+            break; // eof
+        }
+
+        const rhs = try parseAtom(s);
+        lhs = try s.addQuery(Query{
+            .compound = .{ .left = lhs, .right = rhs },
+        });
+    }
+
+    return lhs;
+}
+
+fn parseAtom(s: *State) Error!Query.Index {
     const ch = s.peek() orelse
         return Error.UnexpectedEof;
 
     return switch (ch) {
         '{' => parseAttributeList(s),
         '0'...'9' => parseNumericLiteral(s),
+        'a'...'z', 'A'...'Z' => try parseTag(s),
         else => {
             const message = if (@inComptime())
                 "Unexpected character ('" ++ &[_]u8{ch} ++ "'), expecting the start of a query"
@@ -166,6 +203,29 @@ fn parseQuery(s: *State) Error!Query.Index {
             return s.emitError(message, Error.InvalidCharacter);
         },
     };
+}
+
+const ast = @import("js").ast;
+const valid_tags = std.meta.tags(std.meta.Tag(ast.NodeData));
+fn parseTag(s: *State) Error!Query.Index {
+    std.debug.assert(std.ascii.isAlphabetic(s.peekUnchecked()));
+
+    const start = s.index;
+    while (s.peek()) |ch| : (s.bump()) {
+        if (!(std.ascii.isAlphabetic(ch) or ch == '_')) break;
+    }
+
+    const tag_name = s.source[start..s.index];
+    for (valid_tags) |node_tag| {
+        if (std.mem.eql(u8, tag_name, @tagName(node_tag))) {
+            return s.addQuery(Query{ .tag = node_tag });
+        }
+    }
+
+    if (@inComptime())
+        return s.emitError("Unknown tag name: " ++ tag_name, Error.UnknownTagName);
+
+    return s.emitError("Unknown tag name", Error.UnknownTagName);
 }
 
 /// When on a '{', parse a list of comma separate attributes,
@@ -181,9 +241,9 @@ fn parseAttributeList(s: *State) Error!Query.Index {
         return Error.UnexpectedChar; // TODO: better error
 
     if (s.peek() == '}') {
+        // empty attribute list
         std.debug.assert(attrs_count == 0);
         s.bump();
-        // empty attribute list
         return s.addQuery(Query{ .attribute_list = .{ .attrs_start = 0, .attrs_end = 0 } });
     }
 
@@ -286,10 +346,16 @@ fn parseAttribute(s: *State) Error!Query {
 fn parseAttributeName(s: *State) Error!Query {
     const start = s.index;
     const is_valid_start = std.ascii.isAlphabetic(s.peekUnchecked());
-    if (!is_valid_start) return Error.UnexpectedChar;
+    if (!is_valid_start) {
+        const error_message = "Expected attribute name or ':'";
+        return s.emitError(if (@inComptime())
+            error_message ++ " but found a " ++ s.source[s.index .. s.index + 1]
+        else
+            error_message, Error.UnexpectedChar);
+    }
 
     while (s.peek()) |ch| : (s.bump()) {
-        if (!(std.ascii.isAlphanumeric(ch) or ch == '_' or std.ascii.isDigit(ch)))
+        if (!(std.ascii.isAlphanumeric(ch) or ch == '_'))
             break;
     }
 
@@ -410,5 +476,29 @@ test Parser {
 
         try t.expectEqual(2.0, p.get(attrs[1].attribute.value).numeric_literal);
         try t.expectEqualStrings("b", p.get(attrs[1].attribute.name).attr_name);
+    }
+
+    {
+        var p = try parse("binary_expr { left: 1, right: 2 }");
+        defer p.deinit();
+
+        const compound_query = p.get(p.root_node_id).*;
+
+        try t.expectEqual(.compound, std.meta.activeTag(compound_query));
+
+        // binary_expr
+        const left = p.get(compound_query.compound.left).*;
+        try t.expectEqual(.binary_expr, left.tag);
+
+        // { left: 1, right: 2}
+        const right = p.get(compound_query.compound.right).*;
+        try t.expectEqual(.attribute_list, std.meta.activeTag(right));
+
+        const attrs = right.attribute_list.getAttributes(&p);
+        try t.expectEqual(2, attrs.len);
+        try t.expectEqual(1.0, p.get(attrs[0].attribute.value).numeric_literal);
+        try t.expectEqualStrings("left", p.get(attrs[0].attribute.name).attr_name);
+        try t.expectEqual(2.0, p.get(attrs[1].attribute.value).numeric_literal);
+        try t.expectEqualStrings("right", p.get(attrs[1].attribute.name).attr_name);
     }
 }
