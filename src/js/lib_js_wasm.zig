@@ -64,7 +64,7 @@ fn parseJsImpl(source: []const u8, source_type: root.Parser.SourceType) !ParseRe
     var parser = try root.Parser.init(wasm_allocator, source, .{ .source_type = source_type });
     defer parser.deinit();
 
-    const root_id = parser.parse() catch |err| {
+    var result = parser.parse() catch |err| {
         if (parser.diagnostics.items.len > 0) {
             const diagnostic = parser.diagnostics.items[0];
             const error_message = try wasm_allocator.dupeZ(u8, diagnostic.message);
@@ -98,7 +98,9 @@ fn parseJsImpl(source: []const u8, source_type: root.Parser.SourceType) !ParseRe
         };
     };
 
-    const json_str = try root.estree.toJsonString(wasm_allocator, &parser, root_id);
+    defer result.deinit();
+
+    const json_str = try root.estree.toJsonString(wasm_allocator, &parser, result.tree.root);
     const json_str_z = try nullTerminate(json_str);
     return ParseResult{
         .ok = true,

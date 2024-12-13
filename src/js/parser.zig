@@ -84,6 +84,8 @@ pub const Error = error{
     // TODO: remove these two errors
     JsxNotImplemented,
     TypeScriptNotImplemented,
+    // The parser instance has already been used
+    AlreadyParsed,
 } || Tokenizer.Error;
 const ParseFn = fn (self: *Self) Error!Node.Index;
 
@@ -255,7 +257,7 @@ jsx: bool = false,
 /// Whether we're parsing TypeScript
 typescript: bool = false,
 /// The parse result
-tree: *Tree,
+tree: ?*Tree,
 scope: ScopeManager,
 /// Used in `asyncExpression`.
 /// Reset to `false` after an async arrow function is parsed.
@@ -426,8 +428,10 @@ pub fn init(
 }
 
 pub fn deinit(self: *Self) void {
-    self.tree.deinit();
-    self.allocator.destroy(self.tree);
+    if (self.tree) |tree| {
+        tree.deinit();
+        self.allocator.destroy(tree);
+    }
 
     self.scratch.deinit();
     for (self.diagnostics.items) |d| {
@@ -438,7 +442,20 @@ pub fn deinit(self: *Self) void {
     self.scope.deinit();
 }
 
-pub fn parse(self: *Self) Error!Node.Index {
+pub const Result = struct {
+    tree: *Tree,
+    allocator: std.mem.Allocator,
+    pub fn deinit(self: *Result) void {
+        self.tree.deinit();
+        return self.allocator.destroy(self.tree);
+    }
+};
+
+/// Parse the input program.
+/// IMPORTANT: this function can only be called *once* on a single parser instance.
+/// Calling it multiple times is undefined behavior.
+/// returned value is owned by the caller.
+pub fn parse(self: *Self) Error!Result {
     const prev_scratch_len = self.scratch.items.len;
     defer self.scratch.items.len = prev_scratch_len;
 
@@ -474,11 +491,17 @@ pub fn parse(self: *Self) Error!Node.Index {
 
     const statements = self.scratch.items[prev_scratch_len..];
     const stmt_list = try self.addSubRange(statements);
-    return try self.addNode(
+    const root_node = try self.addNode(
         .{ .program = stmt_list },
         @enumFromInt(0),
         @enumFromInt(self.tokens.items.len - 1),
     );
+
+    const tree = self.tree orelse return Error.AlreadyParsed;
+    tree.root = root_node;
+
+    self.tree = null; // avoid free-ing the tree when parser is deinit-ed.
+    return Result{ .allocator = self.allocator, .tree = tree };
 }
 
 pub fn moduleItem(self: *Self) Error!Node.Index {
@@ -5097,7 +5120,9 @@ fn checkGetterOrSetterParams(
     kind: ast.PropertyDefinitionKind,
 ) Error!void {
     const func = &self.getNode(func_expr).data.function_expr;
-    const n_params = func.getParameterCount(self.tree);
+    // SAFETY: self.tree is always valid here. It can only be null once `parse` (called before this)
+    // has already returned.
+    const n_params = func.getParameterCount(self.tree orelse unreachable);
 
     if (kind == .get and n_params != 0) {
         try self.emitDiagnostic(
@@ -5118,7 +5143,8 @@ fn checkGetterOrSetterParams(
             return Error.InvalidSetter;
         }
 
-        const param = func.getParameterSlice(self.tree)[0];
+        // SAFETY: `self.tree` cannot be null here.
+        const param = func.getParameterSlice(self.tree orelse unreachable)[0];
         if (self.nodeTag(param) == .rest_element) {
             try self.emitDiagnostic(
                 self.nodeStartCoord(param),
@@ -5469,7 +5495,13 @@ fn parseFormalParameters(self: *Self) Error!Node.Index {
             try self.scratch.append(param);
 
             const comma_or_rpar = try self.expect2(.@",", .@")");
-            if (comma_or_rpar.token.tag == .@")") break :blk comma_or_rpar.id;
+            // After a ",", we expect either a ")" or another parameter
+            if (comma_or_rpar.token.tag == .@")") {
+                break :blk comma_or_rpar.id;
+            } else if (self.isAtToken(.@")")) {
+                const rparen = try self.next();
+                break :blk rparen.id;
+            }
         }
     };
 
@@ -5671,7 +5703,7 @@ fn runTestOnFile(tests_dir: std.fs.Dir, file_path: []const u8) !void {
     var parser = try Self.init(t.allocator, source_code, .{ .source_type = .script });
     defer parser.deinit();
 
-    const root_node = parser.parse() catch |err| {
+    var result = parser.parse() catch |err| {
         if (std.mem.startsWith(u8, std.mem.trim(u8, source_code, "\n\t "), "// ERROR")) {
             // error was expected.
             // TODO: check the error message as well.
@@ -5688,8 +5720,11 @@ fn runTestOnFile(tests_dir: std.fs.Dir, file_path: []const u8) !void {
         return err;
     };
 
+    defer result.deinit();
+    const root_node = result.tree.root;
+
     // 1. prettify the AST as a JSON string
-    const ast_json = try estree.toJsonString(t.allocator, &parser, root_node);
+    const ast_json = try estree.toJsonString(t.allocator, result.tree, root_node);
     defer t.allocator.free(ast_json);
 
     // 2. For every `<filename>.js`, read the corresponding `<filename>.json` file

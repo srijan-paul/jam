@@ -135,7 +135,8 @@ fn testOnPassingFile(
     );
     defer parser.deinit();
 
-    _ = try parser.parse();
+    var result = try parser.parse();
+    defer result.deinit();
 
     const source_explicit = try pass_explicit_dir.readFileAlloc(
         allocator,
@@ -151,7 +152,8 @@ fn testOnPassingFile(
     );
     defer parser2.deinit();
 
-    _ = try parser2.parse();
+    var result2 = try parser2.parse();
+    defer result2.deinit();
 
     if (parser.nodes.len != parser2.nodes.len) {
         return ParseResult.ast_no_match;
@@ -194,8 +196,9 @@ fn testOnMalformedFile(
     ) catch return .pass;
     defer parser.deinit();
 
-    _ = parser.parse() catch
+    var result = parser.parse() catch
         return ParseResult.pass;
+    defer result.deinit();
 
     for (fail_exceptions) |exception_filename| {
         if (std.mem.eql(u8, file_name, exception_filename)) {

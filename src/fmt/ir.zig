@@ -21,7 +21,7 @@ pub const Doc = union(enum) {
     /// this is printed as a newline instead.
     space_or_nl: u8,
     /// A '\n' character
-    newline: u8,
+    newline,
     // TODO: make two groups: hard broken and soft broken
     group: []Doc,
     /// raw source text
@@ -34,6 +34,7 @@ pub const Doc = union(enum) {
 const SimpleDoc = union(enum) {
     nil,
     text: []const u8,
+    brk,
     /// stores the number of line breaks to place after the newline
     line_break: u32,
 
@@ -41,6 +42,7 @@ const SimpleDoc = union(enum) {
     pub fn render(self: *const SimpleDoc, out: *std.ArrayList(u8)) Allocator.Error!void {
         switch (self.*) {
             .nil => return,
+            .brk => try out.append(' '),
             .text => |s| try out.appendSlice(s),
             .line_break => |n| {
                 try out.append('\n');
@@ -83,4 +85,14 @@ test renderSimpleDocuments {
         },
         "a\n   b",
     );
+
+    try testRender(&[_]SimpleDoc{
+        .{ .text = "let" },
+        .{ .brk = {} },
+        .{ .text = "x" },
+        .{ .brk = {} },
+        .{ .text = "=" },
+        .{ .brk = {} },
+        .{ .text = "123" },
+    }, "let x = 123");
 }

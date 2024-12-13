@@ -5,8 +5,10 @@ const std = @import("std");
 
 const Parser = @import("parser.zig");
 const ast = @import("ast.zig");
-const Node = ast.Node;
 const util = @import("util");
+
+const Node = ast.Node;
+const Tree = ast.Tree;
 
 const JsonValue = std.json.Value;
 
@@ -22,7 +24,7 @@ fn checkField(v: anytype, want: std.meta.Tag(@TypeOf(v))) bool {
 
 fn subRangeToJsonArray(
     al: std.mem.Allocator,
-    self: *const Parser,
+    t: *const Tree,
     maybe_args: ?ast.SubRange,
 ) error{OutOfMemory}!JsonValue {
     var arr = std.json.Array.init(al);
@@ -30,8 +32,8 @@ fn subRangeToJsonArray(
         const from: usize = @intFromEnum(arguments.from);
         const to: usize = @intFromEnum(arguments.to);
         for (from..to) |i| {
-            const arg_node = self.node_lists.items[i];
-            const new_arg = try nodeToEstree(self, al, arg_node);
+            const arg_node = t.node_indices.items[i];
+            const new_arg = try nodeToEstree(t, al, arg_node);
             try arr.append(new_arg);
         }
     }
@@ -144,11 +146,11 @@ pub fn jamToEstreeTag(node: ast.NodeData) []const u8 {
 }
 
 fn nodeToEstree(
-    self: *const Parser,
+    t: *const Tree,
     al: std.mem.Allocator,
     node_id: Node.Index,
 ) !JsonValue {
-    const node = self.nodes.get(@intFromEnum(node_id));
+    const node = t.nodes.get(@intFromEnum(node_id));
     switch (node.data) {
         .none, .empty_array_item => return JsonValue{ .null = {} },
         else => {},
@@ -157,18 +159,18 @@ fn nodeToEstree(
     var o = std.json.ObjectMap.init(al);
     const tag = jamToEstreeTag(node.data);
     try o.put("type", JsonValue{ .string = tag });
-    try o.put("start", JsonValue{ .integer = @intCast(self.getToken(node.start).start) });
-    const end_token = self.getToken(node.end);
+    try o.put("start", JsonValue{ .integer = @intCast(t.getToken(node.start).start) });
+    const end_token = t.getToken(node.end);
     try o.put("end", JsonValue{ .integer = @intCast(end_token.start + end_token.len) });
 
     switch (node.data) {
         .binary_expr,
         .assignment_expr,
         => |payload| {
-            const lhs = try nodeToEstree(self, al, payload.lhs);
-            const rhs = try nodeToEstree(self, al, payload.rhs);
-            const token = self.tokens.items[(@intFromEnum(payload.operator))];
-            const operator = token.toByteSlice(self.source);
+            const lhs = try nodeToEstree(t, al, payload.lhs);
+            const rhs = try nodeToEstree(t, al, payload.rhs);
+            const token = t.tokens.items[(@intFromEnum(payload.operator))];
+            const operator = token.toByteSlice(t.source);
 
             try o.put("operator", JsonValue{ .string = operator });
             try o.put("left", lhs);
@@ -176,17 +178,17 @@ fn nodeToEstree(
         },
 
         .identifier => |s| {
-            const name = self.tree.string_pool.toByteSlice(s);
+            const name = t.string_pool.toByteSlice(s);
             try o.put("name", JsonValue{ .string = name });
         },
 
         .program => |maybe_statements| {
-            const body = try subRangeToJsonArray(al, self, maybe_statements);
+            const body = try subRangeToJsonArray(al, t, maybe_statements);
             try o.put("body", body);
         },
 
         .expression_statement => |e| {
-            const expression = try nodeToEstree(self, al, e);
+            const expression = try nodeToEstree(t, al, e);
             try o.put("expression", expression);
         },
 
@@ -194,12 +196,12 @@ fn nodeToEstree(
         .array_literal,
         .array_pattern,
         => |maybe_elements| {
-            const elements = try subRangeToJsonArray(al, self, maybe_elements);
+            const elements = try subRangeToJsonArray(al, t, maybe_elements);
             try o.put("elements", elements);
         },
         .literal => |token_id| {
-            const token = self.getToken(token_id);
-            const value = token.toByteSlice(self.source);
+            const token = t.getToken(token_id);
+            const value = token.toByteSlice(t.source);
             if (token.tag == .string_literal) {
                 try o.put("value", JsonValue{ .string = try escapeUtf8(al, value) });
             } else {
@@ -208,18 +210,18 @@ fn nodeToEstree(
         },
 
         .export_from_declaration => |payload| {
-            const source = try nodeToEstree(self, al, payload.source);
+            const source = try nodeToEstree(t, al, payload.source);
             try o.put("source", source);
-            const specifiers = try subRangeToJsonArray(al, self, payload.specifiers);
+            const specifiers = try subRangeToJsonArray(al, t, payload.specifiers);
             try o.put("specifiers", specifiers);
         },
 
         .export_specifier => |payload| {
-            const local = try nodeToEstree(self, al, payload.local);
+            const local = try nodeToEstree(t, al, payload.local);
 
             try o.put("local", local);
             if (payload.exported) |e| {
-                const exported = try nodeToEstree(self, al, e);
+                const exported = try nodeToEstree(t, al, e);
                 try o.put("exported", exported);
             } else {
                 try o.put("exported", local);
@@ -227,35 +229,35 @@ fn nodeToEstree(
         },
 
         .export_all_declaration => |payload| {
-            const source = try nodeToEstree(self, al, payload.source);
+            const source = try nodeToEstree(t, al, payload.source);
             try o.put("source", source);
         },
 
         .export_declaration => |payload| {
-            const declaration = try nodeToEstree(self, al, payload.declaration);
+            const declaration = try nodeToEstree(t, al, payload.declaration);
             try o.put("declaration", declaration);
         },
 
         .export_list_declaration => |payload| {
-            const specifiers = try subRangeToJsonArray(al, self, payload.specifiers);
+            const specifiers = try subRangeToJsonArray(al, t, payload.specifiers);
             try o.put("specifiers", specifiers);
         },
 
         .call_expr, .new_expr => |payload| {
-            const callee = try nodeToEstree(self, al, payload.callee);
-            const arguments = self.getNode(payload.arguments).data.arguments;
-            const args = try subRangeToJsonArray(al, self, arguments);
+            const callee = try nodeToEstree(t, al, payload.callee);
+            const arguments = t.getNode(payload.arguments).data.arguments;
+            const args = try subRangeToJsonArray(al, t, arguments);
             try o.put("callee", callee);
             try o.put("arguments", args);
         },
 
         .super_call_expr => |maybe_args| {
-            try o.put("arguments", try subRangeToJsonArray(al, self, maybe_args));
+            try o.put("arguments", try subRangeToJsonArray(al, t, maybe_args));
             // TODO: store super identifier as well.
         },
 
         .spread_element, .rest_element => |arg| {
-            const argument = try nodeToEstree(self, al, arg);
+            const argument = try nodeToEstree(t, al, arg);
             try o.put("argument", argument);
         },
 
@@ -263,16 +265,16 @@ fn nodeToEstree(
         .post_unary_expr,
         .update_expr,
         => |payload| {
-            const operator = self.tokens.items[(@intFromEnum(payload.operator))];
-            const arg = try nodeToEstree(self, al, payload.operand);
-            const operator_str = operator.toByteSlice(self.source);
+            const operator = t.tokens.items[(@intFromEnum(payload.operator))];
+            const arg = try nodeToEstree(t, al, payload.operand);
+            const operator_str = operator.toByteSlice(t.source);
             try o.put("operator", JsonValue{ .string = operator_str });
             try o.put("argument", arg);
         },
 
         .yield_expr => |payload| {
             if (payload.value) |arg| {
-                const argument = try nodeToEstree(self, al, arg);
+                const argument = try nodeToEstree(t, al, arg);
                 try o.put("argument", argument);
             }
 
@@ -280,14 +282,14 @@ fn nodeToEstree(
         },
 
         .await_expr => |payload| {
-            const arg = try nodeToEstree(self, al, payload.operand);
+            const arg = try nodeToEstree(t, al, payload.operand);
             try o.put("argument", arg);
         },
 
         .if_statement => |payload| {
-            const cond = try nodeToEstree(self, al, payload.condition);
-            const consequent = try nodeToEstree(self, al, payload.consequent);
-            const alternate = try nodeToEstree(self, al, payload.alternate);
+            const cond = try nodeToEstree(t, al, payload.condition);
+            const consequent = try nodeToEstree(t, al, payload.consequent);
+            const alternate = try nodeToEstree(t, al, payload.alternate);
 
             try o.put("test", cond);
             try o.put("consequent", consequent);
@@ -295,18 +297,18 @@ fn nodeToEstree(
         },
 
         .optional_expr => |operand| {
-            const arg = try nodeToEstree(self, al, operand);
+            const arg = try nodeToEstree(t, al, operand);
             try o.put("argument", arg);
         },
 
         .object_literal, .object_pattern => |maybe_properties| {
-            const properties = try subRangeToJsonArray(al, self, maybe_properties);
+            const properties = try subRangeToJsonArray(al, t, maybe_properties);
             try o.put("properties", properties);
         },
 
         .object_property => |payload| {
-            const key = try nodeToEstree(self, al, payload.key);
-            const value = try nodeToEstree(self, al, payload.value);
+            const key = try nodeToEstree(t, al, payload.key);
+            const value = try nodeToEstree(t, al, payload.value);
             const kind = @tagName(payload.flags.kind);
             const computed = payload.flags.is_computed;
             const shorthand = payload.flags.is_shorthand;
@@ -321,9 +323,9 @@ fn nodeToEstree(
         },
 
         .try_statement => |payload| {
-            const block = try nodeToEstree(self, al, payload.body);
-            const handler = try nodeToEstree(self, al, payload.catch_clause);
-            const finalizer = try nodeToEstree(self, al, payload.finalizer);
+            const block = try nodeToEstree(t, al, payload.body);
+            const handler = try nodeToEstree(t, al, payload.catch_clause);
+            const finalizer = try nodeToEstree(t, al, payload.finalizer);
 
             try o.put("block", block);
             try o.put("handler", handler);
@@ -332,57 +334,57 @@ fn nodeToEstree(
 
         .catch_clause => |payload| {
             if (payload.param) |param| {
-                const param_ = try nodeToEstree(self, al, param);
+                const param_ = try nodeToEstree(t, al, param);
                 try o.put("param", param_);
             }
 
-            const body = try nodeToEstree(self, al, payload.body);
+            const body = try nodeToEstree(t, al, payload.body);
             try o.put("body", body);
         },
 
         .block_statement => |maybe_statements| {
-            const body = try subRangeToJsonArray(al, self, maybe_statements);
+            const body = try subRangeToJsonArray(al, t, maybe_statements);
             try o.put("body", body);
         },
 
         .with_statement => |payload| {
-            const object = try nodeToEstree(self, al, payload.object);
-            const body = try nodeToEstree(self, al, payload.body);
+            const object = try nodeToEstree(t, al, payload.object);
+            const body = try nodeToEstree(t, al, payload.body);
 
             try o.put("object", object);
             try o.put("body", body);
         },
 
         .switch_statement => |payload| {
-            const discriminant = try nodeToEstree(self, al, payload.discriminant);
-            const cases = try subRangeToJsonArray(al, self, payload.cases);
+            const discriminant = try nodeToEstree(t, al, payload.discriminant);
+            const cases = try subRangeToJsonArray(al, t, payload.cases);
 
             try o.put("discriminant", discriminant);
             try o.put("cases", cases);
         },
 
         .switch_case => |payload| {
-            const cond = try nodeToEstree(self, al, payload.expression);
-            const consequent = try subRangeToJsonArray(al, self, payload.consequent);
+            const cond = try nodeToEstree(t, al, payload.expression);
+            const consequent = try subRangeToJsonArray(al, t, payload.consequent);
 
             try o.put("test", cond);
             try o.put("consequent", consequent);
         },
 
         .default_case => |payload| {
-            const consequent = try subRangeToJsonArray(al, self, payload.consequent);
+            const consequent = try subRangeToJsonArray(al, t, payload.consequent);
             try o.put("consequent", consequent);
         },
 
         .import_namespace_specifier => |payload| {
-            const local = try nodeToEstree(self, al, payload.name);
+            const local = try nodeToEstree(t, al, payload.name);
             try o.put("local", local);
         },
 
         .import_specifier => |payload| {
-            const local = try nodeToEstree(self, al, payload.local);
+            const local = try nodeToEstree(t, al, payload.local);
             if (payload.imported) |imported| {
-                const imported_ = try nodeToEstree(self, al, imported);
+                const imported_ = try nodeToEstree(t, al, imported);
                 try o.put("imported", imported_);
             } else {
                 try o.put("imported", local);
@@ -391,20 +393,20 @@ fn nodeToEstree(
         },
 
         .import_declaration => |payload| {
-            const source = try nodeToEstree(self, al, payload.source);
-            const specifiers = try subRangeToJsonArray(al, self, payload.specifiers);
+            const source = try nodeToEstree(t, al, payload.source);
+            const specifiers = try subRangeToJsonArray(al, t, payload.specifiers);
 
             try o.put("source", source);
             try o.put("specifiers", specifiers);
         },
 
         .import_default_specifier => |payload| {
-            const local = try nodeToEstree(self, al, payload.name);
+            const local = try nodeToEstree(t, al, payload.name);
             try o.put("local", local);
         },
 
         .variable_declaration => |payload| {
-            const declarations = try subRangeToJsonArray(al, self, payload.declarators);
+            const declarations = try subRangeToJsonArray(al, t, payload.declarators);
             const kind = @tagName(payload.kind);
 
             try o.put("declarations", declarations);
@@ -412,17 +414,17 @@ fn nodeToEstree(
         },
 
         .variable_declarator => |payload| {
-            const id = try nodeToEstree(self, al, payload.lhs);
+            const id = try nodeToEstree(t, al, payload.lhs);
             const init = payload.init orelse return JsonValue{ .object = o };
 
-            const init_ = try nodeToEstree(self, al, init);
+            const init_ = try nodeToEstree(t, al, init);
             try o.put("id", id);
             try o.put("init", init_);
         },
 
         .member_expr => |payload| {
-            const object = try nodeToEstree(self, al, payload.object);
-            const property = try nodeToEstree(self, al, payload.property);
+            const object = try nodeToEstree(t, al, payload.object);
+            const property = try nodeToEstree(t, al, payload.property);
 
             try o.put("object", object);
             try o.put("property", property);
@@ -430,8 +432,8 @@ fn nodeToEstree(
         },
 
         .computed_member_expr => |payload| {
-            const object = try nodeToEstree(self, al, payload.object);
-            const property = try nodeToEstree(self, al, payload.property);
+            const object = try nodeToEstree(t, al, payload.object);
+            const property = try nodeToEstree(t, al, payload.property);
 
             try o.put("object", object);
             try o.put("property", property);
@@ -439,13 +441,13 @@ fn nodeToEstree(
         },
 
         .function_expr, .function_declaration => |payload| {
-            const params_range = self.getNode(payload.parameters).data.parameters;
-            const params = try subRangeToJsonArray(al, self, params_range);
-            const body = try nodeToEstree(self, al, payload.body);
+            const params_range = t.getNode(payload.parameters).data.parameters;
+            const params = try subRangeToJsonArray(al, t, params_range);
+            const body = try nodeToEstree(t, al, payload.body);
 
-            const extra = self.getExtraData(payload.info).function;
+            const extra = t.getExtraData(payload.info).function;
             if (extra.name) |name| {
-                const id = try nodeToEstree(self, al, name);
+                const id = try nodeToEstree(t, al, name);
                 try o.put("id", id);
             }
 
@@ -459,29 +461,29 @@ fn nodeToEstree(
 
         .debugger_statement => {},
         .while_statement => |payload| {
-            const cond = try nodeToEstree(self, al, payload.condition);
-            const body = try nodeToEstree(self, al, payload.body);
+            const cond = try nodeToEstree(t, al, payload.condition);
+            const body = try nodeToEstree(t, al, payload.body);
 
             try o.put("test", cond);
             try o.put("body", body);
         },
 
         .do_while_statement => |payload| {
-            const cond = try nodeToEstree(self, al, payload.condition);
-            const body = try nodeToEstree(self, al, payload.body);
+            const cond = try nodeToEstree(t, al, payload.condition);
+            const body = try nodeToEstree(t, al, payload.body);
 
             try o.put("test", cond);
             try o.put("body", body);
         },
 
         .sequence_expr => |payload| {
-            const expressions = try subRangeToJsonArray(al, self, payload);
+            const expressions = try subRangeToJsonArray(al, t, payload);
             try o.put("expressions", expressions);
         },
 
         .assignment_pattern => |payload| {
-            const left = try nodeToEstree(self, al, payload.lhs);
-            const right = try nodeToEstree(self, al, payload.rhs);
+            const left = try nodeToEstree(t, al, payload.lhs);
+            const right = try nodeToEstree(t, al, payload.rhs);
 
             try o.put("left", left);
             try o.put("right", right);
@@ -489,26 +491,26 @@ fn nodeToEstree(
 
         .empty_statement => {},
         .labeled_statement => |payload| {
-            const label = try nodeToEstree(self, al, payload.label);
-            const body = try nodeToEstree(self, al, payload.body);
+            const label = try nodeToEstree(t, al, payload.label);
+            const body = try nodeToEstree(t, al, payload.body);
 
             try o.put("label", label);
             try o.put("body", body);
         },
 
         .class_expression, .class_declaration => |payload| {
-            const info = self.getExtraData(payload.class_information).class;
+            const info = t.getExtraData(payload.class_information).class;
             if (info.super_class != .empty) {
-                const superClass = try nodeToEstree(self, al, info.super_class);
+                const superClass = try nodeToEstree(t, al, info.super_class);
                 try o.put("superClass", superClass);
             }
 
             if (info.name) |id| {
-                const id_ = try nodeToEstree(self, al, id);
+                const id_ = try nodeToEstree(t, al, id);
                 try o.put("id", id_);
             }
 
-            const body_defs = try subRangeToJsonArray(al, self, payload.body);
+            const body_defs = try subRangeToJsonArray(al, t, payload.body);
             var body = std.json.ObjectMap.init(al);
             try body.put("type", JsonValue{ .string = "ClassBody" });
             try body.put("body", body_defs);
@@ -517,8 +519,8 @@ fn nodeToEstree(
         },
 
         .class_field, .class_method => |payload| {
-            const key = try nodeToEstree(self, al, payload.key);
-            const value = try nodeToEstree(self, al, payload.value);
+            const key = try nodeToEstree(t, al, payload.key);
+            const value = try nodeToEstree(t, al, payload.value);
             const computed = payload.flags.is_computed;
             const static = payload.flags.is_static;
 
@@ -534,16 +536,16 @@ fn nodeToEstree(
         },
 
         .template_literal => |payload| {
-            const items = payload.asSlice(self.tree);
+            const items = payload.asSlice(t);
 
             var exprs = std.json.Array.init(al);
             var quasis = std.json.Array.init(al);
 
             for (0.., items) |i, item| {
                 if (i % 2 == 0) {
-                    try quasis.append(try nodeToEstree(self, al, item));
+                    try quasis.append(try nodeToEstree(t, al, item));
                 } else {
-                    try exprs.append(try nodeToEstree(self, al, item));
+                    try exprs.append(try nodeToEstree(t, al, item));
                 }
             }
 
@@ -552,45 +554,45 @@ fn nodeToEstree(
         },
 
         .template_element => |token_id| {
-            const value = self.getToken(token_id).toByteSlice(self.source);
+            const value = t.getToken(token_id).toByteSlice(t.source);
             try o.put("value", JsonValue{ .string = value });
             const is_tail = value[0] == '{';
             try o.put("tail", JsonValue{ .bool = is_tail });
         },
 
         .throw_statement => |payload| {
-            const argument = try nodeToEstree(self, al, payload);
+            const argument = try nodeToEstree(t, al, payload);
             try o.put("argument", argument);
         },
 
         .break_statement, .continue_statement => |payload| {
             if (payload.label) |label| {
-                const label_ = try nodeToEstree(self, al, label);
+                const label_ = try nodeToEstree(t, al, label);
                 try o.put("label", label_);
             }
         },
 
         .for_statement => |payload| {
-            const iter = self.getExtraData(payload.iterator).for_iterator;
+            const iter = t.getExtraData(payload.iterator).for_iterator;
             if (iter.init != .empty)
-                try o.put("init", try nodeToEstree(self, al, iter.init));
+                try o.put("init", try nodeToEstree(t, al, iter.init));
             if (iter.condition != .empty)
-                try o.put("test", try nodeToEstree(self, al, iter.condition));
+                try o.put("test", try nodeToEstree(t, al, iter.condition));
             if (iter.update != .empty)
-                try o.put("update", try nodeToEstree(self, al, iter.update));
+                try o.put("update", try nodeToEstree(t, al, iter.update));
 
-            const body = try nodeToEstree(self, al, payload.body);
+            const body = try nodeToEstree(t, al, payload.body);
             try o.put("body", body);
         },
 
         .for_in_statement,
         .for_of_statement,
         => |payload| {
-            const iter = self.getExtraData(payload.iterator).for_in_of_iterator;
-            const left = try nodeToEstree(self, al, iter.left);
-            const right = try nodeToEstree(self, al, iter.right);
+            const iter = t.getExtraData(payload.iterator).for_in_of_iterator;
+            const left = try nodeToEstree(t, al, iter.left);
+            const right = try nodeToEstree(t, al, iter.right);
 
-            const body = try nodeToEstree(self, al, payload.body);
+            const body = try nodeToEstree(t, al, payload.body);
             try o.put("left", left);
             try o.put("right", right);
             try o.put("body", body);
@@ -598,15 +600,15 @@ fn nodeToEstree(
 
         .return_statement => |payload| {
             if (payload) |arg| {
-                const argument = try nodeToEstree(self, al, arg);
+                const argument = try nodeToEstree(t, al, arg);
                 try o.put("argument", argument);
             }
         },
 
         .conditional_expr => |payload| {
-            const cond = try nodeToEstree(self, al, payload.condition);
-            const consequent = try nodeToEstree(self, al, payload.consequent);
-            const alternate = try nodeToEstree(self, al, payload.alternate);
+            const cond = try nodeToEstree(t, al, payload.condition);
+            const consequent = try nodeToEstree(t, al, payload.consequent);
+            const alternate = try nodeToEstree(t, al, payload.alternate);
 
             try o.put("test", cond);
             try o.put("consequent", consequent);
@@ -614,16 +616,16 @@ fn nodeToEstree(
         },
 
         .meta_property => |payload| {
-            const meta = try nodeToEstree(self, al, payload.meta);
-            const property = try nodeToEstree(self, al, payload.property);
+            const meta = try nodeToEstree(t, al, payload.meta);
+            const property = try nodeToEstree(t, al, payload.property);
 
             try o.put("meta", meta);
             try o.put("property", property);
         },
 
         .tagged_template_expr => |payload| {
-            const pl_tag = try nodeToEstree(self, al, payload.tag);
-            const quasi = try nodeToEstree(self, al, payload.template);
+            const pl_tag = try nodeToEstree(t, al, payload.tag);
+            const quasi = try nodeToEstree(t, al, payload.template);
 
             try o.put("tag", pl_tag);
             try o.put("quasi", quasi);
@@ -640,14 +642,14 @@ fn nodeToEstree(
 
 pub fn toJsonString(
     allocator: std.mem.Allocator,
-    parser: *const Parser,
+    t: *const Tree,
     node: ast.Node.Index,
 ) error{OutOfMemory}![]u8 {
     var arena = std.heap.ArenaAllocator.init(allocator);
     const al = arena.allocator();
     defer arena.deinit();
 
-    const pretty_node = try nodeToEstree(parser, al, node);
+    const pretty_node = try nodeToEstree(t, al, node);
     return try std.json.stringifyAlloc(allocator, pretty_node, .{
         .whitespace = .indent_2,
         .emit_null_optional_fields = false,

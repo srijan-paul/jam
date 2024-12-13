@@ -29,8 +29,12 @@ pub const Tree = struct {
     string_pool: util.StringPool,
 
     /// Obtain all the data for a single AST Node.
-    pub fn getNode(self: *const Tree, index: Node.Index) Node {
-        return self.nodes.get(@intFromEnum(index));
+    pub fn getNode(self: *const Tree, index: Node.Index) *const Node {
+        return &self.nodes.get(@intFromEnum(index));
+    }
+
+    pub fn nodeData(self: *const Tree, index: Node.Index) *const NodeData {
+        return &self.nodes.items(.data)[@intFromEnum(index)];
     }
 
     /// Get a token by its index (Token.Index)
@@ -52,6 +56,12 @@ pub const Tree = struct {
         const from: usize = @intFromEnum(from_);
         const to: usize = @intFromEnum(to_);
         return self.node_indices.items[from..to];
+    }
+
+    pub fn tag(self: *const Tree, node_id: Node.Index) std.meta.Tag(NodeData) {
+        return std.meta.activeTag(
+            self.nodes.items(.data)[@intFromEnum(node_id)],
+        );
     }
 
     pub fn deinit(self: *Tree) void {
