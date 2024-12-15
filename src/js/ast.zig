@@ -447,7 +447,7 @@ pub const NodeData = union(enum(u8)) {
     variable_declarator: VariableDeclarator,
     function_declaration: Function,
     class_declaration: Class,
-    debugger_statement: void,
+    debugger_statement,
     if_statement: Conditional,
     do_while_statement: WhileStatement,
     while_statement: WhileStatement,

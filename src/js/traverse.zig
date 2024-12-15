@@ -1,3 +1,6 @@
+// A zig port of [ESTraverse](https://github.com/estools/estraverse),
+// modified to suit Jam's syntax tree, and tweaked for performance.
+
 const std = @import("std");
 
 const Parser = @import("parser.zig");
@@ -34,29 +37,153 @@ pub fn Traverser(TControl: type) type {
         }
 
         fn visit(self: *Self, node_id: ast.Node.Index) anyerror!void {
-            const pl = self.t.nodeData(node_id).*;
+            const data = self.t.nodeData(node_id).*;
             if (@hasDecl(TControl, "onEnter"))
-                try self.ctrl.onEnter(node_id, pl);
+                try self.ctrl.onEnter(node_id, data);
 
-            switch (pl) {
-                .program => |maybe_statements| if (maybe_statements) |stmts| {
+            switch (data) {
+                // payload is ?SubRange
+                .program,
+                .array_literal,
+                .array_pattern,
+                .parameters,
+                .block_statement,
+                .object_pattern,
+                .object_literal,
+                => |maybe_statements| if (maybe_statements) |stmts| {
                     try self.subRange(stmts);
                 },
-                .expression_statement => |e| try self.visit(e),
+
+                .object_property => |o| {
+                    self.visit(o.key);
+                    self.visit(o.value);
+                },
+
+                .if_statement, .conditional_expr => |if_pl| {
+                    try self.visit(if_pl.condition);
+                    try self.visit(if_pl.consequent);
+                    try self.visit(if_pl.alternate);
+                },
+
+                .while_statement, .do_while_statement => |while_pl| {
+                    try self.visit(while_pl.condition);
+                    try self.visit(while_pl.body);
+                },
+
+                // payload is Node.Index
+                .expression_statement,
+                .optional_expr,
+                .spread_element,
+                .rest_element,
+                .throw_statement,
+                => |e| try self.visit(e),
+
+                .class_declaration,
+                .class_expression,
+                => |class_pl| {
+                    const info = self.t.getExtraData(class_pl.class_information).class;
+                    if (info.name) |name| try self.visit(name);
+                    try self.visit(info.super_class);
+                    try self.subRange(class_pl.body);
+                },
+
+                .return_statement => |maybe_node_id| {
+                    if (maybe_node_id) |id| try self.visit(id);
+                },
+
+                .template_literal => |nodes| try self.subRange(nodes),
+
+                .labeled_statement => |pl| {
+                    try self.visit(pl.label);
+                    try self.visit(pl.body);
+                },
+
+                // payload is UnaryPayload
+                .unary_expr,
+                .update_expr,
+                .await_expr,
+                => |u| try self.visit(u.operand),
+
+                .yield_expr => |y| {
+                    if (y.value) |val|
+                        try self.visit(val);
+                },
+
+                // payload is BinaryPayload
                 .assignment_expr,
                 .binary_expr,
                 .assignment_pattern,
                 => |binary| try self.binaryPayload(&binary),
-                .variable_declaration => |decl| try self.subRange(decl.declarators),
+
+                .variable_declaration => |decl| {
+                    try self.subRange(decl.declarators);
+                },
+
+                .variable_declarator => |decl| {
+                    try self.visit(decl.lhs);
+                    if (decl.init) |init_expr_id|
+                        try self.visit(init_expr_id);
+                },
+
+                .try_statement => |try_pl| {
+                    try self.visit(try_pl.body);
+                    try self.visit(try_pl.catch_clause);
+                    try self.visit(try_pl.finalizer);
+                },
+
+                .catch_clause => |catch_pl| {
+                    if (catch_pl.param) |param| try self.visit(param);
+                    try self.visit(catch_pl.body);
+                },
+
+                .function_declaration, .function_expr => |func_pl| {
+                    if (self.t.getExtraData(func_pl.info).function.name) |func_name| {
+                        try self.visit(func_name);
+                    }
+                    try self.visit(func_pl.body);
+                },
+
+                .for_of_statement,
+                .for_in_statement,
+                .for_of_statement,
+                => |for_pl| {
+                    const iterator = self.t.getExtraData(for_pl.iterator);
+                    switch (iterator) {
+                        .for_iterator => |for_iter| {
+                            try self.visit(for_iter.init);
+                            try self.visit(for_iter.condition);
+                            try self.visit(for_iter.update);
+                        },
+
+                        .for_in_of_iterator => |inof_iter| {
+                            try self.visit(inof_iter.left);
+                            try self.visit(inof_iter.right);
+                        },
+
+                        // SAFETY: No other case is possible for for loops.
+                        else => std.debug.panic(
+                            "Malformed AST: invalid iterator kind for for loops: {s}",
+                            .{@tagName(std.meta.activeTag(iterator))},
+                        ),
+                    }
+
+                    self.visit(for_pl.body);
+                },
 
                 // leaf nodes cannot be explored further
-                .literal => {},
-                .identifier => {},
-                else => std.debug.panic("not implemented: {s}!\n", .{@tagName(std.meta.activeTag(pl))}),
+                .literal,
+                .identifier,
+                .template_element,
+                .empty_statement,
+                .debugger_statement,
+                .none,
+                .this,
+                => {},
+                else => std.debug.panic("not implemented: {s}!\n", .{@tagName(std.meta.activeTag(data))}),
             }
 
             if (@hasDecl(TControl, "onExit"))
-                try self.ctrl.onExit(node_id, pl);
+                try self.ctrl.onExit(node_id, data);
         }
 
         pub fn traverse(self: *Self) !void {
