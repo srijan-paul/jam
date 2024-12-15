@@ -55,8 +55,8 @@ pub fn Traverser(TControl: type) type {
                 },
 
                 .object_property => |o| {
-                    self.visit(o.key);
-                    self.visit(o.value);
+                    try self.visit(o.key);
+                    try self.visit(o.value);
                 },
 
                 .if_statement, .conditional_expr => |if_pl| {
@@ -145,29 +145,23 @@ pub fn Traverser(TControl: type) type {
 
                 .for_of_statement,
                 .for_in_statement,
-                .for_of_statement,
+                .for_statement,
                 => |for_pl| {
                     const iterator = self.t.getExtraData(for_pl.iterator);
-                    switch (iterator) {
-                        .for_iterator => |for_iter| {
-                            try self.visit(for_iter.init);
-                            try self.visit(for_iter.condition);
-                            try self.visit(for_iter.update);
+                    switch (data) {
+                        .for_statement => {
+                            try self.visit(iterator.for_iterator.init);
+                            try self.visit(iterator.for_iterator.condition);
+                            try self.visit(iterator.for_iterator.update);
                         },
 
-                        .for_in_of_iterator => |inof_iter| {
-                            try self.visit(inof_iter.left);
-                            try self.visit(inof_iter.right);
+                        else => {
+                            try self.visit(iterator.for_in_of_iterator.left);
+                            try self.visit(iterator.for_in_of_iterator.right);
                         },
-
-                        // SAFETY: No other case is possible for for loops.
-                        else => std.debug.panic(
-                            "Malformed AST: invalid iterator kind for for loops: {s}",
-                            .{@tagName(std.meta.activeTag(iterator))},
-                        ),
                     }
 
-                    self.visit(for_pl.body);
+                    try self.visit(for_pl.body);
                 },
 
                 // leaf nodes cannot be explored further

@@ -94,12 +94,13 @@ pub fn build(b: *std.Build) !void {
     jam_css_module.addImport("syntax", jam_syntax_module);
 
     const jam_fmt_module = b.addModule("jam-fmt", .{
-        .root_source_file = b.path("src/css/root.zig"),
+        .root_source_file = b.path("src/fmt/root.zig"),
         .target = target,
         .optimize = optimize,
     });
 
     jam_fmt_module.addImport("util", util_module);
+    jam_fmt_module.addImport("js", jam_js_module);
 
     const lib = b.addStaticLibrary(.{
         .name = "jam",
@@ -171,6 +172,7 @@ pub fn build(b: *std.Build) !void {
 
     lib_unit_tests.root_module.addImport("util", util_module);
     lib_unit_tests.root_module.addImport("syntax", jam_syntax_module);
+    lib_unit_tests.root_module.addImport("js", jam_js_module);
 
     const util_unit_tests = b.addTest(.{
         .root_source_file = b.path("src/util/root.zig"),

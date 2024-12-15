@@ -12,87 +12,89 @@ const Allocator = std.mem.Allocator;
 /// All source text must be converted to a slice of documents
 /// before it can rendered.
 pub const Doc = union(enum) {
-    /// An empty document. Corresponds to an empty
-    /// string in the printed file.
+    /// A unique ID for a document in a list of docs.
+    pub const Id = enum(u32) { _ };
+
+    /// Represents an empty document, never gets printed.
     nil,
-    /// Either a space, or a newline character.
-    /// By default, this is printed as a space.
-    /// If printing as a space exceeds the column limit,
-    /// this is printed as a newline instead.
-    space_or_nl: u8,
-    /// A '\n' character
-    newline,
-    // TODO: make two groups: hard broken and soft broken
-    group: []Doc,
-    /// raw source text
+    /// A '\n' character.
+    nl,
+    /// Indent the inner document by the specified number of tabs.
+    indent: struct { u16, Doc.Id },
+    /// A list of one or more documents
+    /// The first item in the tuple is the head of the list,
+    /// and the second item is the "tail".
+    /// The end of the list is denoted by a any document type
+    /// that isn't another `list`.
+    ///
+    /// E.g, `"foo" -> "bar" -> nil` is represented as:
+    /// ```zig
+    /// // (cons "foo" (cons "bar" nil))
+    /// Doc{
+    ///   .cons = .{
+    ///     Doc{ .text = "foo" },
+    ///     Doc{
+    ///       .cons = .{
+    ///         Doc{ .text = "bar" },
+    ///         Doc{ .nil  = {}    },
+    ///       },
+    ///    },
+    ///   },
+    /// }
+    /// ```
+    ///
+    list: struct { Doc.Id, Doc.Id },
+    /// raw source text without any newline characters
     text: []const u8,
+    /// Chooses between two layouts, whichever is best
+    /// The LHS must not have any `nl`s
+    choice: struct { Doc.Id, Doc.Id },
+    /// Print this sub-layout without any newlines.
+    /// Any `nl`s that are children of this flat node will become spaces
+    flat: Doc.Id,
 };
 
-/// A lower level representation of `Doc` without any nesting.
-/// All whitespaces and newlines are made explicit, and no "dual" states
-/// like "space_or_nl" are present.
-const SimpleDoc = union(enum) {
-    nil,
-    text: []const u8,
-    brk,
-    /// stores the number of line breaks to place after the newline
-    line_break: u32,
+pub fn indent(width: u16, doc: Doc.Id) Doc {
+    return Doc{ .indent = .{ width, doc } };
+}
 
-    /// Write the characters represented by this document to the given array-list.
-    pub fn render(self: *const SimpleDoc, out: *std.ArrayList(u8)) Allocator.Error!void {
-        switch (self.*) {
-            .nil => return,
-            .brk => try out.append(' '),
-            .text => |s| try out.appendSlice(s),
-            .line_break => |n| {
-                try out.append('\n');
-                for (0..n) |_| {
-                    try out.append(' ');
-                }
-            },
+pub fn cons(left: Doc.Id, right: Doc.Id) Doc {
+    return Doc{ .list = .{ left, right } };
+}
+
+pub fn flat(doc: Doc.Id) Doc {
+    return Doc{ .flat = doc };
+}
+
+/// A simpler representation of `Doc`, without any `choice`s.
+/// A layout algorithm should convert a list of `Doc`s
+/// to a list of `SimpleDoc`s, which can then be rendered.
+const SimpleDoc = union(enum) {
+    /// Empty document. Not printed in rendered output.
+    nil,
+    /// raw string
+    text: []const u8,
+    /// Stores the number of tabs to place after the '\n' character
+    line: u32,
+};
+
+pub const LayoutBuilder = struct {
+    const Self = @This();
+
+    /// Maximum number of characters allowed on a single line
+    max_width: u32,
+    /// List of documents to render
+    docs: std.ArrayList(Doc),
+
+    const State = struct {
+        indent_level: u32,
+        mode: enum { brk, flatten },
+    };
+
+    fn fits(_: *Self, doc: *const Doc, _: State) bool {
+        switch (doc.*) {
+            .nil => true,
         }
+        return false;
     }
 };
-
-fn renderSimpleDocuments(
-    allocator: Allocator,
-    sdocs: []const SimpleDoc,
-) Allocator.Error![]const u8 {
-    var out = try std.ArrayList(u8).initCapacity(allocator, sdocs.len);
-    defer out.deinit();
-
-    for (sdocs) |doc| try doc.render(&out);
-
-    return out.toOwnedSlice();
-}
-
-const t = std.testing;
-
-fn testRender(docs: []const SimpleDoc, expected: []const u8) !void {
-    const out = try renderSimpleDocuments(t.allocator, docs);
-    defer t.allocator.free(out);
-    try t.expectEqualStrings(expected, out);
-}
-
-test renderSimpleDocuments {
-    try testRender(&[_]SimpleDoc{.{ .nil = {} }}, "");
-    try testRender(&[_]SimpleDoc{.{ .text = "hello, world!" }}, "hello, world!");
-    try testRender(
-        &[_]SimpleDoc{
-            .{ .text = "a" },
-            .{ .line_break = 3 },
-            .{ .text = "b" },
-        },
-        "a\n   b",
-    );
-
-    try testRender(&[_]SimpleDoc{
-        .{ .text = "let" },
-        .{ .brk = {} },
-        .{ .text = "x" },
-        .{ .brk = {} },
-        .{ .text = "=" },
-        .{ .brk = {} },
-        .{ .text = "123" },
-    }, "let x = 123");
-}

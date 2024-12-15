@@ -1,4 +1,4 @@
-pub const js = @import("./js/root.zig");
+pub const js = @import("js");
 pub const css = @import("./css/root.zig");
 pub const fmt = @import("./fmt/root.zig");
 pub const util = @import("util");
