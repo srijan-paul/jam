@@ -230,7 +230,16 @@ pub fn readResultsFile(allocator: std.mem.Allocator, results_file_path: []const 
 /// compares the ASTs for every file `<file>.js` in `pass/<file>.js` and `pass-explicit/<file>.js`.
 /// Returns a TestResult containing all comparison results.
 pub fn runValidSyntaxTests(al: std.mem.Allocator) !TestResult {
-    const tests_dir = try std.process.getEnvVarOwned(al, "JAM_TESTS_262_DIR");
+    const tests_dir = std.process.getEnvVarOwned(al, "JAM_TESTS_262_DIR") catch |e| {
+        if (e == error.EnvironmentVariableNotFound) {
+            var stderr = std.io.getStdErr();
+            defer stderr.close();
+            _ = try stderr.write("env var 'JAM_TESTS_262_DIR' not set\n");
+            std.process.exit(1);
+        }
+
+        return e;
+    };
 
     var d = try std.fs.openDirAbsolute(tests_dir, .{ .iterate = true });
     defer d.close();

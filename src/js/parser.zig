@@ -453,8 +453,8 @@ pub const Result = struct {
 
 /// Parse the input program.
 /// IMPORTANT: this function can only be called *once* on a single parser instance.
-/// Calling it multiple times is undefined behavior.
-/// returned value is owned by the caller.
+/// Calling it more than once returns an error.
+/// Returned value is owned by the caller.
 pub fn parse(self: *Self) Error!Result {
     const prev_scratch_len = self.scratch.items.len;
     defer self.scratch.items.len = prev_scratch_len;
@@ -1140,6 +1140,7 @@ fn classBody(self: *Self) Error!ast.SubRange {
 
     _ = try self.expectToken(.@"{");
 
+    // TODO: refactor this
     var n_constructors: usize = 0;
     while (self.current.token.tag != .@"}") {
         if (self.current.token.tag == .@";") {
@@ -4430,7 +4431,7 @@ fn identifier(self: *Self, token: TokenWithId) Error!Node.Index {
 
 fn variableName(self: *Self, token_with_id: TokenWithId) Error!Node.Index {
     const token_string = try self.strings.stringValue(&token_with_id.token);
-    if (self.scope.findInCurrentScope(token_string)) |variable| {
+    if (self.scope.findFromCurrentScope(token_string)) |variable| {
         // ```js
         // var a = 1;
         // var a = 1; // this is ok!
@@ -5751,8 +5752,9 @@ fn runTestOnFile(tests_dir: std.fs.Dir, file_path: []const u8) !void {
     try t.expectEqualStrings(trimmed_ast_json, ast_json);
 }
 
-test StringHelper {
+test "StringHelper and ScopeManager" {
     _ = StringHelper;
+    _ = ScopeManager;
 }
 
 test parse {

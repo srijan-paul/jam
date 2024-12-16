@@ -12,16 +12,17 @@ const Allocator = std.mem.Allocator;
 /// All source text must be converted to a slice of documents
 /// before it can rendered.
 pub const Doc = union(enum) {
-    /// A unique ID for a document in a list of docs.
     pub const Id = enum(u32) { _ };
 
     /// Represents an empty document, never gets printed.
     nil,
     /// A '\n' character.
     nl,
+    /// A single whitespace character
+    space,
     /// Indent the inner document by the specified number of tabs.
     indent: struct { u16, Doc.Id },
-    /// A list of one or more documents
+    /// A group of two or more documents
     /// The first item in the tuple is the head of the list,
     /// and the second item is the "tail".
     /// The end of the list is denoted by a any document type
@@ -43,27 +44,45 @@ pub const Doc = union(enum) {
     /// }
     /// ```
     ///
-    list: struct { Doc.Id, Doc.Id },
+    cons: struct { Doc.Id, Doc.Id },
     /// raw source text without any newline characters
     text: []const u8,
-    /// Chooses between two layouts, whichever is best
-    /// The LHS must not have any `nl`s
-    choice: struct { Doc.Id, Doc.Id },
+    /// Represents two possible layouts.
+    /// If the first layout in the pair doesn't fit, the second is chosen.
+    /// NOTE:
+    /// 1. The LHS must not have any `nl`s
+    /// 2. None of the first lines in the left doc should be longer
+    ///    than any of the first lines in the right doc.
+    either: struct { Doc.Id, Doc.Id },
     /// Print this sub-layout without any newlines.
     /// Any `nl`s that are children of this flat node will become spaces
     flat: Doc.Id,
 };
+
+pub const nl = Doc{ .nl = {} };
+pub const nil = Doc{ .nil = {} };
+pub const spc = Doc{ .space = {} };
 
 pub fn indent(width: u16, doc: Doc.Id) Doc {
     return Doc{ .indent = .{ width, doc } };
 }
 
 pub fn cons(left: Doc.Id, right: Doc.Id) Doc {
-    return Doc{ .list = .{ left, right } };
+    return Doc{ .cons = .{ left, right } };
 }
 
-pub fn flat(doc: Doc.Id) Doc {
-    return Doc{ .flat = doc };
+pub fn either(left: Doc.Id, right: Doc.Id) Doc {
+    return Doc{ .either = .{ left, right } };
+}
+
+fn flatten(doc: Doc.Id) Doc {
+    switch (doc.*) {
+        .nil => nil,
+        .nl, .space => spc,
+        .either => |pair| flatten(pair[0]),
+        .indent => |d| flatten(d),
+        .cons => |pair| cons(flatten(pair[0]), flatten(pair[1])),
+    }
 }
 
 /// A simpler representation of `Doc`, without any `choice`s.
@@ -74,27 +93,59 @@ const SimpleDoc = union(enum) {
     nil,
     /// raw string
     text: []const u8,
+    /// A single whitespace character
+    space,
     /// Stores the number of tabs to place after the '\n' character
     line: u32,
+    /// Convert this simple document to a text format, then append it to the
+    /// given array-list.
+    pub fn write(self: SimpleDoc, out: std.ArrayList(u8)) Allocator.Error!void {
+        switch (self) {
+            .nil => {},
+            .space => try out.append(' '),
+            .line => |n| {
+                try out.ensureUnusedCapacity(n + 1);
+                try out.appendAssumeCapacity('\n');
+                for (0..n) |_| try out.appendAssumeCapacity(' ');
+            },
+            .text => |txt| try out.appendSlice(txt),
+        }
+    }
 };
+
+/// When printed as a string, can `doc` fit within `max_width`
+/// characters?
+pub fn fits(max_width: u32, doc: Doc) bool {
+    return fitsImpl(max_width, doc) >= 0;
+}
+
+fn fitsImpl(_: u32, _: Doc) u32 {
+    return 1;
+}
 
 pub const LayoutBuilder = struct {
     const Self = @This();
-
     /// Maximum number of characters allowed on a single line
     max_width: u32,
     /// List of documents to render
     docs: std.ArrayList(Doc),
 
-    const State = struct {
+    /// A document with a specific level of indentation
+    const IndentedDoc = struct {
+        /// Indentation level
         indent_level: u32,
+        /// Whether to separate sub-documents with a new-line
+        /// or a whitespace
         mode: enum { brk, flatten },
-    };
-
-    fn fits(_: *Self, doc: *const Doc, _: State) bool {
-        switch (doc.*) {
-            .nil => true,
+        /// The actual document for which to check the fitting
+        doc: Doc,
+        /// Return a new doc that is indented by [n] tabs
+        pub fn indent(self: *const IndentedDoc, n: u32) IndentedDoc {
+            return .{
+                .indent_level = self.indent_level + n,
+                .doc = self.doc,
+                .mode = self.mode,
+            };
         }
-        return false;
-    }
+    };
 };

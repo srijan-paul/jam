@@ -85,8 +85,8 @@ fn visit(self: *Self, node_id: ast.Node.Index) Doc.Id {
 }
 
 fn format(self: *Self) void {
-    const x = self.visit(self.tree.root);
-    std.debug.print("{d}\n", .{x});
+    _ = self.visit(self.tree.root);
+    // std.debug.print("{d}\n", .{x});
 }
 
 pub fn program(_: *Self, _: *const ast.NodeData) Doc.Id {
@@ -322,7 +322,7 @@ fn parse(s: []const u8) !js.Parser.Result {
 }
 
 test Self {
-    var p = try parse("const x =\n 1;");
+    var p = try parse("1 + 1;");
     defer p.deinit();
 
     var fmt = try Self.init(t.allocator, p.tree);

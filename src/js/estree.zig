@@ -82,7 +82,7 @@ pub fn jamToEstreeTag(node: ast.NodeData) []const u8 {
         .super => "Super",
         .optional_expr => "OptionalExpression",
         .function_expr => "FunctionExpression",
-        .post_unary_expr => "UnaryExpression",
+        .post_unary_expr => "UpdateExpression",
         .unary_expr => "UnaryExpression",
         .await_expr => "AwaitExpression",
         .yield_expr => "YieldExpression",
