@@ -19,6 +19,8 @@ pub const Variable = struct {
     /// E.g: variable declarator, function declaration,
     /// function parameter, import statement, or class declaration.
     def_node: ast.Node.Index,
+    /// Id of the scope to which this variable belongs
+    scope_id: Scope.Id,
     /// Next variable in the same scope.
     next: ?Variable.Id = null,
     kind: Kind,
@@ -48,6 +50,9 @@ pub const Scope = struct {
         tail: Variable.Id,
     } = null,
 
+    /// ID for this scope,
+    /// unique within the same file.
+    id: Scope.Id,
     kind: Kind,
     /// `true` if this scope is in strict mode.
     is_strict: bool,
@@ -67,17 +72,19 @@ pub fn init(al: std.mem.Allocator, root_scope_kind: Scope.Kind) AllocError!Self 
         .upper = null,
         .kind = root_scope_kind,
         .is_strict = root_scope_kind == .module,
+        .id = @enumFromInt(0),
     };
 
     var self = Self{
         .al = al,
-        .current_scope = undefined, // initialized below
+        .current_scope = undefined, // assigned below
         .variables = try std.ArrayList(Variable).initCapacity(al, 16),
         .scopes = try std.ArrayList(Scope).initCapacity(al, 4),
     };
 
     try self.scopes.append(current_scope);
-    self.current_scope = &self.scopes.items[0];
+    self.current_scope = &self.scopes.items[@intFromEnum(current_scope.id)];
+
     return self;
 }
 
@@ -90,11 +97,12 @@ pub fn enterScope(self: *Self, kind: Scope.Kind, is_strict: bool) AllocError!voi
     const scope = Scope{
         .kind = kind,
         .is_strict = is_strict,
-        .upper = @enumFromInt(self.scopes.items.len - 1),
+        .upper = self.current_scope.id,
+        .id = @enumFromInt(self.scopes.items.len),
     };
 
     try self.scopes.append(scope);
-    self.current_scope = &self.scopes.items[self.scopes.items.len - 1];
+    self.current_scope = self.getScopeMut(scope.id);
 }
 
 pub fn exitScope(self: *Self) void {
@@ -115,7 +123,15 @@ pub fn findFromCurrentScope(self: *const Self, name: String) ?*const Variable {
     return null;
 }
 
-fn findInScope(self: *const Self, scope: *const Scope, name: String) ?*const Variable {
+pub fn findInCurrentScope(self: *const Self, name: String) ?*const Variable {
+    return self.findInScope(self.current_scope, name);
+}
+
+pub fn findInScope(
+    self: *const Self,
+    scope: *const Scope,
+    name: String,
+) ?*const Variable {
     const vars = scope.variables orelse return null;
 
     var maybe_cur_var: ?Variable.Id = vars.head;
@@ -152,6 +168,23 @@ pub fn getScopeMut(self: *Self, id: Scope.Id) *Scope {
     return &self.scopes.items[@intFromEnum(id)];
 }
 
+/// Find the nearest surrounding function scope.
+pub fn nearestFunctionScope(self: *const Self) *const Scope {
+    var scope: *const Scope = self.current_scope;
+    // For "var" bindings, find the nearest surrounding function scope
+    while (scope.kind == .block) {
+        if (scope.upper) |parent| {
+            scope = self.getScope(parent);
+        } else {
+            // we've reached the top-most scope
+            std.debug.assert(scope.kind == .script or scope.kind == .module);
+            break;
+        }
+    }
+
+    return scope;
+}
+
 /// Append a new variable to the currently active scope.
 /// If [kind] is `variable_binding`, then the variable is
 /// added to the nearest function-scope instead.
@@ -164,11 +197,10 @@ pub fn addVariable(
     // Find the scope where this variable should be added.
     // (Can't add to the current scope because of hoisting).
     const target_scope = blk: {
-        if (kind == .lexical_binding) break :blk self.current_scope;
-
-        // For "var" bindings, find the nearest
-        // function scope.
         var scope = self.current_scope;
+        if (kind == .lexical_binding) break :blk scope;
+
+        // For "var" bindings, find the nearest surrounding function scope
         while (scope.kind == .block) {
             if (scope.upper) |parent| {
                 scope = self.getScopeMut(parent);
@@ -182,7 +214,13 @@ pub fn addVariable(
         break :blk scope;
     };
 
-    const variable = Variable{ .name = name, .def_node = def_node, .kind = kind };
+    const variable = Variable{
+        .name = name,
+        .def_node = def_node,
+        .kind = kind,
+        .scope_id = target_scope.id,
+    };
+
     const new_var_id: Variable.Id = @enumFromInt(self.variables.items.len);
     try self.variables.append(variable);
 

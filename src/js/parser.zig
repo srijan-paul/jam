@@ -59,6 +59,8 @@ pub const Error = error{
     InvalidFunctionParameter,
     /// 'let' used as an identifier in strict mode.
     LetInStrictMode,
+    /// 'let' bound lexicall (e.g: `const let = ...`)
+    LexicallyBoundLet,
     /// let x = { x =  1} <- pattern where an object literal should've been
     UnexpectedPattern,
     /// let x = 5 let 6 = 5 <- no ';' between statements
@@ -4430,41 +4432,73 @@ fn identifier(self: *Self, token: TokenWithId) Error!Node.Index {
 }
 
 fn variableName(self: *Self, token_with_id: TokenWithId) Error!Node.Index {
-    const token_string = try self.strings.stringValue(&token_with_id.token);
-    if (self.scope.findFromCurrentScope(token_string)) |variable| {
-        // ```js
-        // var a = 1;
-        // var a = 1; // this is ok!
-        // ```
-        // ```
-        // var a = 1;
-        // let a = 1; // this is not
-        // ```
-        if (variable.kind == .lexical_binding or
-            self.context.parsing_declarator == .lexical)
-        {
-            try self.emitDiagnostic(
-                token_with_id.token.startCoord(self.source),
-                "Identifier '{s}' has already been declared",
-                .{token_with_id.token.toByteSlice(self.source)},
-            );
-            return Error.DuplicateBinding;
-        }
-    }
+    const name_string = try self.strings.stringValue(&token_with_id.token);
 
-    if (self.context.parsing_declarator == .lexical and
-        token_with_id.token.tag == .kw_let)
-    {
-        try self.emitDiagnostic(
-            token_with_id.token.startCoord(self.source),
-            "'let' is not allowed as a lexically bound name",
-            .{},
-        );
-        return Error.DuplicateBinding;
+    switch (self.context.parsing_declarator) {
+        .lexical => {
+            // If we're in a let declaration, like `let x = ... ` or `let [{ x }] = ...`,
+            // Ensure there are no variables with the same name in the current scope.
+            // ```js
+            // var x;
+            // let x; // clashes with `var x` above
+            // ```
+            if (self.scope.findInCurrentScope((name_string))) |_| {
+                try self.emitDiagnostic(
+                    token_with_id.token.startCoord(self.source),
+                    "Variable '{s}' has already been declared",
+                    .{token_with_id.token.toByteSlice(self.source)},
+                );
+                return Error.DuplicateBinding;
+            }
+
+            if (token_with_id.token.tag == .kw_let) {
+                try self.emitDiagnostic(
+                    token_with_id.token.startCoord(self.source),
+                    "'let' is not allowed as a lexically bound name",
+                    .{},
+                );
+                return Error.LexicallyBoundLet;
+            }
+        },
+        .@"var" => {
+            // Look for clashes within, or outside the current scope:
+            // ```js
+            // let x;
+            // {
+            //    var x; // clashes with the `x` above because of hoisting
+            // }
+            // ```
+            // Keep going up until we find a function scope,
+            // and for each scope along that path, check if there is an existing
+            // variable with the same name.
+            var scope: *const ScopeManager.Scope = self.scope.current_scope;
+            while (true) {
+                const maybe_existing_var = self.scope.findInScope(scope, name_string);
+                if (maybe_existing_var) |existing_var| {
+                    if (existing_var.kind == .lexical_binding) {
+                        try self.emitDiagnostic(
+                            token_with_id.token.startCoord(self.source),
+                            "Variable '{s}' has already been declared",
+                            .{token_with_id.token.toByteSlice(self.source)},
+                        );
+                        return Error.DuplicateBinding;
+                    }
+                }
+
+                // We've scanned the scope where the current variable
+                // will be inserted into via hoisting.
+                // TODO: now that we have the scope, we can immediately
+                // add the variable right here, instead of doing it below.
+                if (scope.kind != .block) break;
+                const parent_scope_id = scope.upper orelse break;
+                scope = self.scope.getScope(parent_scope_id);
+            }
+        },
+        .none => {},
     }
 
     const id = try self.addNode(
-        .{ .identifier = token_string },
+        .{ .identifier = name_string },
         token_with_id.id,
         token_with_id.id,
     );
@@ -4475,7 +4509,7 @@ fn variableName(self: *Self, token_with_id: TokenWithId) Error!Node.Index {
     else
         .variable_binding;
 
-    try self.scope.addVariable(token_string, id, decl_kind);
+    try self.scope.addVariable(name_string, id, decl_kind);
     return id;
 }
 
