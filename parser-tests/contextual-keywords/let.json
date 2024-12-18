@@ -11,7 +11,13 @@
         {
           "type": "VariableDeclarator",
           "start": 4,
-          "end": 5
+          "end": 5,
+          "id": {
+            "type": "Identifier",
+            "start": 4,
+            "end": 5,
+            "name": "a"
+          }
         }
       ],
       "kind": "let"

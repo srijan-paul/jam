@@ -121,7 +121,13 @@
           {
             "type": "VariableDeclarator",
             "start": 62,
-            "end": 63
+            "end": 63,
+            "id": {
+              "type": "Identifier",
+              "start": 62,
+              "end": 63,
+              "name": "x"
+            }
           }
         ],
         "kind": "let"
@@ -169,7 +175,32 @@
           {
             "type": "VariableDeclarator",
             "start": 88,
-            "end": 97
+            "end": 97,
+            "id": {
+              "type": "ArrayPattern",
+              "start": 88,
+              "end": 97,
+              "elements": [
+                {
+                  "type": "Identifier",
+                  "start": 89,
+                  "end": 90,
+                  "name": "a"
+                },
+                {
+                  "type": "Identifier",
+                  "start": 92,
+                  "end": 93,
+                  "name": "b"
+                },
+                {
+                  "type": "Identifier",
+                  "start": 95,
+                  "end": 96,
+                  "name": "c"
+                }
+              ]
+            }
           }
         ],
         "kind": "let"
@@ -245,12 +276,24 @@
           {
             "type": "VariableDeclarator",
             "start": 134,
-            "end": 139
+            "end": 139,
+            "id": {
+              "type": "Identifier",
+              "start": 138,
+              "end": 139,
+              "name": "x"
+            }
           },
           {
             "type": "VariableDeclarator",
             "start": 141,
-            "end": 142
+            "end": 142,
+            "id": {
+              "type": "Identifier",
+              "start": 141,
+              "end": 142,
+              "name": "y"
+            }
           }
         ],
         "kind": "let"
@@ -273,7 +316,13 @@
           {
             "type": "VariableDeclarator",
             "start": 153,
-            "end": 158
+            "end": 158,
+            "id": {
+              "type": "Identifier",
+              "start": 157,
+              "end": 158,
+              "name": "x"
+            }
           }
         ],
         "kind": "let"

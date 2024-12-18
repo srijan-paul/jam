@@ -1,8 +1,13 @@
 const std = @import("std");
 
+const Utf8CodePoint = struct {
+    codepoint: u21,
+    len: u32,
+};
+
 /// Parse a unicode escape sequence and return the codepoint along with the
 /// length of the sequence in bytes.
-pub fn parseUnicodeEscape(str: []const u8) ?struct { codepoint: u21, len: u32 } {
+pub fn parseUnicodeEscape(str: []const u8) ?Utf8CodePoint {
     if (str.len < 3 or !std.mem.startsWith(u8, str, "\\u")) {
         return null;
     }
@@ -29,6 +34,30 @@ pub fn parseUnicodeEscape(str: []const u8) ?struct { codepoint: u21, len: u32 } 
     const code_point = std.fmt.parseInt(u21, str[2..i], 16) catch
         return null;
     return .{ .codepoint = code_point, .len = i };
+}
+
+pub fn parseOctalEscape(str: []const u8) ?Utf8CodePoint {
+    if (str.len < 2 or str[0] != '\\') return null;
+
+    var i: u32 = 1; // skip /
+    var escape_value: u21 = 0;
+    while (i < str.len) {
+        const ch = str[i];
+        if (!('0' <= ch and ch <= '9')) {
+            i += 1;
+            break;
+        }
+
+        escape_value = escape_value * 8 + ch - '0';
+        i += 1;
+    }
+
+    return .{ .codepoint = escape_value, .len = i };
+}
+
+test parseUnicodeEscape {
+    try std.testing.expectEqual(parseOctalEscape("\\077").?.codepoint, @as(u8, '?'));
+    try std.testing.expectEqual(parseOctalEscape("\\012").?.codepoint, @as(u8, '\n'));
 }
 
 /// A UTF-8 code point.

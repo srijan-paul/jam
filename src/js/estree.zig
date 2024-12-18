@@ -26,7 +26,7 @@ fn subRangeToJsonArray(
     al: std.mem.Allocator,
     t: *const Tree,
     maybe_args: ?ast.SubRange,
-) error{OutOfMemory}!JsonValue {
+) !JsonValue {
     var arr = std.json.Array.init(al);
     if (maybe_args) |arguments| {
         const from: usize = @intFromEnum(arguments.from);
@@ -40,21 +40,33 @@ fn subRangeToJsonArray(
     return JsonValue{ .array = arr };
 }
 
-fn escapeUtf8(allocator: std.mem.Allocator, str: []const u8) ![]const u8 {
+fn escapeUtf8(allocator: std.mem.Allocator, str: []const u8) error{
+    OutOfMemory,
+    InvalidCodePoint,
+    BadEscapeSequence,
+}![]const u8 {
     var iter = std.unicode.Utf8Iterator{ .bytes = str, .i = 0 };
     var buf = std.ArrayList(u8).init(allocator);
     defer buf.deinit();
 
     while (iter.i < str.len) {
         if (str[iter.i] == '\\') {
-            const parsed_cp = util.utf8.parseUnicodeEscape(str[iter.i..]) orelse
-                unreachable; // validated during tokenization.
-            const cp = parsed_cp.codepoint;
-            var cp_slice: [4]u8 = undefined;
-            const cp_len = std.unicode.utf8Encode(cp, &cp_slice) catch
-                unreachable;
-            try buf.appendSlice(cp_slice[0..cp_len]);
+            if (iter.i + 1 >= str.len) return error.BadEscapeSequence;
+
+            const maybe_parsed_cp = if (str[iter.i + 1] == 'u')
+                util.utf8.parseUnicodeEscape(str[iter.i..])
+            else
+                util.utf8.parseOctalEscape(str[iter.i..]);
+
+            const parsed_cp = maybe_parsed_cp orelse
+                return error.InvalidCodePoint;
             iter.i += parsed_cp.len;
+
+            var cp_slice: [4]u8 = undefined;
+            const cp_len = std.unicode.utf8Encode(parsed_cp.codepoint, &cp_slice) catch
+                return error.InvalidCodePoint;
+            try buf.appendSlice(cp_slice[0..cp_len]);
+
             continue;
         }
 
@@ -149,7 +161,11 @@ fn nodeToEstree(
     t: *const Tree,
     al: std.mem.Allocator,
     node_id: Node.Index,
-) !JsonValue {
+) error{
+    InvalidCodePoint,
+    OutOfMemory,
+    BadEscapeSequence,
+}!JsonValue {
     const node = t.nodes.get(@intFromEnum(node_id));
     switch (node.data) {
         .none, .empty_array_item => return JsonValue{ .null = {} },
@@ -184,6 +200,8 @@ fn nodeToEstree(
 
         .program => |maybe_statements| {
             const body = try subRangeToJsonArray(al, t, maybe_statements);
+            // try o.put("interpreter", JsonValue{ .null = {} });
+            // try o.put("sourceType", JsonValue{ .string = @tagName(t.source_type) });
             try o.put("body", body);
         },
 
@@ -415,11 +433,12 @@ fn nodeToEstree(
 
         .variable_declarator => |payload| {
             const id = try nodeToEstree(t, al, payload.lhs);
-            const init = payload.init orelse return JsonValue{ .object = o };
 
-            const init_ = try nodeToEstree(t, al, init);
             try o.put("id", id);
-            try o.put("init", init_);
+            if (payload.init) |init| {
+                const init_ = try nodeToEstree(t, al, init);
+                try o.put("init", init_);
+            }
         },
 
         .member_expr => |payload| {
@@ -644,7 +663,7 @@ pub fn toJsonString(
     allocator: std.mem.Allocator,
     t: *const Tree,
     node: ast.Node.Index,
-) error{OutOfMemory}![]u8 {
+) ![]u8 {
     var arena = std.heap.ArenaAllocator.init(allocator);
     const al = arena.allocator();
     defer arena.deinit();

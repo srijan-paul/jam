@@ -210,6 +210,7 @@ pub const JsTokenTag = enum(u32) {
 
     pub inline fn isIdentifier(self: JsTokenTag) bool {
         return self == .identifier or
+            self == .private_identifier or
             self == .non_ascii_identifier;
     }
 

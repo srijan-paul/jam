@@ -103,22 +103,18 @@ pub const Diagnostic = struct {
 /// in the parser state.
 /// https://tc39.es/ecma262/#sec-grammatical-parameters
 pub const ParseContext = packed struct(u16) {
-    /// Is a ReturnStatement allowed in the current context?
-    /// Unlike `await`, `return` is always parsed as a keyword, regardles of context.
     @"return": bool = false,
-    /// Is a BreakStatement allowed in the current context?
     @"break": bool = false,
-    /// Is a ContinueStatement allowed in the current context?
     @"continue": bool = false,
-    /// Is an `await` parsed as an identifier or as a keyword?
     is_await_reserved: bool = false,
-    /// Is `yield` parsed as an identifier or as a keyword?
     is_yield_reserved: bool = false,
     /// Are we parsing a module? (`false` = parsing a script).
     module: bool = false,
     /// Are we in strict mode?
+    /// NOTE: The parser must not modify this directly.
+    /// Instead, `contextEnterStrictMode` and `contextExitStrictMode` should be used.
     strict: bool = false,
-    /// Are `in` statements allowed?
+    /// Are `in` expressions allowed?
     /// Used to parse for-in loops.
     in: bool = true,
     /// Whether we are currently parsing the LHS of a variable
@@ -381,11 +377,12 @@ pub fn init(
         .extras = try std.ArrayList(ast.ExtraData).initCapacity(allocator, 32),
         .tokens = try std.ArrayList(Token).initCapacity(allocator, 256),
         .string_pool = try util.StringPool.init(allocator),
+        .source_type = config.source_type,
     };
 
     var self = Self{
         .tokenizer = try Tokenizer.init(source, config),
-        // initialized below in the call to `self.startTokenizer()`
+        // SAFETY: initialized below in the call to `self.startTokenizer()`
         .current = undefined,
 
         .allocator = allocator,
@@ -404,10 +401,12 @@ pub fn init(
         .strings = try StringHelper.init(allocator, source, &parse_tree.string_pool),
         .scope = try ScopeManager.init(allocator, if (config.source_type == .module) .module else .script),
     };
+
     errdefer self.deinit();
 
     // "module"s are always parsed in strict mode.
-    self.context.strict = config.strict_mode or config.source_type == SourceType.module;
+    const is_strict = config.strict_mode or config.source_type == SourceType.module;
+    _ = self.contextEnterStrictMode(is_strict);
 
     if (config.jsx) {
         self.jsx = true;
@@ -481,9 +480,8 @@ pub fn parse(self: *Self) Error!Result {
             }
         } else break :blk false;
 
-        const context = self.context;
-        defer self.context = context;
-        self.context.strict = has_use_strict;
+        const ctx = self.contextEnterStrictMode(has_use_strict);
+        defer self.contextExitStrictMode(ctx);
 
         while (!self.isAtToken(.eof)) {
             const stmt = try self.statementOrDeclaration();
@@ -1133,9 +1131,8 @@ fn classHeritage(self: *Self) Error!Node.Index {
 
 fn classBody(self: *Self) Error!ast.SubRange {
     // class bodies are always parsed in strict mode.
-    const context = self.context;
-    self.context.strict = true;
-    defer self.context = context;
+    const ctx = self.contextEnterStrictMode(true);
+    defer self.contextExitStrictMode(ctx);
 
     const prev_scratch_len = self.scratch.items.len;
     defer self.scratch.items.len = prev_scratch_len;
@@ -2477,6 +2474,25 @@ fn continueStatement(self: *Self) Error!Node.Index {
 // ------------------------
 // Common helper functions
 // ------------------------
+
+/// Enter strict mode by modifying the current context.
+/// Returns the previous context that must be passed to `contextExitStrictMode`.
+/// ```zig
+/// const ctx = self.contextExitStrictMode();
+/// defer self.contextExitStrictMode(ctx);
+/// ```
+fn contextEnterStrictMode(self: *Self, strict: bool) ParseContext {
+    const ctx = self.context;
+    self.context.strict = strict;
+    self.tokenizer.is_in_strict_mode = strict;
+    return ctx;
+}
+
+/// Exit strict mode and restore the previous context
+fn contextExitStrictMode(self: *Self, prev_ctx: ParseContext) void {
+    self.context = prev_ctx;
+    self.tokenizer.is_in_strict_mode = self.context.strict;
+}
 
 fn subRangeToSlice(self: *Self, range: ast.SubRange) []const Node.Index {
     return self.node_lists.items[@intFromEnum(range.from)..@intFromEnum(range.to)];

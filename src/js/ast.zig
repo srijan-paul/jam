@@ -13,6 +13,7 @@ pub const Tree = struct {
     root: Node.Index,
     /// Source code represented by this tree
     source: []const u8,
+    source_type: Parser.SourceType,
     /// A flat list that stores all nodes in the AST.
     nodes: std.MultiArrayList(Node),
     tokens: std.ArrayList(Token),

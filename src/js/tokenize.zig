@@ -21,6 +21,7 @@ pub const Error = error{
     UnterminatedRegexLiteral,
     UnterminatedComment,
     BadEscapeSequence,
+    OctalEscapeInStrictMode,
     UnterminatedString,
     NonTerminatedTemplateLiteral,
     MalformedIdentifier,
@@ -603,11 +604,44 @@ fn consumeEscape(self: *Self) !void {
             const byte = self.source[self.index];
             if (std.ascii.isAscii(byte)) {
                 self.index += 1;
-                if (isNewline(byte)) {
-                    self.bumpLine();
-                    // escaping a \r\n
-                    if (byte == '\r' and self.peekByte() == '\n') self.index += 1;
+                switch (byte) {
+                    '\n' => self.bumpLine(),
+                    '\r' => {
+                        self.bumpLine();
+                        if (self.peekByte() == '\n') self.index += 1; // eat '\n' after '\r'
+                    },
+                    // Check for legacy octal escape sequences,
+                    // and disallow them in strict mode.
+                    // https://tc39.es/ecma262/#prod-LegacyOctalEscapeSequence
+                    //
+                    //  LegacyOctalEscapeSequence :
+                    //     0 [lookahead ∈ { 8, 9 }]
+                    //     NonZeroOctalDigit [lookahead ∉ OctalDigit]
+                    //     ZeroToThree OctalDigit [lookahead ∉ OctalDigit]
+                    //     FourToSeven OctalDigit
+                    //     ZeroToThree OctalDigit OctalDigit
+                    '0' => {
+                        // 0 [lookahead ∈ { 8, 9 }]
+                        const lookahead = self.peekByte() orelse return;
+                        if ('0' <= lookahead and lookahead <= '7') {
+                            if (self.is_in_strict_mode)
+                                return Error.OctalEscapeInStrictMode;
+                            return;
+                        }
+                    },
+
+                    '1'...'7' => {
+                        // NonZeroOctalDigit [lookahead ∉ OctalDigit]
+                        const lookahead = self.peekByte() orelse return;
+                        if (!('0' <= lookahead and lookahead <= '7')) {
+                            if (self.is_in_strict_mode)
+                                return Error.OctalEscapeInStrictMode;
+                        }
+                    },
+
+                    else => {},
                 }
+                // Legacy octal escape sequence
             } else {
                 try self.consumeUtf8CodePoint();
             }
