@@ -1,0 +1,55 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 48,
+  "body": [
+    {
+      "type": "FunctionDeclaration",
+      "start": 0,
+      "end": 48,
+      "id": {
+        "type": "Identifier",
+        "start": 15,
+        "end": 17,
+        "name": "fn"
+      },
+      "async": true,
+      "generator": false,
+      "arrow": false,
+      "params": [],
+      "body": {
+        "type": "BlockStatement",
+        "start": 20,
+        "end": 48,
+        "body": [
+          {
+            "type": "ExpressionStatement",
+            "start": 25,
+            "end": 46,
+            "expression": {
+              "type": "FunctionExpression",
+              "start": 25,
+              "end": 44,
+              "id": {
+                "type": "Identifier",
+                "start": 34,
+                "end": 39,
+                "name": "await"
+              },
+              "async": false,
+              "generator": false,
+              "arrow": false,
+              "params": [],
+              "body": {
+                "type": "BlockStatement",
+                "start": 42,
+                "end": 44,
+                "body": []
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

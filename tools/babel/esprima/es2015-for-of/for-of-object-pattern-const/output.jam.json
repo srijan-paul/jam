@@ -1,0 +1,85 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 25,
+  "body": [
+    {
+      "type": "ForOfStatement",
+      "start": 0,
+      "end": 24,
+      "left": {
+        "type": "VariableDeclaration",
+        "start": 5,
+        "end": 17,
+        "declarations": [
+          {
+            "type": "VariableDeclarator",
+            "start": 11,
+            "end": 17,
+            "id": {
+              "type": "ObjectPattern",
+              "start": 11,
+              "end": 17,
+              "properties": [
+                {
+                  "type": "Property",
+                  "start": 12,
+                  "end": 13,
+                  "key": {
+                    "type": "Identifier",
+                    "start": 12,
+                    "end": 13,
+                    "name": "x"
+                  },
+                  "value": {
+                    "type": "Identifier",
+                    "start": 12,
+                    "end": 13,
+                    "name": "x"
+                  },
+                  "kind": "init",
+                  "computed": false,
+                  "shorthand": true,
+                  "method": false
+                },
+                {
+                  "type": "Property",
+                  "start": 15,
+                  "end": 16,
+                  "key": {
+                    "type": "Identifier",
+                    "start": 15,
+                    "end": 16,
+                    "name": "y"
+                  },
+                  "value": {
+                    "type": "Identifier",
+                    "start": 15,
+                    "end": 16,
+                    "name": "y"
+                  },
+                  "kind": "init",
+                  "computed": false,
+                  "shorthand": true,
+                  "method": false
+                }
+              ]
+            }
+          }
+        ],
+        "kind": "const"
+      },
+      "right": {
+        "type": "Identifier",
+        "start": 21,
+        "end": 22,
+        "name": "z"
+      },
+      "body": {
+        "type": "EmptyStatement",
+        "start": 23,
+        "end": 24
+      }
+    }
+  ]
+}

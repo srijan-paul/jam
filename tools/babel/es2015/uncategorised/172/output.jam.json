@@ -1,0 +1,169 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 56,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 1,
+      "end": 55,
+      "expression": {
+        "type": "FunctionExpression",
+        "start": 1,
+        "end": 55,
+        "id": {
+          "type": "Identifier",
+          "start": 10,
+          "end": 11,
+          "name": "x"
+        },
+        "async": false,
+        "generator": false,
+        "arrow": false,
+        "params": [
+          {
+            "type": "ObjectPattern",
+            "start": 12,
+            "end": 38,
+            "properties": [
+              {
+                "type": "Property",
+                "start": 14,
+                "end": 25,
+                "key": {
+                  "type": "Identifier",
+                  "start": 14,
+                  "end": 15,
+                  "name": "a"
+                },
+                "value": {
+                  "type": "ObjectExpression",
+                  "start": 17,
+                  "end": 25,
+                  "properties": [
+                    {
+                      "type": "Property",
+                      "start": 19,
+                      "end": 20,
+                      "key": {
+                        "type": "Identifier",
+                        "start": 19,
+                        "end": 20,
+                        "name": "w"
+                      },
+                      "value": {
+                        "type": "Identifier",
+                        "start": 19,
+                        "end": 20,
+                        "name": "w"
+                      },
+                      "kind": "init",
+                      "computed": false,
+                      "shorthand": true,
+                      "method": false
+                    },
+                    {
+                      "type": "Property",
+                      "start": 22,
+                      "end": 23,
+                      "key": {
+                        "type": "Identifier",
+                        "start": 22,
+                        "end": 23,
+                        "name": "x"
+                      },
+                      "value": {
+                        "type": "Identifier",
+                        "start": 22,
+                        "end": 23,
+                        "name": "x"
+                      },
+                      "kind": "init",
+                      "computed": false,
+                      "shorthand": true,
+                      "method": false
+                    }
+                  ]
+                },
+                "kind": "init",
+                "computed": false,
+                "shorthand": false,
+                "method": false
+              },
+              {
+                "type": "Property",
+                "start": 27,
+                "end": 36,
+                "key": {
+                  "type": "Identifier",
+                  "start": 27,
+                  "end": 28,
+                  "name": "b"
+                },
+                "value": {
+                  "type": "ArrayExpression",
+                  "start": 30,
+                  "end": 36,
+                  "elements": [
+                    {
+                      "type": "Identifier",
+                      "start": 31,
+                      "end": 32,
+                      "name": "y"
+                    },
+                    {
+                      "type": "Identifier",
+                      "start": 34,
+                      "end": 35,
+                      "name": "z"
+                    }
+                  ]
+                },
+                "kind": "init",
+                "computed": false,
+                "shorthand": false,
+                "method": false
+              }
+            ]
+          },
+          {
+            "type": "RestElement",
+            "start": 40,
+            "end": 52,
+            "argument": {
+              "type": "ArrayPattern",
+              "start": 43,
+              "end": 52,
+              "elements": [
+                {
+                  "type": "Identifier",
+                  "start": 44,
+                  "end": 45,
+                  "name": "a"
+                },
+                {
+                  "type": "Identifier",
+                  "start": 47,
+                  "end": 48,
+                  "name": "b"
+                },
+                {
+                  "type": "Identifier",
+                  "start": 50,
+                  "end": 51,
+                  "name": "c"
+                }
+              ]
+            }
+          }
+        ],
+        "body": {
+          "type": "BlockStatement",
+          "start": 53,
+          "end": 55,
+          "body": []
+        }
+      }
+    }
+  ]
+}

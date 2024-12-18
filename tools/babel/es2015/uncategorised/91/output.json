@@ -1,0 +1,30 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 15,
+  "sourceType": "module",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ImportDeclaration",
+      "start": 0,
+      "end": 15,
+      "specifiers": [],
+      "source": {
+        "type": "StringLiteral",
+        "start": 7,
+        "end": 15,
+        "extra": {
+          "rawValue": "jquery",
+          "raw": "\"jquery\""
+        },
+        "value": "jquery"
+      },
+      "attributes": []
+    }
+  ],
+  "directives": [],
+  "extra": {
+    "topLevelAwait": false
+  }
+}

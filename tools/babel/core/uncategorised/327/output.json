@@ -1,0 +1,37 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 13,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ReturnStatement",
+      "start": 0,
+      "end": 13,
+      "argument": {
+        "type": "BinaryExpression",
+        "start": 7,
+        "end": 13,
+        "left": {
+          "type": "ObjectExpression",
+          "start": 7,
+          "end": 9,
+          "properties": []
+        },
+        "operator": "/",
+        "right": {
+          "type": "NumericLiteral",
+          "start": 12,
+          "end": 13,
+          "extra": {
+            "rawValue": 2,
+            "raw": "2"
+          },
+          "value": 2
+        }
+      }
+    }
+  ],
+  "directives": []
+}

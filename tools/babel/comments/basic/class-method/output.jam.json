@@ -1,0 +1,107 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 220,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 9,
+      "end": 113,
+      "expression": {
+        "type": "ClassExpression",
+        "start": 9,
+        "end": 102,
+        "body": {
+          "type": "ClassBody",
+          "body": [
+            {
+              "type": "MethodDefinition",
+              "start": 33,
+              "end": 91,
+              "key": {
+                "type": "Identifier",
+                "start": 33,
+                "end": 34,
+                "name": "f"
+              },
+              "value": {
+                "type": "FunctionExpression",
+                "start": 43,
+                "end": 91,
+                "async": false,
+                "generator": false,
+                "arrow": false,
+                "params": [
+                  {
+                    "type": "Identifier",
+                    "start": 52,
+                    "end": 53,
+                    "name": "a"
+                  }
+                ],
+                "body": {
+                  "type": "BlockStatement",
+                  "start": 80,
+                  "end": 91,
+                  "body": []
+                }
+              },
+              "computed": false,
+              "static": false
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "ExpressionStatement",
+      "start": 115,
+      "end": 219,
+      "expression": {
+        "type": "ClassExpression",
+        "start": 115,
+        "end": 208,
+        "body": {
+          "type": "ClassBody",
+          "body": [
+            {
+              "type": "MethodDefinition",
+              "start": 139,
+              "end": 198,
+              "key": {
+                "type": "Identifier",
+                "start": 139,
+                "end": 141,
+                "name": "#f"
+              },
+              "value": {
+                "type": "FunctionExpression",
+                "start": 150,
+                "end": 198,
+                "async": false,
+                "generator": false,
+                "arrow": false,
+                "params": [
+                  {
+                    "type": "Identifier",
+                    "start": 159,
+                    "end": 160,
+                    "name": "a"
+                  }
+                ],
+                "body": {
+                  "type": "BlockStatement",
+                  "start": 187,
+                  "end": 198,
+                  "body": []
+                }
+              },
+              "computed": false,
+              "static": false
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

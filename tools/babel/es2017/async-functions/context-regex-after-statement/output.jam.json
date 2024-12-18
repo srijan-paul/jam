@@ -1,0 +1,39 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 29,
+  "body": [
+    {
+      "type": "FunctionDeclaration",
+      "start": 0,
+      "end": 22,
+      "id": {
+        "type": "Identifier",
+        "start": 15,
+        "end": 17,
+        "name": "fn"
+      },
+      "async": true,
+      "generator": false,
+      "arrow": false,
+      "params": [],
+      "body": {
+        "type": "BlockStatement",
+        "start": 20,
+        "end": 22,
+        "body": []
+      }
+    },
+    {
+      "type": "ExpressionStatement",
+      "start": 23,
+      "end": 29,
+      "expression": {
+        "type": "Literal",
+        "start": 23,
+        "end": 29,
+        "value": "/foo/g"
+      }
+    }
+  ]
+}

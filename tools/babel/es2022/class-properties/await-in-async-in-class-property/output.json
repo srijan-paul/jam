@@ -1,0 +1,70 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 42,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ClassDeclaration",
+      "start": 0,
+      "end": 41,
+      "id": {
+        "type": "Identifier",
+        "start": 6,
+        "end": 7,
+        "name": "C"
+      },
+      "superClass": null,
+      "body": {
+        "type": "ClassBody",
+        "start": 8,
+        "end": 41,
+        "body": [
+          {
+            "type": "ClassProperty",
+            "start": 12,
+            "end": 39,
+            "static": false,
+            "key": {
+              "type": "Identifier",
+              "start": 12,
+              "end": 13,
+              "name": "p"
+            },
+            "computed": false,
+            "value": {
+              "type": "ArrowFunctionExpression",
+              "start": 16,
+              "end": 38,
+              "id": null,
+              "generator": false,
+              "async": true,
+              "expression": true,
+              "params": [],
+              "body": {
+                "type": "AwaitExpression",
+                "start": 28,
+                "end": 38,
+                "argument": {
+                  "type": "UnaryExpression",
+                  "start": 34,
+                  "end": 38,
+                  "operator": "+",
+                  "prefix": true,
+                  "argument": {
+                    "type": "Literal",
+                    "start": 36,
+                    "end": 38,
+                    "value": 42,
+                    "raw": "42"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

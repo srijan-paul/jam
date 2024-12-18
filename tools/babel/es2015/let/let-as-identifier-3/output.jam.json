@@ -1,0 +1,30 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 19,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 18,
+      "expression": {
+        "type": "BinaryExpression",
+        "start": 0,
+        "end": 18,
+        "operator": "instanceof",
+        "left": {
+          "type": "Identifier",
+          "start": 0,
+          "end": 3,
+          "name": "let"
+        },
+        "right": {
+          "type": "Identifier",
+          "start": 15,
+          "end": 18,
+          "name": "Foo"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,58 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 22,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 21,
+      "expression": {
+        "type": "FunctionExpression",
+        "start": 0,
+        "end": 20,
+        "async": false,
+        "generator": false,
+        "arrow": true,
+        "params": [
+          {
+            "type": "Identifier",
+            "start": 1,
+            "end": 2,
+            "name": "z"
+          }
+        ],
+        "body": {
+          "type": "BlockStatement",
+          "start": 7,
+          "end": 20,
+          "body": [
+            {
+              "type": "ExpressionStatement",
+              "start": 9,
+              "end": 18,
+              "expression": {
+                "type": "BinaryExpression",
+                "start": 9,
+                "end": 18,
+                "operator": "+",
+                "left": {
+                  "type": "Identifier",
+                  "start": 9,
+                  "end": 14,
+                  "name": "yield"
+                },
+                "right": {
+                  "type": "Identifier",
+                  "start": 17,
+                  "end": 18,
+                  "name": "z"
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

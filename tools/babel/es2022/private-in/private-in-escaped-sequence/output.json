@@ -1,0 +1,111 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 63,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ClassDeclaration",
+      "start": 0,
+      "end": 62,
+      "id": {
+        "type": "Identifier",
+        "start": 6,
+        "end": 9,
+        "name": "Foo"
+      },
+      "superClass": null,
+      "body": {
+        "type": "ClassBody",
+        "start": 10,
+        "end": 62,
+        "body": [
+          {
+            "type": "ClassPrivateProperty",
+            "start": 14,
+            "end": 26,
+            "static": false,
+            "key": {
+              "type": "PrivateName",
+              "start": 14,
+              "end": 21,
+              "id": {
+                "type": "Identifier",
+                "start": 15,
+                "end": 21,
+                "name": "a"
+              }
+            },
+            "value": {
+              "type": "Literal",
+              "start": 24,
+              "end": 25,
+              "value": 1,
+              "raw": "1"
+            }
+          },
+          {
+            "type": "MethodDefinition",
+            "start": 29,
+            "end": 60,
+            "static": false,
+            "key": {
+              "type": "Identifier",
+              "start": 29,
+              "end": 33,
+              "name": "test"
+            },
+            "computed": false,
+            "kind": "method",
+            "value": {
+              "type": "FunctionExpression",
+              "start": 33,
+              "end": 60,
+              "id": null,
+              "generator": false,
+              "async": false,
+              "expression": false,
+              "params": [],
+              "body": {
+                "type": "BlockStatement",
+                "start": 36,
+                "end": 60,
+                "body": [
+                  {
+                    "type": "ExpressionStatement",
+                    "start": 42,
+                    "end": 56,
+                    "expression": {
+                      "type": "BinaryExpression",
+                      "start": 42,
+                      "end": 55,
+                      "left": {
+                        "type": "PrivateName",
+                        "start": 42,
+                        "end": 49,
+                        "id": {
+                          "type": "Identifier",
+                          "start": 43,
+                          "end": 49,
+                          "name": "a"
+                        }
+                      },
+                      "operator": "in",
+                      "right": {
+                        "type": "ObjectExpression",
+                        "start": 53,
+                        "end": 55,
+                        "properties": []
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,71 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 34,
+  "body": [
+    {
+      "type": "VariableDeclaration",
+      "start": 0,
+      "end": 33,
+      "declarations": [
+        {
+          "type": "VariableDeclarator",
+          "start": 6,
+          "end": 33,
+          "id": {
+            "type": "Identifier",
+            "start": 6,
+            "end": 7,
+            "name": "x"
+          },
+          "init": {
+            "type": "BinaryExpression",
+            "start": 10,
+            "end": 33,
+            "operator": "/",
+            "left": {
+              "type": "BinaryExpression",
+              "start": 10,
+              "end": 31,
+              "operator": "/",
+              "left": {
+                "type": "FunctionExpression",
+                "start": 10,
+                "end": 27,
+                "id": {
+                  "type": "Identifier",
+                  "start": 19,
+                  "end": 22,
+                  "name": "foo"
+                },
+                "async": false,
+                "generator": false,
+                "arrow": false,
+                "params": [],
+                "body": {
+                  "type": "BlockStatement",
+                  "start": 25,
+                  "end": 27,
+                  "body": []
+                }
+              },
+              "right": {
+                "type": "Literal",
+                "start": 29,
+                "end": 31,
+                "value": "42"
+              }
+            },
+            "right": {
+              "type": "Identifier",
+              "start": 32,
+              "end": 33,
+              "name": "i"
+            }
+          }
+        }
+      ],
+      "kind": "const"
+    }
+  ]
+}

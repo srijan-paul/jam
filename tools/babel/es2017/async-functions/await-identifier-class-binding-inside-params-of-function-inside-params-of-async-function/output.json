@@ -1,0 +1,93 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 51,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 50,
+      "expression": {
+        "type": "ArrowFunctionExpression",
+        "start": 0,
+        "end": 50,
+        "id": null,
+        "generator": false,
+        "async": true,
+        "expression": false,
+        "params": [
+          {
+            "type": "AssignmentPattern",
+            "start": 7,
+            "end": 43,
+            "left": {
+              "type": "Identifier",
+              "start": 7,
+              "end": 8,
+              "name": "x"
+            },
+            "right": {
+              "type": "FunctionExpression",
+              "start": 11,
+              "end": 43,
+              "id": {
+                "type": "Identifier",
+                "start": 20,
+                "end": 21,
+                "name": "f"
+              },
+              "generator": false,
+              "async": false,
+              "expression": false,
+              "params": [
+                {
+                  "type": "AssignmentPattern",
+                  "start": 22,
+                  "end": 40,
+                  "left": {
+                    "type": "Identifier",
+                    "start": 22,
+                    "end": 23,
+                    "name": "x"
+                  },
+                  "right": {
+                    "type": "ClassExpression",
+                    "start": 26,
+                    "end": 40,
+                    "id": {
+                      "type": "Identifier",
+                      "start": 32,
+                      "end": 37,
+                      "name": "await"
+                    },
+                    "superClass": null,
+                    "body": {
+                      "type": "ClassBody",
+                      "start": 38,
+                      "end": 40,
+                      "body": []
+                    }
+                  }
+                }
+              ],
+              "body": {
+                "type": "BlockStatement",
+                "start": 41,
+                "end": 43,
+                "body": []
+              }
+            }
+          }
+        ],
+        "body": {
+          "type": "BlockStatement",
+          "start": 48,
+          "end": 50,
+          "body": []
+        }
+      }
+    }
+  ]
+}

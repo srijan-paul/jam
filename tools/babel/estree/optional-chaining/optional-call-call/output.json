@@ -1,0 +1,43 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 12,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 11,
+      "expression": {
+        "type": "CallExpression",
+        "start": 0,
+        "end": 11,
+        "callee": {
+          "type": "ChainExpression",
+          "start": 1,
+          "end": 8,
+          "expression": {
+            "type": "CallExpression",
+            "start": 1,
+            "end": 8,
+            "callee": {
+              "type": "Identifier",
+              "start": 1,
+              "end": 4,
+              "name": "foo"
+            },
+            "optional": true,
+            "arguments": []
+          },
+          "extra": {
+            "parenthesized": true,
+            "parenStart": 0
+          }
+        },
+        "arguments": [],
+        "optional": false
+      }
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 11,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 2,
+      "end": 10,
+      "expression": {
+        "type": "UnaryExpression",
+        "start": 2,
+        "end": 1,
+        "operator": "-",
+        "argument": {
+          "type": "BinaryExpression",
+          "start": 2,
+          "end": 8,
+          "operator": "**",
+          "left": {
+            "type": "Literal",
+            "start": 2,
+            "end": 3,
+            "value": "5"
+          },
+          "right": {
+            "type": "Literal",
+            "start": 7,
+            "end": 8,
+            "value": "6"
+          }
+        }
+      }
+    }
+  ]
+}

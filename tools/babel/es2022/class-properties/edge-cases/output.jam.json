@@ -1,0 +1,696 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 381,
+  "body": [
+    {
+      "type": "ClassDeclaration",
+      "start": 0,
+      "end": 34,
+      "id": {
+        "type": "Identifier",
+        "start": 6,
+        "end": 8,
+        "name": "A1"
+      },
+      "body": {
+        "type": "ClassBody",
+        "body": [
+          {
+            "type": "ClassProperty",
+            "start": 13,
+            "end": 19,
+            "key": {
+              "type": "Identifier",
+              "start": 13,
+              "end": 19,
+              "name": "static"
+            },
+            "value": {
+              "type": "Identifier",
+              "start": 13,
+              "end": 19,
+              "name": "static"
+            },
+            "computed": false,
+            "static": false
+          },
+          {
+            "type": "ClassProperty",
+            "start": 22,
+            "end": 23,
+            "key": {
+              "type": "Identifier",
+              "start": 22,
+              "end": 23,
+              "name": "a"
+            },
+            "value": {
+              "type": "Identifier",
+              "start": 22,
+              "end": 23,
+              "name": "a"
+            },
+            "computed": false,
+            "static": false
+          },
+          {
+            "type": "ClassProperty",
+            "start": 26,
+            "end": 32,
+            "key": {
+              "type": "Identifier",
+              "start": 26,
+              "end": 32,
+              "name": "static"
+            },
+            "value": {
+              "type": "Identifier",
+              "start": 26,
+              "end": 32,
+              "name": "static"
+            },
+            "computed": false,
+            "static": false
+          }
+        ]
+      }
+    },
+    {
+      "type": "ClassDeclaration",
+      "start": 36,
+      "end": 50,
+      "id": {
+        "type": "Identifier",
+        "start": 42,
+        "end": 44,
+        "name": "A2"
+      },
+      "body": {
+        "type": "ClassBody",
+        "body": [
+          {
+            "type": "ClassProperty",
+            "start": 47,
+            "end": 48,
+            "key": {
+              "type": "Identifier",
+              "start": 47,
+              "end": 48,
+              "name": "a"
+            },
+            "value": {
+              "type": "Identifier",
+              "start": 47,
+              "end": 48,
+              "name": "a"
+            },
+            "computed": false,
+            "static": false
+          }
+        ]
+      }
+    },
+    {
+      "type": "ClassDeclaration",
+      "start": 51,
+      "end": 67,
+      "id": {
+        "type": "Identifier",
+        "start": 57,
+        "end": 59,
+        "name": "A3"
+      },
+      "body": {
+        "type": "ClassBody",
+        "body": [
+          {
+            "type": "ClassProperty",
+            "start": 62,
+            "end": 65,
+            "key": {
+              "type": "Identifier",
+              "start": 62,
+              "end": 65,
+              "name": "get"
+            },
+            "value": {
+              "type": "Identifier",
+              "start": 62,
+              "end": 65,
+              "name": "get"
+            },
+            "computed": false,
+            "static": false
+          }
+        ]
+      }
+    },
+    {
+      "type": "ClassDeclaration",
+      "start": 68,
+      "end": 84,
+      "id": {
+        "type": "Identifier",
+        "start": 74,
+        "end": 76,
+        "name": "A4"
+      },
+      "body": {
+        "type": "ClassBody",
+        "body": [
+          {
+            "type": "ClassProperty",
+            "start": 79,
+            "end": 82,
+            "key": {
+              "type": "Identifier",
+              "start": 79,
+              "end": 82,
+              "name": "set"
+            },
+            "value": {
+              "type": "Identifier",
+              "start": 79,
+              "end": 82,
+              "name": "set"
+            },
+            "computed": false,
+            "static": false
+          }
+        ]
+      }
+    },
+    {
+      "type": "ClassDeclaration",
+      "start": 85,
+      "end": 104,
+      "id": {
+        "type": "Identifier",
+        "start": 91,
+        "end": 93,
+        "name": "A5"
+      },
+      "body": {
+        "type": "ClassBody",
+        "body": [
+          {
+            "type": "ClassProperty",
+            "start": 96,
+            "end": 102,
+            "key": {
+              "type": "Identifier",
+              "start": 96,
+              "end": 102,
+              "name": "static"
+            },
+            "value": {
+              "type": "Identifier",
+              "start": 96,
+              "end": 102,
+              "name": "static"
+            },
+            "computed": false,
+            "static": false
+          }
+        ]
+      }
+    },
+    {
+      "type": "ClassDeclaration",
+      "start": 105,
+      "end": 123,
+      "id": {
+        "type": "Identifier",
+        "start": 111,
+        "end": 113,
+        "name": "A6"
+      },
+      "body": {
+        "type": "ClassBody",
+        "body": [
+          {
+            "type": "ClassProperty",
+            "start": 116,
+            "end": 121,
+            "key": {
+              "type": "Identifier",
+              "start": 116,
+              "end": 121,
+              "name": "async"
+            },
+            "value": {
+              "type": "Identifier",
+              "start": 116,
+              "end": 121,
+              "name": "async"
+            },
+            "computed": false,
+            "static": false
+          }
+        ]
+      }
+    },
+    {
+      "type": "ClassDeclaration",
+      "start": 125,
+      "end": 152,
+      "id": {
+        "type": "Identifier",
+        "start": 131,
+        "end": 133,
+        "name": "A7"
+      },
+      "body": {
+        "type": "ClassBody",
+        "body": [
+          {
+            "type": "ClassProperty",
+            "start": 138,
+            "end": 141,
+            "key": {
+              "type": "Identifier",
+              "start": 138,
+              "end": 141,
+              "name": "get"
+            },
+            "value": {
+              "type": "Identifier",
+              "start": 138,
+              "end": 141,
+              "name": "get"
+            },
+            "computed": false,
+            "static": false
+          },
+          {
+            "type": "MethodDefinition",
+            "start": 145,
+            "end": 150,
+            "key": {
+              "type": "Identifier",
+              "start": 145,
+              "end": 146,
+              "name": "a"
+            },
+            "value": {
+              "type": "FunctionExpression",
+              "start": 146,
+              "end": 150,
+              "async": false,
+              "generator": true,
+              "arrow": false,
+              "params": [],
+              "body": {
+                "type": "BlockStatement",
+                "start": 148,
+                "end": 150,
+                "body": []
+              }
+            },
+            "computed": false,
+            "static": false
+          }
+        ]
+      }
+    },
+    {
+      "type": "ClassDeclaration",
+      "start": 154,
+      "end": 184,
+      "id": {
+        "type": "Identifier",
+        "start": 160,
+        "end": 162,
+        "name": "A8"
+      },
+      "body": {
+        "type": "ClassBody",
+        "body": [
+          {
+            "type": "ClassProperty",
+            "start": 167,
+            "end": 173,
+            "key": {
+              "type": "Identifier",
+              "start": 167,
+              "end": 173,
+              "name": "static"
+            },
+            "value": {
+              "type": "Identifier",
+              "start": 167,
+              "end": 173,
+              "name": "static"
+            },
+            "computed": false,
+            "static": false
+          },
+          {
+            "type": "MethodDefinition",
+            "start": 177,
+            "end": 182,
+            "key": {
+              "type": "Identifier",
+              "start": 177,
+              "end": 178,
+              "name": "a"
+            },
+            "value": {
+              "type": "FunctionExpression",
+              "start": 178,
+              "end": 182,
+              "async": false,
+              "generator": true,
+              "arrow": false,
+              "params": [],
+              "body": {
+                "type": "BlockStatement",
+                "start": 180,
+                "end": 182,
+                "body": []
+              }
+            },
+            "computed": false,
+            "static": false
+          }
+        ]
+      }
+    },
+    {
+      "type": "ClassDeclaration",
+      "start": 186,
+      "end": 214,
+      "id": {
+        "type": "Identifier",
+        "start": 192,
+        "end": 194,
+        "name": "A9"
+      },
+      "body": {
+        "type": "ClassBody",
+        "body": [
+          {
+            "type": "ClassProperty",
+            "start": 199,
+            "end": 204,
+            "key": {
+              "type": "Identifier",
+              "start": 199,
+              "end": 204,
+              "name": "async"
+            },
+            "value": {
+              "type": "Identifier",
+              "start": 199,
+              "end": 204,
+              "name": "async"
+            },
+            "computed": false,
+            "static": false
+          },
+          {
+            "type": "MethodDefinition",
+            "start": 207,
+            "end": 212,
+            "key": {
+              "type": "Identifier",
+              "start": 207,
+              "end": 208,
+              "name": "a"
+            },
+            "value": {
+              "type": "FunctionExpression",
+              "start": 208,
+              "end": 212,
+              "async": false,
+              "generator": false,
+              "arrow": false,
+              "params": [],
+              "body": {
+                "type": "BlockStatement",
+                "start": 210,
+                "end": 212,
+                "body": []
+              }
+            },
+            "computed": false,
+            "static": false
+          }
+        ]
+      }
+    },
+    {
+      "type": "ClassDeclaration",
+      "start": 216,
+      "end": 250,
+      "id": {
+        "type": "Identifier",
+        "start": 222,
+        "end": 225,
+        "name": "A10"
+      },
+      "body": {
+        "type": "ClassBody",
+        "body": [
+          {
+            "type": "ClassProperty",
+            "start": 230,
+            "end": 236,
+            "key": {
+              "type": "Identifier",
+              "start": 230,
+              "end": 236,
+              "name": "static"
+            },
+            "value": {
+              "type": "Identifier",
+              "start": 230,
+              "end": 236,
+              "name": "static"
+            },
+            "computed": false,
+            "static": false
+          },
+          {
+            "type": "ClassProperty",
+            "start": 239,
+            "end": 244,
+            "key": {
+              "type": "Identifier",
+              "start": 239,
+              "end": 244,
+              "name": "async"
+            },
+            "value": {
+              "type": "Identifier",
+              "start": 239,
+              "end": 244,
+              "name": "async"
+            },
+            "computed": false,
+            "static": false
+          },
+          {
+            "type": "ClassProperty",
+            "start": 247,
+            "end": 248,
+            "key": {
+              "type": "Identifier",
+              "start": 247,
+              "end": 248,
+              "name": "a"
+            },
+            "value": {
+              "type": "Identifier",
+              "start": 247,
+              "end": 248,
+              "name": "a"
+            },
+            "computed": false,
+            "static": false
+          }
+        ]
+      }
+    },
+    {
+      "type": "ClassDeclaration",
+      "start": 252,
+      "end": 273,
+      "id": {
+        "type": "Identifier",
+        "start": 258,
+        "end": 261,
+        "name": "A11"
+      },
+      "body": {
+        "type": "ClassBody",
+        "body": [
+          {
+            "type": "ClassProperty",
+            "start": 264,
+            "end": 271,
+            "key": {
+              "type": "Identifier",
+              "start": 264,
+              "end": 270,
+              "name": "static"
+            },
+            "value": {
+              "type": "Identifier",
+              "start": 264,
+              "end": 270,
+              "name": "static"
+            },
+            "computed": false,
+            "static": false
+          }
+        ]
+      }
+    },
+    {
+      "type": "ClassDeclaration",
+      "start": 275,
+      "end": 302,
+      "id": {
+        "type": "Identifier",
+        "start": 281,
+        "end": 284,
+        "name": "A12"
+      },
+      "body": {
+        "type": "ClassBody",
+        "body": [
+          {
+            "type": "ClassProperty",
+            "start": 289,
+            "end": 300,
+            "key": {
+              "type": "Identifier",
+              "start": 289,
+              "end": 295,
+              "name": "static"
+            },
+            "value": {
+              "type": "Literal",
+              "start": 298,
+              "end": 299,
+              "value": "0"
+            },
+            "computed": false,
+            "static": false
+          }
+        ]
+      }
+    },
+    {
+      "type": "ClassDeclaration",
+      "start": 304,
+      "end": 335,
+      "id": {
+        "type": "Identifier",
+        "start": 310,
+        "end": 313,
+        "name": "A13"
+      },
+      "body": {
+        "type": "ClassBody",
+        "body": [
+          {
+            "type": "MethodDefinition",
+            "start": 325,
+            "end": 333,
+            "key": {
+              "type": "Literal",
+              "start": 325,
+              "end": 328,
+              "value": "'a'"
+            },
+            "value": {
+              "type": "FunctionExpression",
+              "start": 329,
+              "end": 333,
+              "async": false,
+              "generator": false,
+              "arrow": false,
+              "params": [],
+              "body": {
+                "type": "BlockStatement",
+                "start": 331,
+                "end": 333,
+                "body": []
+              }
+            },
+            "computed": false,
+            "static": false,
+            "kind": "get"
+          }
+        ]
+      }
+    },
+    {
+      "type": "ClassDeclaration",
+      "start": 337,
+      "end": 381,
+      "id": {
+        "type": "Identifier",
+        "start": 343,
+        "end": 346,
+        "name": "A14"
+      },
+      "body": {
+        "type": "ClassBody",
+        "body": [
+          {
+            "type": "ClassProperty",
+            "start": 351,
+            "end": 357,
+            "key": {
+              "type": "Identifier",
+              "start": 351,
+              "end": 357,
+              "name": "static"
+            },
+            "value": {
+              "type": "Identifier",
+              "start": 351,
+              "end": 357,
+              "name": "static"
+            },
+            "computed": false,
+            "static": false
+          },
+          {
+            "type": "MethodDefinition",
+            "start": 366,
+            "end": 379,
+            "key": {
+              "type": "Identifier",
+              "start": 366,
+              "end": 372,
+              "name": "static"
+            },
+            "value": {
+              "type": "FunctionExpression",
+              "start": 375,
+              "end": 379,
+              "async": false,
+              "generator": false,
+              "arrow": false,
+              "params": [],
+              "body": {
+                "type": "BlockStatement",
+                "start": 377,
+                "end": 379,
+                "body": []
+              }
+            },
+            "computed": false,
+            "static": false,
+            "kind": "get"
+          }
+        ]
+      }
+    }
+  ]
+}

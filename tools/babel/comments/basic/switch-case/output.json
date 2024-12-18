@@ -1,0 +1,268 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 234,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "LabeledStatement",
+      "start": 7,
+      "end": 233,
+      "body": {
+        "type": "SwitchStatement",
+        "start": 25,
+        "end": 233,
+        "discriminant": {
+          "type": "Literal",
+          "start": 46,
+          "end": 51,
+          "value": false,
+          "raw": "false",
+          "trailingComments": [
+            {
+              "type": "CommentBlock",
+              "value": "4",
+              "start": 52,
+              "end": 57
+            }
+          ],
+          "leadingComments": [
+            {
+              "type": "CommentBlock",
+              "value": "3",
+              "start": 40,
+              "end": 45
+            }
+          ]
+        },
+        "cases": [
+          {
+            "type": "SwitchCase",
+            "start": 78,
+            "end": 138,
+            "consequent": [
+              {
+                "type": "BreakStatement",
+                "start": 113,
+                "end": 138,
+                "label": {
+                  "type": "Identifier",
+                  "start": 126,
+                  "end": 129,
+                  "name": "foo",
+                  "trailingComments": [
+                    {
+                      "type": "CommentBlock",
+                      "value": "11",
+                      "start": 130,
+                      "end": 136
+                    }
+                  ],
+                  "leadingComments": [
+                    {
+                      "type": "CommentBlock",
+                      "value": "10",
+                      "start": 119,
+                      "end": 125
+                    }
+                  ]
+                },
+                "leadingComments": [
+                  {
+                    "type": "CommentBlock",
+                    "value": "9",
+                    "start": 103,
+                    "end": 108
+                  }
+                ]
+              }
+            ],
+            "test": {
+              "type": "Literal",
+              "start": 89,
+              "end": 94,
+              "value": false,
+              "raw": "false",
+              "trailingComments": [
+                {
+                  "type": "CommentBlock",
+                  "value": "8",
+                  "start": 95,
+                  "end": 100
+                }
+              ],
+              "leadingComments": [
+                {
+                  "type": "CommentBlock",
+                  "value": "7",
+                  "start": 83,
+                  "end": 88
+                }
+              ]
+            },
+            "trailingComments": [
+              {
+                "type": "CommentBlock",
+                "value": "12",
+                "start": 143,
+                "end": 149
+              }
+            ],
+            "leadingComments": [
+              {
+                "type": "CommentBlock",
+                "value": "6",
+                "start": 72,
+                "end": 77
+              }
+            ]
+          },
+          {
+            "type": "SwitchCase",
+            "start": 150,
+            "end": 166,
+            "consequent": [],
+            "test": null,
+            "innerComments": [
+              {
+                "type": "CommentBlock",
+                "value": "13",
+                "start": 158,
+                "end": 164
+              }
+            ],
+            "trailingComments": [
+              {
+                "type": "CommentBlock",
+                "value": "14",
+                "start": 167,
+                "end": 173
+              }
+            ],
+            "leadingComments": [
+              {
+                "type": "CommentBlock",
+                "value": "12",
+                "start": 143,
+                "end": 149
+              }
+            ]
+          },
+          {
+            "type": "SwitchCase",
+            "start": 178,
+            "end": 222,
+            "consequent": [
+              {
+                "type": "BlockStatement",
+                "start": 212,
+                "end": 222,
+                "body": [],
+                "innerComments": [
+                  {
+                    "type": "CommentBlock",
+                    "value": "18",
+                    "start": 214,
+                    "end": 220
+                  }
+                ],
+                "leadingComments": [
+                  {
+                    "type": "CommentBlock",
+                    "value": "17",
+                    "start": 205,
+                    "end": 211
+                  }
+                ]
+              }
+            ],
+            "test": {
+              "type": "Literal",
+              "start": 190,
+              "end": 195,
+              "value": false,
+              "raw": "false",
+              "trailingComments": [
+                {
+                  "type": "CommentBlock",
+                  "value": "16",
+                  "start": 196,
+                  "end": 202
+                }
+              ],
+              "leadingComments": [
+                {
+                  "type": "CommentBlock",
+                  "value": "15",
+                  "start": 183,
+                  "end": 189
+                }
+              ]
+            },
+            "trailingComments": [
+              {
+                "type": "CommentBlock",
+                "value": "19",
+                "start": 223,
+                "end": 229
+              }
+            ],
+            "leadingComments": [
+              {
+                "type": "CommentBlock",
+                "value": "14",
+                "start": 167,
+                "end": 173
+              }
+            ]
+          }
+        ],
+        "innerComments": [
+          {
+            "type": "CommentBlock",
+            "value": "2",
+            "start": 32,
+            "end": 37
+          },
+          {
+            "type": "CommentBlock",
+            "value": "5",
+            "start": 60,
+            "end": 65
+          }
+        ],
+        "leadingComments": [
+          {
+            "type": "CommentBlock",
+            "value": "1",
+            "start": 19,
+            "end": 24
+          }
+        ]
+      },
+      "label": {
+        "type": "Identifier",
+        "start": 7,
+        "end": 10,
+        "name": "foo",
+        "trailingComments": [
+          {
+            "type": "CommentBlock",
+            "value": "0",
+            "start": 11,
+            "end": 16
+          }
+        ]
+      },
+      "leadingComments": [
+        {
+          "type": "CommentBlock",
+          "value": "-1",
+          "start": 0,
+          "end": 6
+        }
+      ]
+    }
+  ]
+}

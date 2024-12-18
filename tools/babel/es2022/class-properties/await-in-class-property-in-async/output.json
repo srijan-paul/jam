@@ -1,0 +1,90 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 97,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 96,
+      "expression": {
+        "type": "ArrowFunctionExpression",
+        "start": 0,
+        "end": 96,
+        "id": null,
+        "generator": false,
+        "async": true,
+        "expression": false,
+        "params": [],
+        "body": {
+          "type": "BlockStatement",
+          "start": 12,
+          "end": 96,
+          "body": [
+            {
+              "type": "ClassDeclaration",
+              "start": 16,
+              "end": 94,
+              "id": {
+                "type": "Identifier",
+                "start": 22,
+                "end": 23,
+                "name": "C"
+              },
+              "superClass": null,
+              "body": {
+                "type": "ClassBody",
+                "start": 24,
+                "end": 94,
+                "body": [
+                  {
+                    "type": "ClassProperty",
+                    "start": 75,
+                    "end": 90,
+                    "static": false,
+                    "key": {
+                      "type": "Identifier",
+                      "start": 75,
+                      "end": 76,
+                      "name": "p"
+                    },
+                    "computed": false,
+                    "value": {
+                      "type": "BinaryExpression",
+                      "start": 79,
+                      "end": 89,
+                      "left": {
+                        "type": "Identifier",
+                        "start": 79,
+                        "end": 84,
+                        "name": "await"
+                      },
+                      "operator": "+",
+                      "right": {
+                        "type": "Literal",
+                        "start": 87,
+                        "end": 89,
+                        "value": 42,
+                        "raw": "42"
+                      }
+                    },
+                    "leadingComments": [
+                      {
+                        "type": "CommentLine",
+                        "value": " here await is an identifier reference",
+                        "start": 30,
+                        "end": 70
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

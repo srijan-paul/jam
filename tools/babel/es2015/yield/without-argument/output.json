@@ -1,0 +1,159 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 94,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "FunctionDeclaration",
+      "start": 0,
+      "end": 93,
+      "id": {
+        "type": "Identifier",
+        "start": 10,
+        "end": 11,
+        "name": "f"
+      },
+      "generator": true,
+      "async": false,
+      "expression": false,
+      "params": [],
+      "body": {
+        "type": "BlockStatement",
+        "start": 14,
+        "end": 93,
+        "body": [
+          {
+            "type": "ExpressionStatement",
+            "start": 18,
+            "end": 26,
+            "expression": {
+              "type": "YieldExpression",
+              "start": 19,
+              "end": 24,
+              "delegate": false,
+              "argument": null,
+              "extra": {
+                "parenthesized": true,
+                "parenStart": 18
+              }
+            }
+          },
+          {
+            "type": "ExpressionStatement",
+            "start": 29,
+            "end": 37,
+            "expression": {
+              "type": "ArrayExpression",
+              "start": 29,
+              "end": 36,
+              "elements": [
+                {
+                  "type": "YieldExpression",
+                  "start": 30,
+                  "end": 35,
+                  "delegate": false,
+                  "argument": null
+                }
+              ]
+            }
+          },
+          {
+            "type": "BlockStatement",
+            "start": 40,
+            "end": 49,
+            "body": [
+              {
+                "type": "ExpressionStatement",
+                "start": 42,
+                "end": 47,
+                "expression": {
+                  "type": "YieldExpression",
+                  "start": 42,
+                  "end": 47,
+                  "delegate": false,
+                  "argument": null
+                }
+              }
+            ]
+          },
+          {
+            "type": "EmptyStatement",
+            "start": 49,
+            "end": 50
+          },
+          {
+            "type": "ExpressionStatement",
+            "start": 53,
+            "end": 59,
+            "expression": {
+              "type": "YieldExpression",
+              "start": 53,
+              "end": 58,
+              "delegate": false,
+              "argument": null
+            }
+          },
+          {
+            "type": "ExpressionStatement",
+            "start": 62,
+            "end": 79,
+            "expression": {
+              "type": "ConditionalExpression",
+              "start": 62,
+              "end": 78,
+              "test": {
+                "type": "Literal",
+                "start": 62,
+                "end": 66,
+                "value": true,
+                "raw": "true"
+              },
+              "consequent": {
+                "type": "YieldExpression",
+                "start": 69,
+                "end": 74,
+                "delegate": false,
+                "argument": null
+              },
+              "alternate": {
+                "type": "Literal",
+                "start": 77,
+                "end": 78,
+                "value": 1,
+                "raw": "1"
+              }
+            }
+          },
+          {
+            "type": "ExpressionStatement",
+            "start": 82,
+            "end": 91,
+            "expression": {
+              "type": "SequenceExpression",
+              "start": 82,
+              "end": 90,
+              "expressions": [
+                {
+                  "type": "YieldExpression",
+                  "start": 82,
+                  "end": 87,
+                  "delegate": false,
+                  "argument": null
+                },
+                {
+                  "type": "Literal",
+                  "start": 89,
+                  "end": 90,
+                  "value": 1,
+                  "raw": "1"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

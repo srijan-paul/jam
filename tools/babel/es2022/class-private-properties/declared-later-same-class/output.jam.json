@@ -1,0 +1,72 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 33,
+  "body": [
+    {
+      "type": "ClassDeclaration",
+      "start": 0,
+      "end": 33,
+      "id": {
+        "type": "Identifier",
+        "start": 6,
+        "end": 7,
+        "name": "A"
+      },
+      "body": {
+        "type": "ClassBody",
+        "body": [
+          {
+            "type": "ClassProperty",
+            "start": 12,
+            "end": 25,
+            "key": {
+              "type": "Identifier",
+              "start": 12,
+              "end": 14,
+              "name": "#x"
+            },
+            "value": {
+              "type": "MemberExpression",
+              "start": 17,
+              "end": 24,
+              "object": {
+                "type": "ThisExpression",
+                "start": 17,
+                "end": 21
+              },
+              "property": {
+                "type": "Identifier",
+                "start": 22,
+                "end": 24,
+                "name": "#y"
+              },
+              "computed": false
+            },
+            "computed": false,
+            "static": false
+          },
+          {
+            "type": "ClassProperty",
+            "start": 28,
+            "end": 31,
+            "key": {
+              "type": "Identifier",
+              "start": 28,
+              "end": 30,
+              "name": "#y"
+            },
+            "value": {
+              "type": "Identifier",
+              "start": 28,
+              "end": 30,
+              "name": "#y"
+            },
+            "computed": false,
+            "static": false
+          }
+        ]
+      }
+    }
+  ]
+}

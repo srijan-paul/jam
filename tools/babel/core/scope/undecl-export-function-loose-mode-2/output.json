@@ -1,0 +1,60 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 30,
+  "sourceType": "module",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExportNamedDeclaration",
+      "start": 0,
+      "end": 13,
+      "specifiers": [
+        {
+          "type": "ExportSpecifier",
+          "start": 9,
+          "end": 10,
+          "local": {
+            "type": "Identifier",
+            "start": 9,
+            "end": 10,
+            "name": "a"
+          },
+          "exported": {
+            "type": "Identifier",
+            "start": 9,
+            "end": 10,
+            "name": "a"
+          }
+        }
+      ],
+      "source": null,
+      "declaration": null
+    },
+    {
+      "type": "FunctionDeclaration",
+      "start": 14,
+      "end": 29,
+      "id": {
+        "type": "Identifier",
+        "start": 23,
+        "end": 24,
+        "name": "a"
+      },
+      "generator": false,
+      "async": false,
+      "params": [],
+      "body": {
+        "type": "BlockStatement",
+        "start": 27,
+        "end": 29,
+        "body": [],
+        "directives": []
+      }
+    }
+  ],
+  "directives": [],
+  "extra": {
+    "topLevelAwait": false
+  }
+}

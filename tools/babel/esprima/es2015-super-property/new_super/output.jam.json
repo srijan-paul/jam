@@ -1,0 +1,86 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 64,
+  "body": [
+    {
+      "type": "ClassDeclaration",
+      "start": 0,
+      "end": 63,
+      "superClass": {
+        "type": "Identifier",
+        "start": 16,
+        "end": 17,
+        "name": "B"
+      },
+      "id": {
+        "type": "Identifier",
+        "start": 6,
+        "end": 7,
+        "name": "A"
+      },
+      "body": {
+        "type": "ClassBody",
+        "body": [
+          {
+            "type": "MethodDefinition",
+            "start": 24,
+            "end": 61,
+            "key": {
+              "type": "Identifier",
+              "start": 24,
+              "end": 27,
+              "name": "foo"
+            },
+            "value": {
+              "type": "FunctionExpression",
+              "start": 27,
+              "end": 61,
+              "async": false,
+              "generator": false,
+              "arrow": false,
+              "params": [],
+              "body": {
+                "type": "BlockStatement",
+                "start": 30,
+                "end": 61,
+                "body": [
+                  {
+                    "type": "ExpressionStatement",
+                    "start": 40,
+                    "end": 53,
+                    "expression": {
+                      "type": "NewExpression",
+                      "start": 40,
+                      "end": 53,
+                      "callee": {
+                        "type": "MemberExpression",
+                        "start": 44,
+                        "end": 53,
+                        "object": {
+                          "type": "Super",
+                          "start": 44,
+                          "end": 49
+                        },
+                        "property": {
+                          "type": "Identifier",
+                          "start": 50,
+                          "end": 53,
+                          "name": "bar"
+                        },
+                        "computed": false
+                      },
+                      "arguments": []
+                    }
+                  }
+                ]
+              }
+            },
+            "computed": false,
+            "static": false
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 13,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 13,
+      "expression": {
+        "type": "MemberExpression",
+        "start": 0,
+        "end": 13,
+        "object": {
+          "type": "Identifier",
+          "start": 0,
+          "end": 8,
+          "name": "universe"
+        },
+        "computed": false,
+        "property": {
+          "type": "Identifier",
+          "start": 9,
+          "end": 13,
+          "name": "null"
+        },
+        "optional": false
+      }
+    }
+  ]
+}

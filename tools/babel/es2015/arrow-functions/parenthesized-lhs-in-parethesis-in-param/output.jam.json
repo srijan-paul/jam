@@ -1,0 +1,75 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 31,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 30,
+      "expression": {
+        "type": "FunctionExpression",
+        "start": 0,
+        "end": 29,
+        "async": false,
+        "generator": false,
+        "arrow": true,
+        "params": [
+          {
+            "type": "AssignmentPattern",
+            "start": 1,
+            "end": 21,
+            "left": {
+              "type": "Identifier",
+              "start": 1,
+              "end": 2,
+              "name": "x"
+            },
+            "right": {
+              "type": "AssignmentExpression",
+              "start": 6,
+              "end": 21,
+              "operator": "=",
+              "left": {
+                "type": "ArrayPattern",
+                "start": 6,
+                "end": 16,
+                "elements": [
+                  {
+                    "type": "AssignmentPattern",
+                    "start": 8,
+                    "end": 15,
+                    "left": {
+                      "type": "Identifier",
+                      "start": 8,
+                      "end": 9,
+                      "name": "f"
+                    },
+                    "right": {
+                      "type": "ArrayExpression",
+                      "start": 13,
+                      "end": 15,
+                      "elements": []
+                    }
+                  }
+                ]
+              },
+              "right": {
+                "type": "ArrayExpression",
+                "start": 19,
+                "end": 21,
+                "elements": []
+              }
+            }
+          }
+        ],
+        "body": {
+          "type": "BlockStatement",
+          "start": 27,
+          "end": 29,
+          "body": []
+        }
+      }
+    }
+  ]
+}

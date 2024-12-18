@@ -1,0 +1,136 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 93,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ClassDeclaration",
+      "start": 0,
+      "end": 29,
+      "id": {
+        "type": "Identifier",
+        "start": 6,
+        "end": 7,
+        "name": "B"
+      },
+      "superClass": null,
+      "body": {
+        "type": "ClassBody",
+        "start": 8,
+        "end": 29,
+        "body": [
+          {
+            "type": "MethodDefinition",
+            "start": 12,
+            "end": 27,
+            "static": true,
+            "key": {
+              "type": "Identifier",
+              "start": 19,
+              "end": 22,
+              "name": "foo"
+            },
+            "computed": false,
+            "kind": "method",
+            "value": {
+              "type": "FunctionExpression",
+              "start": 22,
+              "end": 27,
+              "id": null,
+              "generator": false,
+              "async": false,
+              "expression": false,
+              "params": [],
+              "body": {
+                "type": "BlockStatement",
+                "start": 25,
+                "end": 27,
+                "body": []
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "ClassDeclaration",
+      "start": 30,
+      "end": 92,
+      "id": {
+        "type": "Identifier",
+        "start": 36,
+        "end": 37,
+        "name": "C"
+      },
+      "superClass": {
+        "type": "Identifier",
+        "start": 46,
+        "end": 47,
+        "name": "B"
+      },
+      "body": {
+        "type": "ClassBody",
+        "start": 48,
+        "end": 92,
+        "body": [
+          {
+            "type": "StaticBlock",
+            "start": 52,
+            "end": 90,
+            "body": [
+              {
+                "type": "ExpressionStatement",
+                "start": 65,
+                "end": 86,
+                "expression": {
+                  "type": "AssignmentExpression",
+                  "start": 65,
+                  "end": 85,
+                  "operator": "=",
+                  "left": {
+                    "type": "MemberExpression",
+                    "start": 65,
+                    "end": 73,
+                    "object": {
+                      "type": "ThisExpression",
+                      "start": 65,
+                      "end": 69
+                    },
+                    "computed": false,
+                    "property": {
+                      "type": "Identifier",
+                      "start": 70,
+                      "end": 73,
+                      "name": "bar"
+                    },
+                    "optional": false
+                  },
+                  "right": {
+                    "type": "MemberExpression",
+                    "start": 76,
+                    "end": 85,
+                    "object": {
+                      "type": "Super",
+                      "start": 76,
+                      "end": 81
+                    },
+                    "computed": false,
+                    "property": {
+                      "type": "Identifier",
+                      "start": 82,
+                      "end": 85,
+                      "name": "foo"
+                    },
+                    "optional": false
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,309 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 216,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 99,
+      "expression": {
+        "type": "ClassExpression",
+        "start": 1,
+        "end": 97,
+        "id": null,
+        "superClass": null,
+        "body": {
+          "type": "ClassBody",
+          "start": 7,
+          "end": 97,
+          "body": [
+            {
+              "type": "MethodDefinition",
+              "start": 17,
+              "end": 95,
+              "static": false,
+              "key": {
+                "type": "Identifier",
+                "start": 38,
+                "end": 39,
+                "name": "f",
+                "trailingComments": [
+                  {
+                    "type": "CommentBlock",
+                    "value": " 4 ",
+                    "start": 39,
+                    "end": 46
+                  }
+                ],
+                "leadingComments": [
+                  {
+                    "type": "CommentBlock",
+                    "value": " 3 ",
+                    "start": 31,
+                    "end": 38
+                  }
+                ]
+              },
+              "computed": true,
+              "kind": "set",
+              "value": {
+                "type": "FunctionExpression",
+                "start": 56,
+                "end": 95,
+                "id": null,
+                "generator": false,
+                "async": false,
+                "expression": false,
+                "params": [
+                  {
+                    "type": "Identifier",
+                    "start": 65,
+                    "end": 66,
+                    "name": "a",
+                    "trailingComments": [
+                      {
+                        "type": "CommentBlock",
+                        "value": " 7 ",
+                        "start": 67,
+                        "end": 74
+                      },
+                      {
+                        "type": "CommentBlock",
+                        "value": " 8 ",
+                        "start": 76,
+                        "end": 83
+                      }
+                    ],
+                    "leadingComments": [
+                      {
+                        "type": "CommentBlock",
+                        "value": " 6 ",
+                        "start": 57,
+                        "end": 64
+                      }
+                    ]
+                  }
+                ],
+                "body": {
+                  "type": "BlockStatement",
+                  "start": 93,
+                  "end": 95,
+                  "body": [],
+                  "leadingComments": [
+                    {
+                      "type": "CommentBlock",
+                      "value": " 9 ",
+                      "start": 85,
+                      "end": 92
+                    }
+                  ]
+                },
+                "leadingComments": [
+                  {
+                    "type": "CommentBlock",
+                    "value": " 5 ",
+                    "start": 48,
+                    "end": 55
+                  }
+                ]
+              },
+              "innerComments": [
+                {
+                  "type": "CommentBlock",
+                  "value": " 2 ",
+                  "start": 21,
+                  "end": 28
+                }
+              ],
+              "leadingComments": [
+                {
+                  "type": "CommentBlock",
+                  "value": " 1 ",
+                  "start": 9,
+                  "end": 16
+                }
+              ]
+            }
+          ]
+        },
+        "extra": {
+          "parenthesized": true,
+          "parenStart": 0
+        }
+      }
+    },
+    {
+      "type": "ExpressionStatement",
+      "start": 100,
+      "end": 180,
+      "expression": {
+        "type": "ClassExpression",
+        "start": 101,
+        "end": 178,
+        "id": null,
+        "superClass": null,
+        "body": {
+          "type": "ClassBody",
+          "start": 107,
+          "end": 178,
+          "body": [
+            {
+              "type": "MethodDefinition",
+              "start": 117,
+              "end": 176,
+              "static": false,
+              "key": {
+                "type": "Identifier",
+                "start": 138,
+                "end": 139,
+                "name": "f",
+                "trailingComments": [
+                  {
+                    "type": "CommentBlock",
+                    "value": " 4 ",
+                    "start": 139,
+                    "end": 146
+                  }
+                ],
+                "leadingComments": [
+                  {
+                    "type": "CommentBlock",
+                    "value": " 3 ",
+                    "start": 131,
+                    "end": 138
+                  }
+                ]
+              },
+              "computed": true,
+              "kind": "get",
+              "value": {
+                "type": "FunctionExpression",
+                "start": 156,
+                "end": 176,
+                "id": null,
+                "generator": false,
+                "async": false,
+                "expression": false,
+                "params": [],
+                "body": {
+                  "type": "BlockStatement",
+                  "start": 174,
+                  "end": 176,
+                  "body": [],
+                  "leadingComments": [
+                    {
+                      "type": "CommentBlock",
+                      "value": " 7 ",
+                      "start": 166,
+                      "end": 173
+                    }
+                  ]
+                },
+                "innerComments": [
+                  {
+                    "type": "CommentBlock",
+                    "value": " 6 ",
+                    "start": 157,
+                    "end": 164
+                  }
+                ],
+                "leadingComments": [
+                  {
+                    "type": "CommentBlock",
+                    "value": " 5 ",
+                    "start": 148,
+                    "end": 155
+                  }
+                ]
+              },
+              "innerComments": [
+                {
+                  "type": "CommentBlock",
+                  "value": " 2 ",
+                  "start": 121,
+                  "end": 128
+                }
+              ],
+              "leadingComments": [
+                {
+                  "type": "CommentBlock",
+                  "value": " 1 ",
+                  "start": 109,
+                  "end": 116
+                }
+              ]
+            }
+          ]
+        },
+        "extra": {
+          "parenthesized": true,
+          "parenStart": 100
+        }
+      }
+    },
+    {
+      "type": "ExpressionStatement",
+      "start": 181,
+      "end": 215,
+      "expression": {
+        "type": "ClassExpression",
+        "start": 182,
+        "end": 213,
+        "id": null,
+        "superClass": null,
+        "body": {
+          "type": "ClassBody",
+          "start": 188,
+          "end": 213,
+          "body": [
+            {
+              "type": "MethodDefinition",
+              "start": 190,
+              "end": 211,
+              "static": false,
+              "key": {
+                "type": "Identifier",
+                "start": 203,
+                "end": 204,
+                "name": "f"
+              },
+              "computed": true,
+              "kind": "get",
+              "value": {
+                "type": "FunctionExpression",
+                "start": 206,
+                "end": 211,
+                "id": null,
+                "generator": false,
+                "async": false,
+                "expression": false,
+                "params": [],
+                "body": {
+                  "type": "BlockStatement",
+                  "start": 209,
+                  "end": 211,
+                  "body": []
+                }
+              },
+              "innerComments": [
+                {
+                  "type": "CommentBlock",
+                  "value": " 1 ",
+                  "start": 194,
+                  "end": 201
+                }
+              ]
+            }
+          ]
+        },
+        "extra": {
+          "parenthesized": true,
+          "parenStart": 181
+        }
+      }
+    }
+  ]
+}

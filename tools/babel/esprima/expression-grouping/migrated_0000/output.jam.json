@@ -1,0 +1,42 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 16,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 1,
+      "end": 15,
+      "expression": {
+        "type": "BinaryExpression",
+        "start": 1,
+        "end": 15,
+        "operator": "+",
+        "left": {
+          "type": "BinaryExpression",
+          "start": 1,
+          "end": 8,
+          "operator": "+",
+          "left": {
+            "type": "Literal",
+            "start": 1,
+            "end": 2,
+            "value": "1"
+          },
+          "right": {
+            "type": "Literal",
+            "start": 7,
+            "end": 8,
+            "value": "2"
+          }
+        },
+        "right": {
+          "type": "Literal",
+          "start": 14,
+          "end": 15,
+          "value": "3"
+        }
+      }
+    }
+  ]
+}

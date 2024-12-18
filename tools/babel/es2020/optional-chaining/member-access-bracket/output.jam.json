@@ -1,0 +1,233 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 97,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 10,
+      "expression": {
+        "type": "OptionalExpression",
+        "start": 0,
+        "end": 10,
+        "argument": {
+          "type": "MemberExpression",
+          "start": 0,
+          "end": 10,
+          "object": {
+            "type": "Identifier",
+            "start": 0,
+            "end": 3,
+            "name": "obj"
+          },
+          "property": {
+            "type": "Identifier",
+            "start": 6,
+            "end": 10,
+            "name": "expr"
+          },
+          "computed": true
+        }
+      }
+    },
+    {
+      "type": "ExpressionStatement",
+      "start": 13,
+      "end": 32,
+      "expression": {
+        "type": "OptionalExpression",
+        "start": 13,
+        "end": 32,
+        "argument": {
+          "type": "MemberExpression",
+          "start": 13,
+          "end": 32,
+          "object": {
+            "type": "OptionalExpression",
+            "start": 13,
+            "end": 23,
+            "argument": {
+              "type": "MemberExpression",
+              "start": 13,
+              "end": 23,
+              "object": {
+                "type": "Identifier",
+                "start": 13,
+                "end": 16,
+                "name": "obj"
+              },
+              "property": {
+                "type": "Identifier",
+                "start": 19,
+                "end": 23,
+                "name": "expr"
+              },
+              "computed": true
+            }
+          },
+          "property": {
+            "type": "Identifier",
+            "start": 27,
+            "end": 32,
+            "name": "other"
+          },
+          "computed": true
+        }
+      }
+    },
+    {
+      "type": "ExpressionStatement",
+      "start": 35,
+      "end": 45,
+      "expression": {
+        "type": "OptionalExpression",
+        "start": 35,
+        "end": 45,
+        "argument": {
+          "type": "MemberExpression",
+          "start": 35,
+          "end": 45,
+          "object": {
+            "type": "Identifier",
+            "start": 35,
+            "end": 38,
+            "name": "obj"
+          },
+          "property": {
+            "type": "Literal",
+            "start": 41,
+            "end": 45,
+            "value": "true"
+          },
+          "computed": true
+        }
+      }
+    },
+    {
+      "type": "ExpressionStatement",
+      "start": 48,
+      "end": 66,
+      "expression": {
+        "type": "OptionalExpression",
+        "start": 48,
+        "end": 66,
+        "argument": {
+          "type": "MemberExpression",
+          "start": 48,
+          "end": 66,
+          "object": {
+            "type": "OptionalExpression",
+            "start": 48,
+            "end": 58,
+            "argument": {
+              "type": "MemberExpression",
+              "start": 48,
+              "end": 58,
+              "object": {
+                "type": "Identifier",
+                "start": 48,
+                "end": 51,
+                "name": "obj"
+              },
+              "property": {
+                "type": "Literal",
+                "start": 54,
+                "end": 58,
+                "value": "true"
+              },
+              "computed": true
+            }
+          },
+          "property": {
+            "type": "Literal",
+            "start": 62,
+            "end": 66,
+            "value": "true"
+          },
+          "computed": true
+        }
+      }
+    },
+    {
+      "type": "ExpressionStatement",
+      "start": 69,
+      "end": 81,
+      "expression": {
+        "type": "OptionalExpression",
+        "start": 69,
+        "end": 81,
+        "argument": {
+          "type": "MemberExpression",
+          "start": 69,
+          "end": 81,
+          "object": {
+            "type": "MemberExpression",
+            "start": 69,
+            "end": 74,
+            "object": {
+              "type": "Identifier",
+              "start": 69,
+              "end": 72,
+              "name": "obj"
+            },
+            "property": {
+              "type": "Identifier",
+              "start": 73,
+              "end": 74,
+              "name": "a"
+            },
+            "computed": false
+          },
+          "property": {
+            "type": "Identifier",
+            "start": 77,
+            "end": 81,
+            "name": "expr"
+          },
+          "computed": true
+        }
+      }
+    },
+    {
+      "type": "ExpressionStatement",
+      "start": 84,
+      "end": 96,
+      "expression": {
+        "type": "OptionalExpression",
+        "start": 84,
+        "end": 96,
+        "argument": {
+          "type": "MemberExpression",
+          "start": 84,
+          "end": 96,
+          "object": {
+            "type": "MemberExpression",
+            "start": 84,
+            "end": 89,
+            "object": {
+              "type": "Identifier",
+              "start": 84,
+              "end": 87,
+              "name": "obj"
+            },
+            "property": {
+              "type": "Identifier",
+              "start": 88,
+              "end": 89,
+              "name": "a"
+            },
+            "computed": false
+          },
+          "property": {
+            "type": "Literal",
+            "start": 92,
+            "end": 96,
+            "value": "true"
+          },
+          "computed": true
+        }
+      }
+    }
+  ]
+}

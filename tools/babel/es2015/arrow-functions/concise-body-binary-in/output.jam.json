@@ -1,0 +1,91 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 41,
+  "body": [
+    {
+      "type": "VariableDeclaration",
+      "start": 0,
+      "end": 39,
+      "declarations": [
+        {
+          "type": "VariableDeclarator",
+          "start": 6,
+          "end": 39,
+          "id": {
+            "type": "Identifier",
+            "start": 6,
+            "end": 7,
+            "name": "t"
+          },
+          "init": {
+            "type": "FunctionExpression",
+            "start": 10,
+            "end": 39,
+            "async": false,
+            "generator": false,
+            "arrow": true,
+            "params": [],
+            "body": {
+              "type": "ObjectExpression",
+              "start": 17,
+              "end": 39,
+              "properties": [
+                {
+                  "type": "Property",
+                  "start": 21,
+                  "end": 37,
+                  "key": {
+                    "type": "Identifier",
+                    "start": 21,
+                    "end": 22,
+                    "name": "v"
+                  },
+                  "value": {
+                    "type": "FunctionExpression",
+                    "start": 24,
+                    "end": 37,
+                    "async": false,
+                    "generator": false,
+                    "arrow": true,
+                    "params": [
+                      {
+                        "type": "Identifier",
+                        "start": 25,
+                        "end": 26,
+                        "name": "v"
+                      }
+                    ],
+                    "body": {
+                      "type": "BinaryExpression",
+                      "start": 31,
+                      "end": 37,
+                      "operator": "in",
+                      "left": {
+                        "type": "Identifier",
+                        "start": 31,
+                        "end": 32,
+                        "name": "v"
+                      },
+                      "right": {
+                        "type": "Identifier",
+                        "start": 36,
+                        "end": 37,
+                        "name": "z"
+                      }
+                    }
+                  },
+                  "kind": "init",
+                  "computed": false,
+                  "shorthand": false,
+                  "method": false
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "kind": "const"
+    }
+  ]
+}

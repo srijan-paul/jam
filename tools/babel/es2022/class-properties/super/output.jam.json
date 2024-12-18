@@ -1,0 +1,97 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 57,
+  "body": [
+    {
+      "type": "ClassDeclaration",
+      "start": 0,
+      "end": 56,
+      "superClass": {
+        "type": "ClassExpression",
+        "start": 20,
+        "end": 35,
+        "body": {
+          "type": "ClassBody",
+          "body": [
+            {
+              "type": "MethodDefinition",
+              "start": 28,
+              "end": 33,
+              "key": {
+                "type": "Identifier",
+                "start": 28,
+                "end": 29,
+                "name": "c"
+              },
+              "value": {
+                "type": "FunctionExpression",
+                "start": 29,
+                "end": 33,
+                "async": false,
+                "generator": false,
+                "arrow": false,
+                "params": [],
+                "body": {
+                  "type": "BlockStatement",
+                  "start": 31,
+                  "end": 33,
+                  "body": []
+                }
+              },
+              "computed": false,
+              "static": false
+            }
+          ]
+        }
+      },
+      "id": {
+        "type": "Identifier",
+        "start": 6,
+        "end": 11,
+        "name": "Fails"
+      },
+      "body": {
+        "type": "ClassBody",
+        "body": [
+          {
+            "type": "ClassProperty",
+            "start": 40,
+            "end": 54,
+            "key": {
+              "type": "Identifier",
+              "start": 40,
+              "end": 41,
+              "name": "c"
+            },
+            "value": {
+              "type": "CallExpression",
+              "start": 44,
+              "end": 53,
+              "callee": {
+                "type": "MemberExpression",
+                "start": 44,
+                "end": 51,
+                "object": {
+                  "type": "Super",
+                  "start": 44,
+                  "end": 49
+                },
+                "property": {
+                  "type": "Identifier",
+                  "start": 50,
+                  "end": 51,
+                  "name": "c"
+                },
+                "computed": false
+              },
+              "arguments": []
+            },
+            "computed": false,
+            "static": false
+          }
+        ]
+      }
+    }
+  ]
+}

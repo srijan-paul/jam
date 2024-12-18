@@ -1,0 +1,81 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 28,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 27,
+      "expression": {
+        "type": "CallExpression",
+        "start": 0,
+        "end": 26,
+        "callee": {
+          "type": "Identifier",
+          "start": 0,
+          "end": 5,
+          "name": "async"
+        },
+        "arguments": [
+          {
+            "type": "AssignmentExpression",
+            "start": 7,
+            "end": 25,
+            "operator": "=",
+            "left": {
+              "type": "ArrayPattern",
+              "start": 7,
+              "end": 20,
+              "elements": [
+                {
+                  "type": "AssignmentPattern",
+                  "start": 8,
+                  "end": 18,
+                  "left": {
+                    "type": "MemberExpression",
+                    "start": 9,
+                    "end": 12,
+                    "object": {
+                      "type": "Identifier",
+                      "start": 9,
+                      "end": 10,
+                      "name": "a"
+                    },
+                    "computed": false,
+                    "property": {
+                      "type": "Identifier",
+                      "start": 11,
+                      "end": 12,
+                      "name": "b"
+                    },
+                    "optional": false,
+                    "extra": {
+                      "parenthesized": true,
+                      "parenStart": 8
+                    }
+                  },
+                  "right": {
+                    "type": "ArrayExpression",
+                    "start": 16,
+                    "end": 18,
+                    "elements": []
+                  }
+                }
+              ]
+            },
+            "right": {
+              "type": "ArrayExpression",
+              "start": 23,
+              "end": 25,
+              "elements": []
+            }
+          }
+        ],
+        "optional": false
+      }
+    }
+  ]
+}

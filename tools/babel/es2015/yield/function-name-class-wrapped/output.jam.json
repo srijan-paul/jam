@@ -1,0 +1,73 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 47,
+  "body": [
+    {
+      "type": "FunctionDeclaration",
+      "start": 0,
+      "end": 46,
+      "id": {
+        "type": "Identifier",
+        "start": 10,
+        "end": 14,
+        "name": "wrap"
+      },
+      "async": false,
+      "generator": true,
+      "arrow": false,
+      "params": [],
+      "body": {
+        "type": "BlockStatement",
+        "start": 17,
+        "end": 46,
+        "body": [
+          {
+            "type": "ClassDeclaration",
+            "start": 23,
+            "end": 44,
+            "id": {
+              "type": "Identifier",
+              "start": 29,
+              "end": 30,
+              "name": "A"
+            },
+            "body": {
+              "type": "ClassBody",
+              "body": [
+                {
+                  "type": "MethodDefinition",
+                  "start": 33,
+                  "end": 43,
+                  "key": {
+                    "type": "Identifier",
+                    "start": 33,
+                    "end": 38,
+                    "name": "yield"
+                  },
+                  "value": {
+                    "type": "FunctionExpression",
+                    "start": 38,
+                    "end": 43,
+                    "async": false,
+                    "generator": true,
+                    "arrow": false,
+                    "params": [],
+                    "body": {
+                      "type": "BlockStatement",
+                      "start": 41,
+                      "end": 43,
+                      "body": []
+                    }
+                  },
+                  "computed": false,
+                  "static": false
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

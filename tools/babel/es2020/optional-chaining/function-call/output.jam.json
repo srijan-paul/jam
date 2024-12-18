@@ -1,0 +1,189 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 64,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 8,
+      "expression": {
+        "type": "OptionalExpression",
+        "start": 0,
+        "end": 8,
+        "argument": {
+          "type": "CallExpression",
+          "start": 0,
+          "end": 8,
+          "callee": {
+            "type": "Identifier",
+            "start": 0,
+            "end": 4,
+            "name": "func"
+          },
+          "arguments": []
+        }
+      }
+    },
+    {
+      "type": "ExpressionStatement",
+      "start": 10,
+      "end": 22,
+      "expression": {
+        "type": "OptionalExpression",
+        "start": 10,
+        "end": 22,
+        "argument": {
+          "type": "CallExpression",
+          "start": 10,
+          "end": 22,
+          "callee": {
+            "type": "Identifier",
+            "start": 10,
+            "end": 14,
+            "name": "func"
+          },
+          "arguments": [
+            {
+              "type": "Identifier",
+              "start": 17,
+              "end": 18,
+              "name": "a"
+            },
+            {
+              "type": "Identifier",
+              "start": 20,
+              "end": 21,
+              "name": "b"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "ExpressionStatement",
+      "start": 24,
+      "end": 35,
+      "expression": {
+        "type": "OptionalExpression",
+        "start": 24,
+        "end": 35,
+        "argument": {
+          "type": "CallExpression",
+          "start": 24,
+          "end": 35,
+          "callee": {
+            "type": "OptionalExpression",
+            "start": 24,
+            "end": 31,
+            "argument": {
+              "type": "MemberExpression",
+              "start": 24,
+              "end": 31,
+              "object": {
+                "type": "Identifier",
+                "start": 24,
+                "end": 25,
+                "name": "a"
+              },
+              "property": {
+                "type": "Identifier",
+                "start": 27,
+                "end": 31,
+                "name": "func"
+              },
+              "computed": false
+            }
+          },
+          "arguments": []
+        }
+      }
+    },
+    {
+      "type": "ExpressionStatement",
+      "start": 37,
+      "end": 52,
+      "expression": {
+        "type": "OptionalExpression",
+        "start": 37,
+        "end": 52,
+        "argument": {
+          "type": "CallExpression",
+          "start": 37,
+          "end": 52,
+          "callee": {
+            "type": "OptionalExpression",
+            "start": 37,
+            "end": 44,
+            "argument": {
+              "type": "MemberExpression",
+              "start": 37,
+              "end": 44,
+              "object": {
+                "type": "Identifier",
+                "start": 37,
+                "end": 38,
+                "name": "a"
+              },
+              "property": {
+                "type": "Identifier",
+                "start": 40,
+                "end": 44,
+                "name": "func"
+              },
+              "computed": false
+            }
+          },
+          "arguments": [
+            {
+              "type": "Identifier",
+              "start": 47,
+              "end": 48,
+              "name": "a"
+            },
+            {
+              "type": "Identifier",
+              "start": 50,
+              "end": 51,
+              "name": "b"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "ExpressionStatement",
+      "start": 54,
+      "end": 64,
+      "expression": {
+        "type": "OptionalExpression",
+        "start": 54,
+        "end": 64,
+        "argument": {
+          "type": "CallExpression",
+          "start": 54,
+          "end": 64,
+          "callee": {
+            "type": "MemberExpression",
+            "start": 54,
+            "end": 60,
+            "object": {
+              "type": "Identifier",
+              "start": 54,
+              "end": 55,
+              "name": "a"
+            },
+            "property": {
+              "type": "Identifier",
+              "start": 56,
+              "end": 60,
+              "name": "func"
+            },
+            "computed": false
+          },
+          "arguments": []
+        }
+      }
+    }
+  ]
+}

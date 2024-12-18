@@ -1,0 +1,80 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 234,
+  "body": [
+    {
+      "type": "LabeledStatement",
+      "start": 7,
+      "end": 233,
+      "label": {
+        "type": "Identifier",
+        "start": 7,
+        "end": 10,
+        "name": "foo"
+      },
+      "body": {
+        "type": "SwitchStatement",
+        "start": 25,
+        "end": 233,
+        "discriminant": {
+          "type": "Literal",
+          "start": 46,
+          "end": 51,
+          "value": "false"
+        },
+        "cases": [
+          {
+            "type": "SwitchCase",
+            "start": 78,
+            "end": 138,
+            "test": {
+              "type": "Literal",
+              "start": 89,
+              "end": 94,
+              "value": "false"
+            },
+            "consequent": [
+              {
+                "type": "BreakStatement",
+                "start": 113,
+                "end": 138,
+                "label": {
+                  "type": "Identifier",
+                  "start": 126,
+                  "end": 129,
+                  "name": "foo"
+                }
+              }
+            ]
+          },
+          {
+            "type": "SwitchCase",
+            "start": 150,
+            "end": 157,
+            "consequent": []
+          },
+          {
+            "type": "SwitchCase",
+            "start": 178,
+            "end": 222,
+            "test": {
+              "type": "Literal",
+              "start": 190,
+              "end": 195,
+              "value": "false"
+            },
+            "consequent": [
+              {
+                "type": "BlockStatement",
+                "start": 212,
+                "end": 222,
+                "body": []
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

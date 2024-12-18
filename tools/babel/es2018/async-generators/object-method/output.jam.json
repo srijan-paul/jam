@@ -1,0 +1,169 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 134,
+  "body": [
+    {
+      "type": "VariableDeclaration",
+      "start": 0,
+      "end": 133,
+      "declarations": [
+        {
+          "type": "VariableDeclarator",
+          "start": 6,
+          "end": 132,
+          "id": {
+            "type": "Identifier",
+            "start": 6,
+            "end": 11,
+            "name": "query"
+          },
+          "init": {
+            "type": "ObjectExpression",
+            "start": 14,
+            "end": 132,
+            "properties": [
+              {
+                "type": "Property",
+                "start": 20,
+                "end": 130,
+                "key": {
+                  "type": "Identifier",
+                  "start": 27,
+                  "end": 35,
+                  "name": "queryAll"
+                },
+                "value": {
+                  "type": "Property",
+                  "start": 27,
+                  "end": 130,
+                  "key": {
+                    "type": "Identifier",
+                    "start": 27,
+                    "end": 35,
+                    "name": "queryAll"
+                  },
+                  "value": {
+                    "type": "FunctionExpression",
+                    "start": 35,
+                    "end": 130,
+                    "async": true,
+                    "generator": true,
+                    "arrow": false,
+                    "params": [
+                      {
+                        "type": "Identifier",
+                        "start": 36,
+                        "end": 39,
+                        "name": "ids"
+                      }
+                    ],
+                    "body": {
+                      "type": "BlockStatement",
+                      "start": 41,
+                      "end": 130,
+                      "body": [
+                        {
+                          "type": "ForOfStatement",
+                          "start": 51,
+                          "end": 124,
+                          "left": {
+                            "type": "VariableDeclaration",
+                            "start": 56,
+                            "end": 64,
+                            "declarations": [
+                              {
+                                "type": "VariableDeclarator",
+                                "start": 62,
+                                "end": 64,
+                                "id": {
+                                  "type": "Identifier",
+                                  "start": 62,
+                                  "end": 64,
+                                  "name": "id"
+                                }
+                              }
+                            ],
+                            "kind": "const"
+                          },
+                          "right": {
+                            "type": "Identifier",
+                            "start": 68,
+                            "end": 71,
+                            "name": "ids"
+                          },
+                          "body": {
+                            "type": "BlockStatement",
+                            "start": 73,
+                            "end": 124,
+                            "body": [
+                              {
+                                "type": "ExpressionStatement",
+                                "start": 87,
+                                "end": 114,
+                                "expression": {
+                                  "type": "YieldExpression",
+                                  "start": 87,
+                                  "end": 113,
+                                  "argument": {
+                                    "type": "AwaitExpression",
+                                    "start": 93,
+                                    "end": 113,
+                                    "argument": {
+                                      "type": "CallExpression",
+                                      "start": 99,
+                                      "end": 113,
+                                      "callee": {
+                                        "type": "MemberExpression",
+                                        "start": 99,
+                                        "end": 109,
+                                        "object": {
+                                          "type": "ThisExpression",
+                                          "start": 99,
+                                          "end": 103
+                                        },
+                                        "property": {
+                                          "type": "Identifier",
+                                          "start": 104,
+                                          "end": 109,
+                                          "name": "query"
+                                        },
+                                        "computed": false
+                                      },
+                                      "arguments": [
+                                        {
+                                          "type": "Identifier",
+                                          "start": 110,
+                                          "end": 112,
+                                          "name": "id"
+                                        }
+                                      ]
+                                    }
+                                  },
+                                  "delegate": false
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  "kind": "init",
+                  "computed": false,
+                  "shorthand": false,
+                  "method": true
+                },
+                "kind": "init",
+                "computed": false,
+                "shorthand": false,
+                "method": false
+              }
+            ]
+          }
+        }
+      ],
+      "kind": "const"
+    }
+  ]
+}

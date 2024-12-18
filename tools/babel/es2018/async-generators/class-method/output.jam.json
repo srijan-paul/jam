@@ -1,0 +1,142 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 131,
+  "body": [
+    {
+      "type": "ClassDeclaration",
+      "start": 0,
+      "end": 130,
+      "id": {
+        "type": "Identifier",
+        "start": 6,
+        "end": 11,
+        "name": "Query"
+      },
+      "body": {
+        "type": "ClassBody",
+        "body": [
+          {
+            "type": "MethodDefinition",
+            "start": 25,
+            "end": 128,
+            "key": {
+              "type": "Identifier",
+              "start": 25,
+              "end": 33,
+              "name": "queryAll"
+            },
+            "value": {
+              "type": "FunctionExpression",
+              "start": 33,
+              "end": 128,
+              "async": true,
+              "generator": true,
+              "arrow": false,
+              "params": [
+                {
+                  "type": "Identifier",
+                  "start": 34,
+                  "end": 37,
+                  "name": "ids"
+                }
+              ],
+              "body": {
+                "type": "BlockStatement",
+                "start": 39,
+                "end": 128,
+                "body": [
+                  {
+                    "type": "ForOfStatement",
+                    "start": 49,
+                    "end": 122,
+                    "left": {
+                      "type": "VariableDeclaration",
+                      "start": 54,
+                      "end": 62,
+                      "declarations": [
+                        {
+                          "type": "VariableDeclarator",
+                          "start": 60,
+                          "end": 62,
+                          "id": {
+                            "type": "Identifier",
+                            "start": 60,
+                            "end": 62,
+                            "name": "id"
+                          }
+                        }
+                      ],
+                      "kind": "const"
+                    },
+                    "right": {
+                      "type": "Identifier",
+                      "start": 66,
+                      "end": 69,
+                      "name": "ids"
+                    },
+                    "body": {
+                      "type": "BlockStatement",
+                      "start": 71,
+                      "end": 122,
+                      "body": [
+                        {
+                          "type": "ExpressionStatement",
+                          "start": 85,
+                          "end": 112,
+                          "expression": {
+                            "type": "YieldExpression",
+                            "start": 85,
+                            "end": 111,
+                            "argument": {
+                              "type": "AwaitExpression",
+                              "start": 91,
+                              "end": 111,
+                              "argument": {
+                                "type": "CallExpression",
+                                "start": 97,
+                                "end": 111,
+                                "callee": {
+                                  "type": "MemberExpression",
+                                  "start": 97,
+                                  "end": 107,
+                                  "object": {
+                                    "type": "ThisExpression",
+                                    "start": 97,
+                                    "end": 101
+                                  },
+                                  "property": {
+                                    "type": "Identifier",
+                                    "start": 102,
+                                    "end": 107,
+                                    "name": "query"
+                                  },
+                                  "computed": false
+                                },
+                                "arguments": [
+                                  {
+                                    "type": "Identifier",
+                                    "start": 108,
+                                    "end": 110,
+                                    "name": "id"
+                                  }
+                                ]
+                              }
+                            },
+                            "delegate": false
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            "computed": false,
+            "static": false
+          }
+        ]
+      }
+    }
+  ]
+}

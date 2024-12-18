@@ -1,0 +1,79 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 70,
+  "body": [
+    {
+      "type": "ClassDeclaration",
+      "start": 0,
+      "end": 69,
+      "superClass": {
+        "type": "Identifier",
+        "start": 16,
+        "end": 17,
+        "name": "B"
+      },
+      "id": {
+        "type": "Identifier",
+        "start": 6,
+        "end": 7,
+        "name": "A"
+      },
+      "body": {
+        "type": "ClassBody",
+        "body": [
+          {
+            "type": "MethodDefinition",
+            "start": 24,
+            "end": 67,
+            "key": {
+              "type": "Identifier",
+              "start": 24,
+              "end": 35,
+              "name": "constructor"
+            },
+            "value": {
+              "type": "FunctionExpression",
+              "start": 35,
+              "end": 67,
+              "async": false,
+              "generator": false,
+              "arrow": false,
+              "params": [],
+              "body": {
+                "type": "BlockStatement",
+                "start": 38,
+                "end": 67,
+                "body": [
+                  {
+                    "type": "ExpressionStatement",
+                    "start": 48,
+                    "end": 61,
+                    "expression": {
+                      "type": "FunctionExpression",
+                      "start": 48,
+                      "end": 61,
+                      "async": false,
+                      "generator": false,
+                      "arrow": true,
+                      "params": [],
+                      "body": {
+                        "type": "CallExpression",
+                        "start": 59,
+                        "end": 61,
+                        "arguments": []
+                      }
+                    }
+                  }
+                ]
+              }
+            },
+            "computed": false,
+            "static": false,
+            "kind": "constructor"
+          }
+        ]
+      }
+    }
+  ]
+}

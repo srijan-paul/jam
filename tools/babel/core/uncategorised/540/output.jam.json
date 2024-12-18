@@ -1,0 +1,39 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 20,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 1,
+      "end": 19,
+      "expression": {
+        "type": "BinaryExpression",
+        "start": 1,
+        "end": 19,
+        "operator": "/",
+        "left": {
+          "type": "FunctionExpression",
+          "start": 1,
+          "end": 15,
+          "async": false,
+          "generator": false,
+          "arrow": false,
+          "params": [],
+          "body": {
+            "type": "BlockStatement",
+            "start": 13,
+            "end": 15,
+            "body": []
+          }
+        },
+        "right": {
+          "type": "Literal",
+          "start": 18,
+          "end": 19,
+          "value": "1"
+        }
+      }
+    }
+  ]
+}

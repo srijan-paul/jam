@@ -1,0 +1,66 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 17,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 8,
+      "expression": {
+        "type": "CallExpression",
+        "start": 0,
+        "end": 7,
+        "callee": {
+          "type": "Identifier",
+          "start": 0,
+          "end": 4,
+          "name": "call"
+        },
+        "arguments": [
+          {
+            "type": "NumericLiteral",
+            "start": 5,
+            "end": 6,
+            "extra": {
+              "rawValue": 1,
+              "raw": "1"
+            },
+            "value": 1
+          }
+        ]
+      }
+    },
+    {
+      "type": "ExpressionStatement",
+      "start": 9,
+      "end": 16,
+      "expression": {
+        "type": "CallExpression",
+        "start": 9,
+        "end": 15,
+        "callee": {
+          "type": "Identifier",
+          "start": 9,
+          "end": 12,
+          "name": "run"
+        },
+        "arguments": [
+          {
+            "type": "NumericLiteral",
+            "start": 13,
+            "end": 14,
+            "extra": {
+              "rawValue": 2,
+              "raw": "2"
+            },
+            "value": 2
+          }
+        ]
+      }
+    }
+  ],
+  "directives": []
+}

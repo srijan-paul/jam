@@ -1,0 +1,44 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 28,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 6,
+      "end": 27,
+      "expression": {
+        "type": "FunctionExpression",
+        "start": 6,
+        "end": 26,
+        "async": true,
+        "generator": false,
+        "arrow": true,
+        "params": [],
+        "body": {
+          "type": "BinaryExpression",
+          "start": 13,
+          "end": 26,
+          "operator": "**",
+          "left": {
+            "type": "AwaitExpression",
+            "start": 13,
+            "end": 20,
+            "argument": {
+              "type": "Literal",
+              "start": 19,
+              "end": 20,
+              "value": "5"
+            }
+          },
+          "right": {
+            "type": "Literal",
+            "start": 25,
+            "end": 26,
+            "value": "6"
+          }
+        }
+      }
+    }
+  ]
+}

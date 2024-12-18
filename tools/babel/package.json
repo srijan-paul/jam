@@ -1,0 +1,12 @@
+{
+  "name": "babel-parser-tests",
+  "version": "0.0.1",
+  "description": "Babel parser tests copied from the original source, modified for ESTree compat",
+  "main": "index.js",
+  "repository": "https://github.com/srijan-paul/jam",
+  "author": "Srijan Paul",
+  "license": "MIT",
+  "dependencies": {
+    "@babel/parser": "^7.26.3"
+  }
+}

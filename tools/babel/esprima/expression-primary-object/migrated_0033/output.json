@@ -1,0 +1,108 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 44,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 13,
+      "expression": {
+        "type": "Literal",
+        "start": 0,
+        "end": 12,
+        "value": "use strict",
+        "raw": "\"use strict\""
+      },
+      "directive": "use strict"
+    },
+    {
+      "type": "VariableDeclaration",
+      "start": 14,
+      "end": 44,
+      "declarations": [
+        {
+          "type": "VariableDeclarator",
+          "start": 18,
+          "end": 44,
+          "id": {
+            "type": "Identifier",
+            "start": 18,
+            "end": 19,
+            "name": "x"
+          },
+          "init": {
+            "type": "ObjectExpression",
+            "start": 22,
+            "end": 44,
+            "properties": [
+              {
+                "type": "Property",
+                "start": 24,
+                "end": 35,
+                "method": false,
+                "key": {
+                  "type": "Identifier",
+                  "start": 28,
+                  "end": 29,
+                  "name": "i"
+                },
+                "computed": false,
+                "kind": "set",
+                "value": {
+                  "type": "FunctionExpression",
+                  "start": 29,
+                  "end": 35,
+                  "id": null,
+                  "generator": false,
+                  "async": false,
+                  "expression": false,
+                  "params": [
+                    {
+                      "type": "Identifier",
+                      "start": 30,
+                      "end": 31,
+                      "name": "x"
+                    }
+                  ],
+                  "body": {
+                    "type": "BlockStatement",
+                    "start": 33,
+                    "end": 35,
+                    "body": []
+                  }
+                },
+                "shorthand": false
+              },
+              {
+                "type": "Property",
+                "start": 37,
+                "end": 42,
+                "method": false,
+                "key": {
+                  "type": "Identifier",
+                  "start": 37,
+                  "end": 38,
+                  "name": "i"
+                },
+                "computed": false,
+                "shorthand": false,
+                "value": {
+                  "type": "Literal",
+                  "start": 40,
+                  "end": 42,
+                  "value": 42,
+                  "raw": "42"
+                },
+                "kind": "init"
+              }
+            ]
+          }
+        }
+      ],
+      "kind": "var"
+    }
+  ]
+}

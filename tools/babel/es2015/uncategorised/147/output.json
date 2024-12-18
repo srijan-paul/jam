@@ -1,0 +1,81 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 18,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "VariableDeclaration",
+      "start": 0,
+      "end": 18,
+      "declarations": [
+        {
+          "type": "VariableDeclarator",
+          "start": 4,
+          "end": 18,
+          "id": {
+            "type": "ObjectPattern",
+            "start": 4,
+            "end": 12,
+            "properties": [
+              {
+                "type": "Property",
+                "start": 5,
+                "end": 11,
+                "computed": true,
+                "key": {
+                  "type": "Identifier",
+                  "start": 6,
+                  "end": 7,
+                  "name": "x"
+                },
+                "method": false,
+                "shorthand": false,
+                "value": {
+                  "type": "Identifier",
+                  "start": 10,
+                  "end": 11,
+                  "name": "y"
+                },
+                "kind": "init"
+              }
+            ]
+          },
+          "init": {
+            "type": "ObjectExpression",
+            "start": 15,
+            "end": 18,
+            "properties": [
+              {
+                "type": "Property",
+                "start": 16,
+                "end": 17,
+                "method": false,
+                "key": {
+                  "type": "Identifier",
+                  "start": 16,
+                  "end": 17,
+                  "name": "y"
+                },
+                "computed": false,
+                "shorthand": true,
+                "value": {
+                  "type": "Identifier",
+                  "start": 16,
+                  "end": 17,
+                  "name": "y"
+                },
+                "kind": "init",
+                "extra": {
+                  "shorthand": true
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "kind": "var"
+    }
+  ]
+}

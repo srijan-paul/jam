@@ -1,0 +1,81 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 82,
+  "body": [
+    {
+      "type": "SwitchStatement",
+      "start": 0,
+      "end": 81,
+      "discriminant": {
+        "type": "Identifier",
+        "start": 7,
+        "end": 8,
+        "name": "x"
+      },
+      "cases": [
+        {
+          "type": "SwitchCase",
+          "start": 14,
+          "end": 42,
+          "test": {
+            "type": "Literal",
+            "start": 19,
+            "end": 20,
+            "value": "1"
+          },
+          "consequent": [
+            {
+              "type": "ExpressionStatement",
+              "start": 26,
+              "end": 42,
+              "expression": {
+                "type": "CallExpression",
+                "start": 26,
+                "end": 42,
+                "callee": {
+                  "type": "MemberExpression",
+                  "start": 26,
+                  "end": 37,
+                  "object": {
+                    "type": "Identifier",
+                    "start": 26,
+                    "end": 33,
+                    "name": "console"
+                  },
+                  "property": {
+                    "type": "Identifier",
+                    "start": 34,
+                    "end": 37,
+                    "name": "log"
+                  },
+                  "computed": false
+                },
+                "arguments": [
+                  {
+                    "type": "Literal",
+                    "start": 38,
+                    "end": 41,
+                    "value": "'1'"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "type": "SwitchCase",
+          "start": 60,
+          "end": 79,
+          "consequent": [
+            {
+              "type": "BreakStatement",
+              "start": 73,
+              "end": 79
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 19,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "FunctionDeclaration",
+      "start": 0,
+      "end": 18,
+      "id": {
+        "type": "Identifier",
+        "start": 10,
+        "end": 13,
+        "name": "foo"
+      },
+      "generator": true,
+      "async": false,
+      "expression": false,
+      "params": [],
+      "body": {
+        "type": "BlockStatement",
+        "start": 16,
+        "end": 18,
+        "body": []
+      }
+    }
+  ]
+}

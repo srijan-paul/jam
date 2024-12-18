@@ -1,0 +1,105 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 85,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 8,
+      "end": 76,
+      "expression": {
+        "type": "SequenceExpression",
+        "start": 27,
+        "end": 47,
+        "expressions": [
+          {
+            "type": "Identifier",
+            "start": 27,
+            "end": 28,
+            "name": "a",
+            "trailingComments": [
+              {
+                "type": "CommentBlock",
+                "value": " 4 ",
+                "start": 29,
+                "end": 36
+              }
+            ]
+          },
+          {
+            "type": "Identifier",
+            "start": 46,
+            "end": 47,
+            "name": "b",
+            "trailingComments": [
+              {
+                "type": "CommentBlock",
+                "value": " 6 ",
+                "start": 48,
+                "end": 55
+              }
+            ],
+            "leadingComments": [
+              {
+                "type": "CommentBlock",
+                "value": " 5 ",
+                "start": 38,
+                "end": 45
+              }
+            ]
+          }
+        ],
+        "extra": {
+          "parenthesized": true,
+          "parenStart": 8
+        },
+        "trailingComments": [
+          {
+            "type": "CommentBlock",
+            "value": " 7 ",
+            "start": 58,
+            "end": 65
+          },
+          {
+            "type": "CommentBlock",
+            "value": " 8 ",
+            "start": 68,
+            "end": 75
+          }
+        ],
+        "leadingComments": [
+          {
+            "type": "CommentBlock",
+            "value": " 2 ",
+            "start": 9,
+            "end": 16
+          },
+          {
+            "type": "CommentBlock",
+            "value": " 3 ",
+            "start": 19,
+            "end": 26
+          }
+        ]
+      },
+      "trailingComments": [
+        {
+          "type": "CommentBlock",
+          "value": " 9 ",
+          "start": 77,
+          "end": 84
+        }
+      ],
+      "leadingComments": [
+        {
+          "type": "CommentBlock",
+          "value": " 1 ",
+          "start": 0,
+          "end": 7
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 107,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 22,
+      "end": 43,
+      "expression": {
+        "type": "FunctionExpression",
+        "start": 22,
+        "end": 42,
+        "async": true,
+        "generator": false,
+        "arrow": true,
+        "params": [],
+        "body": {
+          "type": "Identifier",
+          "start": 41,
+          "end": 42,
+          "name": "x"
+        }
+      }
+    },
+    {
+      "type": "ExpressionStatement",
+      "start": 67,
+      "end": 106,
+      "expression": {
+        "type": "FunctionExpression",
+        "start": 67,
+        "end": 106,
+        "async": true,
+        "generator": false,
+        "arrow": true,
+        "params": [
+          {
+            "type": "Identifier",
+            "start": 75,
+            "end": 76,
+            "name": "x"
+          }
+        ],
+        "body": {
+          "type": "BlockStatement",
+          "start": 104,
+          "end": 106,
+          "body": []
+        }
+      }
+    }
+  ]
+}

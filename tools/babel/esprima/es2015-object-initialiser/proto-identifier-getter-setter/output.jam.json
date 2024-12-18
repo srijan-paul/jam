@@ -1,0 +1,107 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 61,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 1,
+      "end": 59,
+      "expression": {
+        "type": "ObjectExpression",
+        "start": 1,
+        "end": 59,
+        "properties": [
+          {
+            "type": "Property",
+            "start": 3,
+            "end": 18,
+            "key": {
+              "type": "Identifier",
+              "start": 3,
+              "end": 12,
+              "name": "__proto__"
+            },
+            "value": {
+              "type": "Literal",
+              "start": 14,
+              "end": 18,
+              "value": "null"
+            },
+            "kind": "init",
+            "computed": false,
+            "shorthand": false,
+            "method": false
+          },
+          {
+            "type": "Property",
+            "start": 24,
+            "end": 37,
+            "key": {
+              "type": "Identifier",
+              "start": 24,
+              "end": 33,
+              "name": "__proto__"
+            },
+            "value": {
+              "type": "FunctionExpression",
+              "start": 33,
+              "end": 37,
+              "async": false,
+              "generator": false,
+              "arrow": false,
+              "params": [],
+              "body": {
+                "type": "BlockStatement",
+                "start": 35,
+                "end": 37,
+                "body": []
+              }
+            },
+            "kind": "get",
+            "computed": false,
+            "shorthand": false,
+            "method": true
+          },
+          {
+            "type": "Property",
+            "start": 43,
+            "end": 57,
+            "key": {
+              "type": "Identifier",
+              "start": 43,
+              "end": 52,
+              "name": "__proto__"
+            },
+            "value": {
+              "type": "FunctionExpression",
+              "start": 52,
+              "end": 57,
+              "async": false,
+              "generator": false,
+              "arrow": false,
+              "params": [
+                {
+                  "type": "Identifier",
+                  "start": 53,
+                  "end": 54,
+                  "name": "x"
+                }
+              ],
+              "body": {
+                "type": "BlockStatement",
+                "start": 55,
+                "end": 57,
+                "body": []
+              }
+            },
+            "kind": "set",
+            "computed": false,
+            "shorthand": false,
+            "method": true
+          }
+        ]
+      }
+    }
+  ]
+}

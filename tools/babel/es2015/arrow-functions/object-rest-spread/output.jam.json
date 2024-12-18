@@ -1,0 +1,81 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 45,
+  "body": [
+    {
+      "type": "VariableDeclaration",
+      "start": 0,
+      "end": 44,
+      "declarations": [
+        {
+          "type": "VariableDeclarator",
+          "start": 4,
+          "end": 43,
+          "id": {
+            "type": "Identifier",
+            "start": 4,
+            "end": 7,
+            "name": "foo"
+          },
+          "init": {
+            "type": "FunctionExpression",
+            "start": 10,
+            "end": 43,
+            "async": false,
+            "generator": false,
+            "arrow": true,
+            "params": [
+              {
+                "type": "ObjectPattern",
+                "start": 12,
+                "end": 31,
+                "properties": [
+                  {
+                    "type": "Property",
+                    "start": 14,
+                    "end": 19,
+                    "key": {
+                      "type": "Identifier",
+                      "start": 14,
+                      "end": 19,
+                      "name": "title"
+                    },
+                    "value": {
+                      "type": "Identifier",
+                      "start": 14,
+                      "end": 19,
+                      "name": "title"
+                    },
+                    "kind": "init",
+                    "computed": false,
+                    "shorthand": true,
+                    "method": false
+                  },
+                  {
+                    "type": "RestElement",
+                    "start": 21,
+                    "end": 29,
+                    "argument": {
+                      "type": "Identifier",
+                      "start": 24,
+                      "end": 29,
+                      "name": "other"
+                    }
+                  }
+                ]
+              }
+            ],
+            "body": {
+              "type": "BlockStatement",
+              "start": 37,
+              "end": 43,
+              "body": []
+            }
+          }
+        }
+      ],
+      "kind": "var"
+    }
+  ]
+}

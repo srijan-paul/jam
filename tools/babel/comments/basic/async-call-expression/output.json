@@ -1,0 +1,51 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 32,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 23,
+      "expression": {
+        "type": "CallExpression",
+        "start": 0,
+        "end": 23,
+        "callee": {
+          "type": "Identifier",
+          "start": 0,
+          "end": 5,
+          "name": "async",
+          "trailingComments": [
+            {
+              "type": "CommentBlock",
+              "value": " 1 ",
+              "start": 6,
+              "end": 13
+            }
+          ]
+        },
+        "arguments": [],
+        "innerComments": [
+          {
+            "type": "CommentBlock",
+            "value": " 2 ",
+            "start": 15,
+            "end": 22
+          }
+        ],
+        "optional": false
+      },
+      "trailingComments": [
+        {
+          "type": "CommentBlock",
+          "value": " 3 ",
+          "start": 24,
+          "end": 31
+        }
+      ]
+    }
+  ]
+}

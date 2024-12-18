@@ -1,0 +1,104 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 26,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 1,
+      "end": 24,
+      "expression": {
+        "type": "ObjectExpression",
+        "start": 1,
+        "end": 24,
+        "properties": [
+          {
+            "type": "Property",
+            "start": 2,
+            "end": 3,
+            "key": {
+              "type": "Identifier",
+              "start": 2,
+              "end": 3,
+              "name": "x"
+            },
+            "value": {
+              "type": "Identifier",
+              "start": 2,
+              "end": 3,
+              "name": "x"
+            },
+            "kind": "init",
+            "computed": false,
+            "shorthand": true,
+            "method": false
+          },
+          {
+            "type": "SpreadElement",
+            "start": 5,
+            "end": 9,
+            "argument": {
+              "type": "Identifier",
+              "start": 8,
+              "end": 9,
+              "name": "y"
+            }
+          },
+          {
+            "type": "Property",
+            "start": 11,
+            "end": 12,
+            "key": {
+              "type": "Identifier",
+              "start": 11,
+              "end": 12,
+              "name": "a"
+            },
+            "value": {
+              "type": "Identifier",
+              "start": 11,
+              "end": 12,
+              "name": "a"
+            },
+            "kind": "init",
+            "computed": false,
+            "shorthand": true,
+            "method": false
+          },
+          {
+            "type": "SpreadElement",
+            "start": 14,
+            "end": 18,
+            "argument": {
+              "type": "Identifier",
+              "start": 17,
+              "end": 18,
+              "name": "b"
+            }
+          },
+          {
+            "type": "Property",
+            "start": 20,
+            "end": 21,
+            "key": {
+              "type": "Identifier",
+              "start": 20,
+              "end": 21,
+              "name": "c"
+            },
+            "value": {
+              "type": "Identifier",
+              "start": 20,
+              "end": 21,
+              "name": "c"
+            },
+            "kind": "init",
+            "computed": false,
+            "shorthand": true,
+            "method": false
+          }
+        ]
+      }
+    }
+  ]
+}

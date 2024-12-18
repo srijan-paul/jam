@@ -1,0 +1,76 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 41,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 40,
+      "expression": {
+        "type": "FunctionExpression",
+        "start": 0,
+        "end": 40,
+        "async": false,
+        "generator": false,
+        "arrow": true,
+        "params": [],
+        "body": {
+          "type": "ClassExpression",
+          "start": 6,
+          "end": 40,
+          "body": {
+            "type": "ClassBody",
+            "body": [
+              {
+                "type": "MethodDefinition",
+                "start": 22,
+                "end": 38,
+                "key": {
+                  "type": "Identifier",
+                  "start": 22,
+                  "end": 23,
+                  "name": "m"
+                },
+                "value": {
+                  "type": "FunctionExpression",
+                  "start": 23,
+                  "end": 38,
+                  "async": true,
+                  "generator": false,
+                  "arrow": false,
+                  "params": [],
+                  "body": {
+                    "type": "BlockStatement",
+                    "start": 26,
+                    "end": 38,
+                    "body": [
+                      {
+                        "type": "ExpressionStatement",
+                        "start": 28,
+                        "end": 36,
+                        "expression": {
+                          "type": "AwaitExpression",
+                          "start": 28,
+                          "end": 36,
+                          "argument": {
+                            "type": "Literal",
+                            "start": 34,
+                            "end": 36,
+                            "value": "42"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                },
+                "computed": false,
+                "static": false
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

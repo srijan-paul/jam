@@ -1,0 +1,76 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 56,
+  "sourceType": "module",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ImportDeclaration",
+      "start": 0,
+      "end": 56,
+      "specifiers": [
+        {
+          "type": "ImportDefaultSpecifier",
+          "start": 7,
+          "end": 13,
+          "local": {
+            "type": "Identifier",
+            "start": 7,
+            "end": 13,
+            "name": "crypto"
+          }
+        },
+        {
+          "type": "ImportSpecifier",
+          "start": 17,
+          "end": 24,
+          "imported": {
+            "type": "Identifier",
+            "start": 17,
+            "end": 24,
+            "name": "decrypt"
+          },
+          "local": {
+            "type": "Identifier",
+            "start": 17,
+            "end": 24,
+            "name": "decrypt"
+          }
+        },
+        {
+          "type": "ImportSpecifier",
+          "start": 26,
+          "end": 40,
+          "imported": {
+            "type": "Identifier",
+            "start": 26,
+            "end": 33,
+            "name": "encrypt"
+          },
+          "local": {
+            "type": "Identifier",
+            "start": 37,
+            "end": 40,
+            "name": "enc"
+          }
+        }
+      ],
+      "source": {
+        "type": "StringLiteral",
+        "start": 48,
+        "end": 56,
+        "extra": {
+          "rawValue": "crypto",
+          "raw": "\"crypto\""
+        },
+        "value": "crypto"
+      },
+      "attributes": []
+    }
+  ],
+  "directives": [],
+  "extra": {
+    "topLevelAwait": false
+  }
+}

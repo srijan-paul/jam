@@ -1,0 +1,107 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 55,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "VariableDeclaration",
+      "start": 0,
+      "end": 12,
+      "declarations": [
+        {
+          "type": "VariableDeclarator",
+          "start": 6,
+          "end": 11,
+          "id": {
+            "type": "Identifier",
+            "start": 6,
+            "end": 7,
+            "name": "y"
+          },
+          "init": {
+            "type": "Literal",
+            "start": 10,
+            "end": 11,
+            "value": 1,
+            "raw": "1"
+          }
+        }
+      ],
+      "kind": "const"
+    },
+    {
+      "type": "ClassDeclaration",
+      "start": 13,
+      "end": 54,
+      "id": {
+        "type": "Identifier",
+        "start": 19,
+        "end": 20,
+        "name": "x"
+      },
+      "superClass": null,
+      "body": {
+        "type": "ClassBody",
+        "start": 21,
+        "end": 54,
+        "body": [
+          {
+            "type": "StaticBlock",
+            "start": 23,
+            "end": 52,
+            "body": [
+              {
+                "type": "VariableDeclaration",
+                "start": 32,
+                "end": 43,
+                "declarations": [
+                  {
+                    "type": "VariableDeclarator",
+                    "start": 36,
+                    "end": 42,
+                    "id": {
+                      "type": "Identifier",
+                      "start": 36,
+                      "end": 37,
+                      "name": "x"
+                    },
+                    "init": {
+                      "type": "Literal",
+                      "start": 40,
+                      "end": 42,
+                      "value": 42,
+                      "raw": "42"
+                    }
+                  }
+                ],
+                "kind": "var"
+              },
+              {
+                "type": "VariableDeclaration",
+                "start": 44,
+                "end": 50,
+                "declarations": [
+                  {
+                    "type": "VariableDeclarator",
+                    "start": 48,
+                    "end": 49,
+                    "id": {
+                      "type": "Identifier",
+                      "start": 48,
+                      "end": 49,
+                      "name": "y"
+                    },
+                    "init": null
+                  }
+                ],
+                "kind": "var"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

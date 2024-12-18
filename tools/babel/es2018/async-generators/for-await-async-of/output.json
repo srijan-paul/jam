@@ -1,0 +1,54 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 49,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "FunctionDeclaration",
+      "start": 0,
+      "end": 48,
+      "id": {
+        "type": "Identifier",
+        "start": 15,
+        "end": 16,
+        "name": "f"
+      },
+      "generator": false,
+      "async": true,
+      "expression": false,
+      "params": [],
+      "body": {
+        "type": "BlockStatement",
+        "start": 19,
+        "end": 48,
+        "body": [
+          {
+            "type": "ForOfStatement",
+            "start": 23,
+            "end": 46,
+            "await": true,
+            "left": {
+              "type": "Identifier",
+              "start": 34,
+              "end": 39,
+              "name": "async"
+            },
+            "right": {
+              "type": "Identifier",
+              "start": 43,
+              "end": 44,
+              "name": "x"
+            },
+            "body": {
+              "type": "EmptyStatement",
+              "start": 45,
+              "end": 46
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

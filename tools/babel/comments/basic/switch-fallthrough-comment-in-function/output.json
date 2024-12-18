@@ -1,0 +1,120 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 142,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "FunctionDeclaration",
+      "start": 0,
+      "end": 141,
+      "id": {
+        "type": "Identifier",
+        "start": 9,
+        "end": 12,
+        "name": "bar"
+      },
+      "generator": false,
+      "async": false,
+      "expression": false,
+      "params": [
+        {
+          "type": "Identifier",
+          "start": 13,
+          "end": 16,
+          "name": "foo"
+        }
+      ],
+      "body": {
+        "type": "BlockStatement",
+        "start": 18,
+        "end": 141,
+        "body": [
+          {
+            "type": "SwitchStatement",
+            "start": 24,
+            "end": 139,
+            "discriminant": {
+              "type": "Identifier",
+              "start": 31,
+              "end": 34,
+              "name": "foo"
+            },
+            "cases": [
+              {
+                "type": "SwitchCase",
+                "start": 61,
+                "end": 68,
+                "consequent": [],
+                "test": {
+                  "type": "Literal",
+                  "start": 66,
+                  "end": 67,
+                  "value": 1,
+                  "raw": "1"
+                },
+                "trailingComments": [
+                  {
+                    "type": "CommentLine",
+                    "value": " falls through",
+                    "start": 81,
+                    "end": 97
+                  }
+                ],
+                "leadingComments": [
+                  {
+                    "type": "CommentLine",
+                    "value": " foo",
+                    "start": 46,
+                    "end": 52
+                  }
+                ]
+              },
+              {
+                "type": "SwitchCase",
+                "start": 106,
+                "end": 133,
+                "consequent": [
+                  {
+                    "type": "ExpressionStatement",
+                    "start": 126,
+                    "end": 133,
+                    "expression": {
+                      "type": "CallExpression",
+                      "start": 126,
+                      "end": 132,
+                      "callee": {
+                        "type": "Identifier",
+                        "start": 126,
+                        "end": 130,
+                        "name": "doIt"
+                      },
+                      "arguments": [],
+                      "optional": false
+                    }
+                  }
+                ],
+                "test": {
+                  "type": "Literal",
+                  "start": 111,
+                  "end": 112,
+                  "value": 2,
+                  "raw": "2"
+                },
+                "leadingComments": [
+                  {
+                    "type": "CommentLine",
+                    "value": " falls through",
+                    "start": 81,
+                    "end": 97
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,96 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 97,
+  "body": [
+    {
+      "type": "VariableDeclaration",
+      "start": 0,
+      "end": 83,
+      "declarations": [
+        {
+          "type": "VariableDeclarator",
+          "start": 4,
+          "end": 82,
+          "id": {
+            "type": "Identifier",
+            "start": 4,
+            "end": 7,
+            "name": "obj"
+          },
+          "init": {
+            "type": "ObjectExpression",
+            "start": 10,
+            "end": 82,
+            "properties": [
+              {
+                "type": "Property",
+                "start": 14,
+                "end": 20,
+                "key": {
+                  "type": "Identifier",
+                  "start": 14,
+                  "end": 15,
+                  "name": "a"
+                },
+                "value": {
+                  "type": "Literal",
+                  "start": 17,
+                  "end": 20,
+                  "value": "'1'"
+                },
+                "kind": "init",
+                "computed": false,
+                "shorthand": false,
+                "method": false
+              },
+              {
+                "type": "Property",
+                "start": 37,
+                "end": 43,
+                "key": {
+                  "type": "Identifier",
+                  "start": 37,
+                  "end": 38,
+                  "name": "b"
+                },
+                "value": {
+                  "type": "Literal",
+                  "start": 40,
+                  "end": 43,
+                  "value": "'2'"
+                },
+                "kind": "init",
+                "computed": false,
+                "shorthand": false,
+                "method": false
+              },
+              {
+                "type": "Property",
+                "start": 60,
+                "end": 66,
+                "key": {
+                  "type": "Identifier",
+                  "start": 60,
+                  "end": 61,
+                  "name": "c"
+                },
+                "value": {
+                  "type": "Literal",
+                  "start": 63,
+                  "end": 66,
+                  "value": "'3'"
+                },
+                "kind": "init",
+                "computed": false,
+                "shorthand": false,
+                "method": false
+              }
+            ]
+          }
+        }
+      ],
+      "kind": "var"
+    }
+  ]
+}

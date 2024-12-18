@@ -1,0 +1,42 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 19,
+  "body": [
+    {
+      "type": "ForOfStatement",
+      "start": 0,
+      "end": 18,
+      "left": {
+        "type": "ArrayPattern",
+        "start": 5,
+        "end": 11,
+        "elements": [
+          {
+            "type": "Identifier",
+            "start": 6,
+            "end": 7,
+            "name": "p"
+          },
+          {
+            "type": "Identifier",
+            "start": 9,
+            "end": 10,
+            "name": "q"
+          }
+        ]
+      },
+      "right": {
+        "type": "Identifier",
+        "start": 15,
+        "end": 16,
+        "name": "r"
+      },
+      "body": {
+        "type": "EmptyStatement",
+        "start": 17,
+        "end": 18
+      }
+    }
+  ]
+}

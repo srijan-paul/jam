@@ -1,0 +1,52 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 19,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 1,
+      "end": 18,
+      "expression": {
+        "type": "ObjectExpression",
+        "start": 1,
+        "end": 18,
+        "properties": [
+          {
+            "type": "Property",
+            "start": 3,
+            "end": 17,
+            "key": {
+              "type": "BinaryExpression",
+              "start": 3,
+              "end": 12,
+              "operator": "+",
+              "left": {
+                "type": "Literal",
+                "start": 3,
+                "end": 6,
+                "value": "\"x\""
+              },
+              "right": {
+                "type": "Literal",
+                "start": 9,
+                "end": 12,
+                "value": "\"y\""
+              }
+            },
+            "value": {
+              "type": "Literal",
+              "start": 15,
+              "end": 17,
+              "value": "10"
+            },
+            "kind": "init",
+            "computed": true,
+            "shorthand": false,
+            "method": false
+          }
+        ]
+      }
+    }
+  ]
+}

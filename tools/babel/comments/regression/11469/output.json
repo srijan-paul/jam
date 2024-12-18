@@ -1,0 +1,188 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 194,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ClassDeclaration",
+      "start": 0,
+      "end": 82,
+      "id": {
+        "type": "Identifier",
+        "start": 6,
+        "end": 7,
+        "name": "A"
+      },
+      "superClass": null,
+      "body": {
+        "type": "ClassBody",
+        "start": 8,
+        "end": 82,
+        "body": [
+          {
+            "type": "MethodDefinition",
+            "start": 12,
+            "end": 54,
+            "static": false,
+            "key": {
+              "type": "Identifier",
+              "start": 12,
+              "end": 16,
+              "name": "test"
+            },
+            "computed": false,
+            "kind": "method",
+            "value": {
+              "type": "FunctionExpression",
+              "start": 16,
+              "end": 54,
+              "id": null,
+              "generator": false,
+              "async": false,
+              "expression": false,
+              "params": [],
+              "body": {
+                "type": "BlockStatement",
+                "start": 19,
+                "end": 54,
+                "body": [],
+                "innerComments": [
+                  {
+                    "type": "CommentLine",
+                    "value": " this.member = 'value';",
+                    "start": 25,
+                    "end": 50
+                  }
+                ]
+              }
+            },
+            "trailingComments": [
+              {
+                "type": "CommentBlock",
+                "value": " Trailing comment ",
+                "start": 58,
+                "end": 80
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "type": "ClassDeclaration",
+      "start": 84,
+      "end": 140,
+      "id": {
+        "type": "Identifier",
+        "start": 90,
+        "end": 91,
+        "name": "B"
+      },
+      "superClass": null,
+      "body": {
+        "type": "ClassBody",
+        "start": 92,
+        "end": 140,
+        "body": [
+          {
+            "type": "MethodDefinition",
+            "start": 96,
+            "end": 138,
+            "static": false,
+            "key": {
+              "type": "Identifier",
+              "start": 96,
+              "end": 100,
+              "name": "test"
+            },
+            "computed": false,
+            "kind": "method",
+            "value": {
+              "type": "FunctionExpression",
+              "start": 100,
+              "end": 138,
+              "id": null,
+              "generator": false,
+              "async": false,
+              "expression": false,
+              "params": [],
+              "body": {
+                "type": "BlockStatement",
+                "start": 103,
+                "end": 138,
+                "body": [],
+                "innerComments": [
+                  {
+                    "type": "CommentLine",
+                    "value": " this.member = 'value';",
+                    "start": 109,
+                    "end": 134
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "ClassDeclaration",
+      "start": 142,
+      "end": 193,
+      "id": {
+        "type": "Identifier",
+        "start": 148,
+        "end": 149,
+        "name": "C"
+      },
+      "superClass": null,
+      "body": {
+        "type": "ClassBody",
+        "start": 150,
+        "end": 193,
+        "body": [
+          {
+            "type": "MethodDefinition",
+            "start": 154,
+            "end": 163,
+            "static": false,
+            "key": {
+              "type": "Identifier",
+              "start": 154,
+              "end": 158,
+              "name": "test"
+            },
+            "computed": false,
+            "kind": "method",
+            "value": {
+              "type": "FunctionExpression",
+              "start": 158,
+              "end": 163,
+              "id": null,
+              "generator": false,
+              "async": false,
+              "expression": false,
+              "params": [],
+              "body": {
+                "type": "BlockStatement",
+                "start": 161,
+                "end": 163,
+                "body": []
+              }
+            },
+            "trailingComments": [
+              {
+                "type": "CommentLine",
+                "value": " this.member = 'value';",
+                "start": 166,
+                "end": 191
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

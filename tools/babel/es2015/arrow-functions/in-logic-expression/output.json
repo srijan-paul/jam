@@ -1,0 +1,89 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 39,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 19,
+      "expression": {
+        "type": "LogicalExpression",
+        "start": 0,
+        "end": 18,
+        "left": {
+          "type": "ArrowFunctionExpression",
+          "start": 1,
+          "end": 9,
+          "id": null,
+          "generator": false,
+          "async": false,
+          "expression": false,
+          "params": [],
+          "body": {
+            "type": "BlockStatement",
+            "start": 7,
+            "end": 9,
+            "body": []
+          },
+          "extra": {
+            "parenthesized": true,
+            "parenStart": 0
+          }
+        },
+        "operator": "||",
+        "right": {
+          "type": "Literal",
+          "start": 14,
+          "end": 18,
+          "value": true,
+          "raw": "true"
+        }
+      }
+    },
+    {
+      "type": "ExpressionStatement",
+      "start": 20,
+      "end": 39,
+      "expression": {
+        "type": "ConditionalExpression",
+        "start": 20,
+        "end": 38,
+        "test": {
+          "type": "ArrowFunctionExpression",
+          "start": 21,
+          "end": 29,
+          "id": null,
+          "generator": false,
+          "async": false,
+          "expression": false,
+          "params": [],
+          "body": {
+            "type": "BlockStatement",
+            "start": 27,
+            "end": 29,
+            "body": []
+          },
+          "extra": {
+            "parenthesized": true,
+            "parenStart": 20
+          }
+        },
+        "consequent": {
+          "type": "Identifier",
+          "start": 33,
+          "end": 34,
+          "name": "a"
+        },
+        "alternate": {
+          "type": "Identifier",
+          "start": 37,
+          "end": 38,
+          "name": "b"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,63 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 26,
+  "body": [
+    {
+      "type": "VariableDeclaration",
+      "start": 0,
+      "end": 25,
+      "declarations": [
+        {
+          "type": "VariableDeclarator",
+          "start": 4,
+          "end": 24,
+          "id": {
+            "type": "Identifier",
+            "start": 4,
+            "end": 7,
+            "name": "bar"
+          },
+          "init": {
+            "type": "ObjectExpression",
+            "start": 10,
+            "end": 24,
+            "properties": [
+              {
+                "type": "Property",
+                "start": 14,
+                "end": 22,
+                "key": {
+                  "type": "Identifier",
+                  "start": 14,
+                  "end": 17,
+                  "name": "foo"
+                },
+                "value": {
+                  "type": "FunctionExpression",
+                  "start": 17,
+                  "end": 22,
+                  "async": false,
+                  "generator": false,
+                  "arrow": false,
+                  "params": [],
+                  "body": {
+                    "type": "BlockStatement",
+                    "start": 20,
+                    "end": 22,
+                    "body": []
+                  }
+                },
+                "kind": "init",
+                "computed": false,
+                "shorthand": false,
+                "method": true
+              }
+            ]
+          }
+        }
+      ],
+      "kind": "var"
+    }
+  ]
+}

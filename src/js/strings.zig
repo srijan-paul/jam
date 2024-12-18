@@ -44,7 +44,8 @@ pub fn stringValue(self: *Self, token: *const Token) error{ OutOfMemory, Overflo
     // we can just return the slice after interning it as is.
     // Non-ASCII identifiers are tagged with ".non_ascii_identifier"
     if (token.tag == .identifier) {
-        return try self.string_pool.getInsert(str);
+        @branchHint(.cold);
+        return try self.string_pool.getOrInsertNoOwn(str);
     }
 
     if (str.len > self.buf.len) {
@@ -57,11 +58,11 @@ pub fn stringValue(self: *Self, token: *const Token) error{ OutOfMemory, Overflo
     while (iter.i < str.len) {
         if (str[iter.i] == '\\') {
             const parsed_cp = util.utf8.parseUnicodeEscape(str[iter.i..]) orelse
-                unreachable; // validated during tokenization.
+                unreachable; // SAFETY: validated during tokenization.
             const cp = parsed_cp.codepoint;
             var cp_slice: [4]u8 = undefined;
             const cp_len = std.unicode.utf8Encode(cp, &cp_slice) catch
-                unreachable;
+                unreachable; // SAFETY: validated during tokenization
             @memcpy(self.buf[strlen .. strlen + cp_len], cp_slice[0..cp_len]);
             strlen += cp_len;
             iter.i += parsed_cp.len;
@@ -69,13 +70,13 @@ pub fn stringValue(self: *Self, token: *const Token) error{ OutOfMemory, Overflo
         }
 
         const cp_slice = iter.nextCodepointSlice() orelse
-            unreachable; // already validated UTF-8 during tokenization
+            unreachable; // SAFETY: already validated UTF-8 during tokenization
         const cplen = cp_slice.len;
         @memcpy(self.buf[strlen .. strlen + cplen], cp_slice);
         strlen += cplen;
     }
 
-    const string = try self.string_pool.getInsert(self.buf[0..strlen]);
+    const string = try self.string_pool.getOrInsert(self.buf[0..strlen]);
     return string;
 }
 

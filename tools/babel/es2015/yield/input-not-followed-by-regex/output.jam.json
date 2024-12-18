@@ -1,0 +1,61 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 35,
+  "body": [
+    {
+      "type": "FunctionDeclaration",
+      "start": 0,
+      "end": 34,
+      "id": {
+        "type": "Identifier",
+        "start": 10,
+        "end": 12,
+        "name": "f2"
+      },
+      "async": false,
+      "generator": true,
+      "arrow": false,
+      "params": [],
+      "body": {
+        "type": "BlockStatement",
+        "start": 15,
+        "end": 34,
+        "body": [
+          {
+            "type": "ExpressionStatement",
+            "start": 17,
+            "end": 32,
+            "expression": {
+              "type": "FunctionExpression",
+              "start": 17,
+              "end": 32,
+              "async": false,
+              "generator": false,
+              "arrow": true,
+              "params": [],
+              "body": {
+                "type": "BinaryExpression",
+                "start": 23,
+                "end": 32,
+                "operator": "/",
+                "left": {
+                  "type": "Identifier",
+                  "start": 23,
+                  "end": 28,
+                  "name": "yield"
+                },
+                "right": {
+                  "type": "Literal",
+                  "start": 31,
+                  "end": 32,
+                  "value": "1"
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

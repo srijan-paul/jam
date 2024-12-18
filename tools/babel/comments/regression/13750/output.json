@@ -1,0 +1,225 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 137,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "IfStatement",
+      "start": 0,
+      "end": 136,
+      "test": {
+        "type": "LogicalExpression",
+        "start": 4,
+        "end": 82,
+        "left": {
+          "type": "BinaryExpression",
+          "start": 4,
+          "end": 17,
+          "left": {
+            "type": "MemberExpression",
+            "start": 4,
+            "end": 11,
+            "object": {
+              "type": "Identifier",
+              "start": 4,
+              "end": 8,
+              "name": "args"
+            },
+            "computed": true,
+            "property": {
+              "type": "Literal",
+              "start": 9,
+              "end": 10,
+              "value": 0,
+              "raw": "0"
+            },
+            "optional": false
+          },
+          "operator": "===",
+          "right": {
+            "type": "Literal",
+            "start": 16,
+            "end": 17,
+            "value": 1,
+            "raw": "1"
+          }
+        },
+        "operator": "||",
+        "right": {
+          "type": "LogicalExpression",
+          "start": 50,
+          "end": 81,
+          "left": {
+            "type": "BinaryExpression",
+            "start": 50,
+            "end": 63,
+            "left": {
+              "type": "MemberExpression",
+              "start": 50,
+              "end": 57,
+              "object": {
+                "type": "Identifier",
+                "start": 50,
+                "end": 54,
+                "name": "args"
+              },
+              "computed": true,
+              "property": {
+                "type": "Literal",
+                "start": 55,
+                "end": 56,
+                "value": 0,
+                "raw": "0"
+              },
+              "optional": false
+            },
+            "operator": "===",
+            "right": {
+              "type": "Literal",
+              "start": 62,
+              "end": 63,
+              "value": 2,
+              "raw": "2"
+            }
+          },
+          "operator": "||",
+          "right": {
+            "type": "BinaryExpression",
+            "start": 68,
+            "end": 81,
+            "left": {
+              "type": "MemberExpression",
+              "start": 68,
+              "end": 75,
+              "object": {
+                "type": "Identifier",
+                "start": 68,
+                "end": 72,
+                "name": "args"
+              },
+              "computed": true,
+              "property": {
+                "type": "Literal",
+                "start": 73,
+                "end": 74,
+                "value": 0,
+                "raw": "0"
+              },
+              "optional": false
+            },
+            "operator": "===",
+            "right": {
+              "type": "Literal",
+              "start": 80,
+              "end": 81,
+              "value": 3,
+              "raw": "3"
+            }
+          },
+          "extra": {
+            "parenthesized": true,
+            "parenStart": 49
+          },
+          "leadingComments": [
+            {
+              "type": "CommentBlock",
+              "value": " istanbul ignore next ",
+              "start": 22,
+              "end": 48
+            }
+          ]
+        }
+      },
+      "consequent": {
+        "type": "BlockStatement",
+        "start": 84,
+        "end": 112,
+        "body": [
+          {
+            "type": "ExpressionStatement",
+            "start": 88,
+            "end": 110,
+            "expression": {
+              "type": "AssignmentExpression",
+              "start": 88,
+              "end": 109,
+              "operator": "=",
+              "left": {
+                "type": "Identifier",
+                "start": 88,
+                "end": 94,
+                "name": "output"
+              },
+              "right": {
+                "type": "BinaryExpression",
+                "start": 97,
+                "end": 109,
+                "left": {
+                  "type": "MemberExpression",
+                  "start": 97,
+                  "end": 104,
+                  "object": {
+                    "type": "Identifier",
+                    "start": 97,
+                    "end": 101,
+                    "name": "args"
+                  },
+                  "computed": true,
+                  "property": {
+                    "type": "Literal",
+                    "start": 102,
+                    "end": 103,
+                    "value": 0,
+                    "raw": "0"
+                  },
+                  "optional": false
+                },
+                "operator": "+",
+                "right": {
+                  "type": "Literal",
+                  "start": 107,
+                  "end": 109,
+                  "value": 10,
+                  "raw": "10"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "alternate": {
+        "type": "BlockStatement",
+        "start": 118,
+        "end": 136,
+        "body": [
+          {
+            "type": "ExpressionStatement",
+            "start": 122,
+            "end": 134,
+            "expression": {
+              "type": "AssignmentExpression",
+              "start": 122,
+              "end": 133,
+              "operator": "=",
+              "left": {
+                "type": "Identifier",
+                "start": 122,
+                "end": 128,
+                "name": "output"
+              },
+              "right": {
+                "type": "Literal",
+                "start": 131,
+                "end": 133,
+                "value": 20,
+                "raw": "20"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

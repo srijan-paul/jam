@@ -1,0 +1,46 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 16,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 15,
+      "expression": {
+        "type": "CallExpression",
+        "start": 0,
+        "end": 15,
+        "callee": {
+          "type": "MemberExpression",
+          "start": 0,
+          "end": 13,
+          "object": {
+            "type": "NewExpression",
+            "start": 0,
+            "end": 9,
+            "callee": {
+              "type": "Identifier",
+              "start": 4,
+              "end": 7,
+              "name": "foo"
+            },
+            "arguments": []
+          },
+          "computed": false,
+          "property": {
+            "type": "Identifier",
+            "start": 10,
+            "end": 13,
+            "name": "bar"
+          },
+          "optional": false
+        },
+        "arguments": [],
+        "optional": false
+      }
+    }
+  ]
+}

@@ -1,0 +1,115 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 71,
+  "body": [
+    {
+      "type": "ClassDeclaration",
+      "start": 0,
+      "end": 70,
+      "id": {
+        "type": "Identifier",
+        "start": 6,
+        "end": 7,
+        "name": "A"
+      },
+      "body": {
+        "type": "ClassBody",
+        "body": [
+          {
+            "type": "MethodDefinition",
+            "start": 12,
+            "end": 35,
+            "key": {
+              "type": "Identifier",
+              "start": 12,
+              "end": 16,
+              "name": "#foo"
+            },
+            "value": {
+              "type": "FunctionExpression",
+              "start": 16,
+              "end": 35,
+              "async": false,
+              "generator": false,
+              "arrow": false,
+              "params": [
+                {
+                  "type": "Identifier",
+                  "start": 17,
+                  "end": 20,
+                  "name": "arg"
+                },
+                {
+                  "type": "RestElement",
+                  "start": 22,
+                  "end": 31,
+                  "argument": {
+                    "type": "Identifier",
+                    "start": 25,
+                    "end": 31,
+                    "name": "others"
+                  }
+                }
+              ],
+              "body": {
+                "type": "BlockStatement",
+                "start": 33,
+                "end": 35,
+                "body": []
+              }
+            },
+            "computed": false,
+            "static": false
+          },
+          {
+            "type": "MethodDefinition",
+            "start": 45,
+            "end": 68,
+            "key": {
+              "type": "Identifier",
+              "start": 45,
+              "end": 49,
+              "name": "#bar"
+            },
+            "value": {
+              "type": "FunctionExpression",
+              "start": 49,
+              "end": 68,
+              "async": false,
+              "generator": false,
+              "arrow": false,
+              "params": [
+                {
+                  "type": "Identifier",
+                  "start": 50,
+                  "end": 53,
+                  "name": "arg"
+                },
+                {
+                  "type": "RestElement",
+                  "start": 55,
+                  "end": 64,
+                  "argument": {
+                    "type": "Identifier",
+                    "start": 58,
+                    "end": 64,
+                    "name": "others"
+                  }
+                }
+              ],
+              "body": {
+                "type": "BlockStatement",
+                "start": 66,
+                "end": 68,
+                "body": []
+              }
+            },
+            "computed": false,
+            "static": true
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,81 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 26,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 1,
+      "end": 25,
+      "expression": {
+        "type": "AssignmentExpression",
+        "start": 1,
+        "end": 25,
+        "operator": "=",
+        "left": {
+          "type": "ObjectPattern",
+          "start": 1,
+          "end": 20,
+          "properties": [
+            {
+              "type": "AssignmentPattern",
+              "start": 2,
+              "end": 8,
+              "left": {
+                "type": "Identifier",
+                "start": 2,
+                "end": 3,
+                "name": "a"
+              },
+              "right": {
+                "type": "Literal",
+                "start": 6,
+                "end": 8,
+                "value": "42"
+              }
+            },
+            {
+              "type": "Property",
+              "start": 10,
+              "end": 19,
+              "key": {
+                "type": "Identifier",
+                "start": 10,
+                "end": 11,
+                "name": "b"
+              },
+              "value": {
+                "type": "MemberExpression",
+                "start": 13,
+                "end": 19,
+                "object": {
+                  "type": "Identifier",
+                  "start": 13,
+                  "end": 17,
+                  "name": "test"
+                },
+                "property": {
+                  "type": "Identifier",
+                  "start": 18,
+                  "end": 19,
+                  "name": "d"
+                },
+                "computed": false
+              },
+              "kind": "init",
+              "computed": false,
+              "shorthand": false,
+              "method": false
+            }
+          ]
+        },
+        "right": {
+          "type": "ObjectExpression",
+          "start": 23,
+          "end": 25,
+          "properties": []
+        }
+      }
+    }
+  ]
+}

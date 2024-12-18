@@ -1,0 +1,67 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 26,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 1,
+      "end": 24,
+      "expression": {
+        "type": "ObjectExpression",
+        "start": 1,
+        "end": 24,
+        "properties": [
+          {
+            "type": "Property",
+            "start": 4,
+            "end": 22,
+            "key": {
+              "type": "Identifier",
+              "start": 4,
+              "end": 7,
+              "name": "foo"
+            },
+            "value": {
+              "type": "FunctionExpression",
+              "start": 7,
+              "end": 22,
+              "async": false,
+              "generator": true,
+              "arrow": false,
+              "params": [],
+              "body": {
+                "type": "BlockStatement",
+                "start": 10,
+                "end": 22,
+                "body": [
+                  {
+                    "type": "ExpressionStatement",
+                    "start": 12,
+                    "end": 20,
+                    "expression": {
+                      "type": "YieldExpression",
+                      "start": 12,
+                      "end": 19,
+                      "argument": {
+                        "type": "Literal",
+                        "start": 18,
+                        "end": 19,
+                        "value": "3"
+                      },
+                      "delegate": false
+                    }
+                  }
+                ]
+              }
+            },
+            "kind": "init",
+            "computed": false,
+            "shorthand": false,
+            "method": true
+          }
+        ]
+      }
+    }
+  ]
+}

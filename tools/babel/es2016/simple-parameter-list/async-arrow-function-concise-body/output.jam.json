@@ -1,0 +1,59 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 41,
+  "body": [
+    {
+      "type": "VariableDeclaration",
+      "start": 0,
+      "end": 40,
+      "declarations": [
+        {
+          "type": "VariableDeclarator",
+          "start": 4,
+          "end": 39,
+          "id": {
+            "type": "Identifier",
+            "start": 4,
+            "end": 5,
+            "name": "a"
+          },
+          "init": {
+            "type": "FunctionExpression",
+            "start": 14,
+            "end": 39,
+            "async": true,
+            "generator": false,
+            "arrow": true,
+            "params": [
+              {
+                "type": "AssignmentPattern",
+                "start": 15,
+                "end": 27,
+                "left": {
+                  "type": "Identifier",
+                  "start": 15,
+                  "end": 22,
+                  "name": "options"
+                },
+                "right": {
+                  "type": "ObjectExpression",
+                  "start": 25,
+                  "end": 27,
+                  "properties": []
+                }
+              }
+            ],
+            "body": {
+              "type": "Identifier",
+              "start": 32,
+              "end": 39,
+              "name": "options"
+            }
+          }
+        }
+      ],
+      "kind": "var"
+    }
+  ]
+}

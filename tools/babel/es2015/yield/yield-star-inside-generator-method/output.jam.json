@@ -1,0 +1,81 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 34,
+  "body": [
+    {
+      "type": "VariableDeclaration",
+      "start": 0,
+      "end": 34,
+      "declarations": [
+        {
+          "type": "VariableDeclarator",
+          "start": 4,
+          "end": 33,
+          "id": {
+            "type": "Identifier",
+            "start": 4,
+            "end": 5,
+            "name": "x"
+          },
+          "init": {
+            "type": "ObjectExpression",
+            "start": 8,
+            "end": 33,
+            "properties": [
+              {
+                "type": "Property",
+                "start": 11,
+                "end": 31,
+                "key": {
+                  "type": "Identifier",
+                  "start": 11,
+                  "end": 15,
+                  "name": "test"
+                },
+                "value": {
+                  "type": "FunctionExpression",
+                  "start": 16,
+                  "end": 31,
+                  "async": false,
+                  "generator": true,
+                  "arrow": false,
+                  "params": [],
+                  "body": {
+                    "type": "BlockStatement",
+                    "start": 19,
+                    "end": 31,
+                    "body": [
+                      {
+                        "type": "ExpressionStatement",
+                        "start": 21,
+                        "end": 29,
+                        "expression": {
+                          "type": "YieldExpression",
+                          "start": 21,
+                          "end": 29,
+                          "argument": {
+                            "type": "Identifier",
+                            "start": 28,
+                            "end": 29,
+                            "name": "v"
+                          },
+                          "delegate": true
+                        }
+                      }
+                    ]
+                  }
+                },
+                "kind": "init",
+                "computed": false,
+                "shorthand": false,
+                "method": true
+              }
+            ]
+          }
+        }
+      ],
+      "kind": "var"
+    }
+  ]
+}

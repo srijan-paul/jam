@@ -1,0 +1,104 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 57,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "VariableDeclaration",
+      "start": 0,
+      "end": 56,
+      "declarations": [
+        {
+          "type": "VariableDeclarator",
+          "start": 6,
+          "end": 55,
+          "id": {
+            "type": "Identifier",
+            "start": 6,
+            "end": 9,
+            "name": "foo"
+          },
+          "init": {
+            "type": "ArrowFunctionExpression",
+            "start": 12,
+            "end": 55,
+            "id": null,
+            "generator": false,
+            "async": true,
+            "expression": false,
+            "params": [
+              {
+                "type": "ObjectPattern",
+                "start": 19,
+                "end": 34,
+                "properties": [
+                  {
+                    "type": "Property",
+                    "start": 21,
+                    "end": 32,
+                    "method": false,
+                    "key": {
+                      "type": "Identifier",
+                      "start": 21,
+                      "end": 26,
+                      "name": "async"
+                    },
+                    "computed": false,
+                    "shorthand": true,
+                    "value": {
+                      "type": "AssignmentPattern",
+                      "start": 21,
+                      "end": 32,
+                      "left": {
+                        "type": "Identifier",
+                        "start": 21,
+                        "end": 26,
+                        "name": "async"
+                      },
+                      "right": {
+                        "type": "Identifier",
+                        "start": 29,
+                        "end": 32,
+                        "name": "bar"
+                      }
+                    },
+                    "kind": "init",
+                    "extra": {
+                      "shorthand": true
+                    }
+                  }
+                ]
+              }
+            ],
+            "body": {
+              "type": "BlockStatement",
+              "start": 39,
+              "end": 55,
+              "body": [
+                {
+                  "type": "ExpressionStatement",
+                  "start": 43,
+                  "end": 53,
+                  "expression": {
+                    "type": "AwaitExpression",
+                    "start": 43,
+                    "end": 52,
+                    "argument": {
+                      "type": "Identifier",
+                      "start": 49,
+                      "end": 52,
+                      "name": "baz"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "kind": "const"
+    }
+  ]
+}

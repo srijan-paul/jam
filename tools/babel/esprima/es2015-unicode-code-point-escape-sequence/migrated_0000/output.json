@@ -1,0 +1,22 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 21,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 20,
+      "expression": {
+        "type": "Literal",
+        "start": 0,
+        "end": 20,
+        "value": "\\u{714E}\\u{8336}",
+        "raw": "\"\\\\u{714E}\\\\u{8336}\""
+      },
+      "directive": "\\\\u{714E}\\\\u{8336}"
+    }
+  ]
+}

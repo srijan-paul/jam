@@ -1,0 +1,73 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 27,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 26,
+      "expression": {
+        "type": "CallExpression",
+        "start": 0,
+        "end": 25,
+        "callee": {
+          "type": "Identifier",
+          "start": 0,
+          "end": 5,
+          "name": "async"
+        },
+        "arguments": [
+          {
+            "type": "AssignmentExpression",
+            "start": 7,
+            "end": 24,
+            "operator": "=",
+            "left": {
+              "type": "ArrayPattern",
+              "start": 7,
+              "end": 19,
+              "elements": [
+                {
+                  "type": "AssignmentPattern",
+                  "start": 9,
+                  "end": 18,
+                  "left": {
+                    "type": "MemberExpression",
+                    "start": 9,
+                    "end": 12,
+                    "object": {
+                      "type": "Identifier",
+                      "start": 9,
+                      "end": 10,
+                      "name": "a"
+                    },
+                    "property": {
+                      "type": "Identifier",
+                      "start": 11,
+                      "end": 12,
+                      "name": "b"
+                    },
+                    "computed": false
+                  },
+                  "right": {
+                    "type": "ArrayExpression",
+                    "start": 16,
+                    "end": 18,
+                    "elements": []
+                  }
+                }
+              ]
+            },
+            "right": {
+              "type": "ArrayExpression",
+              "start": 22,
+              "end": 24,
+              "elements": []
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

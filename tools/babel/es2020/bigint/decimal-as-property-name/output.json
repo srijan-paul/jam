@@ -1,0 +1,221 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 72,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 71,
+      "expression": {
+        "type": "ObjectExpression",
+        "start": 1,
+        "end": 69,
+        "properties": [
+          {
+            "type": "Property",
+            "start": 3,
+            "end": 8,
+            "method": false,
+            "key": {
+              "type": "Literal",
+              "start": 3,
+              "end": 5,
+              "value": "0",
+              "raw": "0n",
+              "bigint": "0"
+            },
+            "computed": false,
+            "shorthand": false,
+            "value": {
+              "type": "Literal",
+              "start": 7,
+              "end": 8,
+              "value": 0,
+              "raw": "0"
+            },
+            "kind": "init"
+          },
+          {
+            "type": "Property",
+            "start": 10,
+            "end": 17,
+            "method": true,
+            "key": {
+              "type": "Literal",
+              "start": 10,
+              "end": 12,
+              "value": "1",
+              "raw": "1n",
+              "bigint": "1"
+            },
+            "computed": false,
+            "kind": "init",
+            "value": {
+              "type": "FunctionExpression",
+              "start": 12,
+              "end": 17,
+              "id": null,
+              "generator": false,
+              "async": false,
+              "expression": false,
+              "params": [],
+              "body": {
+                "type": "BlockStatement",
+                "start": 15,
+                "end": 17,
+                "body": []
+              }
+            },
+            "shorthand": false
+          },
+          {
+            "type": "Property",
+            "start": 19,
+            "end": 29,
+            "method": false,
+            "key": {
+              "type": "Literal",
+              "start": 23,
+              "end": 25,
+              "value": "2",
+              "raw": "2n",
+              "bigint": "2"
+            },
+            "computed": false,
+            "kind": "get",
+            "value": {
+              "type": "FunctionExpression",
+              "start": 25,
+              "end": 29,
+              "id": null,
+              "generator": false,
+              "async": false,
+              "expression": false,
+              "params": [],
+              "body": {
+                "type": "BlockStatement",
+                "start": 27,
+                "end": 29,
+                "body": []
+              }
+            },
+            "shorthand": false
+          },
+          {
+            "type": "Property",
+            "start": 31,
+            "end": 42,
+            "method": false,
+            "key": {
+              "type": "Literal",
+              "start": 35,
+              "end": 37,
+              "value": "3",
+              "raw": "3n",
+              "bigint": "3"
+            },
+            "computed": false,
+            "kind": "set",
+            "value": {
+              "type": "FunctionExpression",
+              "start": 37,
+              "end": 42,
+              "id": null,
+              "generator": false,
+              "async": false,
+              "expression": false,
+              "params": [
+                {
+                  "type": "Identifier",
+                  "start": 38,
+                  "end": 39,
+                  "name": "_"
+                }
+              ],
+              "body": {
+                "type": "BlockStatement",
+                "start": 40,
+                "end": 42,
+                "body": []
+              }
+            },
+            "shorthand": false
+          },
+          {
+            "type": "Property",
+            "start": 44,
+            "end": 57,
+            "method": true,
+            "key": {
+              "type": "Literal",
+              "start": 50,
+              "end": 52,
+              "value": "4",
+              "raw": "4n",
+              "bigint": "4"
+            },
+            "computed": false,
+            "kind": "init",
+            "value": {
+              "type": "FunctionExpression",
+              "start": 52,
+              "end": 57,
+              "id": null,
+              "generator": false,
+              "async": true,
+              "expression": false,
+              "params": [],
+              "body": {
+                "type": "BlockStatement",
+                "start": 55,
+                "end": 57,
+                "body": []
+              }
+            },
+            "shorthand": false
+          },
+          {
+            "type": "Property",
+            "start": 59,
+            "end": 67,
+            "method": true,
+            "key": {
+              "type": "Literal",
+              "start": 60,
+              "end": 62,
+              "value": "5",
+              "raw": "5n",
+              "bigint": "5"
+            },
+            "computed": false,
+            "kind": "init",
+            "value": {
+              "type": "FunctionExpression",
+              "start": 62,
+              "end": 67,
+              "id": null,
+              "generator": true,
+              "async": false,
+              "expression": false,
+              "params": [],
+              "body": {
+                "type": "BlockStatement",
+                "start": 65,
+                "end": 67,
+                "body": []
+              }
+            },
+            "shorthand": false
+          }
+        ],
+        "extra": {
+          "parenthesized": true,
+          "parenStart": 0
+        }
+      }
+    }
+  ]
+}

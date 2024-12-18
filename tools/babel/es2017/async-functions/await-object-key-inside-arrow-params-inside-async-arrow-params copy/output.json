@@ -1,0 +1,87 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 40,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 39,
+      "expression": {
+        "type": "ArrowFunctionExpression",
+        "start": 0,
+        "end": 38,
+        "id": null,
+        "generator": false,
+        "async": true,
+        "expression": false,
+        "params": [
+          {
+            "type": "AssignmentPattern",
+            "start": 7,
+            "end": 31,
+            "left": {
+              "type": "Identifier",
+              "start": 7,
+              "end": 8,
+              "name": "a"
+            },
+            "right": {
+              "type": "ArrowFunctionExpression",
+              "start": 11,
+              "end": 31,
+              "id": null,
+              "generator": false,
+              "async": false,
+              "expression": false,
+              "params": [
+                {
+                  "type": "ObjectPattern",
+                  "start": 12,
+                  "end": 24,
+                  "properties": [
+                    {
+                      "type": "Property",
+                      "start": 14,
+                      "end": 22,
+                      "method": false,
+                      "key": {
+                        "type": "Identifier",
+                        "start": 14,
+                        "end": 19,
+                        "name": "await"
+                      },
+                      "computed": false,
+                      "shorthand": false,
+                      "value": {
+                        "type": "Identifier",
+                        "start": 21,
+                        "end": 22,
+                        "name": "x"
+                      },
+                      "kind": "init"
+                    }
+                  ]
+                }
+              ],
+              "body": {
+                "type": "BlockStatement",
+                "start": 29,
+                "end": 31,
+                "body": []
+              }
+            }
+          }
+        ],
+        "body": {
+          "type": "BlockStatement",
+          "start": 36,
+          "end": 38,
+          "body": []
+        }
+      }
+    }
+  ]
+}

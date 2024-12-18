@@ -1,0 +1,102 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 67,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 66,
+      "expression": {
+        "type": "FunctionExpression",
+        "start": 1,
+        "end": 64,
+        "id": null,
+        "generator": false,
+        "async": true,
+        "expression": false,
+        "params": [],
+        "body": {
+          "type": "BlockStatement",
+          "start": 19,
+          "end": 64,
+          "body": [
+            {
+              "type": "FunctionDeclaration",
+              "start": 23,
+              "end": 48,
+              "id": {
+                "type": "Identifier",
+                "start": 32,
+                "end": 33,
+                "name": "f"
+              },
+              "generator": false,
+              "async": false,
+              "expression": false,
+              "params": [
+                {
+                  "type": "AssignmentPattern",
+                  "start": 34,
+                  "end": 44,
+                  "left": {
+                    "type": "Identifier",
+                    "start": 34,
+                    "end": 35,
+                    "name": "_"
+                  },
+                  "right": {
+                    "type": "ArrowFunctionExpression",
+                    "start": 36,
+                    "end": 44,
+                    "id": null,
+                    "generator": false,
+                    "async": false,
+                    "expression": true,
+                    "params": [],
+                    "body": {
+                      "type": "Literal",
+                      "start": 40,
+                      "end": 44,
+                      "value": null,
+                      "raw": "null"
+                    }
+                  }
+                }
+              ],
+              "body": {
+                "type": "BlockStatement",
+                "start": 46,
+                "end": 48,
+                "body": []
+              }
+            },
+            {
+              "type": "ExpressionStatement",
+              "start": 51,
+              "end": 62,
+              "expression": {
+                "type": "AwaitExpression",
+                "start": 51,
+                "end": 61,
+                "argument": {
+                  "type": "Literal",
+                  "start": 57,
+                  "end": 61,
+                  "value": null,
+                  "raw": "null"
+                }
+              }
+            }
+          ]
+        },
+        "extra": {
+          "parenthesized": true,
+          "parenStart": 0
+        }
+      }
+    }
+  ]
+}

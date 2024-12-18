@@ -1,0 +1,119 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 44,
+  "body": [
+    {
+      "type": "VariableDeclaration",
+      "start": 0,
+      "end": 6,
+      "declarations": [
+        {
+          "type": "VariableDeclarator",
+          "start": 4,
+          "end": 5,
+          "id": {
+            "type": "Identifier",
+            "start": 4,
+            "end": 5,
+            "name": "a"
+          }
+        }
+      ],
+      "kind": "var"
+    },
+    {
+      "type": "ExpressionStatement",
+      "start": 8,
+      "end": 16,
+      "expression": {
+        "type": "AssignmentExpression",
+        "start": 8,
+        "end": 15,
+        "operator": "=",
+        "left": {
+          "type": "Identifier",
+          "start": 8,
+          "end": 9,
+          "name": "a"
+        },
+        "right": {
+          "type": "ObjectExpression",
+          "start": 13,
+          "end": 15,
+          "properties": []
+        }
+      }
+    },
+    {
+      "type": "ExpressionStatement",
+      "start": 18,
+      "end": 28,
+      "expression": {
+        "type": "AssignmentExpression",
+        "start": 18,
+        "end": 27,
+        "operator": "=",
+        "left": {
+          "type": "MemberExpression",
+          "start": 18,
+          "end": 21,
+          "object": {
+            "type": "Identifier",
+            "start": 18,
+            "end": 19,
+            "name": "a"
+          },
+          "property": {
+            "type": "Identifier",
+            "start": 20,
+            "end": 21,
+            "name": "b"
+          },
+          "computed": false
+        },
+        "right": {
+          "type": "ObjectExpression",
+          "start": 25,
+          "end": 27,
+          "properties": []
+        }
+      }
+    },
+    {
+      "type": "ExpressionStatement",
+      "start": 30,
+      "end": 43,
+      "expression": {
+        "type": "AssignmentExpression",
+        "start": 30,
+        "end": 42,
+        "operator": "=",
+        "left": {
+          "type": "MemberExpression",
+          "start": 30,
+          "end": 35,
+          "object": {
+            "type": "Identifier",
+            "start": 30,
+            "end": 31,
+            "name": "a"
+          },
+          "property": {
+            "type": "Literal",
+            "start": 32,
+            "end": 35,
+            "value": "'c'"
+          },
+          "computed": true
+        },
+        "right": {
+          "type": "ObjectExpression",
+          "start": 40,
+          "end": 42,
+          "properties": []
+        }
+      }
+    }
+  ]
+}

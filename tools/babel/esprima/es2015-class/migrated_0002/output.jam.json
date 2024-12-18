@@ -1,0 +1,22 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 12,
+  "body": [
+    {
+      "type": "ClassDeclaration",
+      "start": 0,
+      "end": 11,
+      "id": {
+        "type": "Identifier",
+        "start": 6,
+        "end": 7,
+        "name": "A"
+      },
+      "body": {
+        "type": "ClassBody",
+        "body": []
+      }
+    }
+  ]
+}

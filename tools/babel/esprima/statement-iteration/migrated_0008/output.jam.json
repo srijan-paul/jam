@@ -1,0 +1,17 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 9,
+  "body": [
+    {
+      "type": "ForStatement",
+      "start": 0,
+      "end": 8,
+      "body": {
+        "type": "EmptyStatement",
+        "start": 7,
+        "end": 8
+      }
+    }
+  ]
+}

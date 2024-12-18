@@ -1,0 +1,88 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 54,
+  "body": [
+    {
+      "type": "ClassDeclaration",
+      "start": 0,
+      "end": 54,
+      "id": {
+        "type": "Identifier",
+        "start": 6,
+        "end": 7,
+        "name": "A"
+      },
+      "body": {
+        "type": "ClassBody",
+        "body": [
+          {
+            "type": "MethodDefinition",
+            "start": 23,
+            "end": 31,
+            "key": {
+              "type": "Identifier",
+              "start": 23,
+              "end": 25,
+              "name": "#x"
+            },
+            "value": {
+              "type": "FunctionExpression",
+              "start": 25,
+              "end": 31,
+              "async": false,
+              "generator": false,
+              "arrow": false,
+              "params": [
+                {
+                  "type": "Identifier",
+                  "start": 26,
+                  "end": 27,
+                  "name": "_"
+                }
+              ],
+              "body": {
+                "type": "BlockStatement",
+                "start": 29,
+                "end": 31,
+                "body": []
+              }
+            },
+            "computed": false,
+            "static": true,
+            "kind": "set"
+          },
+          {
+            "type": "MethodDefinition",
+            "start": 45,
+            "end": 52,
+            "key": {
+              "type": "Identifier",
+              "start": 45,
+              "end": 47,
+              "name": "#x"
+            },
+            "value": {
+              "type": "FunctionExpression",
+              "start": 47,
+              "end": 52,
+              "async": false,
+              "generator": false,
+              "arrow": false,
+              "params": [],
+              "body": {
+                "type": "BlockStatement",
+                "start": 50,
+                "end": 52,
+                "body": []
+              }
+            },
+            "computed": false,
+            "static": true,
+            "kind": "get"
+          }
+        ]
+      }
+    }
+  ]
+}

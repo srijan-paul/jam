@@ -1,0 +1,45 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 26,
+  "body": [
+    {
+      "type": "VariableDeclaration",
+      "start": 0,
+      "end": 25,
+      "declarations": [
+        {
+          "type": "VariableDeclarator",
+          "start": 4,
+          "end": 24,
+          "id": {
+            "type": "Identifier",
+            "start": 4,
+            "end": 7,
+            "name": "foo"
+          },
+          "init": {
+            "type": "CallExpression",
+            "start": 10,
+            "end": 24,
+            "callee": {
+              "type": "Identifier",
+              "start": 10,
+              "end": 17,
+              "name": "require"
+            },
+            "arguments": [
+              {
+                "type": "Literal",
+                "start": 18,
+                "end": 23,
+                "value": "\"foo\""
+              }
+            ]
+          }
+        }
+      ],
+      "kind": "var"
+    }
+  ]
+}

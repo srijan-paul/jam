@@ -1,0 +1,75 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 56,
+  "body": [
+    {
+      "type": "ClassDeclaration",
+      "start": 0,
+      "end": 55,
+      "id": {
+        "type": "Identifier",
+        "start": 6,
+        "end": 11,
+        "name": "Hotel"
+      },
+      "body": {
+        "type": "ClassBody",
+        "body": [
+          {
+            "type": "MethodDefinition",
+            "start": 17,
+            "end": 53,
+            "key": {
+              "type": "Identifier",
+              "start": 17,
+              "end": 22,
+              "name": "#evil"
+            },
+            "value": {
+              "type": "FunctionExpression",
+              "start": 22,
+              "end": 53,
+              "async": false,
+              "generator": true,
+              "arrow": false,
+              "params": [],
+              "body": {
+                "type": "BlockStatement",
+                "start": 25,
+                "end": 53,
+                "body": [
+                  {
+                    "type": "ExpressionStatement",
+                    "start": 31,
+                    "end": 49,
+                    "expression": {
+                      "type": "YieldExpression",
+                      "start": 31,
+                      "end": 48,
+                      "argument": {
+                        "type": "CallExpression",
+                        "start": 37,
+                        "end": 48,
+                        "callee": {
+                          "type": "Identifier",
+                          "start": 37,
+                          "end": 46,
+                          "name": "notReally"
+                        },
+                        "arguments": []
+                      },
+                      "delegate": false
+                    }
+                  }
+                ]
+              }
+            },
+            "computed": false,
+            "static": false
+          }
+        ]
+      }
+    }
+  ]
+}

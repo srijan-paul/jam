@@ -1,0 +1,76 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 39,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 1,
+      "end": 19,
+      "expression": {
+        "type": "BinaryExpression",
+        "start": 1,
+        "end": 18,
+        "operator": "||",
+        "left": {
+          "type": "FunctionExpression",
+          "start": 1,
+          "end": 9,
+          "async": false,
+          "generator": false,
+          "arrow": true,
+          "params": [],
+          "body": {
+            "type": "BlockStatement",
+            "start": 7,
+            "end": 9,
+            "body": []
+          }
+        },
+        "right": {
+          "type": "Literal",
+          "start": 14,
+          "end": 18,
+          "value": "true"
+        }
+      }
+    },
+    {
+      "type": "ExpressionStatement",
+      "start": 21,
+      "end": 39,
+      "expression": {
+        "type": "ConditionalExpression",
+        "start": 21,
+        "end": 38,
+        "test": {
+          "type": "FunctionExpression",
+          "start": 21,
+          "end": 29,
+          "async": false,
+          "generator": false,
+          "arrow": true,
+          "params": [],
+          "body": {
+            "type": "BlockStatement",
+            "start": 27,
+            "end": 29,
+            "body": []
+          }
+        },
+        "consequent": {
+          "type": "Identifier",
+          "start": 33,
+          "end": 34,
+          "name": "a"
+        },
+        "alternate": {
+          "type": "Identifier",
+          "start": 37,
+          "end": 38,
+          "name": "b"
+        }
+      }
+    }
+  ]
+}

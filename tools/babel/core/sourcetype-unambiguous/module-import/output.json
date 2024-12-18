@@ -1,0 +1,30 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 14,
+  "sourceType": "module",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ImportDeclaration",
+      "start": 0,
+      "end": 13,
+      "specifiers": [],
+      "source": {
+        "type": "StringLiteral",
+        "start": 7,
+        "end": 12,
+        "extra": {
+          "rawValue": "foo",
+          "raw": "\"foo\""
+        },
+        "value": "foo"
+      },
+      "attributes": []
+    }
+  ],
+  "directives": [],
+  "extra": {
+    "topLevelAwait": false
+  }
+}

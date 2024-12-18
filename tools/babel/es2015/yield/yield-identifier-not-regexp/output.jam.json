@@ -1,0 +1,191 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 100,
+  "body": [
+    {
+      "type": "FunctionDeclaration",
+      "start": 0,
+      "end": 49,
+      "id": {
+        "type": "Identifier",
+        "start": 9,
+        "end": 11,
+        "name": "f1"
+      },
+      "async": false,
+      "generator": false,
+      "arrow": false,
+      "params": [],
+      "body": {
+        "type": "BlockStatement",
+        "start": 14,
+        "end": 49,
+        "body": [
+          {
+            "type": "ExpressionStatement",
+            "start": 18,
+            "end": 30,
+            "expression": {
+              "type": "BinaryExpression",
+              "start": 18,
+              "end": 30,
+              "operator": "/",
+              "left": {
+                "type": "BinaryExpression",
+                "start": 18,
+                "end": 27,
+                "operator": "/",
+                "left": {
+                  "type": "Identifier",
+                  "start": 18,
+                  "end": 23,
+                  "name": "yield"
+                },
+                "right": {
+                  "type": "Literal",
+                  "start": 26,
+                  "end": 27,
+                  "value": "1"
+                }
+              },
+              "right": {
+                "type": "Identifier",
+                "start": 29,
+                "end": 30,
+                "name": "g"
+              }
+            }
+          },
+          {
+            "type": "ExpressionStatement",
+            "start": 33,
+            "end": 47,
+            "expression": {
+              "type": "BinaryExpression",
+              "start": 33,
+              "end": 47,
+              "operator": "/",
+              "left": {
+                "type": "BinaryExpression",
+                "start": 33,
+                "end": 44,
+                "operator": "/",
+                "left": {
+                  "type": "Identifier",
+                  "start": 33,
+                  "end": 38,
+                  "name": "yield"
+                },
+                "right": {
+                  "type": "Literal",
+                  "start": 43,
+                  "end": 44,
+                  "value": "1"
+                }
+              },
+              "right": {
+                "type": "Identifier",
+                "start": 46,
+                "end": 47,
+                "name": "g"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "FunctionDeclaration",
+      "start": 50,
+      "end": 99,
+      "id": {
+        "type": "Identifier",
+        "start": 59,
+        "end": 61,
+        "name": "f2"
+      },
+      "async": false,
+      "generator": false,
+      "arrow": false,
+      "params": [],
+      "body": {
+        "type": "BlockStatement",
+        "start": 64,
+        "end": 99,
+        "body": [
+          {
+            "type": "ExpressionStatement",
+            "start": 68,
+            "end": 80,
+            "expression": {
+              "type": "AssignmentExpression",
+              "start": 68,
+              "end": 80,
+              "operator": "/=",
+              "left": {
+                "type": "Identifier",
+                "start": 68,
+                "end": 73,
+                "name": "yield"
+              },
+              "right": {
+                "type": "BinaryExpression",
+                "start": 76,
+                "end": 80,
+                "operator": "/",
+                "left": {
+                  "type": "Literal",
+                  "start": 76,
+                  "end": 77,
+                  "value": "2"
+                },
+                "right": {
+                  "type": "Identifier",
+                  "start": 79,
+                  "end": 80,
+                  "name": "i"
+                }
+              }
+            }
+          },
+          {
+            "type": "ExpressionStatement",
+            "start": 83,
+            "end": 97,
+            "expression": {
+              "type": "AssignmentExpression",
+              "start": 83,
+              "end": 97,
+              "operator": "/=",
+              "left": {
+                "type": "Identifier",
+                "start": 83,
+                "end": 88,
+                "name": "yield"
+              },
+              "right": {
+                "type": "BinaryExpression",
+                "start": 93,
+                "end": 97,
+                "operator": "/",
+                "left": {
+                  "type": "Literal",
+                  "start": 93,
+                  "end": 94,
+                  "value": "2"
+                },
+                "right": {
+                  "type": "Identifier",
+                  "start": 96,
+                  "end": 97,
+                  "name": "i"
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

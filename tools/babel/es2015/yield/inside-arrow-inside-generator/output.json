@@ -1,0 +1,85 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 52,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "FunctionDeclaration",
+      "start": 0,
+      "end": 52,
+      "id": {
+        "type": "Identifier",
+        "start": 10,
+        "end": 12,
+        "name": "fn"
+      },
+      "generator": true,
+      "async": false,
+      "expression": false,
+      "params": [],
+      "body": {
+        "type": "BlockStatement",
+        "start": 15,
+        "end": 52,
+        "body": [
+          {
+            "type": "ExpressionStatement",
+            "start": 19,
+            "end": 31,
+            "expression": {
+              "type": "ArrowFunctionExpression",
+              "start": 19,
+              "end": 30,
+              "id": null,
+              "generator": false,
+              "async": false,
+              "expression": true,
+              "params": [],
+              "body": {
+                "type": "Identifier",
+                "start": 25,
+                "end": 30,
+                "name": "yield"
+              }
+            }
+          },
+          {
+            "type": "ExpressionStatement",
+            "start": 34,
+            "end": 50,
+            "expression": {
+              "type": "ArrowFunctionExpression",
+              "start": 34,
+              "end": 49,
+              "id": null,
+              "generator": false,
+              "async": false,
+              "expression": false,
+              "params": [],
+              "body": {
+                "type": "BlockStatement",
+                "start": 40,
+                "end": 49,
+                "body": [
+                  {
+                    "type": "ExpressionStatement",
+                    "start": 42,
+                    "end": 47,
+                    "expression": {
+                      "type": "Identifier",
+                      "start": 42,
+                      "end": 47,
+                      "name": "yield"
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

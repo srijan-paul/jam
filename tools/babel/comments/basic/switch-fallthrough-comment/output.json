@@ -1,0 +1,91 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 92,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "SwitchStatement",
+      "start": 0,
+      "end": 91,
+      "discriminant": {
+        "type": "Identifier",
+        "start": 7,
+        "end": 10,
+        "name": "foo"
+      },
+      "cases": [
+        {
+          "type": "SwitchCase",
+          "start": 29,
+          "end": 36,
+          "consequent": [],
+          "test": {
+            "type": "Literal",
+            "start": 34,
+            "end": 35,
+            "value": 1,
+            "raw": "1"
+          },
+          "trailingComments": [
+            {
+              "type": "CommentLine",
+              "value": " falls through",
+              "start": 45,
+              "end": 61
+            }
+          ],
+          "leadingComments": [
+            {
+              "type": "CommentLine",
+              "value": " foo",
+              "start": 18,
+              "end": 24
+            }
+          ]
+        },
+        {
+          "type": "SwitchCase",
+          "start": 66,
+          "end": 89,
+          "consequent": [
+            {
+              "type": "ExpressionStatement",
+              "start": 82,
+              "end": 89,
+              "expression": {
+                "type": "CallExpression",
+                "start": 82,
+                "end": 88,
+                "callee": {
+                  "type": "Identifier",
+                  "start": 82,
+                  "end": 86,
+                  "name": "doIt"
+                },
+                "arguments": [],
+                "optional": false
+              }
+            }
+          ],
+          "test": {
+            "type": "Literal",
+            "start": 71,
+            "end": 72,
+            "value": 2,
+            "raw": "2"
+          },
+          "leadingComments": [
+            {
+              "type": "CommentLine",
+              "value": " falls through",
+              "start": 45,
+              "end": 61
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

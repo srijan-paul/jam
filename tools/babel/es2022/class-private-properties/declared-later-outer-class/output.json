@@ -1,0 +1,136 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 73,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ClassDeclaration",
+      "start": 0,
+      "end": 73,
+      "id": {
+        "type": "Identifier",
+        "start": 6,
+        "end": 7,
+        "name": "B"
+      },
+      "superClass": null,
+      "body": {
+        "type": "ClassBody",
+        "start": 8,
+        "end": 73,
+        "body": [
+          {
+            "type": "MethodDefinition",
+            "start": 12,
+            "end": 64,
+            "static": false,
+            "key": {
+              "type": "Identifier",
+              "start": 12,
+              "end": 16,
+              "name": "meth"
+            },
+            "computed": false,
+            "kind": "method",
+            "value": {
+              "type": "FunctionExpression",
+              "start": 16,
+              "end": 64,
+              "id": null,
+              "generator": false,
+              "async": false,
+              "expression": false,
+              "params": [],
+              "body": {
+                "type": "BlockStatement",
+                "start": 19,
+                "end": 64,
+                "body": [
+                  {
+                    "type": "ClassDeclaration",
+                    "start": 25,
+                    "end": 60,
+                    "id": {
+                      "type": "Identifier",
+                      "start": 31,
+                      "end": 32,
+                      "name": "A"
+                    },
+                    "superClass": null,
+                    "body": {
+                      "type": "ClassBody",
+                      "start": 33,
+                      "end": 60,
+                      "body": [
+                        {
+                          "type": "ClassPrivateProperty",
+                          "start": 41,
+                          "end": 54,
+                          "static": false,
+                          "key": {
+                            "type": "PrivateName",
+                            "start": 41,
+                            "end": 43,
+                            "id": {
+                              "type": "Identifier",
+                              "start": 42,
+                              "end": 43,
+                              "name": "x"
+                            }
+                          },
+                          "value": {
+                            "type": "MemberExpression",
+                            "start": 46,
+                            "end": 53,
+                            "object": {
+                              "type": "ThisExpression",
+                              "start": 46,
+                              "end": 50
+                            },
+                            "computed": false,
+                            "property": {
+                              "type": "PrivateName",
+                              "start": 51,
+                              "end": 53,
+                              "id": {
+                                "type": "Identifier",
+                                "start": 52,
+                                "end": 53,
+                                "name": "y"
+                              }
+                            },
+                            "optional": false
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "type": "ClassPrivateProperty",
+            "start": 68,
+            "end": 71,
+            "static": false,
+            "key": {
+              "type": "PrivateName",
+              "start": 68,
+              "end": 70,
+              "id": {
+                "type": "Identifier",
+                "start": 69,
+                "end": 70,
+                "name": "y"
+              }
+            },
+            "value": null
+          }
+        ]
+      }
+    }
+  ]
+}

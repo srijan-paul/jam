@@ -1,0 +1,150 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 112,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 110,
+      "expression": {
+        "type": "ClassExpression",
+        "start": 1,
+        "end": 99,
+        "id": null,
+        "superClass": null,
+        "body": {
+          "type": "ClassBody",
+          "start": 15,
+          "end": 99,
+          "body": [
+            {
+              "type": "MethodDefinition",
+              "start": 25,
+              "end": 89,
+              "static": true,
+              "kind": "method",
+              "key": {
+                "type": "Identifier",
+                "start": 50,
+                "end": 51,
+                "name": "f",
+                "trailingComments": [
+                  {
+                    "type": "CommentBlock",
+                    "value": " 5 ",
+                    "start": 52,
+                    "end": 59
+                  }
+                ],
+                "leadingComments": [
+                  {
+                    "type": "CommentBlock",
+                    "value": " 4 ",
+                    "start": 42,
+                    "end": 49
+                  }
+                ]
+              },
+              "computed": false,
+              "value": {
+                "type": "FunctionExpression",
+                "start": 60,
+                "end": 89,
+                "id": null,
+                "generator": true,
+                "async": false,
+                "expression": false,
+                "params": [],
+                "body": {
+                  "type": "BlockStatement",
+                  "start": 78,
+                  "end": 89,
+                  "body": [],
+                  "innerComments": [
+                    {
+                      "type": "CommentBlock",
+                      "value": " 8 ",
+                      "start": 80,
+                      "end": 87
+                    }
+                  ],
+                  "leadingComments": [
+                    {
+                      "type": "CommentBlock",
+                      "value": " 7 ",
+                      "start": 70,
+                      "end": 77
+                    }
+                  ]
+                },
+                "innerComments": [
+                  {
+                    "type": "CommentBlock",
+                    "value": " 6 ",
+                    "start": 61,
+                    "end": 68
+                  }
+                ],
+                "leadingComments": [
+                  {
+                    "type": "CommentBlock",
+                    "value": " 5 ",
+                    "start": 52,
+                    "end": 59
+                  }
+                ]
+              },
+              "innerComments": [
+                {
+                  "type": "CommentBlock",
+                  "value": " 3 ",
+                  "start": 32,
+                  "end": 39
+                }
+              ],
+              "trailingComments": [
+                {
+                  "type": "CommentBlock",
+                  "value": " 9 ",
+                  "start": 90,
+                  "end": 97
+                }
+              ],
+              "leadingComments": [
+                {
+                  "type": "CommentBlock",
+                  "value": " 2 ",
+                  "start": 17,
+                  "end": 24
+                }
+              ]
+            }
+          ],
+          "leadingComments": [
+            {
+              "type": "CommentBlock",
+              "value": " 1 ",
+              "start": 7,
+              "end": 14
+            }
+          ]
+        },
+        "extra": {
+          "parenthesized": true,
+          "parenStart": 0
+        },
+        "trailingComments": [
+          {
+            "type": "CommentBlock",
+            "value": " 10 ",
+            "start": 100,
+            "end": 108
+          }
+        ]
+      }
+    }
+  ]
+}

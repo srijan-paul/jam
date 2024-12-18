@@ -1,0 +1,113 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 80,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ClassDeclaration",
+      "start": 0,
+      "end": 79,
+      "id": {
+        "type": "Identifier",
+        "start": 6,
+        "end": 7,
+        "name": "A"
+      },
+      "superClass": null,
+      "body": {
+        "type": "ClassBody",
+        "start": 8,
+        "end": 79,
+        "body": [
+          {
+            "type": "PropertyDefinition",
+            "start": 12,
+            "end": 25,
+            "static": false,
+            "variance": null,
+            "key": {
+              "type": "PrivateIdentifier",
+              "start": 12,
+              "end": 16,
+              "name": "foo"
+            },
+            "value": {
+              "type": "Literal",
+              "start": 19,
+              "end": 24,
+              "value": "bar",
+              "raw": "\"bar\""
+            },
+            "computed": false
+          },
+          {
+            "type": "PropertyDefinition",
+            "start": 28,
+            "end": 46,
+            "static": true,
+            "variance": null,
+            "key": {
+              "type": "PrivateIdentifier",
+              "start": 35,
+              "end": 39,
+              "name": "bar"
+            },
+            "value": {
+              "type": "Identifier",
+              "start": 42,
+              "end": 45,
+              "name": "foo"
+            },
+            "computed": false
+          },
+          {
+            "type": "PropertyDefinition",
+            "start": 49,
+            "end": 77,
+            "declare": true,
+            "static": false,
+            "variance": null,
+            "key": {
+              "type": "PrivateIdentifier",
+              "start": 57,
+              "end": 61,
+              "name": "qux"
+            },
+            "typeAnnotation": {
+              "type": "TypeAnnotation",
+              "start": 61,
+              "end": 76,
+              "typeAnnotation": {
+                "type": "GenericTypeAnnotation",
+                "start": 63,
+                "end": 76,
+                "typeParameters": {
+                  "type": "TypeParameterInstantiation",
+                  "start": 68,
+                  "end": 76,
+                  "params": [
+                    {
+                      "type": "StringTypeAnnotation",
+                      "start": 69,
+                      "end": 75
+                    }
+                  ]
+                },
+                "id": {
+                  "type": "Identifier",
+                  "start": 63,
+                  "end": 68,
+                  "name": "Array"
+                }
+              }
+            },
+            "value": null,
+            "computed": false
+          }
+        ]
+      }
+    }
+  ]
+}

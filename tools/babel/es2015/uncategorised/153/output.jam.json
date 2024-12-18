@@ -1,0 +1,90 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 28,
+  "body": [
+    {
+      "type": "FunctionDeclaration",
+      "start": 0,
+      "end": 28,
+      "id": {
+        "type": "Identifier",
+        "start": 9,
+        "end": 10,
+        "name": "f"
+      },
+      "async": false,
+      "generator": false,
+      "arrow": false,
+      "params": [
+        {
+          "type": "AssignmentPattern",
+          "start": 11,
+          "end": 18,
+          "left": {
+            "type": "ObjectPattern",
+            "start": 11,
+            "end": 14,
+            "properties": [
+              {
+                "type": "Property",
+                "start": 12,
+                "end": 13,
+                "key": {
+                  "type": "Identifier",
+                  "start": 12,
+                  "end": 13,
+                  "name": "x"
+                },
+                "value": {
+                  "type": "Identifier",
+                  "start": 12,
+                  "end": 13,
+                  "name": "x"
+                },
+                "kind": "init",
+                "computed": false,
+                "shorthand": true,
+                "method": false
+              }
+            ]
+          },
+          "right": {
+            "type": "ObjectExpression",
+            "start": 17,
+            "end": 24,
+            "properties": [
+              {
+                "type": "Property",
+                "start": 18,
+                "end": 23,
+                "key": {
+                  "type": "Identifier",
+                  "start": 18,
+                  "end": 19,
+                  "name": "x"
+                },
+                "value": {
+                  "type": "Literal",
+                  "start": 21,
+                  "end": 23,
+                  "value": "10"
+                },
+                "kind": "init",
+                "computed": false,
+                "shorthand": false,
+                "method": false
+              }
+            ]
+          }
+        }
+      ],
+      "body": {
+        "type": "BlockStatement",
+        "start": 26,
+        "end": 28,
+        "body": []
+      }
+    }
+  ]
+}

@@ -1,0 +1,117 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 74,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ClassDeclaration",
+      "start": 0,
+      "end": 73,
+      "id": {
+        "type": "Identifier",
+        "start": 6,
+        "end": 9,
+        "name": "Foo"
+      },
+      "superClass": null,
+      "body": {
+        "type": "ClassBody",
+        "start": 10,
+        "end": 73,
+        "body": [
+          {
+            "type": "ClassPrivateProperty",
+            "start": 14,
+            "end": 28,
+            "static": true,
+            "key": {
+              "type": "PrivateName",
+              "start": 21,
+              "end": 23,
+              "id": {
+                "type": "Identifier",
+                "start": 22,
+                "end": 23,
+                "name": "x"
+              }
+            },
+            "value": {
+              "type": "Literal",
+              "start": 26,
+              "end": 27,
+              "value": 1,
+              "raw": "1"
+            }
+          },
+          {
+            "type": "MethodDefinition",
+            "start": 32,
+            "end": 71,
+            "static": true,
+            "key": {
+              "type": "Identifier",
+              "start": 39,
+              "end": 43,
+              "name": "test"
+            },
+            "computed": false,
+            "kind": "method",
+            "value": {
+              "type": "FunctionExpression",
+              "start": 43,
+              "end": 71,
+              "id": null,
+              "generator": false,
+              "async": false,
+              "expression": false,
+              "params": [],
+              "body": {
+                "type": "BlockStatement",
+                "start": 46,
+                "end": 71,
+                "body": [
+                  {
+                    "type": "ReturnStatement",
+                    "start": 52,
+                    "end": 67,
+                    "argument": {
+                      "type": "ChainExpression",
+                      "start": 59,
+                      "end": 66,
+                      "expression": {
+                        "type": "MemberExpression",
+                        "start": 59,
+                        "end": 66,
+                        "object": {
+                          "type": "Identifier",
+                          "start": 59,
+                          "end": 62,
+                          "name": "Foo"
+                        },
+                        "computed": false,
+                        "property": {
+                          "type": "PrivateName",
+                          "start": 64,
+                          "end": 66,
+                          "id": {
+                            "type": "Identifier",
+                            "start": 65,
+                            "end": 66,
+                            "name": "x"
+                          }
+                        },
+                        "optional": true
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

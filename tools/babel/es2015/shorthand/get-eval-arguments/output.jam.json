@@ -1,0 +1,96 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 36,
+  "body": [
+    {
+      "type": "VariableDeclaration",
+      "start": 0,
+      "end": 35,
+      "declarations": [
+        {
+          "type": "VariableDeclarator",
+          "start": 4,
+          "end": 33,
+          "id": {
+            "type": "Identifier",
+            "start": 4,
+            "end": 5,
+            "name": "x"
+          },
+          "init": {
+            "type": "ObjectExpression",
+            "start": 9,
+            "end": 33,
+            "properties": [
+              {
+                "type": "Property",
+                "start": 11,
+                "end": 14,
+                "key": {
+                  "type": "Identifier",
+                  "start": 11,
+                  "end": 14,
+                  "name": "get"
+                },
+                "value": {
+                  "type": "Identifier",
+                  "start": 11,
+                  "end": 14,
+                  "name": "get"
+                },
+                "kind": "init",
+                "computed": false,
+                "shorthand": true,
+                "method": false
+              },
+              {
+                "type": "Property",
+                "start": 16,
+                "end": 20,
+                "key": {
+                  "type": "Identifier",
+                  "start": 16,
+                  "end": 20,
+                  "name": "eval"
+                },
+                "value": {
+                  "type": "Identifier",
+                  "start": 16,
+                  "end": 20,
+                  "name": "eval"
+                },
+                "kind": "init",
+                "computed": false,
+                "shorthand": true,
+                "method": false
+              },
+              {
+                "type": "Property",
+                "start": 22,
+                "end": 31,
+                "key": {
+                  "type": "Identifier",
+                  "start": 22,
+                  "end": 31,
+                  "name": "arguments"
+                },
+                "value": {
+                  "type": "Identifier",
+                  "start": 22,
+                  "end": 31,
+                  "name": "arguments"
+                },
+                "kind": "init",
+                "computed": false,
+                "shorthand": true,
+                "method": false
+              }
+            ]
+          }
+        }
+      ],
+      "kind": "var"
+    }
+  ]
+}

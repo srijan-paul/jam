@@ -1,0 +1,41 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 14,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "VariableDeclaration",
+      "start": 0,
+      "end": 13,
+      "declarations": [
+        {
+          "type": "VariableDeclarator",
+          "start": 4,
+          "end": 7,
+          "id": {
+            "type": "Identifier",
+            "start": 4,
+            "end": 7,
+            "name": "foo"
+          },
+          "init": null
+        },
+        {
+          "type": "VariableDeclarator",
+          "start": 9,
+          "end": 12,
+          "id": {
+            "type": "Identifier",
+            "start": 9,
+            "end": 12,
+            "name": "foo"
+          },
+          "init": null
+        }
+      ],
+      "kind": "var"
+    }
+  ]
+}

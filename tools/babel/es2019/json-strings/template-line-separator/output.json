@@ -1,0 +1,44 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 102,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 17,
+      "expression": {
+        "type": "TemplateLiteral",
+        "start": 1,
+        "end": 15,
+        "expressions": [],
+        "quasis": [
+          {
+            "type": "TemplateElement",
+            "start": 2,
+            "end": 14,
+            "value": {
+              "raw": "before after",
+              "cooked": "before after"
+            },
+            "tail": true
+          }
+        ],
+        "extra": {
+          "parenthesized": true,
+          "parenStart": 0
+        }
+      },
+      "trailingComments": [
+        {
+          "type": "CommentLine",
+          "value": "      ^ That's a U+2028 LINE SEPARATOR UTF-16 char (between 'before' and 'after')",
+          "start": 18,
+          "end": 101
+        }
+      ]
+    }
+  ]
+}

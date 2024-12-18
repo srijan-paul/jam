@@ -1,0 +1,46 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 36,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "FunctionDeclaration",
+      "start": 7,
+      "end": 35,
+      "id": {
+        "type": "Identifier",
+        "start": 28,
+        "end": 29,
+        "name": "f"
+      },
+      "generator": false,
+      "async": true,
+      "expression": false,
+      "params": [],
+      "body": {
+        "type": "BlockStatement",
+        "start": 33,
+        "end": 35,
+        "body": []
+      },
+      "innerComments": [
+        {
+          "type": "CommentBlock",
+          "value": " 2 ",
+          "start": 12,
+          "end": 19
+        }
+      ],
+      "leadingComments": [
+        {
+          "type": "CommentBlock",
+          "value": " 1 ",
+          "start": 0,
+          "end": 7
+        }
+      ]
+    }
+  ]
+}

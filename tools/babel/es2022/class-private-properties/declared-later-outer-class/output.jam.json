@@ -1,0 +1,117 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 73,
+  "body": [
+    {
+      "type": "ClassDeclaration",
+      "start": 0,
+      "end": 73,
+      "id": {
+        "type": "Identifier",
+        "start": 6,
+        "end": 7,
+        "name": "B"
+      },
+      "body": {
+        "type": "ClassBody",
+        "body": [
+          {
+            "type": "MethodDefinition",
+            "start": 12,
+            "end": 64,
+            "key": {
+              "type": "Identifier",
+              "start": 12,
+              "end": 16,
+              "name": "meth"
+            },
+            "value": {
+              "type": "FunctionExpression",
+              "start": 16,
+              "end": 64,
+              "async": false,
+              "generator": false,
+              "arrow": false,
+              "params": [],
+              "body": {
+                "type": "BlockStatement",
+                "start": 19,
+                "end": 64,
+                "body": [
+                  {
+                    "type": "ClassDeclaration",
+                    "start": 25,
+                    "end": 60,
+                    "id": {
+                      "type": "Identifier",
+                      "start": 31,
+                      "end": 32,
+                      "name": "A"
+                    },
+                    "body": {
+                      "type": "ClassBody",
+                      "body": [
+                        {
+                          "type": "ClassProperty",
+                          "start": 41,
+                          "end": 54,
+                          "key": {
+                            "type": "Identifier",
+                            "start": 41,
+                            "end": 43,
+                            "name": "#x"
+                          },
+                          "value": {
+                            "type": "MemberExpression",
+                            "start": 46,
+                            "end": 53,
+                            "object": {
+                              "type": "ThisExpression",
+                              "start": 46,
+                              "end": 50
+                            },
+                            "property": {
+                              "type": "Identifier",
+                              "start": 51,
+                              "end": 53,
+                              "name": "#y"
+                            },
+                            "computed": false
+                          },
+                          "computed": false,
+                          "static": false
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            "computed": false,
+            "static": false
+          },
+          {
+            "type": "ClassProperty",
+            "start": 68,
+            "end": 71,
+            "key": {
+              "type": "Identifier",
+              "start": 68,
+              "end": 70,
+              "name": "#y"
+            },
+            "value": {
+              "type": "Identifier",
+              "start": 68,
+              "end": 70,
+              "name": "#y"
+            },
+            "computed": false,
+            "static": false
+          }
+        ]
+      }
+    }
+  ]
+}

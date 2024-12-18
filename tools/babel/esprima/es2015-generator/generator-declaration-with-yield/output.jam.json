@@ -1,0 +1,46 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 29,
+  "body": [
+    {
+      "type": "FunctionDeclaration",
+      "start": 0,
+      "end": 28,
+      "id": {
+        "type": "Identifier",
+        "start": 10,
+        "end": 13,
+        "name": "foo"
+      },
+      "async": false,
+      "generator": true,
+      "arrow": false,
+      "params": [],
+      "body": {
+        "type": "BlockStatement",
+        "start": 16,
+        "end": 28,
+        "body": [
+          {
+            "type": "ExpressionStatement",
+            "start": 18,
+            "end": 26,
+            "expression": {
+              "type": "YieldExpression",
+              "start": 18,
+              "end": 25,
+              "argument": {
+                "type": "Literal",
+                "start": 24,
+                "end": 25,
+                "value": "3"
+              },
+              "delegate": false
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 12,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 11,
+      "expression": {
+        "type": "FunctionExpression",
+        "start": 0,
+        "end": 11,
+        "async": false,
+        "generator": false,
+        "arrow": true,
+        "params": [
+          {
+            "type": "RestElement",
+            "start": 1,
+            "end": 5,
+            "argument": {
+              "type": "Identifier",
+              "start": 4,
+              "end": 5,
+              "name": "a"
+            }
+          }
+        ],
+        "body": {
+          "type": "Literal",
+          "start": 10,
+          "end": 11,
+          "value": "0"
+        }
+      }
+    }
+  ]
+}

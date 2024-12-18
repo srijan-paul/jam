@@ -1,0 +1,27 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 15,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 6,
+      "end": 14,
+      "expression": {
+        "type": "FunctionExpression",
+        "start": 6,
+        "end": 14,
+        "async": true,
+        "generator": false,
+        "arrow": true,
+        "params": [],
+        "body": {
+          "type": "BlockStatement",
+          "start": 12,
+          "end": 14,
+          "body": []
+        }
+      }
+    }
+  ]
+}

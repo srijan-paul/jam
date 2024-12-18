@@ -1,0 +1,90 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 24,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 13,
+      "expression": {
+        "type": "Literal",
+        "start": 0,
+        "end": 12,
+        "value": "use strict",
+        "raw": "\"use strict\""
+      },
+      "directive": "use strict"
+    },
+    {
+      "type": "ExpressionStatement",
+      "start": 13,
+      "end": 24,
+      "expression": {
+        "type": "AssignmentExpression",
+        "start": 13,
+        "end": 24,
+        "operator": "=",
+        "left": {
+          "type": "Identifier",
+          "start": 13,
+          "end": 14,
+          "name": "x"
+        },
+        "right": {
+          "type": "ObjectExpression",
+          "start": 15,
+          "end": 24,
+          "properties": [
+            {
+              "type": "Property",
+              "start": 16,
+              "end": 19,
+              "method": false,
+              "key": {
+                "type": "Identifier",
+                "start": 16,
+                "end": 17,
+                "name": "y"
+              },
+              "computed": false,
+              "shorthand": false,
+              "value": {
+                "type": "Literal",
+                "start": 18,
+                "end": 19,
+                "value": 1,
+                "raw": "1"
+              },
+              "kind": "init"
+            },
+            {
+              "type": "Property",
+              "start": 20,
+              "end": 23,
+              "method": false,
+              "key": {
+                "type": "Identifier",
+                "start": 20,
+                "end": 21,
+                "name": "y"
+              },
+              "computed": false,
+              "shorthand": false,
+              "value": {
+                "type": "Literal",
+                "start": 22,
+                "end": 23,
+                "value": 1,
+                "raw": "1"
+              },
+              "kind": "init"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

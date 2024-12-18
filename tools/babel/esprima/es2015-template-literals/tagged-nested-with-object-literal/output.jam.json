@@ -1,0 +1,96 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 45,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 44,
+      "expression": {
+        "type": "TaggedTemplateExpression",
+        "start": 0,
+        "end": 44,
+        "tag": {
+          "type": "Identifier",
+          "start": 0,
+          "end": 3,
+          "name": "raw"
+        },
+        "quasi": {
+          "type": "TemplateLiteral",
+          "start": 3,
+          "end": 44,
+          "quasis": [
+            {
+              "type": "TemplateElement",
+              "start": 3,
+              "end": 12,
+              "value": "`token ${",
+              "tail": false
+            },
+            {
+              "type": "TemplateElement",
+              "start": 42,
+              "end": 44,
+              "value": "}`",
+              "tail": false
+            }
+          ],
+          "expressions": [
+            {
+              "type": "TemplateLiteral",
+              "start": 12,
+              "end": 42,
+              "quasis": [
+                {
+                  "type": "TemplateElement",
+                  "start": 12,
+                  "end": 22,
+                  "value": "`nested ${",
+                  "tail": false
+                },
+                {
+                  "type": "TemplateElement",
+                  "start": 35,
+                  "end": 42,
+                  "value": "} blah`",
+                  "tail": false
+                }
+              ],
+              "expressions": [
+                {
+                  "type": "BinaryExpression",
+                  "start": 22,
+                  "end": 35,
+                  "operator": "+",
+                  "left": {
+                    "type": "TemplateLiteral",
+                    "start": 22,
+                    "end": 30,
+                    "quasis": [
+                      {
+                        "type": "TemplateElement",
+                        "start": 22,
+                        "end": 30,
+                        "value": "`deeply`",
+                        "tail": false
+                      }
+                    ],
+                    "expressions": []
+                  },
+                  "right": {
+                    "type": "ObjectExpression",
+                    "start": 33,
+                    "end": 35,
+                    "properties": []
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

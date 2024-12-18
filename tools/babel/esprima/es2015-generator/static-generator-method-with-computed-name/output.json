@@ -1,0 +1,58 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 33,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ClassDeclaration",
+      "start": 0,
+      "end": 32,
+      "id": {
+        "type": "Identifier",
+        "start": 6,
+        "end": 9,
+        "name": "Foo"
+      },
+      "superClass": null,
+      "body": {
+        "type": "ClassBody",
+        "start": 10,
+        "end": 32,
+        "body": [
+          {
+            "type": "MethodDefinition",
+            "start": 12,
+            "end": 30,
+            "static": true,
+            "kind": "method",
+            "computed": true,
+            "key": {
+              "type": "Identifier",
+              "start": 21,
+              "end": 24,
+              "name": "foo"
+            },
+            "value": {
+              "type": "FunctionExpression",
+              "start": 25,
+              "end": 30,
+              "id": null,
+              "generator": true,
+              "async": false,
+              "expression": false,
+              "params": [],
+              "body": {
+                "type": "BlockStatement",
+                "start": 28,
+                "end": 30,
+                "body": []
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,61 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 17,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 16,
+      "expression": {
+        "type": "AssignmentExpression",
+        "start": 0,
+        "end": 15,
+        "operator": "=",
+        "left": {
+          "type": "ArrayPattern",
+          "start": 0,
+          "end": 10,
+          "elements": [
+            {
+              "type": "RestElement",
+              "start": 1,
+              "end": 9,
+              "argument": {
+                "type": "MemberExpression",
+                "start": 5,
+                "end": 8,
+                "object": {
+                  "type": "Identifier",
+                  "start": 5,
+                  "end": 6,
+                  "name": "a"
+                },
+                "computed": false,
+                "property": {
+                  "type": "Identifier",
+                  "start": 7,
+                  "end": 8,
+                  "name": "b"
+                },
+                "optional": false,
+                "extra": {
+                  "parenthesized": true,
+                  "parenStart": 4
+                }
+              }
+            }
+          ]
+        },
+        "right": {
+          "type": "ArrayExpression",
+          "start": 13,
+          "end": 15,
+          "elements": []
+        }
+      }
+    }
+  ]
+}

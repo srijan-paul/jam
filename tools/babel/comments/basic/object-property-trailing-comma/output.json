@@ -1,0 +1,136 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 97,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "VariableDeclaration",
+      "start": 0,
+      "end": 83,
+      "declarations": [
+        {
+          "type": "VariableDeclarator",
+          "start": 4,
+          "end": 82,
+          "id": {
+            "type": "Identifier",
+            "start": 4,
+            "end": 7,
+            "name": "obj"
+          },
+          "init": {
+            "type": "ObjectExpression",
+            "start": 10,
+            "end": 82,
+            "properties": [
+              {
+                "type": "Property",
+                "start": 14,
+                "end": 20,
+                "method": false,
+                "key": {
+                  "type": "Identifier",
+                  "start": 14,
+                  "end": 15,
+                  "name": "a"
+                },
+                "computed": false,
+                "shorthand": false,
+                "value": {
+                  "type": "Literal",
+                  "start": 17,
+                  "end": 20,
+                  "value": "1",
+                  "raw": "'1'"
+                },
+                "kind": "init"
+              },
+              {
+                "type": "Property",
+                "start": 37,
+                "end": 43,
+                "method": false,
+                "key": {
+                  "type": "Identifier",
+                  "start": 37,
+                  "end": 38,
+                  "name": "b"
+                },
+                "computed": false,
+                "shorthand": false,
+                "value": {
+                  "type": "Literal",
+                  "start": 40,
+                  "end": 43,
+                  "value": "2",
+                  "raw": "'2'"
+                },
+                "kind": "init",
+                "leadingComments": [
+                  {
+                    "type": "CommentLine",
+                    "value": " comment 1",
+                    "start": 22,
+                    "end": 34
+                  }
+                ]
+              },
+              {
+                "type": "Property",
+                "start": 60,
+                "end": 66,
+                "method": false,
+                "key": {
+                  "type": "Identifier",
+                  "start": 60,
+                  "end": 61,
+                  "name": "c"
+                },
+                "computed": false,
+                "shorthand": false,
+                "value": {
+                  "type": "Literal",
+                  "start": 63,
+                  "end": 66,
+                  "value": "3",
+                  "raw": "'3'"
+                },
+                "kind": "init",
+                "trailingComments": [
+                  {
+                    "type": "CommentLine",
+                    "value": " comment 3",
+                    "start": 68,
+                    "end": 80
+                  }
+                ],
+                "leadingComments": [
+                  {
+                    "type": "CommentLine",
+                    "value": " comment 2",
+                    "start": 45,
+                    "end": 57
+                  }
+                ]
+              }
+            ],
+            "extra": {
+              "trailingComma": 66
+            }
+          }
+        }
+      ],
+      "kind": "var",
+      "trailingComments": [
+        {
+          "type": "CommentLine",
+          "value": " comment 4",
+          "start": 84,
+          "end": 96
+        }
+      ]
+    }
+  ]
+}

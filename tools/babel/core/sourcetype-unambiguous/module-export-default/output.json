@@ -1,0 +1,24 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 19,
+  "sourceType": "module",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExportDefaultDeclaration",
+      "start": 0,
+      "end": 18,
+      "declaration": {
+        "type": "ObjectExpression",
+        "start": 15,
+        "end": 17,
+        "properties": []
+      }
+    }
+  ],
+  "directives": [],
+  "extra": {
+    "topLevelAwait": false
+  }
+}

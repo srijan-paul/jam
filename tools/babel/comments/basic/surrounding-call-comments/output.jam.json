@@ -1,0 +1,46 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 61,
+  "body": [
+    {
+      "type": "FunctionDeclaration",
+      "start": 0,
+      "end": 60,
+      "id": {
+        "type": "Identifier",
+        "start": 9,
+        "end": 10,
+        "name": "a"
+      },
+      "async": false,
+      "generator": false,
+      "arrow": false,
+      "params": [],
+      "body": {
+        "type": "BlockStatement",
+        "start": 13,
+        "end": 60,
+        "body": [
+          {
+            "type": "ExpressionStatement",
+            "start": 36,
+            "end": 42,
+            "expression": {
+              "type": "CallExpression",
+              "start": 36,
+              "end": 41,
+              "callee": {
+                "type": "Identifier",
+                "start": 36,
+                "end": 39,
+                "name": "foo"
+              },
+              "arguments": []
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

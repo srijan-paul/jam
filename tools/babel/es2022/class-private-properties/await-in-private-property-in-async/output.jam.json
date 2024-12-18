@@ -1,0 +1,74 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 98,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 6,
+      "end": 97,
+      "expression": {
+        "type": "FunctionExpression",
+        "start": 6,
+        "end": 97,
+        "async": true,
+        "generator": false,
+        "arrow": true,
+        "params": [],
+        "body": {
+          "type": "BlockStatement",
+          "start": 12,
+          "end": 97,
+          "body": [
+            {
+              "type": "ClassDeclaration",
+              "start": 16,
+              "end": 95,
+              "id": {
+                "type": "Identifier",
+                "start": 22,
+                "end": 23,
+                "name": "C"
+              },
+              "body": {
+                "type": "ClassBody",
+                "body": [
+                  {
+                    "type": "ClassProperty",
+                    "start": 75,
+                    "end": 91,
+                    "key": {
+                      "type": "Identifier",
+                      "start": 75,
+                      "end": 77,
+                      "name": "#p"
+                    },
+                    "value": {
+                      "type": "AwaitExpression",
+                      "start": 80,
+                      "end": 87,
+                      "argument": {
+                        "type": "UnaryExpression",
+                        "start": 88,
+                        "end": 87,
+                        "operator": "+",
+                        "argument": {
+                          "type": "Literal",
+                          "start": 88,
+                          "end": 90,
+                          "value": "42"
+                        }
+                      }
+                    },
+                    "computed": false,
+                    "static": false
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

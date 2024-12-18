@@ -1,0 +1,53 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 31,
+  "body": [
+    {
+      "type": "FunctionDeclaration",
+      "start": 0,
+      "end": 17,
+      "id": {
+        "type": "Identifier",
+        "start": 9,
+        "end": 12,
+        "name": "foo"
+      },
+      "async": false,
+      "generator": false,
+      "arrow": false,
+      "params": [],
+      "body": {
+        "type": "BlockStatement",
+        "start": 15,
+        "end": 17,
+        "body": []
+      }
+    },
+    {
+      "type": "VariableDeclaration",
+      "start": 18,
+      "end": 30,
+      "declarations": [
+        {
+          "type": "VariableDeclarator",
+          "start": 22,
+          "end": 29,
+          "id": {
+            "type": "Identifier",
+            "start": 22,
+            "end": 25,
+            "name": "foo"
+          },
+          "init": {
+            "type": "Literal",
+            "start": 28,
+            "end": 29,
+            "value": "1"
+          }
+        }
+      ],
+      "kind": "var"
+    }
+  ]
+}

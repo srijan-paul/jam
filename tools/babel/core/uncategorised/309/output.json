@@ -1,0 +1,61 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 52,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "WhileStatement",
+      "start": 0,
+      "end": 52,
+      "test": {
+        "type": "Literal",
+        "start": 7,
+        "end": 11,
+        "value": true,
+        "raw": "true"
+      },
+      "body": {
+        "type": "BlockStatement",
+        "start": 13,
+        "end": 52,
+        "body": [
+          {
+            "type": "BreakStatement",
+            "start": 15,
+            "end": 20,
+            "label": null,
+            "trailingComments": [
+              {
+                "type": "CommentBlock",
+                "value": " Multiline\nComment ",
+                "start": 21,
+                "end": 44
+              }
+            ]
+          },
+          {
+            "type": "ExpressionStatement",
+            "start": 44,
+            "end": 50,
+            "expression": {
+              "type": "Identifier",
+              "start": 44,
+              "end": 49,
+              "name": "there"
+            },
+            "leadingComments": [
+              {
+                "type": "CommentBlock",
+                "value": " Multiline\nComment ",
+                "start": 21,
+                "end": 44
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

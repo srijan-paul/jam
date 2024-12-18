@@ -1,0 +1,108 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 92,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ClassDeclaration",
+      "start": 0,
+      "end": 91,
+      "id": {
+        "type": "Identifier",
+        "start": 6,
+        "end": 7,
+        "name": "A"
+      },
+      "superClass": null,
+      "body": {
+        "type": "ClassBody",
+        "start": 8,
+        "end": 91,
+        "body": [
+          {
+            "type": "ClassProperty",
+            "start": 12,
+            "end": 24,
+            "static": false,
+            "key": {
+              "type": "Identifier",
+              "start": 12,
+              "end": 15,
+              "name": "foo"
+            },
+            "computed": false,
+            "value": {
+              "type": "Literal",
+              "start": 18,
+              "end": 23,
+              "value": "bar",
+              "raw": "\"bar\""
+            }
+          },
+          {
+            "type": "ClassProperty",
+            "start": 27,
+            "end": 39,
+            "static": false,
+            "computed": true,
+            "key": {
+              "type": "Identifier",
+              "start": 28,
+              "end": 31,
+              "name": "bar"
+            },
+            "value": {
+              "type": "Identifier",
+              "start": 35,
+              "end": 38,
+              "name": "foo"
+            }
+          },
+          {
+            "type": "ClassProperty",
+            "start": 42,
+            "end": 64,
+            "static": true,
+            "key": {
+              "type": "Literal",
+              "start": 49,
+              "end": 54,
+              "value": "qux",
+              "raw": "\"qux\""
+            },
+            "computed": false,
+            "value": {
+              "type": "Literal",
+              "start": 57,
+              "end": 63,
+              "value": "quux",
+              "raw": "\"quux\""
+            }
+          },
+          {
+            "type": "ClassProperty",
+            "start": 67,
+            "end": 89,
+            "static": true,
+            "computed": true,
+            "key": {
+              "type": "Identifier",
+              "start": 75,
+              "end": 79,
+              "name": "quux"
+            },
+            "value": {
+              "type": "Literal",
+              "start": 83,
+              "end": 88,
+              "value": "qux",
+              "raw": "\"qux\""
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

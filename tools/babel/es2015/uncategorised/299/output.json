@@ -1,0 +1,107 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 32,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 32,
+      "expression": {
+        "type": "CallExpression",
+        "start": 0,
+        "end": 32,
+        "callee": {
+          "type": "Identifier",
+          "start": 0,
+          "end": 6,
+          "name": "doSmth"
+        },
+        "arguments": [
+          {
+            "type": "TemplateLiteral",
+            "start": 7,
+            "end": 31,
+            "expressions": [
+              {
+                "type": "Identifier",
+                "start": 10,
+                "end": 11,
+                "name": "x"
+              },
+              {
+                "type": "Identifier",
+                "start": 17,
+                "end": 18,
+                "name": "y"
+              },
+              {
+                "type": "BinaryExpression",
+                "start": 24,
+                "end": 29,
+                "left": {
+                  "type": "Identifier",
+                  "start": 24,
+                  "end": 25,
+                  "name": "x"
+                },
+                "operator": "+",
+                "right": {
+                  "type": "Identifier",
+                  "start": 28,
+                  "end": 29,
+                  "name": "y"
+                }
+              }
+            ],
+            "quasis": [
+              {
+                "type": "TemplateElement",
+                "start": 8,
+                "end": 8,
+                "value": {
+                  "raw": "",
+                  "cooked": ""
+                },
+                "tail": false
+              },
+              {
+                "type": "TemplateElement",
+                "start": 12,
+                "end": 15,
+                "value": {
+                  "raw": " + ",
+                  "cooked": " + "
+                },
+                "tail": false
+              },
+              {
+                "type": "TemplateElement",
+                "start": 19,
+                "end": 22,
+                "value": {
+                  "raw": " = ",
+                  "cooked": " = "
+                },
+                "tail": false
+              },
+              {
+                "type": "TemplateElement",
+                "start": 30,
+                "end": 30,
+                "value": {
+                  "raw": "",
+                  "cooked": ""
+                },
+                "tail": true
+              }
+            ]
+          }
+        ],
+        "optional": false
+      }
+    }
+  ]
+}

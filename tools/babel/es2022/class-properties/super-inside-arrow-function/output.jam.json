@@ -1,0 +1,74 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 47,
+  "body": [
+    {
+      "type": "ClassDeclaration",
+      "start": 0,
+      "end": 46,
+      "superClass": {
+        "type": "Identifier",
+        "start": 16,
+        "end": 17,
+        "name": "B"
+      },
+      "id": {
+        "type": "Identifier",
+        "start": 6,
+        "end": 7,
+        "name": "A"
+      },
+      "body": {
+        "type": "ClassBody",
+        "body": [
+          {
+            "type": "ClassProperty",
+            "start": 22,
+            "end": 44,
+            "key": {
+              "type": "Identifier",
+              "start": 22,
+              "end": 25,
+              "name": "foo"
+            },
+            "value": {
+              "type": "FunctionExpression",
+              "start": 28,
+              "end": 43,
+              "async": false,
+              "generator": false,
+              "arrow": true,
+              "params": [],
+              "body": {
+                "type": "CallExpression",
+                "start": 34,
+                "end": 43,
+                "callee": {
+                  "type": "MemberExpression",
+                  "start": 34,
+                  "end": 41,
+                  "object": {
+                    "type": "Super",
+                    "start": 34,
+                    "end": 39
+                  },
+                  "property": {
+                    "type": "Identifier",
+                    "start": 40,
+                    "end": 41,
+                    "name": "x"
+                  },
+                  "computed": false
+                },
+                "arguments": []
+              }
+            },
+            "computed": false,
+            "static": false
+          }
+        ]
+      }
+    }
+  ]
+}

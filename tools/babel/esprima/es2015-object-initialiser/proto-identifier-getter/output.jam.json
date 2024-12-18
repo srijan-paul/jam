@@ -1,0 +1,70 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 41,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 1,
+      "end": 39,
+      "expression": {
+        "type": "ObjectExpression",
+        "start": 1,
+        "end": 39,
+        "properties": [
+          {
+            "type": "Property",
+            "start": 3,
+            "end": 18,
+            "key": {
+              "type": "Identifier",
+              "start": 3,
+              "end": 12,
+              "name": "__proto__"
+            },
+            "value": {
+              "type": "Literal",
+              "start": 14,
+              "end": 18,
+              "value": "null"
+            },
+            "kind": "init",
+            "computed": false,
+            "shorthand": false,
+            "method": false
+          },
+          {
+            "type": "Property",
+            "start": 24,
+            "end": 37,
+            "key": {
+              "type": "Identifier",
+              "start": 24,
+              "end": 33,
+              "name": "__proto__"
+            },
+            "value": {
+              "type": "FunctionExpression",
+              "start": 33,
+              "end": 37,
+              "async": false,
+              "generator": false,
+              "arrow": false,
+              "params": [],
+              "body": {
+                "type": "BlockStatement",
+                "start": 35,
+                "end": 37,
+                "body": []
+              }
+            },
+            "kind": "get",
+            "computed": false,
+            "shorthand": false,
+            "method": true
+          }
+        ]
+      }
+    }
+  ]
+}

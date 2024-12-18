@@ -1,0 +1,153 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 102,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "FunctionDeclaration",
+      "start": 0,
+      "end": 50,
+      "id": {
+        "type": "Identifier",
+        "start": 10,
+        "end": 12,
+        "name": "f1"
+      },
+      "generator": true,
+      "async": false,
+      "expression": false,
+      "params": [],
+      "body": {
+        "type": "BlockStatement",
+        "start": 15,
+        "end": 50,
+        "body": [
+          {
+            "type": "ExpressionStatement",
+            "start": 19,
+            "end": 31,
+            "expression": {
+              "type": "YieldExpression",
+              "start": 19,
+              "end": 31,
+              "delegate": false,
+              "argument": {
+                "type": "Literal",
+                "start": 25,
+                "end": 31,
+                "value": {},
+                "raw": "/ 1 /g",
+                "regex": {
+                  "pattern": " 1 ",
+                  "flags": "g"
+                }
+              }
+            }
+          },
+          {
+            "type": "ExpressionStatement",
+            "start": 34,
+            "end": 39,
+            "expression": {
+              "type": "YieldExpression",
+              "start": 34,
+              "end": 39,
+              "delegate": false,
+              "argument": null
+            }
+          },
+          {
+            "type": "ExpressionStatement",
+            "start": 42,
+            "end": 48,
+            "expression": {
+              "type": "Literal",
+              "start": 42,
+              "end": 48,
+              "value": {},
+              "raw": "/ 1 /g",
+              "regex": {
+                "pattern": " 1 ",
+                "flags": "g"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "FunctionDeclaration",
+      "start": 51,
+      "end": 101,
+      "id": {
+        "type": "Identifier",
+        "start": 61,
+        "end": 63,
+        "name": "f2"
+      },
+      "generator": true,
+      "async": false,
+      "expression": false,
+      "params": [],
+      "body": {
+        "type": "BlockStatement",
+        "start": 66,
+        "end": 101,
+        "body": [
+          {
+            "type": "ExpressionStatement",
+            "start": 70,
+            "end": 82,
+            "expression": {
+              "type": "YieldExpression",
+              "start": 70,
+              "end": 82,
+              "delegate": false,
+              "argument": {
+                "type": "Literal",
+                "start": 76,
+                "end": 82,
+                "value": {},
+                "raw": "/=2 /i",
+                "regex": {
+                  "pattern": "=2 ",
+                  "flags": "i"
+                }
+              }
+            }
+          },
+          {
+            "type": "ExpressionStatement",
+            "start": 85,
+            "end": 90,
+            "expression": {
+              "type": "YieldExpression",
+              "start": 85,
+              "end": 90,
+              "delegate": false,
+              "argument": null
+            }
+          },
+          {
+            "type": "ExpressionStatement",
+            "start": 93,
+            "end": 99,
+            "expression": {
+              "type": "Literal",
+              "start": 93,
+              "end": 99,
+              "value": {},
+              "raw": "/=2 /i",
+              "regex": {
+                "pattern": "=2 ",
+                "flags": "i"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

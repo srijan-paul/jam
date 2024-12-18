@@ -1,0 +1,314 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 220,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 113,
+      "expression": {
+        "type": "ClassExpression",
+        "start": 9,
+        "end": 102,
+        "id": null,
+        "superClass": null,
+        "body": {
+          "type": "ClassBody",
+          "start": 23,
+          "end": 102,
+          "body": [
+            {
+              "type": "MethodDefinition",
+              "start": 33,
+              "end": 91,
+              "static": false,
+              "key": {
+                "type": "Identifier",
+                "start": 33,
+                "end": 34,
+                "name": "f",
+                "trailingComments": [
+                  {
+                    "type": "CommentBlock",
+                    "value": " 4 ",
+                    "start": 35,
+                    "end": 42
+                  }
+                ]
+              },
+              "computed": false,
+              "kind": "method",
+              "value": {
+                "type": "FunctionExpression",
+                "start": 43,
+                "end": 91,
+                "id": null,
+                "generator": false,
+                "async": false,
+                "expression": false,
+                "params": [
+                  {
+                    "type": "Identifier",
+                    "start": 52,
+                    "end": 53,
+                    "name": "a",
+                    "trailingComments": [
+                      {
+                        "type": "CommentBlock",
+                        "value": " 6 ",
+                        "start": 54,
+                        "end": 61
+                      },
+                      {
+                        "type": "CommentBlock",
+                        "value": " 7 ",
+                        "start": 63,
+                        "end": 70
+                      }
+                    ],
+                    "leadingComments": [
+                      {
+                        "type": "CommentBlock",
+                        "value": " 5 ",
+                        "start": 44,
+                        "end": 51
+                      }
+                    ]
+                  }
+                ],
+                "body": {
+                  "type": "BlockStatement",
+                  "start": 80,
+                  "end": 91,
+                  "body": [],
+                  "innerComments": [
+                    {
+                      "type": "CommentBlock",
+                      "value": " 9 ",
+                      "start": 82,
+                      "end": 89
+                    }
+                  ],
+                  "leadingComments": [
+                    {
+                      "type": "CommentBlock",
+                      "value": " 8 ",
+                      "start": 72,
+                      "end": 79
+                    }
+                  ]
+                },
+                "leadingComments": [
+                  {
+                    "type": "CommentBlock",
+                    "value": " 4 ",
+                    "start": 35,
+                    "end": 42
+                  }
+                ]
+              },
+              "trailingComments": [
+                {
+                  "type": "CommentBlock",
+                  "value": " 10 ",
+                  "start": 92,
+                  "end": 100
+                }
+              ],
+              "leadingComments": [
+                {
+                  "type": "CommentBlock",
+                  "value": " 3 ",
+                  "start": 25,
+                  "end": 32
+                }
+              ]
+            }
+          ],
+          "leadingComments": [
+            {
+              "type": "CommentBlock",
+              "value": " 2 ",
+              "start": 15,
+              "end": 22
+            }
+          ]
+        },
+        "extra": {
+          "parenthesized": true,
+          "parenStart": 0
+        },
+        "trailingComments": [
+          {
+            "type": "CommentBlock",
+            "value": " 11 ",
+            "start": 103,
+            "end": 111
+          }
+        ],
+        "leadingComments": [
+          {
+            "type": "CommentBlock",
+            "value": " 1 ",
+            "start": 1,
+            "end": 8
+          }
+        ]
+      }
+    },
+    {
+      "type": "ExpressionStatement",
+      "start": 114,
+      "end": 219,
+      "expression": {
+        "type": "ClassExpression",
+        "start": 115,
+        "end": 208,
+        "id": null,
+        "superClass": null,
+        "body": {
+          "type": "ClassBody",
+          "start": 129,
+          "end": 208,
+          "body": [
+            {
+              "type": "MethodDefinition",
+              "start": 139,
+              "end": 198,
+              "static": false,
+              "key": {
+                "type": "PrivateName",
+                "start": 139,
+                "end": 141,
+                "id": {
+                  "type": "Identifier",
+                  "start": 140,
+                  "end": 141,
+                  "name": "f"
+                },
+                "trailingComments": [
+                  {
+                    "type": "CommentBlock",
+                    "value": " 3 ",
+                    "start": 142,
+                    "end": 149
+                  }
+                ]
+              },
+              "kind": "method",
+              "value": {
+                "type": "FunctionExpression",
+                "start": 150,
+                "end": 198,
+                "id": null,
+                "generator": false,
+                "async": false,
+                "expression": false,
+                "params": [
+                  {
+                    "type": "Identifier",
+                    "start": 159,
+                    "end": 160,
+                    "name": "a",
+                    "trailingComments": [
+                      {
+                        "type": "CommentBlock",
+                        "value": " 5 ",
+                        "start": 161,
+                        "end": 168
+                      },
+                      {
+                        "type": "CommentBlock",
+                        "value": " 6 ",
+                        "start": 170,
+                        "end": 177
+                      }
+                    ],
+                    "leadingComments": [
+                      {
+                        "type": "CommentBlock",
+                        "value": " 4 ",
+                        "start": 151,
+                        "end": 158
+                      }
+                    ]
+                  }
+                ],
+                "body": {
+                  "type": "BlockStatement",
+                  "start": 187,
+                  "end": 198,
+                  "body": [],
+                  "innerComments": [
+                    {
+                      "type": "CommentBlock",
+                      "value": " 8 ",
+                      "start": 189,
+                      "end": 196
+                    }
+                  ],
+                  "leadingComments": [
+                    {
+                      "type": "CommentBlock",
+                      "value": " 7 ",
+                      "start": 179,
+                      "end": 186
+                    }
+                  ]
+                },
+                "leadingComments": [
+                  {
+                    "type": "CommentBlock",
+                    "value": " 3 ",
+                    "start": 142,
+                    "end": 149
+                  }
+                ]
+              },
+              "computed": false,
+              "trailingComments": [
+                {
+                  "type": "CommentBlock",
+                  "value": " 9 ",
+                  "start": 199,
+                  "end": 206
+                }
+              ],
+              "leadingComments": [
+                {
+                  "type": "CommentBlock",
+                  "value": " 2 ",
+                  "start": 131,
+                  "end": 138
+                }
+              ]
+            }
+          ],
+          "leadingComments": [
+            {
+              "type": "CommentBlock",
+              "value": " 1 ",
+              "start": 121,
+              "end": 128
+            }
+          ]
+        },
+        "extra": {
+          "parenthesized": true,
+          "parenStart": 114
+        },
+        "trailingComments": [
+          {
+            "type": "CommentBlock",
+            "value": " 10 ",
+            "start": 209,
+            "end": 217
+          }
+        ]
+      }
+    }
+  ]
+}

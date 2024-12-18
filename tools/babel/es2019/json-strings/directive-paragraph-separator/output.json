@@ -1,0 +1,30 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 104,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 15,
+      "expression": {
+        "type": "Literal",
+        "start": 0,
+        "end": 14,
+        "value": "before after",
+        "raw": "\"before after\""
+      },
+      "directive": "before after",
+      "trailingComments": [
+        {
+          "type": "CommentLine",
+          "value": "     ^ That's a U+2029 PARAGRAPH SEPARATOR UTF-16 char (between 'before' and 'after')",
+          "start": 16,
+          "end": 103
+        }
+      ]
+    }
+  ]
+}

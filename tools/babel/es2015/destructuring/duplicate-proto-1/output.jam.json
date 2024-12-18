@@ -1,0 +1,73 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 39,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 1,
+      "end": 38,
+      "expression": {
+        "type": "AssignmentExpression",
+        "start": 1,
+        "end": 36,
+        "operator": "=",
+        "left": {
+          "type": "ObjectPattern",
+          "start": 1,
+          "end": 31,
+          "properties": [
+            {
+              "type": "Property",
+              "start": 3,
+              "end": 15,
+              "key": {
+                "type": "Identifier",
+                "start": 3,
+                "end": 12,
+                "name": "__proto__"
+              },
+              "value": {
+                "type": "Identifier",
+                "start": 14,
+                "end": 15,
+                "name": "x"
+              },
+              "kind": "init",
+              "computed": false,
+              "shorthand": false,
+              "method": false
+            },
+            {
+              "type": "Property",
+              "start": 17,
+              "end": 29,
+              "key": {
+                "type": "Identifier",
+                "start": 17,
+                "end": 26,
+                "name": "__proto__"
+              },
+              "value": {
+                "type": "Identifier",
+                "start": 28,
+                "end": 29,
+                "name": "y"
+              },
+              "kind": "init",
+              "computed": false,
+              "shorthand": false,
+              "method": false
+            }
+          ]
+        },
+        "right": {
+          "type": "ObjectExpression",
+          "start": 34,
+          "end": 36,
+          "properties": []
+        }
+      }
+    }
+  ]
+}

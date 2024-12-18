@@ -1,0 +1,36 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 25,
+  "sourceType": "module",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExportDefaultDeclaration",
+      "start": 0,
+      "end": 25,
+      "declaration": {
+        "type": "ClassDeclaration",
+        "start": 15,
+        "end": 25,
+        "id": {
+          "type": "Identifier",
+          "start": 21,
+          "end": 22,
+          "name": "A"
+        },
+        "superClass": null,
+        "body": {
+          "type": "ClassBody",
+          "start": 23,
+          "end": 25,
+          "body": []
+        }
+      }
+    }
+  ],
+  "directives": [],
+  "extra": {
+    "topLevelAwait": false
+  }
+}

@@ -1,0 +1,86 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 50,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 49,
+      "expression": {
+        "type": "FunctionExpression",
+        "start": 1,
+        "end": 48,
+        "id": null,
+        "generator": false,
+        "async": false,
+        "expression": false,
+        "params": [],
+        "body": {
+          "type": "BlockStatement",
+          "start": 13,
+          "end": 48,
+          "body": [
+            {
+              "type": "ReturnStatement",
+              "start": 17,
+              "end": 46,
+              "argument": {
+                "type": "BinaryExpression",
+                "start": 24,
+                "end": 46,
+                "left": {
+                  "type": "BinaryExpression",
+                  "start": 24,
+                  "end": 44,
+                  "left": {
+                    "type": "FunctionExpression",
+                    "start": 24,
+                    "end": 40,
+                    "id": {
+                      "type": "Identifier",
+                      "start": 33,
+                      "end": 35,
+                      "name": "fn"
+                    },
+                    "generator": false,
+                    "async": false,
+                    "expression": false,
+                    "params": [],
+                    "body": {
+                      "type": "BlockStatement",
+                      "start": 38,
+                      "end": 40,
+                      "body": []
+                    }
+                  },
+                  "operator": "/",
+                  "right": {
+                    "type": "Literal",
+                    "start": 42,
+                    "end": 44,
+                    "value": 42,
+                    "raw": "42"
+                  }
+                },
+                "operator": "/",
+                "right": {
+                  "type": "Identifier",
+                  "start": 45,
+                  "end": 46,
+                  "name": "i"
+                }
+              }
+            }
+          ]
+        },
+        "extra": {
+          "parenthesized": true,
+          "parenStart": 0
+        }
+      }
+    }
+  ]
+}

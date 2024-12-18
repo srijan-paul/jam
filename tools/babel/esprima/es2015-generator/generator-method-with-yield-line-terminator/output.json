@@ -1,0 +1,81 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 30,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 29,
+      "expression": {
+        "type": "ObjectExpression",
+        "start": 1,
+        "end": 28,
+        "properties": [
+          {
+            "type": "Property",
+            "start": 3,
+            "end": 26,
+            "method": true,
+            "key": {
+              "type": "Identifier",
+              "start": 4,
+              "end": 7,
+              "name": "foo"
+            },
+            "computed": false,
+            "kind": "init",
+            "value": {
+              "type": "FunctionExpression",
+              "start": 7,
+              "end": 26,
+              "id": null,
+              "generator": true,
+              "async": false,
+              "expression": false,
+              "params": [],
+              "body": {
+                "type": "BlockStatement",
+                "start": 10,
+                "end": 26,
+                "body": [
+                  {
+                    "type": "ExpressionStatement",
+                    "start": 15,
+                    "end": 20,
+                    "expression": {
+                      "type": "YieldExpression",
+                      "start": 15,
+                      "end": 20,
+                      "delegate": false,
+                      "argument": null
+                    }
+                  },
+                  {
+                    "type": "ExpressionStatement",
+                    "start": 23,
+                    "end": 24,
+                    "expression": {
+                      "type": "Literal",
+                      "start": 23,
+                      "end": 24,
+                      "value": 3,
+                      "raw": "3"
+                    }
+                  }
+                ]
+              }
+            },
+            "shorthand": false
+          }
+        ],
+        "extra": {
+          "parenthesized": true,
+          "parenStart": 0
+        }
+      }
+    }
+  ]
+}

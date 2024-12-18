@@ -1,0 +1,43 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 16,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 16,
+      "expression": {
+        "type": "CallExpression",
+        "start": 0,
+        "end": 15,
+        "callee": {
+          "type": "Identifier",
+          "start": 0,
+          "end": 3,
+          "name": "log"
+        },
+        "arguments": [
+          {
+            "type": "Identifier",
+            "start": 4,
+            "end": 5,
+            "name": "n"
+          },
+          {
+            "type": "Literal",
+            "start": 7,
+            "end": 10,
+            "value": "'='"
+          },
+          {
+            "type": "Literal",
+            "start": 12,
+            "end": 13,
+            "value": "2"
+          }
+        ]
+      }
+    }
+  ]
+}

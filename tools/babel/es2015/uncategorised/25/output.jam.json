@@ -1,0 +1,44 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 11,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 11,
+      "expression": {
+        "type": "NewExpression",
+        "start": 0,
+        "end": 11,
+        "callee": {
+          "type": "TaggedTemplateExpression",
+          "start": 4,
+          "end": 11,
+          "tag": {
+            "type": "Identifier",
+            "start": 4,
+            "end": 7,
+            "name": "raw"
+          },
+          "quasi": {
+            "type": "TemplateLiteral",
+            "start": 7,
+            "end": 11,
+            "quasis": [
+              {
+                "type": "TemplateElement",
+                "start": 7,
+                "end": 11,
+                "value": "`42`",
+                "tail": false
+              }
+            ],
+            "expressions": []
+          }
+        },
+        "arguments": []
+      }
+    }
+  ]
+}

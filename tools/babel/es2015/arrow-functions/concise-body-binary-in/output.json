@@ -1,0 +1,99 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 41,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "VariableDeclaration",
+      "start": 0,
+      "end": 40,
+      "declarations": [
+        {
+          "type": "VariableDeclarator",
+          "start": 6,
+          "end": 40,
+          "id": {
+            "type": "Identifier",
+            "start": 6,
+            "end": 7,
+            "name": "t"
+          },
+          "init": {
+            "type": "ArrowFunctionExpression",
+            "start": 10,
+            "end": 40,
+            "id": null,
+            "generator": false,
+            "async": false,
+            "expression": true,
+            "params": [],
+            "body": {
+              "type": "ObjectExpression",
+              "start": 17,
+              "end": 39,
+              "properties": [
+                {
+                  "type": "Property",
+                  "start": 21,
+                  "end": 37,
+                  "method": false,
+                  "key": {
+                    "type": "Identifier",
+                    "start": 21,
+                    "end": 22,
+                    "name": "v"
+                  },
+                  "computed": false,
+                  "shorthand": false,
+                  "value": {
+                    "type": "ArrowFunctionExpression",
+                    "start": 24,
+                    "end": 37,
+                    "id": null,
+                    "generator": false,
+                    "async": false,
+                    "expression": true,
+                    "params": [
+                      {
+                        "type": "Identifier",
+                        "start": 25,
+                        "end": 26,
+                        "name": "v"
+                      }
+                    ],
+                    "body": {
+                      "type": "BinaryExpression",
+                      "start": 31,
+                      "end": 37,
+                      "left": {
+                        "type": "Identifier",
+                        "start": 31,
+                        "end": 32,
+                        "name": "v"
+                      },
+                      "operator": "in",
+                      "right": {
+                        "type": "Identifier",
+                        "start": 36,
+                        "end": 37,
+                        "name": "z"
+                      }
+                    }
+                  },
+                  "kind": "init"
+                }
+              ],
+              "extra": {
+                "parenthesized": true,
+                "parenStart": 16
+              }
+            }
+          }
+        }
+      ],
+      "kind": "const"
+    }
+  ]
+}

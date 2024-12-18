@@ -1,0 +1,46 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 26,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 1,
+      "end": 24,
+      "expression": {
+        "type": "FunctionExpression",
+        "start": 1,
+        "end": 24,
+        "id": {
+          "type": "Identifier",
+          "start": 10,
+          "end": 14,
+          "name": "test"
+        },
+        "async": false,
+        "generator": false,
+        "arrow": false,
+        "params": [
+          {
+            "type": "Identifier",
+            "start": 15,
+            "end": 16,
+            "name": "t"
+          },
+          {
+            "type": "Identifier",
+            "start": 18,
+            "end": 19,
+            "name": "t"
+          }
+        ],
+        "body": {
+          "type": "BlockStatement",
+          "start": 21,
+          "end": 24,
+          "body": []
+        }
+      }
+    }
+  ]
+}

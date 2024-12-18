@@ -1,0 +1,130 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 118,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 1,
+      "end": 117,
+      "expression": {
+        "type": "CallExpression",
+        "start": 1,
+        "end": 116,
+        "callee": {
+          "type": "ObjectExpression",
+          "start": 1,
+          "end": 86,
+          "properties": [
+            {
+              "type": "Property",
+              "start": 11,
+              "end": 84,
+              "key": {
+                "type": "Identifier",
+                "start": 35,
+                "end": 36,
+                "name": "f"
+              },
+              "value": {
+                "type": "Property",
+                "start": 35,
+                "end": 84,
+                "key": {
+                  "type": "Identifier",
+                  "start": 35,
+                  "end": 36,
+                  "name": "f"
+                },
+                "value": {
+                  "type": "FunctionExpression",
+                  "start": 45,
+                  "end": 84,
+                  "async": true,
+                  "generator": true,
+                  "arrow": false,
+                  "params": [
+                    {
+                      "type": "Identifier",
+                      "start": 54,
+                      "end": 55,
+                      "name": "a"
+                    }
+                  ],
+                  "body": {
+                    "type": "BlockStatement",
+                    "start": 82,
+                    "end": 84,
+                    "body": []
+                  }
+                },
+                "kind": "init",
+                "computed": false,
+                "shorthand": false,
+                "method": true
+              },
+              "kind": "init",
+              "computed": false,
+              "shorthand": false,
+              "method": false
+            }
+          ]
+        },
+        "arguments": [
+          {
+            "type": "ObjectExpression",
+            "start": 89,
+            "end": 115,
+            "properties": [
+              {
+                "type": "Property",
+                "start": 91,
+                "end": 113,
+                "key": {
+                  "type": "Identifier",
+                  "start": 106,
+                  "end": 107,
+                  "name": "f"
+                },
+                "value": {
+                  "type": "Property",
+                  "start": 106,
+                  "end": 113,
+                  "key": {
+                    "type": "Identifier",
+                    "start": 106,
+                    "end": 107,
+                    "name": "f"
+                  },
+                  "value": {
+                    "type": "FunctionExpression",
+                    "start": 108,
+                    "end": 113,
+                    "async": true,
+                    "generator": true,
+                    "arrow": false,
+                    "params": [],
+                    "body": {
+                      "type": "BlockStatement",
+                      "start": 111,
+                      "end": 113,
+                      "body": []
+                    }
+                  },
+                  "kind": "init",
+                  "computed": false,
+                  "shorthand": false,
+                  "method": true
+                },
+                "kind": "init",
+                "computed": false,
+                "shorthand": false,
+                "method": false
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

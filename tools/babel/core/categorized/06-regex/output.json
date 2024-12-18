@@ -1,0 +1,67 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 25,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 24,
+      "expression": {
+        "type": "BinaryExpression",
+        "start": 0,
+        "end": 23,
+        "left": {
+          "type": "BinaryExpression",
+          "start": 0,
+          "end": 21,
+          "left": {
+            "type": "UnaryExpression",
+            "start": 0,
+            "end": 17,
+            "operator": "!",
+            "prefix": true,
+            "argument": {
+              "type": "FunctionExpression",
+              "start": 1,
+              "end": 17,
+              "id": {
+                "type": "Identifier",
+                "start": 10,
+                "end": 12,
+                "name": "fn"
+              },
+              "generator": false,
+              "async": false,
+              "expression": false,
+              "params": [],
+              "body": {
+                "type": "BlockStatement",
+                "start": 15,
+                "end": 17,
+                "body": []
+              }
+            }
+          },
+          "operator": "/",
+          "right": {
+            "type": "Literal",
+            "start": 19,
+            "end": 21,
+            "value": 42,
+            "raw": "42"
+          }
+        },
+        "operator": "/",
+        "right": {
+          "type": "Identifier",
+          "start": 22,
+          "end": 23,
+          "name": "i"
+        }
+      }
+    }
+  ]
+}

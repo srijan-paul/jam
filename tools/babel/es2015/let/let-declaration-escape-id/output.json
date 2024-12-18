@@ -1,0 +1,29 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 41,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "VariableDeclaration",
+      "start": 0,
+      "end": 40,
+      "declarations": [
+        {
+          "type": "VariableDeclarator",
+          "start": 4,
+          "end": 40,
+          "id": {
+            "type": "Identifier",
+            "start": 4,
+            "end": 40,
+            "name": "ɵResourceLoaderImpl_BaseFactory"
+          },
+          "init": null
+        }
+      ],
+      "kind": "let"
+    }
+  ]
+}

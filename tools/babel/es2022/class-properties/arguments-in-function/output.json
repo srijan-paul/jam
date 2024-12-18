@@ -1,0 +1,96 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 71,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "FunctionDeclaration",
+      "start": 0,
+      "end": 71,
+      "id": {
+        "type": "Identifier",
+        "start": 9,
+        "end": 11,
+        "name": "fn"
+      },
+      "generator": false,
+      "async": false,
+      "expression": false,
+      "params": [],
+      "body": {
+        "type": "BlockStatement",
+        "start": 14,
+        "end": 71,
+        "body": [
+          {
+            "type": "ClassDeclaration",
+            "start": 18,
+            "end": 69,
+            "id": {
+              "type": "Identifier",
+              "start": 24,
+              "end": 25,
+              "name": "A"
+            },
+            "superClass": null,
+            "body": {
+              "type": "ClassBody",
+              "start": 26,
+              "end": 69,
+              "body": [
+                {
+                  "type": "ClassProperty",
+                  "start": 32,
+                  "end": 65,
+                  "static": false,
+                  "key": {
+                    "type": "Identifier",
+                    "start": 32,
+                    "end": 35,
+                    "name": "foo"
+                  },
+                  "computed": false,
+                  "value": {
+                    "type": "FunctionExpression",
+                    "start": 38,
+                    "end": 64,
+                    "id": {
+                      "type": "Identifier",
+                      "start": 47,
+                      "end": 48,
+                      "name": "f"
+                    },
+                    "generator": false,
+                    "async": false,
+                    "expression": false,
+                    "params": [],
+                    "body": {
+                      "type": "BlockStatement",
+                      "start": 51,
+                      "end": 64,
+                      "body": [
+                        {
+                          "type": "ExpressionStatement",
+                          "start": 53,
+                          "end": 62,
+                          "expression": {
+                            "type": "Identifier",
+                            "start": 53,
+                            "end": 62,
+                            "name": "arguments"
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

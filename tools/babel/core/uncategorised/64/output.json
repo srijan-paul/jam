@@ -1,0 +1,54 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 36,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "IfStatement",
+      "start": 0,
+      "end": 36,
+      "test": {
+        "type": "Identifier",
+        "start": 4,
+        "end": 5,
+        "name": "x"
+      },
+      "consequent": {
+        "type": "BlockStatement",
+        "start": 7,
+        "end": 36,
+        "body": [
+          {
+            "type": "ExpressionStatement",
+            "start": 25,
+            "end": 34,
+            "expression": {
+              "type": "CallExpression",
+              "start": 25,
+              "end": 33,
+              "callee": {
+                "type": "Identifier",
+                "start": 25,
+                "end": 31,
+                "name": "doThat"
+              },
+              "arguments": [],
+              "optional": false
+            },
+            "leadingComments": [
+              {
+                "type": "CommentLine",
+                "value": " Some comment",
+                "start": 9,
+                "end": 24
+              }
+            ]
+          }
+        ]
+      },
+      "alternate": null
+    }
+  ]
+}

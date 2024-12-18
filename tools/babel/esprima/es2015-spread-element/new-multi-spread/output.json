@@ -1,0 +1,60 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 25,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 24,
+      "expression": {
+        "type": "NewExpression",
+        "start": 0,
+        "end": 23,
+        "callee": {
+          "type": "Identifier",
+          "start": 4,
+          "end": 5,
+          "name": "f"
+        },
+        "arguments": [
+          {
+            "type": "SpreadElement",
+            "start": 6,
+            "end": 10,
+            "argument": {
+              "type": "Identifier",
+              "start": 9,
+              "end": 10,
+              "name": "x"
+            }
+          },
+          {
+            "type": "SpreadElement",
+            "start": 12,
+            "end": 16,
+            "argument": {
+              "type": "Identifier",
+              "start": 15,
+              "end": 16,
+              "name": "y"
+            }
+          },
+          {
+            "type": "SpreadElement",
+            "start": 18,
+            "end": 22,
+            "argument": {
+              "type": "Identifier",
+              "start": 21,
+              "end": 22,
+              "name": "z"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

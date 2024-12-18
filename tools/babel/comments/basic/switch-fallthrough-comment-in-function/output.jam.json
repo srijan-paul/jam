@@ -1,0 +1,91 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 142,
+  "body": [
+    {
+      "type": "FunctionDeclaration",
+      "start": 0,
+      "end": 141,
+      "id": {
+        "type": "Identifier",
+        "start": 9,
+        "end": 12,
+        "name": "bar"
+      },
+      "async": false,
+      "generator": false,
+      "arrow": false,
+      "params": [
+        {
+          "type": "Identifier",
+          "start": 13,
+          "end": 16,
+          "name": "foo"
+        }
+      ],
+      "body": {
+        "type": "BlockStatement",
+        "start": 18,
+        "end": 141,
+        "body": [
+          {
+            "type": "SwitchStatement",
+            "start": 24,
+            "end": 139,
+            "discriminant": {
+              "type": "Identifier",
+              "start": 31,
+              "end": 34,
+              "name": "foo"
+            },
+            "cases": [
+              {
+                "type": "SwitchCase",
+                "start": 61,
+                "end": 65,
+                "test": {
+                  "type": "Literal",
+                  "start": 66,
+                  "end": 67,
+                  "value": "1"
+                },
+                "consequent": []
+              },
+              {
+                "type": "SwitchCase",
+                "start": 106,
+                "end": 133,
+                "test": {
+                  "type": "Literal",
+                  "start": 111,
+                  "end": 112,
+                  "value": "2"
+                },
+                "consequent": [
+                  {
+                    "type": "ExpressionStatement",
+                    "start": 126,
+                    "end": 133,
+                    "expression": {
+                      "type": "CallExpression",
+                      "start": 126,
+                      "end": 132,
+                      "callee": {
+                        "type": "Identifier",
+                        "start": 126,
+                        "end": 130,
+                        "name": "doIt"
+                      },
+                      "arguments": []
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

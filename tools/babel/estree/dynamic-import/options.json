@@ -1,0 +1,4 @@
+{
+  "plugins": ["estree"],
+  "createImportExpressions": false
+}

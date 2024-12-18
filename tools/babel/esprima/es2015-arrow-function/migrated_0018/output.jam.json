@@ -1,0 +1,40 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 14,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 13,
+      "expression": {
+        "type": "CallExpression",
+        "start": 0,
+        "end": 13,
+        "callee": {
+          "type": "Identifier",
+          "start": 0,
+          "end": 3,
+          "name": "foo"
+        },
+        "arguments": [
+          {
+            "type": "FunctionExpression",
+            "start": 4,
+            "end": 12,
+            "async": false,
+            "generator": false,
+            "arrow": true,
+            "params": [],
+            "body": {
+              "type": "BlockStatement",
+              "start": 10,
+              "end": 12,
+              "body": []
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

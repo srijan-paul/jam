@@ -1,0 +1,60 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 29,
+  "body": [
+    {
+      "type": "VariableDeclaration",
+      "start": 0,
+      "end": 28,
+      "declarations": [
+        {
+          "type": "VariableDeclarator",
+          "start": 4,
+          "end": 27,
+          "id": {
+            "type": "Identifier",
+            "start": 4,
+            "end": 7,
+            "name": "foo"
+          },
+          "init": {
+            "type": "ObjectExpression",
+            "start": 10,
+            "end": 27,
+            "properties": [
+              {
+                "type": "Property",
+                "start": 15,
+                "end": 25,
+                "key": {
+                  "type": "CallExpression",
+                  "start": 15,
+                  "end": 20,
+                  "callee": {
+                    "type": "Identifier",
+                    "start": 15,
+                    "end": 18,
+                    "name": "bar"
+                  },
+                  "arguments": []
+                },
+                "value": {
+                  "type": "Literal",
+                  "start": 23,
+                  "end": 25,
+                  "value": "\"\""
+                },
+                "kind": "init",
+                "computed": true,
+                "shorthand": false,
+                "method": false
+              }
+            ]
+          }
+        }
+      ],
+      "kind": "var"
+    }
+  ]
+}

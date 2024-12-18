@@ -1,0 +1,59 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 23,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "FunctionDeclaration",
+      "start": 0,
+      "end": 23,
+      "id": {
+        "type": "Identifier",
+        "start": 9,
+        "end": 10,
+        "name": "f"
+      },
+      "generator": false,
+      "async": false,
+      "expression": false,
+      "params": [
+        {
+          "type": "ObjectPattern",
+          "start": 11,
+          "end": 19,
+          "properties": [
+            {
+              "type": "Property",
+              "start": 12,
+              "end": 18,
+              "computed": true,
+              "key": {
+                "type": "Identifier",
+                "start": 13,
+                "end": 14,
+                "name": "x"
+              },
+              "method": false,
+              "shorthand": false,
+              "value": {
+                "type": "Identifier",
+                "start": 17,
+                "end": 18,
+                "name": "y"
+              },
+              "kind": "init"
+            }
+          ]
+        }
+      ],
+      "body": {
+        "type": "BlockStatement",
+        "start": 21,
+        "end": 23,
+        "body": []
+      }
+    }
+  ]
+}

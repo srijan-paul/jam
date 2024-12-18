@@ -1,0 +1,42 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 23,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "VariableDeclaration",
+      "start": 0,
+      "end": 22,
+      "declarations": [
+        {
+          "type": "VariableDeclarator",
+          "start": 6,
+          "end": 21,
+          "id": {
+            "type": "Identifier",
+            "start": 6,
+            "end": 7,
+            "name": "a"
+          },
+          "init": {
+            "type": "ImportExpression",
+            "start": 10,
+            "end": 21,
+            "source": {
+              "type": "Literal",
+              "start": 17,
+              "end": 20,
+              "value": "a",
+              "raw": "\"a\""
+            },
+            "options": null,
+            "attributes": null
+          }
+        }
+      ],
+      "kind": "const"
+    }
+  ]
+}

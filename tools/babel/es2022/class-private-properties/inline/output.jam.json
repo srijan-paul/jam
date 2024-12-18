@@ -1,0 +1,115 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 49,
+  "body": [
+    {
+      "type": "ClassDeclaration",
+      "start": 0,
+      "end": 19,
+      "id": {
+        "type": "Identifier",
+        "start": 6,
+        "end": 7,
+        "name": "A"
+      },
+      "body": {
+        "type": "ClassBody",
+        "body": [
+          {
+            "type": "ClassProperty",
+            "start": 10,
+            "end": 13,
+            "key": {
+              "type": "Identifier",
+              "start": 10,
+              "end": 12,
+              "name": "#x"
+            },
+            "value": {
+              "type": "Identifier",
+              "start": 10,
+              "end": 12,
+              "name": "#x"
+            },
+            "computed": false,
+            "static": false
+          },
+          {
+            "type": "ClassProperty",
+            "start": 14,
+            "end": 17,
+            "key": {
+              "type": "Identifier",
+              "start": 14,
+              "end": 16,
+              "name": "#y"
+            },
+            "value": {
+              "type": "Identifier",
+              "start": 14,
+              "end": 16,
+              "name": "#y"
+            },
+            "computed": false,
+            "static": false
+          }
+        ]
+      }
+    },
+    {
+      "type": "ClassDeclaration",
+      "start": 21,
+      "end": 48,
+      "id": {
+        "type": "Identifier",
+        "start": 27,
+        "end": 28,
+        "name": "B"
+      },
+      "body": {
+        "type": "ClassBody",
+        "body": [
+          {
+            "type": "ClassProperty",
+            "start": 31,
+            "end": 38,
+            "key": {
+              "type": "Identifier",
+              "start": 31,
+              "end": 33,
+              "name": "#x"
+            },
+            "value": {
+              "type": "Literal",
+              "start": 36,
+              "end": 37,
+              "value": "0"
+            },
+            "computed": false,
+            "static": false
+          },
+          {
+            "type": "ClassProperty",
+            "start": 39,
+            "end": 46,
+            "key": {
+              "type": "Identifier",
+              "start": 39,
+              "end": 41,
+              "name": "#y"
+            },
+            "value": {
+              "type": "Literal",
+              "start": 44,
+              "end": 45,
+              "value": "1"
+            },
+            "computed": false,
+            "static": false
+          }
+        ]
+      }
+    }
+  ]
+}

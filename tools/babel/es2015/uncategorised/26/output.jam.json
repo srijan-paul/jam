@@ -1,0 +1,142 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 70,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 70,
+      "expression": {
+        "type": "TemplateLiteral",
+        "start": 0,
+        "end": 70,
+        "quasis": [
+          {
+            "type": "TemplateElement",
+            "start": 0,
+            "end": 8,
+            "value": "`outer${",
+            "tail": false
+          },
+          {
+            "type": "TemplateElement",
+            "start": 20,
+            "end": 26,
+            "value": "}bar${",
+            "tail": false
+          },
+          {
+            "type": "TemplateElement",
+            "start": 65,
+            "end": 70,
+            "value": "}end`",
+            "tail": false
+          }
+        ],
+        "expressions": [
+          {
+            "type": "ObjectExpression",
+            "start": 8,
+            "end": 20,
+            "properties": [
+              {
+                "type": "Property",
+                "start": 9,
+                "end": 19,
+                "key": {
+                  "type": "Identifier",
+                  "start": 9,
+                  "end": 10,
+                  "name": "x"
+                },
+                "value": {
+                  "type": "ObjectExpression",
+                  "start": 12,
+                  "end": 19,
+                  "properties": [
+                    {
+                      "type": "Property",
+                      "start": 13,
+                      "end": 18,
+                      "key": {
+                        "type": "Identifier",
+                        "start": 13,
+                        "end": 14,
+                        "name": "y"
+                      },
+                      "value": {
+                        "type": "Literal",
+                        "start": 16,
+                        "end": 18,
+                        "value": "10"
+                      },
+                      "kind": "init",
+                      "computed": false,
+                      "shorthand": false,
+                      "method": false
+                    }
+                  ]
+                },
+                "kind": "init",
+                "computed": false,
+                "shorthand": false,
+                "method": false
+              }
+            ]
+          },
+          {
+            "type": "TemplateLiteral",
+            "start": 26,
+            "end": 65,
+            "quasis": [
+              {
+                "type": "TemplateElement",
+                "start": 26,
+                "end": 35,
+                "value": "`nested${",
+                "tail": false
+              },
+              {
+                "type": "TemplateElement",
+                "start": 56,
+                "end": 65,
+                "value": "}endnest`",
+                "tail": false
+              }
+            ],
+            "expressions": [
+              {
+                "type": "FunctionExpression",
+                "start": 35,
+                "end": 56,
+                "async": false,
+                "generator": false,
+                "arrow": false,
+                "params": [],
+                "body": {
+                  "type": "BlockStatement",
+                  "start": 45,
+                  "end": 56,
+                  "body": [
+                    {
+                      "type": "ReturnStatement",
+                      "start": 46,
+                      "end": 55,
+                      "argument": {
+                        "type": "Literal",
+                        "start": 53,
+                        "end": 54,
+                        "value": "1"
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

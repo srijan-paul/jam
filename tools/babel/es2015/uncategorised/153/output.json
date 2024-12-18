@@ -1,0 +1,96 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 28,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "FunctionDeclaration",
+      "start": 0,
+      "end": 28,
+      "id": {
+        "type": "Identifier",
+        "start": 9,
+        "end": 10,
+        "name": "f"
+      },
+      "generator": false,
+      "async": false,
+      "expression": false,
+      "params": [
+        {
+          "type": "AssignmentPattern",
+          "start": 11,
+          "end": 24,
+          "left": {
+            "type": "ObjectPattern",
+            "start": 11,
+            "end": 14,
+            "properties": [
+              {
+                "type": "Property",
+                "start": 12,
+                "end": 13,
+                "key": {
+                  "type": "Identifier",
+                  "start": 12,
+                  "end": 13,
+                  "name": "x"
+                },
+                "computed": false,
+                "method": false,
+                "shorthand": true,
+                "value": {
+                  "type": "Identifier",
+                  "start": 12,
+                  "end": 13,
+                  "name": "x"
+                },
+                "kind": "init",
+                "extra": {
+                  "shorthand": true
+                }
+              }
+            ]
+          },
+          "right": {
+            "type": "ObjectExpression",
+            "start": 17,
+            "end": 24,
+            "properties": [
+              {
+                "type": "Property",
+                "start": 18,
+                "end": 23,
+                "method": false,
+                "key": {
+                  "type": "Identifier",
+                  "start": 18,
+                  "end": 19,
+                  "name": "x"
+                },
+                "computed": false,
+                "shorthand": false,
+                "value": {
+                  "type": "Literal",
+                  "start": 21,
+                  "end": 23,
+                  "value": 10,
+                  "raw": "10"
+                },
+                "kind": "init"
+              }
+            ]
+          }
+        }
+      ],
+      "body": {
+        "type": "BlockStatement",
+        "start": 26,
+        "end": 28,
+        "body": []
+      }
+    }
+  ]
+}

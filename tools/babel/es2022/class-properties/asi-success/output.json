@@ -1,0 +1,119 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 54,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ClassDeclaration",
+      "start": 0,
+      "end": 21,
+      "id": {
+        "type": "Identifier",
+        "start": 6,
+        "end": 9,
+        "name": "Foo"
+      },
+      "superClass": null,
+      "body": {
+        "type": "ClassBody",
+        "start": 10,
+        "end": 21,
+        "body": [
+          {
+            "type": "ClassProperty",
+            "start": 14,
+            "end": 15,
+            "static": false,
+            "key": {
+              "type": "Identifier",
+              "start": 14,
+              "end": 15,
+              "name": "x"
+            },
+            "computed": false,
+            "value": null
+          },
+          {
+            "type": "ClassProperty",
+            "start": 18,
+            "end": 19,
+            "static": false,
+            "key": {
+              "type": "Identifier",
+              "start": 18,
+              "end": 19,
+              "name": "y"
+            },
+            "computed": false,
+            "value": null
+          }
+        ]
+      }
+    },
+    {
+      "type": "ClassDeclaration",
+      "start": 23,
+      "end": 53,
+      "id": {
+        "type": "Identifier",
+        "start": 29,
+        "end": 33,
+        "name": "Foo2"
+      },
+      "superClass": null,
+      "body": {
+        "type": "ClassBody",
+        "start": 34,
+        "end": 53,
+        "body": [
+          {
+            "type": "ClassProperty",
+            "start": 38,
+            "end": 39,
+            "static": false,
+            "key": {
+              "type": "Identifier",
+              "start": 38,
+              "end": 39,
+              "name": "p"
+            },
+            "computed": false,
+            "value": null
+          },
+          {
+            "type": "MethodDefinition",
+            "start": 42,
+            "end": 51,
+            "static": false,
+            "computed": true,
+            "key": {
+              "type": "Identifier",
+              "start": 43,
+              "end": 44,
+              "name": "m"
+            },
+            "kind": "method",
+            "value": {
+              "type": "FunctionExpression",
+              "start": 46,
+              "end": 51,
+              "id": null,
+              "generator": false,
+              "async": false,
+              "expression": false,
+              "params": [],
+              "body": {
+                "type": "BlockStatement",
+                "start": 49,
+                "end": 51,
+                "body": []
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

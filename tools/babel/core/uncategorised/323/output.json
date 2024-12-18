@@ -1,0 +1,55 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 17,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "LabeledStatement",
+      "start": 0,
+      "end": 8,
+      "body": {
+        "type": "ExpressionStatement",
+        "start": 5,
+        "end": 8,
+        "expression": {
+          "type": "Literal",
+          "start": 5,
+          "end": 7,
+          "value": 10,
+          "raw": "10"
+        }
+      },
+      "label": {
+        "type": "Identifier",
+        "start": 0,
+        "end": 3,
+        "name": "foo"
+      }
+    },
+    {
+      "type": "LabeledStatement",
+      "start": 9,
+      "end": 17,
+      "body": {
+        "type": "ExpressionStatement",
+        "start": 14,
+        "end": 17,
+        "expression": {
+          "type": "Literal",
+          "start": 14,
+          "end": 16,
+          "value": 20,
+          "raw": "20"
+        }
+      },
+      "label": {
+        "type": "Identifier",
+        "start": 9,
+        "end": 12,
+        "name": "foo"
+      }
+    }
+  ]
+}

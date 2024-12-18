@@ -1,0 +1,53 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 28,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 27,
+      "expression": {
+        "type": "ArrowFunctionExpression",
+        "start": 0,
+        "end": 26,
+        "id": null,
+        "generator": false,
+        "async": true,
+        "expression": true,
+        "params": [],
+        "body": {
+          "type": "BinaryExpression",
+          "start": 12,
+          "end": 26,
+          "left": {
+            "type": "AwaitExpression",
+            "start": 13,
+            "end": 20,
+            "argument": {
+              "type": "Literal",
+              "start": 19,
+              "end": 20,
+              "value": 5,
+              "raw": "5"
+            },
+            "extra": {
+              "parenthesized": true,
+              "parenStart": 12
+            }
+          },
+          "operator": "**",
+          "right": {
+            "type": "Literal",
+            "start": 25,
+            "end": 26,
+            "value": 6,
+            "raw": "6"
+          }
+        }
+      }
+    }
+  ]
+}

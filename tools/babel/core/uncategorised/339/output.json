@@ -1,0 +1,47 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 8,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 8,
+      "expression": {
+        "type": "BinaryExpression",
+        "start": 0,
+        "end": 8,
+        "left": {
+          "type": "UnaryExpression",
+          "start": 0,
+          "end": 4,
+          "operator": "+",
+          "prefix": true,
+          "argument": {
+            "type": "UpdateExpression",
+            "start": 1,
+            "end": 4,
+            "operator": "++",
+            "prefix": false,
+            "argument": {
+              "type": "Identifier",
+              "start": 1,
+              "end": 2,
+              "name": "x"
+            }
+          }
+        },
+        "operator": "/",
+        "right": {
+          "type": "Literal",
+          "start": 7,
+          "end": 8,
+          "value": 2,
+          "raw": "2"
+        }
+      }
+    }
+  ]
+}

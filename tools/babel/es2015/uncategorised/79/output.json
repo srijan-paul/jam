@@ -1,0 +1,28 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 17,
+  "sourceType": "module",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExportDefaultDeclaration",
+      "start": 0,
+      "end": 17,
+      "declaration": {
+        "type": "NumericLiteral",
+        "start": 15,
+        "end": 17,
+        "extra": {
+          "rawValue": 42,
+          "raw": "42"
+        },
+        "value": 42
+      }
+    }
+  ],
+  "directives": [],
+  "extra": {
+    "topLevelAwait": false
+  }
+}

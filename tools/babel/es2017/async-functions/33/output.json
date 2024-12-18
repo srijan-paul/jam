@@ -1,0 +1,90 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 61,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "VariableDeclaration",
+      "start": 0,
+      "end": 60,
+      "declarations": [
+        {
+          "type": "VariableDeclarator",
+          "start": 6,
+          "end": 59,
+          "id": {
+            "type": "Identifier",
+            "start": 6,
+            "end": 9,
+            "name": "foo"
+          },
+          "init": {
+            "type": "FunctionExpression",
+            "start": 12,
+            "end": 59,
+            "id": null,
+            "generator": false,
+            "async": true,
+            "expression": false,
+            "params": [
+              {
+                "type": "ObjectPattern",
+                "start": 27,
+                "end": 41,
+                "properties": [
+                  {
+                    "type": "Property",
+                    "start": 29,
+                    "end": 39,
+                    "key": {
+                      "type": "Identifier",
+                      "start": 29,
+                      "end": 34,
+                      "name": "async"
+                    },
+                    "computed": false,
+                    "method": false,
+                    "shorthand": false,
+                    "value": {
+                      "type": "Identifier",
+                      "start": 36,
+                      "end": 39,
+                      "name": "bar"
+                    },
+                    "kind": "init"
+                  }
+                ]
+              }
+            ],
+            "body": {
+              "type": "BlockStatement",
+              "start": 43,
+              "end": 59,
+              "body": [
+                {
+                  "type": "ExpressionStatement",
+                  "start": 47,
+                  "end": 57,
+                  "expression": {
+                    "type": "AwaitExpression",
+                    "start": 47,
+                    "end": 56,
+                    "argument": {
+                      "type": "Identifier",
+                      "start": 53,
+                      "end": 56,
+                      "name": "baz"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "kind": "const"
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 26,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ThrowStatement",
+      "start": 0,
+      "end": 26,
+      "argument": {
+        "type": "ObjectExpression",
+        "start": 6,
+        "end": 26,
+        "properties": [
+          {
+            "type": "Property",
+            "start": 8,
+            "end": 24,
+            "method": false,
+            "key": {
+              "type": "Identifier",
+              "start": 8,
+              "end": 15,
+              "name": "message"
+            },
+            "computed": false,
+            "shorthand": false,
+            "value": {
+              "type": "Literal",
+              "start": 17,
+              "end": 24,
+              "value": "Error",
+              "raw": "\"Error\""
+            },
+            "kind": "init"
+          }
+        ]
+      }
+    }
+  ]
+}

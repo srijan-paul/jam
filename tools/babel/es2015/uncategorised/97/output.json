@@ -1,0 +1,48 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 33,
+  "sourceType": "module",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ImportDeclaration",
+      "start": 0,
+      "end": 33,
+      "specifiers": [
+        {
+          "type": "ImportSpecifier",
+          "start": 9,
+          "end": 20,
+          "imported": {
+            "type": "Identifier",
+            "start": 9,
+            "end": 13,
+            "name": "null"
+          },
+          "local": {
+            "type": "Identifier",
+            "start": 17,
+            "end": 20,
+            "name": "nil"
+          }
+        }
+      ],
+      "source": {
+        "type": "StringLiteral",
+        "start": 28,
+        "end": 33,
+        "extra": {
+          "rawValue": "bar",
+          "raw": "\"bar\""
+        },
+        "value": "bar"
+      },
+      "attributes": []
+    }
+  ],
+  "directives": [],
+  "extra": {
+    "topLevelAwait": false
+  }
+}

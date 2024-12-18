@@ -40,7 +40,7 @@ pub const Error = error{
     IllegalFatArrow,
     /// Found a newline where there shouldn't be one
     IllegalNewline,
-    /// Incorrect use of a meta property like 'new.target'
+    // Incorrect use of a meta property like 'new.target'
     InvalidMetaProperty,
     /// 5 = ...
     InvalidAssignmentTarget,
@@ -655,8 +655,7 @@ fn importSpecifier(self: *Self) Error!Node.Index {
             break :blk try self.stringLiteralFromToken(name_token.id);
         }
 
-        name_token.id = self.current.id;
-        name_token.token = try self.expectIdOrKeyword();
+        name_token = try self.expectIdOrKeyword();
         break :blk try self.identifier(name_token);
     };
 
@@ -1166,12 +1165,19 @@ fn classBody(self: *Self) Error!ast.SubRange {
 }
 
 // `saw_constructor` is an in-out parameter that is set to true if a constructor was seen.
+// TODO: remove this saw_constructor_inout parameter
 fn classElement(self: *Self, saw_constructor_inout: *bool) Error!Node.Index {
     switch (self.current.token.tag) {
         .kw_constructor => {
             saw_constructor_inout.* = true;
             const ctor = try self.next();
             const ctor_key = try self.identifier(ctor);
+
+            if (!self.isAtToken(.@"(")) {
+                try self.emitDiagnosticOnNode(ctor_key, "Classes cannot have a field named 'constructor'");
+                return Error.UnexpectedToken;
+            }
+
             return self.parseClassMethodBody(
                 ctor_key,
                 .{ .is_static = false, .kind = .constructor },
@@ -2722,13 +2728,12 @@ fn expectIdentifier(self: *Self) Error!TokenWithId {
     return Error.UnexpectedToken;
 }
 
-fn expectIdOrKeyword(self: *Self) Error!Token {
-    const token = try self.nextToken();
-    if (token.tag.isIdentifier() or token.tag.isKeyword()) {
-        return token;
+fn expectIdOrKeyword(self: *Self) Error!TokenWithId {
+    if (self.current.token.tag.isIdentifier() or self.current.token.tag.isKeyword()) {
+        return self.next();
     }
 
-    try self.emitBadTokenDiagnostic("identifier", &token);
+    try self.emitBadTokenDiagnostic("identifier", &self.current.token);
     return Error.UnexpectedToken;
 }
 
@@ -2906,6 +2911,10 @@ fn reinterpretAsPattern(self: *Self, node_id: Node.Index) void {
         .computed_member_expr,
         .call_expr,
         => return,
+        .meta_property => {
+            // TODO: import.meta is not assignable. raise an error here
+            return;
+        },
         .object_literal => |object_pl| {
             node.* = .{ .object_pattern = object_pl };
             const elems = self.subRangeToSlice(object_pl orelse return);
@@ -2928,7 +2937,7 @@ fn reinterpretAsPattern(self: *Self, node_id: Node.Index) void {
             self.reinterpretAsPattern(spread_pl);
             node.* = .{ .rest_element = spread_pl };
         },
-        else => unreachable,
+        else => {},
     }
 }
 
@@ -3092,7 +3101,6 @@ fn yieldOrConditionalExpression(self: *Self) Error!Node.Index {
         return self.conditionalExpression();
     }
 
-    self.current_destructure_kind.setNoAssignOrDestruct();
     return self.yieldExpression();
 }
 
@@ -3131,6 +3139,8 @@ fn yieldExpression(self: *Self) Error!Node.Index {
 
         break :blk null;
     };
+
+    self.current_destructure_kind.setNoAssignOrDestruct();
 
     return self.addNode(.{
         .yield_expr = .{
@@ -4262,8 +4272,7 @@ fn asyncExpression(self: *Self, async_kw: *const TokenWithId) Error!Node.Index {
             },
         );
 
-        const node_slice = self.nodes.slice();
-        const parsed: *ast.NodeData = &node_slice.items(.data)[@intFromEnum(argsOrArrowParams)];
+        const parsed: *ast.NodeData = &self.nodes.items(.data)[@intFromEnum(argsOrArrowParams)];
         switch (parsed.*) {
             .parameters => return argsOrArrowParams,
             .arguments => {
@@ -4271,7 +4280,7 @@ fn asyncExpression(self: *Self, async_kw: *const TokenWithId) Error!Node.Index {
                 return self.addNode(
                     .{ .call_expr = .{ .callee = async_identifier, .arguments = argsOrArrowParams } },
                     async_kw.id,
-                    node_slice.items(.end)[@intFromEnum(argsOrArrowParams)],
+                    self.nodes.items(.end)[@intFromEnum(argsOrArrowParams)],
                 );
             },
             else => unreachable,
@@ -4299,10 +4308,7 @@ fn asyncExpression(self: *Self, async_kw: *const TokenWithId) Error!Node.Index {
     return self.identifier(async_kw.*);
 }
 
-fn callArgsOrAsyncArrowParams(
-    self: *Self,
-    _: ast.FunctionFlags,
-) Error!Node.Index {
+fn callArgsOrAsyncArrowParams(self: *Self, _: ast.FunctionFlags) Error!Node.Index {
     const lparen = try self.next();
     std.debug.assert(lparen.token.tag == .@"(");
 
@@ -4685,6 +4691,7 @@ fn completeArrowParamsOrGroupingExpr(
         return expr;
     }
 
+    // TODO: use scratch space here
     var nodes = std.ArrayList(Node.Index).init(self.allocator);
     defer nodes.deinit();
 
@@ -4959,16 +4966,18 @@ fn identifierProperty(self: *Self) Error!Node.Index {
         cur_token.tag != .@"," and cur_token.tag != .@"}" and
         cur_token.tag != .@"=")
     {
-        if (key_token.token.tag == .kw_async and
-            key_token.token.tag.isValidPropertyName())
-        {
-            // handle `async f() { ... }`
-            const next_token = try self.next();
-            const property_key = try self.identifier(next_token);
+        if (key_token.token.tag == .kw_async) {
+            // handle `async f() { ... }` and `async *f() { ... }`
+
+            const is_generator = self.isAtToken(.@"*");
+            if (is_generator) _ = try self.nextToken(); // eat '*'
+
+            const property_key_token = try self.expectIdOrKeyword();
+            const property_key = try self.identifier(property_key_token);
             const property_val = try self.parseMethodBody(
                 property_key,
                 .{ .is_method = true },
-                .{ .is_async = true },
+                .{ .is_async = true, .is_generator = is_generator },
             );
 
             const end_pos = self.nodes.items(.end)[@intFromEnum(property_val)];
@@ -5088,6 +5097,13 @@ fn getterOrSetter(self: *Self, token: Token) Error!?Node.Index {
 }
 
 /// Checks if a token can start a class element name.
+/// ```js
+/// class Foo {
+///     foo = 1; // .identifier
+///     if = 2; // .kw_if
+///     [x] = 3; // .@"["
+/// }
+/// ```
 fn canStartClassElementName(token: *const Token) bool {
     return token.tag.isValidPropertyName() or
         token.tag == .@"[" or
@@ -5653,7 +5669,6 @@ fn parseArgs(self: *Self) Error!struct { ast.SubRange, Token.Index, Token.Index 
     }
 
     const end_pos = (try self.expect(.@")")).id; // eat closing ')'
-
     const arg_list = self.scratch.items[scratch_start..];
     return .{ try self.addSubRange(arg_list), start_pos, end_pos };
 }

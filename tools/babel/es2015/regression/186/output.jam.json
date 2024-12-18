@@ -1,0 +1,75 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 24,
+  "body": [
+    {
+      "type": "VariableDeclaration",
+      "start": 0,
+      "end": 23,
+      "declarations": [
+        {
+          "type": "VariableDeclarator",
+          "start": 6,
+          "end": 22,
+          "id": {
+            "type": "Identifier",
+            "start": 6,
+            "end": 7,
+            "name": "x"
+          },
+          "init": {
+            "type": "ObjectExpression",
+            "start": 10,
+            "end": 22,
+            "properties": [
+              {
+                "type": "Property",
+                "start": 11,
+                "end": 16,
+                "key": {
+                  "type": "Identifier",
+                  "start": 11,
+                  "end": 16,
+                  "name": "async"
+                },
+                "value": {
+                  "type": "Identifier",
+                  "start": 11,
+                  "end": 16,
+                  "name": "async"
+                },
+                "kind": "init",
+                "computed": false,
+                "shorthand": true,
+                "method": false
+              },
+              {
+                "type": "Property",
+                "start": 18,
+                "end": 21,
+                "key": {
+                  "type": "Identifier",
+                  "start": 18,
+                  "end": 21,
+                  "name": "bar"
+                },
+                "value": {
+                  "type": "Identifier",
+                  "start": 18,
+                  "end": 21,
+                  "name": "bar"
+                },
+                "kind": "init",
+                "computed": false,
+                "shorthand": true,
+                "method": false
+              }
+            ]
+          }
+        }
+      ],
+      "kind": "const"
+    }
+  ]
+}

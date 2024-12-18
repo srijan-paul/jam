@@ -1,0 +1,74 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 41,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 40,
+      "expression": {
+        "type": "ArrowFunctionExpression",
+        "start": 0,
+        "end": 40,
+        "id": null,
+        "generator": false,
+        "async": true,
+        "expression": true,
+        "params": [],
+        "body": {
+          "type": "ClassExpression",
+          "start": 12,
+          "end": 40,
+          "id": null,
+          "superClass": null,
+          "body": {
+            "type": "ClassBody",
+            "start": 18,
+            "end": 40,
+            "body": [
+              {
+                "type": "MethodDefinition",
+                "start": 22,
+                "end": 38,
+                "static": false,
+                "computed": true,
+                "key": {
+                  "type": "AwaitExpression",
+                  "start": 23,
+                  "end": 31,
+                  "argument": {
+                    "type": "Literal",
+                    "start": 29,
+                    "end": 31,
+                    "value": 42,
+                    "raw": "42"
+                  }
+                },
+                "kind": "method",
+                "value": {
+                  "type": "FunctionExpression",
+                  "start": 32,
+                  "end": 38,
+                  "id": null,
+                  "generator": false,
+                  "async": false,
+                  "expression": false,
+                  "params": [],
+                  "body": {
+                    "type": "BlockStatement",
+                    "start": 35,
+                    "end": 38,
+                    "body": []
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

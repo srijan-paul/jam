@@ -1,0 +1,101 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 54,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 6,
+      "end": 53,
+      "expression": {
+        "type": "FunctionExpression",
+        "start": 6,
+        "end": 53,
+        "async": true,
+        "generator": false,
+        "arrow": true,
+        "params": [
+          {
+            "type": "AssignmentPattern",
+            "start": 7,
+            "end": 46,
+            "left": {
+              "type": "Identifier",
+              "start": 7,
+              "end": 8,
+              "name": "x"
+            },
+            "right": {
+              "type": "FunctionExpression",
+              "start": 11,
+              "end": 46,
+              "id": {
+                "type": "Identifier",
+                "start": 20,
+                "end": 21,
+                "name": "f"
+              },
+              "async": false,
+              "generator": false,
+              "arrow": false,
+              "params": [
+                {
+                  "type": "AssignmentPattern",
+                  "start": 22,
+                  "end": 31,
+                  "left": {
+                    "type": "Identifier",
+                    "start": 22,
+                    "end": 23,
+                    "name": "x"
+                  },
+                  "right": {
+                    "type": "ClassExpression",
+                    "start": 26,
+                    "end": 43,
+                    "body": {
+                      "type": "ClassBody",
+                      "body": [
+                        {
+                          "type": "ClassProperty",
+                          "start": 35,
+                          "end": 40,
+                          "key": {
+                            "type": "Identifier",
+                            "start": 35,
+                            "end": 40,
+                            "name": "await"
+                          },
+                          "value": {
+                            "type": "Identifier",
+                            "start": 35,
+                            "end": 40,
+                            "name": "await"
+                          },
+                          "computed": false,
+                          "static": false
+                        }
+                      ]
+                    }
+                  }
+                }
+              ],
+              "body": {
+                "type": "BlockStatement",
+                "start": 44,
+                "end": 46,
+                "body": []
+              }
+            }
+          }
+        ],
+        "body": {
+          "type": "BlockStatement",
+          "start": 51,
+          "end": 53,
+          "body": []
+        }
+      }
+    }
+  ]
+}

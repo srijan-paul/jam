@@ -1,0 +1,59 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 42,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 41,
+      "expression": {
+        "type": "CallExpression",
+        "start": 0,
+        "end": 25,
+        "callee": {
+          "type": "Identifier",
+          "start": 0,
+          "end": 2,
+          "name": "fn"
+        },
+        "extra": {
+          "trailingComma": 7
+        },
+        "arguments": [
+          {
+            "type": "Identifier",
+            "start": 3,
+            "end": 4,
+            "name": "a"
+          },
+          {
+            "type": "Identifier",
+            "start": 6,
+            "end": 7,
+            "name": "b",
+            "trailingComments": [
+              {
+                "type": "CommentBlock",
+                "value": " comment 1 ",
+                "start": 9,
+                "end": 24
+              }
+            ]
+          }
+        ],
+        "optional": false,
+        "trailingComments": [
+          {
+            "type": "CommentBlock",
+            "value": " comment 2",
+            "start": 26,
+            "end": 40
+          }
+        ]
+      }
+    }
+  ]
+}

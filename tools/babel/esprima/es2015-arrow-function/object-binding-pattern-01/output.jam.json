@@ -1,0 +1,122 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 26,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 25,
+      "expression": {
+        "type": "FunctionExpression",
+        "start": 0,
+        "end": 24,
+        "async": false,
+        "generator": false,
+        "arrow": true,
+        "params": [
+          {
+            "type": "ObjectPattern",
+            "start": 1,
+            "end": 20,
+            "properties": [
+              {
+                "type": "Property",
+                "start": 2,
+                "end": 3,
+                "key": {
+                  "type": "Identifier",
+                  "start": 2,
+                  "end": 3,
+                  "name": "a"
+                },
+                "value": {
+                  "type": "Identifier",
+                  "start": 2,
+                  "end": 3,
+                  "name": "a"
+                },
+                "kind": "init",
+                "computed": false,
+                "shorthand": true,
+                "method": false
+              },
+              {
+                "type": "AssignmentPattern",
+                "start": 4,
+                "end": 7,
+                "left": {
+                  "type": "Identifier",
+                  "start": 4,
+                  "end": 5,
+                  "name": "b"
+                },
+                "right": {
+                  "type": "Identifier",
+                  "start": 6,
+                  "end": 7,
+                  "name": "b"
+                }
+              },
+              {
+                "type": "Property",
+                "start": 8,
+                "end": 11,
+                "key": {
+                  "type": "Identifier",
+                  "start": 8,
+                  "end": 9,
+                  "name": "a"
+                },
+                "value": {
+                  "type": "Identifier",
+                  "start": 10,
+                  "end": 11,
+                  "name": "c"
+                },
+                "kind": "init",
+                "computed": false,
+                "shorthand": false,
+                "method": false
+              },
+              {
+                "type": "Property",
+                "start": 13,
+                "end": 19,
+                "key": {
+                  "type": "Identifier",
+                  "start": 13,
+                  "end": 14,
+                  "name": "a"
+                },
+                "value": {
+                  "type": "ArrayPattern",
+                  "start": 16,
+                  "end": 19,
+                  "elements": [
+                    {
+                      "type": "Identifier",
+                      "start": 17,
+                      "end": 18,
+                      "name": "d"
+                    }
+                  ]
+                },
+                "kind": "init",
+                "computed": true,
+                "shorthand": false,
+                "method": false
+              }
+            ]
+          }
+        ],
+        "body": {
+          "type": "Literal",
+          "start": 23,
+          "end": 24,
+          "value": "0"
+        }
+      }
+    }
+  ]
+}

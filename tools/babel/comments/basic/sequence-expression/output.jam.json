@@ -1,0 +1,31 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 85,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 17,
+      "end": 76,
+      "expression": {
+        "type": "SequenceExpression",
+        "start": 17,
+        "end": 57,
+        "expressions": [
+          {
+            "type": "Identifier",
+            "start": 27,
+            "end": 28,
+            "name": "a"
+          },
+          {
+            "type": "Identifier",
+            "start": 46,
+            "end": 47,
+            "name": "b"
+          }
+        ]
+      }
+    }
+  ]
+}

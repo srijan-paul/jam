@@ -1,0 +1,85 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 66,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "FunctionDeclaration",
+      "start": 0,
+      "end": 65,
+      "id": {
+        "type": "Identifier",
+        "start": 9,
+        "end": 19,
+        "name": "loadImport"
+      },
+      "generator": false,
+      "async": false,
+      "expression": false,
+      "params": [
+        {
+          "type": "Identifier",
+          "start": 20,
+          "end": 24,
+          "name": "file"
+        }
+      ],
+      "body": {
+        "type": "BlockStatement",
+        "start": 26,
+        "end": 65,
+        "body": [
+          {
+            "type": "ReturnStatement",
+            "start": 30,
+            "end": 63,
+            "argument": {
+              "type": "ImportExpression",
+              "start": 37,
+              "end": 62,
+              "source": {
+                "type": "TemplateLiteral",
+                "start": 44,
+                "end": 61,
+                "expressions": [
+                  {
+                    "type": "Identifier",
+                    "start": 52,
+                    "end": 56,
+                    "name": "file"
+                  }
+                ],
+                "quasis": [
+                  {
+                    "type": "TemplateElement",
+                    "start": 45,
+                    "end": 50,
+                    "value": {
+                      "raw": "test/",
+                      "cooked": "test/"
+                    },
+                    "tail": false
+                  },
+                  {
+                    "type": "TemplateElement",
+                    "start": 57,
+                    "end": 60,
+                    "value": {
+                      "raw": ".js",
+                      "cooked": ".js"
+                    },
+                    "tail": true
+                  }
+                ]
+              },
+              "options": null,
+              "attributes": null
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

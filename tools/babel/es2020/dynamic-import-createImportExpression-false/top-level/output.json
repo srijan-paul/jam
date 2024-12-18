@@ -1,0 +1,157 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 113,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 21,
+      "expression": {
+        "type": "ImportExpression",
+        "start": 0,
+        "end": 20,
+        "source": {
+          "type": "Literal",
+          "start": 7,
+          "end": 19,
+          "value": "testing.js",
+          "raw": "'testing.js'"
+        },
+        "options": null,
+        "attributes": null
+      }
+    },
+    {
+      "type": "VariableDeclaration",
+      "start": 23,
+      "end": 44,
+      "declarations": [
+        {
+          "type": "VariableDeclarator",
+          "start": 29,
+          "end": 43,
+          "id": {
+            "type": "Identifier",
+            "start": 29,
+            "end": 33,
+            "name": "test"
+          },
+          "init": {
+            "type": "Literal",
+            "start": 36,
+            "end": 43,
+            "value": "hello",
+            "raw": "'hello'"
+          }
+        }
+      ],
+      "kind": "const"
+    },
+    {
+      "type": "ExpressionStatement",
+      "start": 45,
+      "end": 74,
+      "expression": {
+        "type": "ImportExpression",
+        "start": 45,
+        "end": 73,
+        "source": {
+          "type": "TemplateLiteral",
+          "start": 52,
+          "end": 72,
+          "expressions": [
+            {
+              "type": "Identifier",
+              "start": 63,
+              "end": 67,
+              "name": "test"
+            }
+          ],
+          "quasis": [
+            {
+              "type": "TemplateElement",
+              "start": 53,
+              "end": 61,
+              "value": {
+                "raw": "testing/",
+                "cooked": "testing/"
+              },
+              "tail": false
+            },
+            {
+              "type": "TemplateElement",
+              "start": 68,
+              "end": 71,
+              "value": {
+                "raw": ".js",
+                "cooked": ".js"
+              },
+              "tail": true
+            }
+          ]
+        },
+        "options": null,
+        "attributes": null
+      }
+    },
+    {
+      "type": "ExpressionStatement",
+      "start": 76,
+      "end": 112,
+      "expression": {
+        "type": "CallExpression",
+        "start": 76,
+        "end": 111,
+        "callee": {
+          "type": "MemberExpression",
+          "start": 76,
+          "end": 101,
+          "object": {
+            "type": "ImportExpression",
+            "start": 76,
+            "end": 96,
+            "source": {
+              "type": "Literal",
+              "start": 83,
+              "end": 95,
+              "value": "testing.js",
+              "raw": "'testing.js'"
+            },
+            "options": null,
+            "attributes": null
+          },
+          "computed": false,
+          "property": {
+            "type": "Identifier",
+            "start": 97,
+            "end": 101,
+            "name": "then"
+          },
+          "optional": false
+        },
+        "arguments": [
+          {
+            "type": "ArrowFunctionExpression",
+            "start": 102,
+            "end": 110,
+            "id": null,
+            "generator": false,
+            "async": false,
+            "expression": false,
+            "params": [],
+            "body": {
+              "type": "BlockStatement",
+              "start": 108,
+              "end": 110,
+              "body": []
+            }
+          }
+        ],
+        "optional": false
+      }
+    }
+  ]
+}

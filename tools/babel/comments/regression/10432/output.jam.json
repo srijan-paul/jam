@@ -1,0 +1,133 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 137,
+  "body": [
+    {
+      "type": "VariableDeclaration",
+      "start": 0,
+      "end": 36,
+      "declarations": [
+        {
+          "type": "VariableDeclarator",
+          "start": 6,
+          "end": 36,
+          "id": {
+            "type": "Identifier",
+            "start": 6,
+            "end": 12,
+            "name": "socket"
+          },
+          "init": {
+            "type": "CallExpression",
+            "start": 15,
+            "end": 36,
+            "callee": {
+              "type": "Identifier",
+              "start": 15,
+              "end": 27,
+              "name": "socketClient"
+            },
+            "arguments": [
+              {
+                "type": "Identifier",
+                "start": 28,
+                "end": 35,
+                "name": "address"
+              }
+            ]
+          }
+        }
+      ],
+      "kind": "const"
+    },
+    {
+      "type": "ExpressionStatement",
+      "start": 64,
+      "end": 136,
+      "expression": {
+        "type": "CallExpression",
+        "start": 64,
+        "end": 136,
+        "callee": {
+          "type": "MemberExpression",
+          "start": 64,
+          "end": 73,
+          "object": {
+            "type": "Identifier",
+            "start": 64,
+            "end": 70,
+            "name": "socket"
+          },
+          "property": {
+            "type": "Identifier",
+            "start": 71,
+            "end": 73,
+            "name": "on"
+          },
+          "computed": false
+        },
+        "arguments": [
+          {
+            "type": "Literal",
+            "start": 74,
+            "end": 83,
+            "value": "'connect'"
+          },
+          {
+            "type": "FunctionExpression",
+            "start": 85,
+            "end": 135,
+            "async": false,
+            "generator": false,
+            "arrow": false,
+            "params": [],
+            "body": {
+              "type": "BlockStatement",
+              "start": 97,
+              "end": 135,
+              "body": [
+                {
+                  "type": "ExpressionStatement",
+                  "start": 101,
+                  "end": 133,
+                  "expression": {
+                    "type": "CallExpression",
+                    "start": 101,
+                    "end": 133,
+                    "callee": {
+                      "type": "Identifier",
+                      "start": 101,
+                      "end": 106,
+                      "name": "debug"
+                    },
+                    "arguments": [
+                      {
+                        "type": "BinaryExpression",
+                        "start": 107,
+                        "end": 132,
+                        "operator": "+",
+                        "left": {
+                          "type": "Literal",
+                          "start": 107,
+                          "end": 122,
+                          "value": "'Connected to '"
+                        },
+                        "right": {
+                          "type": "Identifier",
+                          "start": 125,
+                          "end": 132,
+                          "name": "address"
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

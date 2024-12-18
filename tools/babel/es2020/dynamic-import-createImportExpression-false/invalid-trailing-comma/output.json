@@ -1,0 +1,31 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 15,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 15,
+      "expression": {
+        "type": "ImportExpression",
+        "start": 0,
+        "end": 14,
+        "extra": {
+          "trailingComma": 12
+        },
+        "source": {
+          "type": "Literal",
+          "start": 7,
+          "end": 12,
+          "value": "foo",
+          "raw": "\"foo\""
+        },
+        "options": null,
+        "attributes": null
+      }
+    }
+  ]
+}

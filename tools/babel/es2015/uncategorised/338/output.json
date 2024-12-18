@@ -1,0 +1,50 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 38,
+  "sourceType": "module",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExportDefaultDeclaration",
+      "start": 0,
+      "end": 32,
+      "declaration": {
+        "type": "FunctionDeclaration",
+        "start": 15,
+        "end": 32,
+        "id": {
+          "type": "Identifier",
+          "start": 24,
+          "end": 27,
+          "name": "foo"
+        },
+        "generator": false,
+        "async": false,
+        "params": [],
+        "body": {
+          "type": "BlockStatement",
+          "start": 30,
+          "end": 32,
+          "body": [],
+          "directives": []
+        }
+      }
+    },
+    {
+      "type": "ExpressionStatement",
+      "start": 33,
+      "end": 38,
+      "expression": {
+        "type": "BooleanLiteral",
+        "start": 33,
+        "end": 38,
+        "value": false
+      }
+    }
+  ],
+  "directives": [],
+  "extra": {
+    "topLevelAwait": false
+  }
+}

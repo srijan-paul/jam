@@ -7,7 +7,7 @@ const types = util.types;
 /// concatenating tokens in order should give yield the original source text.
 /// This allows syntax trees to preserve whitespaces and comments.
 /// Nodes need only store two properties: `start: Token.Index` and `end: Token.Index`,
-/// and we can reliably reconstruct the original source text with whitespaces.
+/// and we can reliably reconstruct the original source text with whitespaces intact.
 ///
 /// `TagType` must be an enum type.
 pub fn Token(TagType: type) type {
@@ -18,7 +18,7 @@ pub fn Token(TagType: type) type {
     return struct {
         const Self = @This();
 
-        /// This number is used to index into a list of enums.
+        /// This enum is used to index into a list of enums.
         /// A parser that consumes tokens would usually maintain
         /// a list of tokens, and nodes can reference tokens by using
         /// a member of this type.

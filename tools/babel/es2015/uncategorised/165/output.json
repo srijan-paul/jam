@@ -1,0 +1,86 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 22,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "FunctionDeclaration",
+      "start": 0,
+      "end": 22,
+      "id": {
+        "type": "Identifier",
+        "start": 9,
+        "end": 10,
+        "name": "x"
+      },
+      "generator": false,
+      "async": false,
+      "expression": false,
+      "params": [
+        {
+          "type": "ObjectPattern",
+          "start": 11,
+          "end": 19,
+          "properties": [
+            {
+              "type": "Property",
+              "start": 13,
+              "end": 14,
+              "key": {
+                "type": "Identifier",
+                "start": 13,
+                "end": 14,
+                "name": "a"
+              },
+              "computed": false,
+              "method": false,
+              "shorthand": true,
+              "value": {
+                "type": "Identifier",
+                "start": 13,
+                "end": 14,
+                "name": "a"
+              },
+              "kind": "init",
+              "extra": {
+                "shorthand": true
+              }
+            },
+            {
+              "type": "Property",
+              "start": 16,
+              "end": 17,
+              "key": {
+                "type": "Identifier",
+                "start": 16,
+                "end": 17,
+                "name": "b"
+              },
+              "computed": false,
+              "method": false,
+              "shorthand": true,
+              "value": {
+                "type": "Identifier",
+                "start": 16,
+                "end": 17,
+                "name": "b"
+              },
+              "kind": "init",
+              "extra": {
+                "shorthand": true
+              }
+            }
+          ]
+        }
+      ],
+      "body": {
+        "type": "BlockStatement",
+        "start": 20,
+        "end": 22,
+        "body": []
+      }
+    }
+  ]
+}

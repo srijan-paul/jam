@@ -1,0 +1,193 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 117,
+  "body": [
+    {
+      "type": "VariableDeclaration",
+      "start": 0,
+      "end": 22,
+      "declarations": [
+        {
+          "type": "VariableDeclarator",
+          "start": 6,
+          "end": 21,
+          "id": {
+            "type": "Identifier",
+            "start": 6,
+            "end": 7,
+            "name": "x"
+          },
+          "init": {
+            "type": "MetaProperty",
+            "start": 10,
+            "end": 21,
+            "meta": {
+              "type": "Identifier",
+              "start": 10,
+              "end": 16,
+              "name": "import"
+            },
+            "property": {
+              "type": "Identifier",
+              "start": 17,
+              "end": 21,
+              "name": "meta"
+            }
+          }
+        }
+      ],
+      "kind": "const"
+    },
+    {
+      "type": "VariableDeclaration",
+      "start": 23,
+      "end": 51,
+      "declarations": [
+        {
+          "type": "VariableDeclarator",
+          "start": 29,
+          "end": 50,
+          "id": {
+            "type": "Identifier",
+            "start": 29,
+            "end": 32,
+            "name": "url"
+          },
+          "init": {
+            "type": "MemberExpression",
+            "start": 35,
+            "end": 50,
+            "object": {
+              "type": "MetaProperty",
+              "start": 35,
+              "end": 46,
+              "meta": {
+                "type": "Identifier",
+                "start": 35,
+                "end": 41,
+                "name": "import"
+              },
+              "property": {
+                "type": "Identifier",
+                "start": 42,
+                "end": 46,
+                "name": "meta"
+              }
+            },
+            "property": {
+              "type": "Identifier",
+              "start": 47,
+              "end": 50,
+              "name": "url"
+            },
+            "computed": false
+          }
+        }
+      ],
+      "kind": "const"
+    },
+    {
+      "type": "ExpressionStatement",
+      "start": 52,
+      "end": 64,
+      "expression": {
+        "type": "MetaProperty",
+        "start": 52,
+        "end": 63,
+        "meta": {
+          "type": "Identifier",
+          "start": 52,
+          "end": 58,
+          "name": "import"
+        },
+        "property": {
+          "type": "Identifier",
+          "start": 59,
+          "end": 63,
+          "name": "meta"
+        }
+      }
+    },
+    {
+      "type": "ExpressionStatement",
+      "start": 65,
+      "end": 81,
+      "expression": {
+        "type": "MemberExpression",
+        "start": 65,
+        "end": 80,
+        "object": {
+          "type": "MetaProperty",
+          "start": 65,
+          "end": 76,
+          "meta": {
+            "type": "Identifier",
+            "start": 65,
+            "end": 71,
+            "name": "import"
+          },
+          "property": {
+            "type": "Identifier",
+            "start": 72,
+            "end": 76,
+            "name": "meta"
+          }
+        },
+        "property": {
+          "type": "Identifier",
+          "start": 77,
+          "end": 80,
+          "name": "url"
+        },
+        "computed": false
+      }
+    },
+    {
+      "type": "ExpressionStatement",
+      "start": 82,
+      "end": 116,
+      "expression": {
+        "type": "AssignmentExpression",
+        "start": 82,
+        "end": 115,
+        "operator": "=",
+        "left": {
+          "type": "MemberExpression",
+          "start": 82,
+          "end": 108,
+          "object": {
+            "type": "MetaProperty",
+            "start": 82,
+            "end": 93,
+            "meta": {
+              "type": "Identifier",
+              "start": 82,
+              "end": 88,
+              "name": "import"
+            },
+            "property": {
+              "type": "Identifier",
+              "start": 89,
+              "end": 93,
+              "name": "meta"
+            }
+          },
+          "property": {
+            "type": "Identifier",
+            "start": 94,
+            "end": 108,
+            "name": "couldBeMutable"
+          },
+          "computed": false
+        },
+        "right": {
+          "type": "Literal",
+          "start": 111,
+          "end": 115,
+          "value": "true"
+        }
+      }
+    }
+  ]
+}

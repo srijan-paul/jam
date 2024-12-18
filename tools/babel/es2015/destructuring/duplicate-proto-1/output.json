@@ -1,0 +1,79 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 39,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 38,
+      "expression": {
+        "type": "AssignmentExpression",
+        "start": 1,
+        "end": 36,
+        "operator": "=",
+        "left": {
+          "type": "ObjectPattern",
+          "start": 1,
+          "end": 31,
+          "properties": [
+            {
+              "type": "Property",
+              "start": 3,
+              "end": 15,
+              "method": false,
+              "key": {
+                "type": "Identifier",
+                "start": 3,
+                "end": 12,
+                "name": "__proto__"
+              },
+              "computed": false,
+              "shorthand": false,
+              "value": {
+                "type": "Identifier",
+                "start": 14,
+                "end": 15,
+                "name": "x"
+              },
+              "kind": "init"
+            },
+            {
+              "type": "Property",
+              "start": 17,
+              "end": 29,
+              "method": false,
+              "key": {
+                "type": "Identifier",
+                "start": 17,
+                "end": 26,
+                "name": "__proto__"
+              },
+              "computed": false,
+              "shorthand": false,
+              "value": {
+                "type": "Identifier",
+                "start": 28,
+                "end": 29,
+                "name": "y"
+              },
+              "kind": "init"
+            }
+          ]
+        },
+        "right": {
+          "type": "ObjectExpression",
+          "start": 34,
+          "end": 36,
+          "properties": []
+        },
+        "extra": {
+          "parenthesized": true,
+          "parenStart": 0
+        }
+      }
+    }
+  ]
+}

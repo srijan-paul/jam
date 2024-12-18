@@ -1,0 +1,40 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 19,
+  "sourceType": "module",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 18,
+      "expression": {
+        "type": "CallExpression",
+        "start": 0,
+        "end": 17,
+        "callee": {
+          "type": "Import",
+          "start": 0,
+          "end": 6
+        },
+        "arguments": [
+          {
+            "type": "StringLiteral",
+            "start": 7,
+            "end": 16,
+            "extra": {
+              "rawValue": "test.js",
+              "raw": "'test.js'"
+            },
+            "value": "test.js"
+          }
+        ]
+      }
+    }
+  ],
+  "directives": [],
+  "extra": {
+    "topLevelAwait": false
+  }
+}

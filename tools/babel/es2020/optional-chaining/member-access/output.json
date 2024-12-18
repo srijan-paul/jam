@@ -1,0 +1,122 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 37,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 8,
+      "expression": {
+        "type": "ChainExpression",
+        "start": 0,
+        "end": 8,
+        "expression": {
+          "type": "MemberExpression",
+          "start": 0,
+          "end": 8,
+          "object": {
+            "type": "Identifier",
+            "start": 0,
+            "end": 3,
+            "name": "foo"
+          },
+          "computed": false,
+          "property": {
+            "type": "Identifier",
+            "start": 5,
+            "end": 8,
+            "name": "bar"
+          },
+          "optional": true
+        }
+      }
+    },
+    {
+      "type": "ExpressionStatement",
+      "start": 10,
+      "end": 23,
+      "expression": {
+        "type": "ChainExpression",
+        "start": 10,
+        "end": 23,
+        "expression": {
+          "type": "MemberExpression",
+          "start": 10,
+          "end": 23,
+          "object": {
+            "type": "MemberExpression",
+            "start": 10,
+            "end": 18,
+            "object": {
+              "type": "Identifier",
+              "start": 10,
+              "end": 13,
+              "name": "foo"
+            },
+            "computed": false,
+            "property": {
+              "type": "Identifier",
+              "start": 15,
+              "end": 18,
+              "name": "bar"
+            },
+            "optional": true
+          },
+          "computed": false,
+          "property": {
+            "type": "Identifier",
+            "start": 20,
+            "end": 23,
+            "name": "baz"
+          },
+          "optional": true
+        }
+      }
+    },
+    {
+      "type": "ExpressionStatement",
+      "start": 25,
+      "end": 37,
+      "expression": {
+        "type": "ChainExpression",
+        "start": 25,
+        "end": 37,
+        "expression": {
+          "type": "MemberExpression",
+          "start": 25,
+          "end": 37,
+          "object": {
+            "type": "MemberExpression",
+            "start": 25,
+            "end": 32,
+            "object": {
+              "type": "Identifier",
+              "start": 25,
+              "end": 28,
+              "name": "foo"
+            },
+            "computed": false,
+            "property": {
+              "type": "Identifier",
+              "start": 29,
+              "end": 32,
+              "name": "bar"
+            },
+            "optional": false
+          },
+          "computed": false,
+          "property": {
+            "type": "Identifier",
+            "start": 34,
+            "end": 37,
+            "name": "baz"
+          },
+          "optional": true
+        }
+      }
+    }
+  ]
+}

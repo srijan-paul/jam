@@ -1,0 +1,63 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 33,
+  "body": [
+    {
+      "type": "ForStatement",
+      "start": 0,
+      "end": 32,
+      "init": {
+        "type": "VariableDeclaration",
+        "start": 5,
+        "end": 14,
+        "declarations": [
+          {
+            "type": "VariableDeclarator",
+            "start": 5,
+            "end": 14,
+            "id": {
+              "type": "Identifier",
+              "start": 9,
+              "end": 10,
+              "name": "i"
+            },
+            "init": {
+              "type": "Literal",
+              "start": 13,
+              "end": 14,
+              "value": "0"
+            }
+          }
+        ],
+        "kind": "let"
+      },
+      "body": {
+        "type": "BlockStatement",
+        "start": 18,
+        "end": 32,
+        "body": [
+          {
+            "type": "VariableDeclaration",
+            "start": 24,
+            "end": 30,
+            "declarations": [
+              {
+                "type": "VariableDeclarator",
+                "start": 28,
+                "end": 29,
+                "id": {
+                  "type": "Identifier",
+                  "start": 28,
+                  "end": 29,
+                  "name": "i"
+                }
+              }
+            ],
+            "kind": "let"
+          }
+        ]
+      }
+    }
+  ]
+}

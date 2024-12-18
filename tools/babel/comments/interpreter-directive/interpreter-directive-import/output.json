@@ -1,0 +1,53 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 57,
+  "sourceType": "module",
+  "interpreter": {
+    "type": "InterpreterDirective",
+    "start": 0,
+    "end": 25,
+    "value": "/usr/bin/env babel-node"
+  },
+  "body": [
+    {
+      "type": "ImportDeclaration",
+      "start": 27,
+      "end": 56,
+      "specifiers": [
+        {
+          "type": "ImportSpecifier",
+          "start": 35,
+          "end": 40,
+          "imported": {
+            "type": "Identifier",
+            "start": 35,
+            "end": 40,
+            "name": "spawn"
+          },
+          "local": {
+            "type": "Identifier",
+            "start": 35,
+            "end": 40,
+            "name": "spawn"
+          }
+        }
+      ],
+      "source": {
+        "type": "StringLiteral",
+        "start": 47,
+        "end": 55,
+        "extra": {
+          "rawValue": "foobar",
+          "raw": "'foobar'"
+        },
+        "value": "foobar"
+      },
+      "attributes": []
+    }
+  ],
+  "directives": [],
+  "extra": {
+    "topLevelAwait": false
+  }
+}

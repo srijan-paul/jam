@@ -1,0 +1,251 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 213,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ClassDeclaration",
+      "start": 0,
+      "end": 212,
+      "id": {
+        "type": "Identifier",
+        "start": 6,
+        "end": 9,
+        "name": "Foo"
+      },
+      "superClass": null,
+      "body": {
+        "type": "ClassBody",
+        "start": 10,
+        "end": 212,
+        "body": [
+          {
+            "type": "MethodDefinition",
+            "start": 14,
+            "end": 210,
+            "static": false,
+            "key": {
+              "type": "PrivateName",
+              "start": 21,
+              "end": 31,
+              "id": {
+                "type": "Identifier",
+                "start": 22,
+                "end": 31,
+                "name": "readLines"
+              }
+            },
+            "computed": false,
+            "kind": "method",
+            "value": {
+              "type": "FunctionExpression",
+              "start": 31,
+              "end": 210,
+              "id": null,
+              "generator": true,
+              "async": true,
+              "expression": false,
+              "params": [
+                {
+                  "type": "Identifier",
+                  "start": 32,
+                  "end": 36,
+                  "name": "path"
+                }
+              ],
+              "body": {
+                "type": "BlockStatement",
+                "start": 38,
+                "end": 210,
+                "body": [
+                  {
+                    "type": "VariableDeclaration",
+                    "start": 44,
+                    "end": 76,
+                    "declarations": [
+                      {
+                        "type": "VariableDeclarator",
+                        "start": 48,
+                        "end": 75,
+                        "id": {
+                          "type": "Identifier",
+                          "start": 48,
+                          "end": 52,
+                          "name": "file"
+                        },
+                        "init": {
+                          "type": "AwaitExpression",
+                          "start": 55,
+                          "end": 75,
+                          "argument": {
+                            "type": "CallExpression",
+                            "start": 61,
+                            "end": 75,
+                            "callee": {
+                              "type": "Identifier",
+                              "start": 61,
+                              "end": 69,
+                              "name": "fileOpen"
+                            },
+                            "arguments": [
+                              {
+                                "type": "Identifier",
+                                "start": 70,
+                                "end": 74,
+                                "name": "path"
+                              }
+                            ],
+                            "optional": false
+                          }
+                        }
+                      }
+                    ],
+                    "kind": "let"
+                  },
+                  {
+                    "type": "TryStatement",
+                    "start": 82,
+                    "end": 206,
+                    "block": {
+                      "type": "BlockStatement",
+                      "start": 86,
+                      "end": 164,
+                      "body": [
+                        {
+                          "type": "WhileStatement",
+                          "start": 94,
+                          "end": 158,
+                          "test": {
+                            "type": "UnaryExpression",
+                            "start": 101,
+                            "end": 110,
+                            "operator": "!",
+                            "prefix": true,
+                            "argument": {
+                              "type": "MemberExpression",
+                              "start": 102,
+                              "end": 110,
+                              "object": {
+                                "type": "Identifier",
+                                "start": 102,
+                                "end": 106,
+                                "name": "file"
+                              },
+                              "computed": false,
+                              "property": {
+                                "type": "Identifier",
+                                "start": 107,
+                                "end": 110,
+                                "name": "EOF"
+                              },
+                              "optional": false
+                            }
+                          },
+                          "body": {
+                            "type": "BlockStatement",
+                            "start": 112,
+                            "end": 158,
+                            "body": [
+                              {
+                                "type": "ExpressionStatement",
+                                "start": 122,
+                                "end": 150,
+                                "expression": {
+                                  "type": "YieldExpression",
+                                  "start": 122,
+                                  "end": 149,
+                                  "delegate": false,
+                                  "argument": {
+                                    "type": "AwaitExpression",
+                                    "start": 128,
+                                    "end": 149,
+                                    "argument": {
+                                      "type": "CallExpression",
+                                      "start": 134,
+                                      "end": 149,
+                                      "callee": {
+                                        "type": "MemberExpression",
+                                        "start": 134,
+                                        "end": 147,
+                                        "object": {
+                                          "type": "Identifier",
+                                          "start": 134,
+                                          "end": 138,
+                                          "name": "file"
+                                        },
+                                        "computed": false,
+                                        "property": {
+                                          "type": "Identifier",
+                                          "start": 139,
+                                          "end": 147,
+                                          "name": "readLine"
+                                        },
+                                        "optional": false
+                                      },
+                                      "arguments": [],
+                                      "optional": false
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    },
+                    "handler": null,
+                    "finalizer": {
+                      "type": "BlockStatement",
+                      "start": 173,
+                      "end": 206,
+                      "body": [
+                        {
+                          "type": "ExpressionStatement",
+                          "start": 181,
+                          "end": 200,
+                          "expression": {
+                            "type": "AwaitExpression",
+                            "start": 181,
+                            "end": 199,
+                            "argument": {
+                              "type": "CallExpression",
+                              "start": 187,
+                              "end": 199,
+                              "callee": {
+                                "type": "MemberExpression",
+                                "start": 187,
+                                "end": 197,
+                                "object": {
+                                  "type": "Identifier",
+                                  "start": 187,
+                                  "end": 191,
+                                  "name": "file"
+                                },
+                                "computed": false,
+                                "property": {
+                                  "type": "Identifier",
+                                  "start": 192,
+                                  "end": 197,
+                                  "name": "close"
+                                },
+                                "optional": false
+                              },
+                              "arguments": [],
+                              "optional": false
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

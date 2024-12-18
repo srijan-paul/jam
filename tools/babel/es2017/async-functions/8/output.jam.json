@@ -1,0 +1,67 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 40,
+  "body": [
+    {
+      "type": "VariableDeclaration",
+      "start": 0,
+      "end": 39,
+      "declarations": [
+        {
+          "type": "VariableDeclarator",
+          "start": 6,
+          "end": 39,
+          "id": {
+            "type": "ObjectPattern",
+            "start": 6,
+            "end": 13,
+            "properties": [
+              {
+                "type": "Property",
+                "start": 7,
+                "end": 12,
+                "key": {
+                  "type": "Identifier",
+                  "start": 7,
+                  "end": 12,
+                  "name": "async"
+                },
+                "value": {
+                  "type": "Identifier",
+                  "start": 7,
+                  "end": 12,
+                  "name": "async"
+                },
+                "kind": "init",
+                "computed": false,
+                "shorthand": true,
+                "method": false
+              }
+            ]
+          },
+          "init": {
+            "type": "CallExpression",
+            "start": 16,
+            "end": 39,
+            "callee": {
+              "type": "Identifier",
+              "start": 16,
+              "end": 23,
+              "name": "require"
+            },
+            "arguments": [
+              {
+                "type": "Literal",
+                "start": 24,
+                "end": 38,
+                "value": "'../lang/task'"
+              }
+            ]
+          }
+        }
+      ],
+      "kind": "const"
+    }
+  ]
+}

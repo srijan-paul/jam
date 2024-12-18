@@ -1,0 +1,79 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 21,
+  "body": [
+    {
+      "type": "ClassDeclaration",
+      "start": 0,
+      "end": 20,
+      "id": {
+        "type": "Identifier",
+        "start": 6,
+        "end": 7,
+        "name": "A"
+      },
+      "body": {
+        "type": "ClassBody",
+        "body": [
+          {
+            "type": "MethodDefinition",
+            "start": 9,
+            "end": 14,
+            "key": {
+              "type": "Identifier",
+              "start": 9,
+              "end": 10,
+              "name": "a"
+            },
+            "value": {
+              "type": "FunctionExpression",
+              "start": 10,
+              "end": 14,
+              "async": false,
+              "generator": false,
+              "arrow": false,
+              "params": [],
+              "body": {
+                "type": "BlockStatement",
+                "start": 12,
+                "end": 14,
+                "body": []
+              }
+            },
+            "computed": false,
+            "static": false
+          },
+          {
+            "type": "MethodDefinition",
+            "start": 14,
+            "end": 19,
+            "key": {
+              "type": "Identifier",
+              "start": 14,
+              "end": 15,
+              "name": "b"
+            },
+            "value": {
+              "type": "FunctionExpression",
+              "start": 15,
+              "end": 19,
+              "async": false,
+              "generator": false,
+              "arrow": false,
+              "params": [],
+              "body": {
+                "type": "BlockStatement",
+                "start": 17,
+                "end": 19,
+                "body": []
+              }
+            },
+            "computed": false,
+            "static": false
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -232,8 +232,8 @@ test Self {
     var strings = try StringPool.init(t.allocator);
     defer strings.deinit();
 
-    const a = try strings.getInsert("a");
-    const b = try strings.getInsert("b");
+    const a = try strings.getOrInsert("a");
+    const b = try strings.getOrInsert("b");
 
     {
 

@@ -1,0 +1,37 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 21,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "VariableDeclaration",
+      "start": 0,
+      "end": 20,
+      "declarations": [
+        {
+          "type": "VariableDeclarator",
+          "start": 4,
+          "end": 5,
+          "id": {
+            "type": "Identifier",
+            "start": 4,
+            "end": 5,
+            "name": "x"
+          },
+          "init": null,
+          "trailingComments": [
+            {
+              "type": "CommentBlock",
+              "value": " comment ",
+              "start": 6,
+              "end": 19
+            }
+          ]
+        }
+      ],
+      "kind": "var"
+    }
+  ]
+}

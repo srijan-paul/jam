@@ -1,0 +1,54 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 22,
+  "body": [
+    {
+      "type": "VariableDeclaration",
+      "start": 0,
+      "end": 21,
+      "declarations": [
+        {
+          "type": "VariableDeclarator",
+          "start": 6,
+          "end": 20,
+          "id": {
+            "type": "Identifier",
+            "start": 6,
+            "end": 7,
+            "name": "a"
+          },
+          "init": {
+            "type": "ObjectExpression",
+            "start": 10,
+            "end": 20,
+            "properties": [
+              {
+                "type": "Property",
+                "start": 12,
+                "end": 18,
+                "key": {
+                  "type": "Identifier",
+                  "start": 12,
+                  "end": 15,
+                  "name": "foo"
+                },
+                "value": {
+                  "type": "Literal",
+                  "start": 17,
+                  "end": 18,
+                  "value": "1"
+                },
+                "kind": "init",
+                "computed": false,
+                "shorthand": false,
+                "method": false
+              }
+            ]
+          }
+        }
+      ],
+      "kind": "const"
+    }
+  ]
+}

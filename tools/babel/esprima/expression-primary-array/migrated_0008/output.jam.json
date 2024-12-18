@@ -1,0 +1,30 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 13,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 12,
+      "expression": {
+        "type": "AssignmentExpression",
+        "start": 0,
+        "end": 12,
+        "operator": "=",
+        "left": {
+          "type": "Identifier",
+          "start": 0,
+          "end": 7,
+          "name": "T‿"
+        },
+        "right": {
+          "type": "ArrayExpression",
+          "start": 10,
+          "end": 12,
+          "elements": []
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 24,
+  "body": [
+    {
+      "type": "ForOfStatement",
+      "start": 0,
+      "end": 23,
+      "left": {
+        "type": "VariableDeclaration",
+        "start": 5,
+        "end": 12,
+        "declarations": [
+          {
+            "type": "VariableDeclarator",
+            "start": 9,
+            "end": 12,
+            "id": {
+              "type": "ObjectPattern",
+              "start": 9,
+              "end": 12,
+              "properties": [
+                {
+                  "type": "Property",
+                  "start": 10,
+                  "end": 11,
+                  "key": {
+                    "type": "Identifier",
+                    "start": 10,
+                    "end": 11,
+                    "name": "a"
+                  },
+                  "value": {
+                    "type": "Identifier",
+                    "start": 10,
+                    "end": 11,
+                    "name": "a"
+                  },
+                  "kind": "init",
+                  "computed": false,
+                  "shorthand": true,
+                  "method": false
+                }
+              ]
+            }
+          }
+        ],
+        "kind": "let"
+      },
+      "right": {
+        "type": "Literal",
+        "start": 16,
+        "end": 19,
+        "value": "/b/"
+      },
+      "body": {
+        "type": "BlockStatement",
+        "start": 21,
+        "end": 23,
+        "body": []
+      }
+    }
+  ]
+}

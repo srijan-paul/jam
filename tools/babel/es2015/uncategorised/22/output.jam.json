@@ -1,0 +1,27 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 26,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 26,
+      "expression": {
+        "type": "TemplateLiteral",
+        "start": 0,
+        "end": 26,
+        "quasis": [
+          {
+            "type": "TemplateElement",
+            "start": 0,
+            "end": 26,
+            "value": "`\\n\\r\\b\\v\\t\\f\\\n\\\n\\ \\ `",
+            "tail": false
+          }
+        ],
+        "expressions": []
+      }
+    }
+  ]
+}

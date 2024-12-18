@@ -1,0 +1,82 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 44,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 1,
+      "end": 43,
+      "expression": {
+        "type": "ObjectExpression",
+        "start": 1,
+        "end": 43,
+        "properties": [
+          {
+            "type": "Property",
+            "start": 3,
+            "end": 27,
+            "key": {
+              "type": "Identifier",
+              "start": 3,
+              "end": 12,
+              "name": "__proto__"
+            },
+            "value": {
+              "type": "FunctionExpression",
+              "start": 12,
+              "end": 27,
+              "async": false,
+              "generator": false,
+              "arrow": false,
+              "params": [],
+              "body": {
+                "type": "BlockStatement",
+                "start": 15,
+                "end": 27,
+                "body": [
+                  {
+                    "type": "ReturnStatement",
+                    "start": 17,
+                    "end": 25,
+                    "argument": {
+                      "type": "Literal",
+                      "start": 24,
+                      "end": 25,
+                      "value": "1"
+                    }
+                  }
+                ]
+              }
+            },
+            "kind": "init",
+            "computed": false,
+            "shorthand": false,
+            "method": true
+          },
+          {
+            "type": "Property",
+            "start": 29,
+            "end": 41,
+            "key": {
+              "type": "Identifier",
+              "start": 29,
+              "end": 38,
+              "name": "__proto__"
+            },
+            "value": {
+              "type": "Literal",
+              "start": 40,
+              "end": 41,
+              "value": "2"
+            },
+            "kind": "init",
+            "computed": false,
+            "shorthand": false,
+            "method": false
+          }
+        ]
+      }
+    }
+  ]
+}

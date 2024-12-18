@@ -1,0 +1,112 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 54,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "VariableDeclaration",
+      "start": 0,
+      "end": 54,
+      "declarations": [
+        {
+          "type": "VariableDeclarator",
+          "start": 4,
+          "end": 54,
+          "id": {
+            "type": "Identifier",
+            "start": 4,
+            "end": 5,
+            "name": "o"
+          },
+          "init": {
+            "type": "ObjectExpression",
+            "start": 8,
+            "end": 54,
+            "properties": [
+              {
+                "type": "Property",
+                "start": 10,
+                "end": 14,
+                "method": false,
+                "key": {
+                  "type": "Identifier",
+                  "start": 10,
+                  "end": 11,
+                  "name": "a"
+                },
+                "computed": false,
+                "shorthand": false,
+                "value": {
+                  "type": "Literal",
+                  "start": 13,
+                  "end": 14,
+                  "value": 1,
+                  "raw": "1"
+                },
+                "kind": "init"
+              },
+              {
+                "type": "Property",
+                "start": 16,
+                "end": 52,
+                "method": true,
+                "key": {
+                  "type": "Identifier",
+                  "start": 22,
+                  "end": 25,
+                  "name": "foo"
+                },
+                "computed": false,
+                "kind": "init",
+                "value": {
+                  "type": "FunctionExpression",
+                  "start": 25,
+                  "end": 52,
+                  "id": null,
+                  "generator": false,
+                  "async": true,
+                  "expression": false,
+                  "params": [
+                    {
+                      "type": "Identifier",
+                      "start": 26,
+                      "end": 33,
+                      "name": "promise"
+                    }
+                  ],
+                  "body": {
+                    "type": "BlockStatement",
+                    "start": 35,
+                    "end": 52,
+                    "body": [
+                      {
+                        "type": "ExpressionStatement",
+                        "start": 37,
+                        "end": 50,
+                        "expression": {
+                          "type": "AwaitExpression",
+                          "start": 37,
+                          "end": 50,
+                          "argument": {
+                            "type": "Identifier",
+                            "start": 43,
+                            "end": 50,
+                            "name": "promise"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                },
+                "shorthand": false
+              }
+            ]
+          }
+        }
+      ],
+      "kind": "var"
+    }
+  ]
+}

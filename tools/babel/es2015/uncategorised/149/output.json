@@ -1,0 +1,84 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 33,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "VariableDeclaration",
+      "start": 0,
+      "end": 33,
+      "declarations": [
+        {
+          "type": "VariableDeclarator",
+          "start": 4,
+          "end": 33,
+          "id": {
+            "type": "Identifier",
+            "start": 4,
+            "end": 5,
+            "name": "x"
+          },
+          "init": {
+            "type": "ObjectExpression",
+            "start": 8,
+            "end": 33,
+            "properties": [
+              {
+                "type": "Property",
+                "start": 9,
+                "end": 32,
+                "method": true,
+                "computed": true,
+                "key": {
+                  "type": "Identifier",
+                  "start": 11,
+                  "end": 15,
+                  "name": "test"
+                },
+                "kind": "init",
+                "value": {
+                  "type": "FunctionExpression",
+                  "start": 16,
+                  "end": 32,
+                  "id": null,
+                  "generator": true,
+                  "async": false,
+                  "expression": false,
+                  "params": [],
+                  "body": {
+                    "type": "BlockStatement",
+                    "start": 19,
+                    "end": 32,
+                    "body": [
+                      {
+                        "type": "ExpressionStatement",
+                        "start": 21,
+                        "end": 30,
+                        "expression": {
+                          "type": "YieldExpression",
+                          "start": 21,
+                          "end": 29,
+                          "delegate": true,
+                          "argument": {
+                            "type": "Identifier",
+                            "start": 28,
+                            "end": 29,
+                            "name": "v"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                },
+                "shorthand": false
+              }
+            ]
+          }
+        }
+      ],
+      "kind": "var"
+    }
+  ]
+}

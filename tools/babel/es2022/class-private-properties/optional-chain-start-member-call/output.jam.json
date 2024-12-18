@@ -1,0 +1,134 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 85,
+  "body": [
+    {
+      "type": "ClassDeclaration",
+      "start": 0,
+      "end": 84,
+      "id": {
+        "type": "Identifier",
+        "start": 6,
+        "end": 9,
+        "name": "Foo"
+      },
+      "body": {
+        "type": "ClassBody",
+        "body": [
+          {
+            "type": "ClassProperty",
+            "start": 21,
+            "end": 28,
+            "key": {
+              "type": "Identifier",
+              "start": 21,
+              "end": 23,
+              "name": "#x"
+            },
+            "value": {
+              "type": "Literal",
+              "start": 26,
+              "end": 27,
+              "value": "1"
+            },
+            "computed": false,
+            "static": true
+          },
+          {
+            "type": "MethodDefinition",
+            "start": 39,
+            "end": 82,
+            "key": {
+              "type": "Identifier",
+              "start": 39,
+              "end": 43,
+              "name": "test"
+            },
+            "value": {
+              "type": "FunctionExpression",
+              "start": 43,
+              "end": 82,
+              "async": false,
+              "generator": false,
+              "arrow": false,
+              "params": [],
+              "body": {
+                "type": "BlockStatement",
+                "start": 46,
+                "end": 82,
+                "body": [
+                  {
+                    "type": "ReturnStatement",
+                    "start": 52,
+                    "end": 78,
+                    "argument": {
+                      "type": "OptionalExpression",
+                      "start": 59,
+                      "end": 77,
+                      "argument": {
+                        "type": "CallExpression",
+                        "start": 59,
+                        "end": 77,
+                        "callee": {
+                          "type": "OptionalExpression",
+                          "start": 59,
+                          "end": 74,
+                          "argument": {
+                            "type": "MemberExpression",
+                            "start": 59,
+                            "end": 74,
+                            "object": {
+                              "type": "OptionalExpression",
+                              "start": 59,
+                              "end": 66,
+                              "argument": {
+                                "type": "MemberExpression",
+                                "start": 59,
+                                "end": 66,
+                                "object": {
+                                  "type": "Identifier",
+                                  "start": 59,
+                                  "end": 62,
+                                  "name": "Foo"
+                                },
+                                "property": {
+                                  "type": "Identifier",
+                                  "start": 64,
+                                  "end": 66,
+                                  "name": "#x"
+                                },
+                                "computed": false
+                              }
+                            },
+                            "property": {
+                              "type": "Identifier",
+                              "start": 67,
+                              "end": 74,
+                              "name": "toFixed"
+                            },
+                            "computed": false
+                          }
+                        },
+                        "arguments": [
+                          {
+                            "type": "Literal",
+                            "start": 75,
+                            "end": 76,
+                            "value": "2"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                ]
+              }
+            },
+            "computed": false,
+            "static": true
+          }
+        ]
+      }
+    }
+  ]
+}

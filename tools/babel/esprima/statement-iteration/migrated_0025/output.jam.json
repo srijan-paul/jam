@@ -1,0 +1,66 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 25,
+  "body": [
+    {
+      "type": "ForInStatement",
+      "start": 0,
+      "end": 24,
+      "left": {
+        "type": "MemberExpression",
+        "start": 5,
+        "end": 16,
+        "object": {
+          "type": "CallExpression",
+          "start": 5,
+          "end": 14,
+          "callee": {
+            "type": "Identifier",
+            "start": 5,
+            "end": 6,
+            "name": "a"
+          },
+          "arguments": [
+            {
+              "type": "BinaryExpression",
+              "start": 7,
+              "end": 13,
+              "operator": "in",
+              "left": {
+                "type": "Identifier",
+                "start": 7,
+                "end": 8,
+                "name": "b"
+              },
+              "right": {
+                "type": "Identifier",
+                "start": 12,
+                "end": 13,
+                "name": "c"
+              }
+            }
+          ]
+        },
+        "property": {
+          "type": "Literal",
+          "start": 15,
+          "end": 16,
+          "value": "0"
+        },
+        "computed": true
+      },
+      "right": {
+        "type": "Identifier",
+        "start": 21,
+        "end": 22,
+        "name": "d"
+      },
+      "body": {
+        "type": "EmptyStatement",
+        "start": 23,
+        "end": 24
+      }
+    }
+  ]
+}

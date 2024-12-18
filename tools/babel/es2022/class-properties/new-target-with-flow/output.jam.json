@@ -1,0 +1,409 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 258,
+  "body": [
+    {
+      "type": "ClassDeclaration",
+      "start": 0,
+      "end": 257,
+      "id": {
+        "type": "Identifier",
+        "start": 6,
+        "end": 7,
+        "name": "X"
+      },
+      "body": {
+        "type": "ClassBody",
+        "body": [
+          {
+            "type": "ClassProperty",
+            "start": 19,
+            "end": 34,
+            "key": {
+              "type": "Identifier",
+              "start": 19,
+              "end": 20,
+              "name": "a"
+            },
+            "value": {
+              "type": "MetaProperty",
+              "start": 23,
+              "end": 33,
+              "meta": {
+                "type": "Identifier",
+                "start": 23,
+                "end": 26,
+                "name": "new"
+              },
+              "property": {
+                "type": "Identifier",
+                "start": 27,
+                "end": 33,
+                "name": "target"
+              }
+            },
+            "computed": false,
+            "static": true
+          },
+          {
+            "type": "ClassProperty",
+            "start": 44,
+            "end": 76,
+            "key": {
+              "type": "Identifier",
+              "start": 44,
+              "end": 45,
+              "name": "b"
+            },
+            "value": {
+              "type": "AssignmentExpression",
+              "start": 49,
+              "end": 74,
+              "operator": "=",
+              "left": {
+                "type": "Identifier",
+                "start": 49,
+                "end": 52,
+                "name": "foo"
+              },
+              "right": {
+                "type": "BinaryExpression",
+                "start": 55,
+                "end": 74,
+                "operator": "+",
+                "left": {
+                  "type": "Literal",
+                  "start": 55,
+                  "end": 56,
+                  "value": "1"
+                },
+                "right": {
+                  "type": "CallExpression",
+                  "start": 59,
+                  "end": 74,
+                  "callee": {
+                    "type": "Identifier",
+                    "start": 59,
+                    "end": 62,
+                    "name": "bar"
+                  },
+                  "arguments": [
+                    {
+                      "type": "MetaProperty",
+                      "start": 63,
+                      "end": 73,
+                      "meta": {
+                        "type": "Identifier",
+                        "start": 63,
+                        "end": 66,
+                        "name": "new"
+                      },
+                      "property": {
+                        "type": "Identifier",
+                        "start": 67,
+                        "end": 73,
+                        "name": "target"
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "computed": false,
+            "static": true
+          },
+          {
+            "type": "ClassProperty",
+            "start": 86,
+            "end": 107,
+            "key": {
+              "type": "Identifier",
+              "start": 86,
+              "end": 87,
+              "name": "c"
+            },
+            "value": {
+              "type": "FunctionExpression",
+              "start": 90,
+              "end": 106,
+              "async": false,
+              "generator": false,
+              "arrow": true,
+              "params": [],
+              "body": {
+                "type": "MetaProperty",
+                "start": 96,
+                "end": 106,
+                "meta": {
+                  "type": "Identifier",
+                  "start": 96,
+                  "end": 99,
+                  "name": "new"
+                },
+                "property": {
+                  "type": "Identifier",
+                  "start": 100,
+                  "end": 106,
+                  "name": "target"
+                }
+              }
+            },
+            "computed": false,
+            "static": true
+          },
+          {
+            "type": "ClassProperty",
+            "start": 117,
+            "end": 146,
+            "key": {
+              "type": "Identifier",
+              "start": 117,
+              "end": 118,
+              "name": "d"
+            },
+            "value": {
+              "type": "FunctionExpression",
+              "start": 121,
+              "end": 145,
+              "async": false,
+              "generator": false,
+              "arrow": true,
+              "params": [
+                {
+                  "type": "AssignmentPattern",
+                  "start": 122,
+                  "end": 138,
+                  "left": {
+                    "type": "Identifier",
+                    "start": 122,
+                    "end": 125,
+                    "name": "foo"
+                  },
+                  "right": {
+                    "type": "MetaProperty",
+                    "start": 128,
+                    "end": 138,
+                    "meta": {
+                      "type": "Identifier",
+                      "start": 128,
+                      "end": 131,
+                      "name": "new"
+                    },
+                    "property": {
+                      "type": "Identifier",
+                      "start": 132,
+                      "end": 138,
+                      "name": "target"
+                    }
+                  }
+                }
+              ],
+              "body": {
+                "type": "BlockStatement",
+                "start": 143,
+                "end": 145,
+                "body": []
+              }
+            },
+            "computed": false,
+            "static": true
+          },
+          {
+            "type": "ClassProperty",
+            "start": 149,
+            "end": 164,
+            "key": {
+              "type": "Identifier",
+              "start": 149,
+              "end": 150,
+              "name": "e"
+            },
+            "value": {
+              "type": "MetaProperty",
+              "start": 153,
+              "end": 163,
+              "meta": {
+                "type": "Identifier",
+                "start": 153,
+                "end": 156,
+                "name": "new"
+              },
+              "property": {
+                "type": "Identifier",
+                "start": 157,
+                "end": 163,
+                "name": "target"
+              }
+            },
+            "computed": false,
+            "static": false
+          },
+          {
+            "type": "ClassProperty",
+            "start": 167,
+            "end": 199,
+            "key": {
+              "type": "Identifier",
+              "start": 167,
+              "end": 168,
+              "name": "f"
+            },
+            "value": {
+              "type": "AssignmentExpression",
+              "start": 172,
+              "end": 197,
+              "operator": "=",
+              "left": {
+                "type": "Identifier",
+                "start": 172,
+                "end": 175,
+                "name": "foo"
+              },
+              "right": {
+                "type": "BinaryExpression",
+                "start": 178,
+                "end": 197,
+                "operator": "+",
+                "left": {
+                  "type": "Literal",
+                  "start": 178,
+                  "end": 179,
+                  "value": "1"
+                },
+                "right": {
+                  "type": "CallExpression",
+                  "start": 182,
+                  "end": 197,
+                  "callee": {
+                    "type": "Identifier",
+                    "start": 182,
+                    "end": 185,
+                    "name": "bar"
+                  },
+                  "arguments": [
+                    {
+                      "type": "MetaProperty",
+                      "start": 186,
+                      "end": 196,
+                      "meta": {
+                        "type": "Identifier",
+                        "start": 186,
+                        "end": 189,
+                        "name": "new"
+                      },
+                      "property": {
+                        "type": "Identifier",
+                        "start": 190,
+                        "end": 196,
+                        "name": "target"
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "computed": false,
+            "static": false
+          },
+          {
+            "type": "ClassProperty",
+            "start": 202,
+            "end": 223,
+            "key": {
+              "type": "Identifier",
+              "start": 202,
+              "end": 203,
+              "name": "g"
+            },
+            "value": {
+              "type": "FunctionExpression",
+              "start": 206,
+              "end": 222,
+              "async": false,
+              "generator": false,
+              "arrow": true,
+              "params": [],
+              "body": {
+                "type": "MetaProperty",
+                "start": 212,
+                "end": 222,
+                "meta": {
+                  "type": "Identifier",
+                  "start": 212,
+                  "end": 215,
+                  "name": "new"
+                },
+                "property": {
+                  "type": "Identifier",
+                  "start": 216,
+                  "end": 222,
+                  "name": "target"
+                }
+              }
+            },
+            "computed": false,
+            "static": false
+          },
+          {
+            "type": "ClassProperty",
+            "start": 226,
+            "end": 255,
+            "key": {
+              "type": "Identifier",
+              "start": 226,
+              "end": 227,
+              "name": "h"
+            },
+            "value": {
+              "type": "FunctionExpression",
+              "start": 230,
+              "end": 254,
+              "async": false,
+              "generator": false,
+              "arrow": true,
+              "params": [
+                {
+                  "type": "AssignmentPattern",
+                  "start": 231,
+                  "end": 247,
+                  "left": {
+                    "type": "Identifier",
+                    "start": 231,
+                    "end": 234,
+                    "name": "foo"
+                  },
+                  "right": {
+                    "type": "MetaProperty",
+                    "start": 237,
+                    "end": 247,
+                    "meta": {
+                      "type": "Identifier",
+                      "start": 237,
+                      "end": 240,
+                      "name": "new"
+                    },
+                    "property": {
+                      "type": "Identifier",
+                      "start": 241,
+                      "end": 247,
+                      "name": "target"
+                    }
+                  }
+                }
+              ],
+              "body": {
+                "type": "BlockStatement",
+                "start": 252,
+                "end": 254,
+                "body": []
+              }
+            },
+            "computed": false,
+            "static": false
+          }
+        ]
+      }
+    }
+  ]
+}

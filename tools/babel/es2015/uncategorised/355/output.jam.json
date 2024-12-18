@@ -1,0 +1,53 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 30,
+  "body": [
+    {
+      "type": "FunctionDeclaration",
+      "start": 0,
+      "end": 29,
+      "id": {
+        "type": "Identifier",
+        "start": 9,
+        "end": 10,
+        "name": "x"
+      },
+      "async": false,
+      "generator": false,
+      "arrow": false,
+      "params": [
+        {
+          "type": "ObjectPattern",
+          "start": 11,
+          "end": 25,
+          "properties": [
+            {
+              "type": "AssignmentPattern",
+              "start": 13,
+              "end": 23,
+              "left": {
+                "type": "Identifier",
+                "start": 13,
+                "end": 16,
+                "name": "set"
+              },
+              "right": {
+                "type": "Literal",
+                "start": 19,
+                "end": 23,
+                "value": "null"
+              }
+            }
+          ]
+        }
+      ],
+      "body": {
+        "type": "BlockStatement",
+        "start": 27,
+        "end": 29,
+        "body": []
+      }
+    }
+  ]
+}

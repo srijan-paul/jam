@@ -1,0 +1,153 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 66,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 7,
+      "expression": {
+        "type": "AwaitExpression",
+        "start": 0,
+        "end": 7,
+        "argument": {
+          "type": "NumericLiteral",
+          "start": 6,
+          "end": 7,
+          "extra": {
+            "rawValue": 0,
+            "raw": "0"
+          },
+          "value": 0
+        }
+      }
+    },
+    {
+      "type": "ExpressionStatement",
+      "start": 9,
+      "end": 18,
+      "expression": {
+        "type": "AwaitExpression",
+        "start": 9,
+        "end": 18,
+        "argument": {
+          "type": "UnaryExpression",
+          "start": 15,
+          "end": 18,
+          "operator": "+",
+          "prefix": true,
+          "argument": {
+            "type": "NumericLiteral",
+            "start": 17,
+            "end": 18,
+            "extra": {
+              "rawValue": 0,
+              "raw": "0"
+            },
+            "value": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "ExpressionStatement",
+      "start": 19,
+      "end": 28,
+      "expression": {
+        "type": "AwaitExpression",
+        "start": 19,
+        "end": 28,
+        "argument": {
+          "type": "UnaryExpression",
+          "start": 25,
+          "end": 28,
+          "operator": "-",
+          "prefix": true,
+          "argument": {
+            "type": "NumericLiteral",
+            "start": 27,
+            "end": 28,
+            "extra": {
+              "rawValue": 0,
+              "raw": "0"
+            },
+            "value": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "ExpressionStatement",
+      "start": 29,
+      "end": 40,
+      "expression": {
+        "type": "AwaitExpression",
+        "start": 29,
+        "end": 40,
+        "argument": {
+          "type": "NumericLiteral",
+          "start": 37,
+          "end": 38,
+          "extra": {
+            "rawValue": 0,
+            "raw": "0",
+            "parenthesized": true,
+            "parenStart": 35
+          },
+          "value": 0
+        }
+      }
+    },
+    {
+      "type": "ExpressionStatement",
+      "start": 41,
+      "end": 52,
+      "expression": {
+        "type": "AwaitExpression",
+        "start": 41,
+        "end": 52,
+        "argument": {
+          "type": "ArrayExpression",
+          "start": 47,
+          "end": 52,
+          "elements": [
+            {
+              "type": "NumericLiteral",
+              "start": 49,
+              "end": 50,
+              "extra": {
+                "rawValue": 0,
+                "raw": "0"
+              },
+              "value": 0
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "ExpressionStatement",
+      "start": 53,
+      "end": 65,
+      "expression": {
+        "type": "AwaitExpression",
+        "start": 53,
+        "end": 65,
+        "argument": {
+          "type": "RegExpLiteral",
+          "start": 59,
+          "end": 65,
+          "extra": {
+            "raw": "/ 0 /u"
+          },
+          "pattern": " 0 ",
+          "flags": "u"
+        }
+      }
+    }
+  ],
+  "directives": []
+}

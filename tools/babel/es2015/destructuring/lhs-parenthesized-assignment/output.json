@@ -1,0 +1,103 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 29,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 28,
+      "expression": {
+        "type": "AssignmentExpression",
+        "start": 1,
+        "end": 26,
+        "operator": "=",
+        "left": {
+          "type": "ObjectPattern",
+          "start": 1,
+          "end": 21,
+          "properties": [
+            {
+              "type": "Property",
+              "start": 3,
+              "end": 19,
+              "method": false,
+              "key": {
+                "type": "Identifier",
+                "start": 3,
+                "end": 4,
+                "name": "a"
+              },
+              "computed": false,
+              "shorthand": false,
+              "value": {
+                "type": "AssignmentPattern",
+                "start": 6,
+                "end": 19,
+                "left": {
+                  "type": "MemberExpression",
+                  "start": 7,
+                  "end": 10,
+                  "object": {
+                    "type": "Identifier",
+                    "start": 7,
+                    "end": 8,
+                    "name": "a"
+                  },
+                  "computed": false,
+                  "property": {
+                    "type": "Identifier",
+                    "start": 9,
+                    "end": 10,
+                    "name": "b"
+                  },
+                  "optional": false,
+                  "extra": {
+                    "parenthesized": true,
+                    "parenStart": 6
+                  }
+                },
+                "right": {
+                  "type": "MemberExpression",
+                  "start": 15,
+                  "end": 18,
+                  "object": {
+                    "type": "Identifier",
+                    "start": 15,
+                    "end": 16,
+                    "name": "c"
+                  },
+                  "computed": false,
+                  "property": {
+                    "type": "Identifier",
+                    "start": 17,
+                    "end": 18,
+                    "name": "d"
+                  },
+                  "optional": false,
+                  "extra": {
+                    "parenthesized": true,
+                    "parenStart": 14
+                  }
+                }
+              },
+              "kind": "init"
+            }
+          ]
+        },
+        "right": {
+          "type": "ObjectExpression",
+          "start": 24,
+          "end": 26,
+          "properties": []
+        },
+        "extra": {
+          "parenthesized": true,
+          "parenStart": 0
+        }
+      }
+    }
+  ]
+}

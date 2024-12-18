@@ -1,0 +1,30 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 36,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 13,
+      "expression": {
+        "type": "Literal",
+        "start": 0,
+        "end": 12,
+        "value": "use strict",
+        "raw": "\"use strict\""
+      },
+      "directive": "use strict",
+      "trailingComments": [
+        {
+          "type": "CommentBlock",
+          "value": "* @external foo ",
+          "start": 15,
+          "end": 35
+        }
+      ]
+    }
+  ]
+}

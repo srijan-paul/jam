@@ -1,0 +1,41 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 33,
+  "body": [
+    {
+      "type": "WhileStatement",
+      "start": 0,
+      "end": 32,
+      "test": {
+        "type": "Literal",
+        "start": 7,
+        "end": 11,
+        "value": "true"
+      },
+      "body": {
+        "type": "BlockStatement",
+        "start": 13,
+        "end": 32,
+        "body": [
+          {
+            "type": "ContinueStatement",
+            "start": 15,
+            "end": 23
+          },
+          {
+            "type": "ExpressionStatement",
+            "start": 24,
+            "end": 30,
+            "expression": {
+              "type": "Identifier",
+              "start": 24,
+              "end": 29,
+              "name": "there"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

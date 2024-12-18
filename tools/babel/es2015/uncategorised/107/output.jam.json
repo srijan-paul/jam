@@ -1,0 +1,48 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 26,
+  "body": [
+    {
+      "type": "ForOfStatement",
+      "start": 0,
+      "end": 26,
+      "left": {
+        "type": "Identifier",
+        "start": 4,
+        "end": 5,
+        "name": "x"
+      },
+      "right": {
+        "type": "Identifier",
+        "start": 9,
+        "end": 13,
+        "name": "list"
+      },
+      "body": {
+        "type": "ExpressionStatement",
+        "start": 15,
+        "end": 26,
+        "expression": {
+          "type": "CallExpression",
+          "start": 15,
+          "end": 25,
+          "callee": {
+            "type": "Identifier",
+            "start": 15,
+            "end": 22,
+            "name": "process"
+          },
+          "arguments": [
+            {
+              "type": "Identifier",
+              "start": 23,
+              "end": 24,
+              "name": "x"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

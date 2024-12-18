@@ -1,0 +1,53 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 154,
+  "body": [
+    {
+      "type": "TryStatement",
+      "start": 6,
+      "end": 146,
+      "block": {
+        "type": "BlockStatement",
+        "start": 16,
+        "end": 58,
+        "body": [
+          {
+            "type": "ThrowStatement",
+            "start": 28,
+            "end": 51,
+            "argument": {
+              "type": "Literal",
+              "start": 40,
+              "end": 44,
+              "value": "\"no\""
+            }
+          }
+        ]
+      },
+      "handler": {
+        "type": "CatchClause",
+        "start": 65,
+        "end": 113,
+        "param": {
+          "type": "Identifier",
+          "start": 85,
+          "end": 86,
+          "name": "e"
+        },
+        "body": {
+          "type": "BlockStatement",
+          "start": 103,
+          "end": 113,
+          "body": []
+        }
+      },
+      "finalizer": {
+        "type": "BlockStatement",
+        "start": 136,
+        "end": 146,
+        "body": []
+      }
+    }
+  ]
+}

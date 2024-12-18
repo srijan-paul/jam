@@ -1,0 +1,101 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 130,
+  "body": [
+    {
+      "type": "ClassDeclaration",
+      "start": 0,
+      "end": 93,
+      "id": {
+        "type": "Identifier",
+        "start": 6,
+        "end": 7,
+        "name": "C"
+      },
+      "body": {
+        "type": "ClassBody",
+        "body": [
+          {
+            "type": "MethodDefinition",
+            "start": 42,
+            "end": 91,
+            "key": {
+              "type": "Identifier",
+              "start": 42,
+              "end": 43,
+              "name": "f"
+            },
+            "value": {
+              "type": "FunctionExpression",
+              "start": 52,
+              "end": 91,
+              "async": true,
+              "generator": true,
+              "arrow": false,
+              "params": [
+                {
+                  "type": "Identifier",
+                  "start": 61,
+                  "end": 62,
+                  "name": "a"
+                }
+              ],
+              "body": {
+                "type": "BlockStatement",
+                "start": 89,
+                "end": 91,
+                "body": []
+              }
+            },
+            "computed": false,
+            "static": false
+          }
+        ]
+      }
+    },
+    {
+      "type": "ExpressionStatement",
+      "start": 95,
+      "end": 129,
+      "expression": {
+        "type": "ClassExpression",
+        "start": 95,
+        "end": 127,
+        "body": {
+          "type": "ClassBody",
+          "body": [
+            {
+              "type": "MethodDefinition",
+              "start": 118,
+              "end": 125,
+              "key": {
+                "type": "Identifier",
+                "start": 118,
+                "end": 119,
+                "name": "f"
+              },
+              "value": {
+                "type": "FunctionExpression",
+                "start": 120,
+                "end": 125,
+                "async": true,
+                "generator": true,
+                "arrow": false,
+                "params": [],
+                "body": {
+                  "type": "BlockStatement",
+                  "start": 123,
+                  "end": 125,
+                  "body": []
+                }
+              },
+              "computed": false,
+              "static": false
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

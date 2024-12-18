@@ -1,0 +1,164 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 69,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "VariableDeclaration",
+      "start": 0,
+      "end": 68,
+      "declarations": [
+        {
+          "type": "VariableDeclarator",
+          "start": 6,
+          "end": 67,
+          "id": {
+            "type": "Identifier",
+            "start": 6,
+            "end": 9,
+            "name": "obj"
+          },
+          "init": {
+            "type": "AssignmentExpression",
+            "start": 12,
+            "end": 67,
+            "operator": "=",
+            "left": {
+              "type": "ObjectPattern",
+              "start": 12,
+              "end": 44,
+              "properties": [
+                {
+                  "type": "Property",
+                  "start": 16,
+                  "end": 25,
+                  "method": false,
+                  "key": {
+                    "type": "Identifier",
+                    "start": 16,
+                    "end": 19,
+                    "name": "foo"
+                  },
+                  "computed": false,
+                  "shorthand": true,
+                  "value": {
+                    "type": "AssignmentPattern",
+                    "start": 16,
+                    "end": 25,
+                    "left": {
+                      "type": "Identifier",
+                      "start": 16,
+                      "end": 19,
+                      "name": "foo"
+                    },
+                    "right": {
+                      "type": "Literal",
+                      "start": 22,
+                      "end": 25,
+                      "value": 123,
+                      "raw": "123"
+                    }
+                  },
+                  "kind": "init",
+                  "extra": {
+                    "shorthand": true
+                  }
+                },
+                {
+                  "type": "Property",
+                  "start": 29,
+                  "end": 41,
+                  "method": false,
+                  "key": {
+                    "type": "Identifier",
+                    "start": 29,
+                    "end": 32,
+                    "name": "bar"
+                  },
+                  "computed": false,
+                  "shorthand": false,
+                  "value": {
+                    "type": "AssignmentPattern",
+                    "start": 34,
+                    "end": 41,
+                    "left": {
+                      "type": "Identifier",
+                      "start": 34,
+                      "end": 35,
+                      "name": "x"
+                    },
+                    "right": {
+                      "type": "Literal",
+                      "start": 38,
+                      "end": 41,
+                      "value": 123,
+                      "raw": "123"
+                    }
+                  },
+                  "kind": "init"
+                }
+              ],
+              "extra": {
+                "trailingComma": 41
+              }
+            },
+            "right": {
+              "type": "ObjectExpression",
+              "start": 47,
+              "end": 67,
+              "properties": [
+                {
+                  "type": "Property",
+                  "start": 49,
+                  "end": 56,
+                  "method": false,
+                  "key": {
+                    "type": "Identifier",
+                    "start": 49,
+                    "end": 52,
+                    "name": "foo"
+                  },
+                  "computed": false,
+                  "shorthand": false,
+                  "value": {
+                    "type": "Literal",
+                    "start": 54,
+                    "end": 56,
+                    "value": 24,
+                    "raw": "24"
+                  },
+                  "kind": "init"
+                },
+                {
+                  "type": "Property",
+                  "start": 58,
+                  "end": 65,
+                  "method": false,
+                  "key": {
+                    "type": "Identifier",
+                    "start": 58,
+                    "end": 61,
+                    "name": "bar"
+                  },
+                  "computed": false,
+                  "shorthand": false,
+                  "value": {
+                    "type": "Literal",
+                    "start": 63,
+                    "end": 65,
+                    "value": 45,
+                    "raw": "45"
+                  },
+                  "kind": "init"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "kind": "const"
+    }
+  ]
+}

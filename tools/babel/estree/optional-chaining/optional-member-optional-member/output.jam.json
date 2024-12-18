@@ -1,0 +1,52 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 14,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 13,
+      "expression": {
+        "type": "OptionalExpression",
+        "start": 0,
+        "end": 13,
+        "argument": {
+          "type": "MemberExpression",
+          "start": 0,
+          "end": 13,
+          "object": {
+            "type": "OptionalExpression",
+            "start": 0,
+            "end": 8,
+            "argument": {
+              "type": "MemberExpression",
+              "start": 0,
+              "end": 8,
+              "object": {
+                "type": "Identifier",
+                "start": 0,
+                "end": 3,
+                "name": "foo"
+              },
+              "property": {
+                "type": "Identifier",
+                "start": 5,
+                "end": 8,
+                "name": "bar"
+              },
+              "computed": false
+            }
+          },
+          "property": {
+            "type": "Identifier",
+            "start": 10,
+            "end": 13,
+            "name": "qux"
+          },
+          "computed": false
+        }
+      }
+    }
+  ]
+}

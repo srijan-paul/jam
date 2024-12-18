@@ -1,0 +1,200 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 211,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ClassDeclaration",
+      "start": 0,
+      "end": 210,
+      "id": {
+        "type": "Identifier",
+        "start": 6,
+        "end": 7,
+        "name": "C"
+      },
+      "superClass": null,
+      "body": {
+        "type": "ClassBody",
+        "start": 8,
+        "end": 210,
+        "body": [
+          {
+            "type": "MethodDefinition",
+            "start": 12,
+            "end": 27,
+            "static": true,
+            "key": {
+              "type": "Identifier",
+              "start": 19,
+              "end": 22,
+              "name": "foo"
+            },
+            "computed": false,
+            "kind": "method",
+            "value": {
+              "type": "FunctionExpression",
+              "start": 22,
+              "end": 27,
+              "id": null,
+              "generator": false,
+              "async": false,
+              "expression": false,
+              "params": [],
+              "body": {
+                "type": "BlockStatement",
+                "start": 25,
+                "end": 27,
+                "body": []
+              }
+            }
+          },
+          {
+            "type": "StaticBlock",
+            "start": 30,
+            "end": 208,
+            "body": [
+              {
+                "type": "WhileStatement",
+                "start": 43,
+                "end": 145,
+                "test": {
+                  "type": "MemberExpression",
+                  "start": 50,
+                  "end": 58,
+                  "object": {
+                    "type": "ThisExpression",
+                    "start": 50,
+                    "end": 54
+                  },
+                  "computed": false,
+                  "property": {
+                    "type": "Identifier",
+                    "start": 55,
+                    "end": 58,
+                    "name": "foo"
+                  },
+                  "optional": false
+                },
+                "body": {
+                  "type": "BlockStatement",
+                  "start": 60,
+                  "end": 145,
+                  "body": [
+                    {
+                      "type": "IfStatement",
+                      "start": 68,
+                      "end": 139,
+                      "test": {
+                        "type": "MemberExpression",
+                        "start": 72,
+                        "end": 80,
+                        "object": {
+                          "type": "ThisExpression",
+                          "start": 72,
+                          "end": 76
+                        },
+                        "computed": false,
+                        "property": {
+                          "type": "Identifier",
+                          "start": 77,
+                          "end": 80,
+                          "name": "foo"
+                        },
+                        "optional": false
+                      },
+                      "consequent": {
+                        "type": "BlockStatement",
+                        "start": 82,
+                        "end": 106,
+                        "body": [
+                          {
+                            "type": "BreakStatement",
+                            "start": 92,
+                            "end": 98,
+                            "label": null
+                          }
+                        ]
+                      },
+                      "alternate": {
+                        "type": "BlockStatement",
+                        "start": 112,
+                        "end": 139,
+                        "body": [
+                          {
+                            "type": "ContinueStatement",
+                            "start": 122,
+                            "end": 131,
+                            "label": null
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "type": "ClassDeclaration",
+                "start": 150,
+                "end": 204,
+                "id": {
+                  "type": "Identifier",
+                  "start": 156,
+                  "end": 158,
+                  "name": "C2"
+                },
+                "superClass": null,
+                "body": {
+                  "type": "ClassBody",
+                  "start": 159,
+                  "end": 204,
+                  "body": [
+                    {
+                      "type": "MethodDefinition",
+                      "start": 167,
+                      "end": 198,
+                      "static": false,
+                      "key": {
+                        "type": "Identifier",
+                        "start": 167,
+                        "end": 170,
+                        "name": "bar"
+                      },
+                      "computed": false,
+                      "kind": "method",
+                      "value": {
+                        "type": "FunctionExpression",
+                        "start": 170,
+                        "end": 198,
+                        "id": null,
+                        "generator": false,
+                        "async": false,
+                        "expression": false,
+                        "params": [],
+                        "body": {
+                          "type": "BlockStatement",
+                          "start": 173,
+                          "end": 198,
+                          "body": [
+                            {
+                              "type": "ReturnStatement",
+                              "start": 183,
+                              "end": 190,
+                              "argument": null
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

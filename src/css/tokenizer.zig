@@ -453,7 +453,7 @@ fn matchStringLiteral(self: *Self, str: []const u8) Error!struct { u32, Token.Da
             self.scratch[escaped_len] = quote;
             escaped_len += 1;
 
-            const interned = try self.string_pool.getInsert(self.scratch[0..escaped_len]);
+            const interned = try self.string_pool.getOrInsert(self.scratch[0..escaped_len]);
             return .{ @intCast(i + 1), .{ .string = interned } };
         } else if (byte == '\\') {
             // Found an escape sequence.

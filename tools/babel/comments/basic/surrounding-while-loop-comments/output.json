@@ -1,0 +1,93 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 69,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "FunctionDeclaration",
+      "start": 0,
+      "end": 68,
+      "id": {
+        "type": "Identifier",
+        "start": 9,
+        "end": 10,
+        "name": "f"
+      },
+      "generator": false,
+      "async": false,
+      "expression": false,
+      "params": [],
+      "body": {
+        "type": "BlockStatement",
+        "start": 13,
+        "end": 68,
+        "body": [
+          {
+            "type": "WhileStatement",
+            "start": 30,
+            "end": 46,
+            "test": {
+              "type": "Literal",
+              "start": 37,
+              "end": 41,
+              "value": true,
+              "raw": "true"
+            },
+            "body": {
+              "type": "BlockStatement",
+              "start": 43,
+              "end": 46,
+              "body": []
+            },
+            "trailingComments": [
+              {
+                "type": "CommentBlock",
+                "value": " bar ",
+                "start": 47,
+                "end": 56
+              }
+            ],
+            "leadingComments": [
+              {
+                "type": "CommentBlock",
+                "value": " infinite ",
+                "start": 15,
+                "end": 29
+              }
+            ]
+          },
+          {
+            "type": "VariableDeclaration",
+            "start": 57,
+            "end": 66,
+            "declarations": [
+              {
+                "type": "VariableDeclarator",
+                "start": 61,
+                "end": 65,
+                "id": {
+                  "type": "Identifier",
+                  "start": 61,
+                  "end": 65,
+                  "name": "each"
+                },
+                "init": null
+              }
+            ],
+            "kind": "var",
+            "leadingComments": [
+              {
+                "type": "CommentBlock",
+                "value": " bar ",
+                "start": 47,
+                "end": 56
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

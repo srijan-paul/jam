@@ -1,0 +1,87 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 52,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 51,
+      "expression": {
+        "type": "CallExpression",
+        "start": 0,
+        "end": 50,
+        "callee": {
+          "type": "Identifier",
+          "start": 0,
+          "end": 4,
+          "name": "test"
+        },
+        "arguments": [
+          {
+            "type": "FunctionExpression",
+            "start": 5,
+            "end": 41,
+            "id": null,
+            "generator": false,
+            "async": false,
+            "expression": false,
+            "params": [],
+            "body": {
+              "type": "BlockStatement",
+              "start": 16,
+              "end": 41,
+              "body": [
+                {
+                  "type": "VariableDeclaration",
+                  "start": 20,
+                  "end": 30,
+                  "declarations": [
+                    {
+                      "type": "VariableDeclarator",
+                      "start": 24,
+                      "end": 29,
+                      "id": {
+                        "type": "Identifier",
+                        "start": 24,
+                        "end": 25,
+                        "name": "a"
+                      },
+                      "init": {
+                        "type": "Literal",
+                        "start": 28,
+                        "end": 29,
+                        "value": 1,
+                        "raw": "1"
+                      }
+                    }
+                  ],
+                  "kind": "var",
+                  "trailingComments": [
+                    {
+                      "type": "CommentLine",
+                      "value": " one",
+                      "start": 33,
+                      "end": 39
+                    }
+                  ]
+                }
+              ]
+            },
+            "trailingComments": [
+              {
+                "type": "CommentLine",
+                "value": " two",
+                "start": 42,
+                "end": 48
+              }
+            ]
+          }
+        ],
+        "optional": false
+      }
+    }
+  ]
+}

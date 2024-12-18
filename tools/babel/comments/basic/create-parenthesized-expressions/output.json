@@ -1,0 +1,130 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 66,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 7,
+      "end": 11,
+      "expression": {
+        "type": "ParenthesizedExpression",
+        "start": 7,
+        "end": 10,
+        "expression": {
+          "type": "NumericLiteral",
+          "start": 8,
+          "end": 9,
+          "extra": {
+            "rawValue": 1,
+            "raw": "1"
+          },
+          "value": 1
+        }
+      },
+      "trailingComments": [
+        {
+          "type": "CommentBlock",
+          "value": " Two ",
+          "start": 13,
+          "end": 22
+        }
+      ],
+      "leadingComments": [
+        {
+          "type": "CommentLine",
+          "value": " One",
+          "start": 0,
+          "end": 6
+        }
+      ]
+    },
+    {
+      "type": "ExpressionStatement",
+      "start": 23,
+      "end": 27,
+      "expression": {
+        "type": "ParenthesizedExpression",
+        "start": 23,
+        "end": 26,
+        "expression": {
+          "type": "NumericLiteral",
+          "start": 24,
+          "end": 25,
+          "extra": {
+            "rawValue": 2,
+            "raw": "2"
+          },
+          "value": 2
+        }
+      },
+      "leadingComments": [
+        {
+          "type": "CommentBlock",
+          "value": " Two ",
+          "start": 13,
+          "end": 22
+        }
+      ]
+    },
+    {
+      "type": "ExpressionStatement",
+      "start": 29,
+      "end": 48,
+      "expression": {
+        "type": "ParenthesizedExpression",
+        "start": 29,
+        "end": 47,
+        "expression": {
+          "type": "NumericLiteral",
+          "start": 44,
+          "end": 45,
+          "extra": {
+            "rawValue": 3,
+            "raw": "3"
+          },
+          "value": 3,
+          "leadingComments": [
+            {
+              "type": "CommentLine",
+              "value": " Three",
+              "start": 33,
+              "end": 41
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "ExpressionStatement",
+      "start": 50,
+      "end": 65,
+      "expression": {
+        "type": "ParenthesizedExpression",
+        "start": 50,
+        "end": 64,
+        "expression": {
+          "type": "NumericLiteral",
+          "start": 62,
+          "end": 63,
+          "extra": {
+            "rawValue": 4,
+            "raw": "4"
+          },
+          "value": 4,
+          "leadingComments": [
+            {
+              "type": "CommentBlock",
+              "value": " Four ",
+              "start": 51,
+              "end": 61
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "directives": []
+}

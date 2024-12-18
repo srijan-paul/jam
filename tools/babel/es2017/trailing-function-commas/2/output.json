@@ -1,0 +1,49 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 29,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "FunctionDeclaration",
+      "start": 0,
+      "end": 29,
+      "id": {
+        "type": "Identifier",
+        "start": 9,
+        "end": 12,
+        "name": "log"
+      },
+      "generator": false,
+      "async": false,
+      "expression": false,
+      "params": [
+        {
+          "type": "Identifier",
+          "start": 13,
+          "end": 14,
+          "name": "n"
+        },
+        {
+          "type": "Identifier",
+          "start": 16,
+          "end": 18,
+          "name": "op"
+        },
+        {
+          "type": "Identifier",
+          "start": 20,
+          "end": 23,
+          "name": "val"
+        }
+      ],
+      "body": {
+        "type": "BlockStatement",
+        "start": 26,
+        "end": 29,
+        "body": []
+      }
+    }
+  ]
+}

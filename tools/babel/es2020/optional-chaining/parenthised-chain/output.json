@@ -1,0 +1,185 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 39,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 9,
+      "expression": {
+        "type": "MemberExpression",
+        "start": 0,
+        "end": 8,
+        "object": {
+          "type": "ChainExpression",
+          "start": 1,
+          "end": 5,
+          "expression": {
+            "type": "MemberExpression",
+            "start": 1,
+            "end": 5,
+            "object": {
+              "type": "Identifier",
+              "start": 1,
+              "end": 2,
+              "name": "a"
+            },
+            "computed": false,
+            "property": {
+              "type": "Identifier",
+              "start": 4,
+              "end": 5,
+              "name": "b"
+            },
+            "optional": true
+          },
+          "extra": {
+            "parenthesized": true,
+            "parenStart": 0
+          }
+        },
+        "computed": false,
+        "property": {
+          "type": "Identifier",
+          "start": 7,
+          "end": 8,
+          "name": "c"
+        },
+        "optional": false
+      }
+    },
+    {
+      "type": "ExpressionStatement",
+      "start": 11,
+      "end": 22,
+      "expression": {
+        "type": "CallExpression",
+        "start": 11,
+        "end": 21,
+        "callee": {
+          "type": "MemberExpression",
+          "start": 11,
+          "end": 19,
+          "object": {
+            "type": "ChainExpression",
+            "start": 12,
+            "end": 16,
+            "expression": {
+              "type": "MemberExpression",
+              "start": 12,
+              "end": 16,
+              "object": {
+                "type": "Identifier",
+                "start": 12,
+                "end": 13,
+                "name": "a"
+              },
+              "computed": false,
+              "property": {
+                "type": "Identifier",
+                "start": 15,
+                "end": 16,
+                "name": "b"
+              },
+              "optional": true
+            },
+            "extra": {
+              "parenthesized": true,
+              "parenStart": 11
+            }
+          },
+          "computed": false,
+          "property": {
+            "type": "Identifier",
+            "start": 18,
+            "end": 19,
+            "name": "c"
+          },
+          "optional": false
+        },
+        "arguments": [],
+        "optional": false
+      }
+    },
+    {
+      "type": "ExpressionStatement",
+      "start": 24,
+      "end": 39,
+      "expression": {
+        "type": "ChainExpression",
+        "start": 24,
+        "end": 38,
+        "expression": {
+          "type": "MemberExpression",
+          "start": 24,
+          "end": 38,
+          "object": {
+            "type": "MemberExpression",
+            "start": 24,
+            "end": 35,
+            "object": {
+              "type": "MemberExpression",
+              "start": 24,
+              "end": 33,
+              "object": {
+                "type": "ChainExpression",
+                "start": 25,
+                "end": 29,
+                "expression": {
+                  "type": "MemberExpression",
+                  "start": 25,
+                  "end": 29,
+                  "object": {
+                    "type": "Identifier",
+                    "start": 25,
+                    "end": 26,
+                    "name": "a"
+                  },
+                  "computed": false,
+                  "property": {
+                    "type": "Identifier",
+                    "start": 28,
+                    "end": 29,
+                    "name": "b"
+                  },
+                  "optional": true
+                },
+                "extra": {
+                  "parenthesized": true,
+                  "parenStart": 24
+                }
+              },
+              "computed": false,
+              "property": {
+                "type": "Identifier",
+                "start": 32,
+                "end": 33,
+                "name": "c"
+              },
+              "optional": true
+            },
+            "computed": false,
+            "property": {
+              "type": "Identifier",
+              "start": 34,
+              "end": 35,
+              "name": "d"
+            },
+            "optional": false
+          },
+          "computed": false,
+          "property": {
+            "type": "Identifier",
+            "start": 37,
+            "end": 38,
+            "name": "e"
+          },
+          "optional": true
+        }
+      }
+    }
+  ]
+}

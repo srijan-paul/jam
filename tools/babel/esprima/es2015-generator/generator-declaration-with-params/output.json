@@ -1,0 +1,49 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 26,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "FunctionDeclaration",
+      "start": 0,
+      "end": 25,
+      "id": {
+        "type": "Identifier",
+        "start": 10,
+        "end": 13,
+        "name": "foo"
+      },
+      "generator": true,
+      "async": false,
+      "expression": false,
+      "params": [
+        {
+          "type": "Identifier",
+          "start": 14,
+          "end": 15,
+          "name": "x"
+        },
+        {
+          "type": "Identifier",
+          "start": 17,
+          "end": 18,
+          "name": "y"
+        },
+        {
+          "type": "Identifier",
+          "start": 20,
+          "end": 21,
+          "name": "z"
+        }
+      ],
+      "body": {
+        "type": "BlockStatement",
+        "start": 23,
+        "end": 25,
+        "body": []
+      }
+    }
+  ]
+}

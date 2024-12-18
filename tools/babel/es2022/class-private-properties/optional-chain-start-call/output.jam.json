@@ -1,0 +1,119 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 88,
+  "body": [
+    {
+      "type": "ClassDeclaration",
+      "start": 0,
+      "end": 87,
+      "id": {
+        "type": "Identifier",
+        "start": 6,
+        "end": 9,
+        "name": "Foo"
+      },
+      "body": {
+        "type": "ClassBody",
+        "body": [
+          {
+            "type": "ClassProperty",
+            "start": 21,
+            "end": 40,
+            "key": {
+              "type": "Identifier",
+              "start": 21,
+              "end": 23,
+              "name": "#m"
+            },
+            "value": {
+              "type": "FunctionExpression",
+              "start": 26,
+              "end": 39,
+              "async": false,
+              "generator": false,
+              "arrow": false,
+              "params": [],
+              "body": {
+                "type": "BlockStatement",
+                "start": 37,
+                "end": 39,
+                "body": []
+              }
+            },
+            "computed": false,
+            "static": true
+          },
+          {
+            "type": "MethodDefinition",
+            "start": 51,
+            "end": 85,
+            "key": {
+              "type": "Identifier",
+              "start": 51,
+              "end": 55,
+              "name": "test"
+            },
+            "value": {
+              "type": "FunctionExpression",
+              "start": 55,
+              "end": 85,
+              "async": false,
+              "generator": false,
+              "arrow": false,
+              "params": [],
+              "body": {
+                "type": "BlockStatement",
+                "start": 58,
+                "end": 85,
+                "body": [
+                  {
+                    "type": "ReturnStatement",
+                    "start": 64,
+                    "end": 81,
+                    "argument": {
+                      "type": "OptionalExpression",
+                      "start": 71,
+                      "end": 80,
+                      "argument": {
+                        "type": "CallExpression",
+                        "start": 71,
+                        "end": 80,
+                        "callee": {
+                          "type": "OptionalExpression",
+                          "start": 71,
+                          "end": 78,
+                          "argument": {
+                            "type": "MemberExpression",
+                            "start": 71,
+                            "end": 78,
+                            "object": {
+                              "type": "Identifier",
+                              "start": 71,
+                              "end": 74,
+                              "name": "Foo"
+                            },
+                            "property": {
+                              "type": "Identifier",
+                              "start": 76,
+                              "end": 78,
+                              "name": "#m"
+                            },
+                            "computed": false
+                          }
+                        },
+                        "arguments": []
+                      }
+                    }
+                  }
+                ]
+              }
+            },
+            "computed": false,
+            "static": true
+          }
+        ]
+      }
+    }
+  ]
+}

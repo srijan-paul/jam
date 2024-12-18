@@ -1,0 +1,124 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 62,
+  "body": [
+    {
+      "type": "ClassDeclaration",
+      "start": 0,
+      "end": 27,
+      "id": {
+        "type": "Identifier",
+        "start": 6,
+        "end": 9,
+        "name": "Foo"
+      },
+      "body": {
+        "type": "ClassBody",
+        "body": [
+          {
+            "type": "ClassProperty",
+            "start": 15,
+            "end": 16,
+            "key": {
+              "type": "Identifier",
+              "start": 15,
+              "end": 16,
+              "name": "x"
+            },
+            "value": {
+              "type": "Identifier",
+              "start": 15,
+              "end": 16,
+              "name": "x"
+            },
+            "computed": false,
+            "static": false
+          },
+          {
+            "type": "ClassProperty",
+            "start": 21,
+            "end": 24,
+            "key": {
+              "type": "Literal",
+              "start": 21,
+              "end": 24,
+              "value": "'y'"
+            },
+            "value": {
+              "type": "Literal",
+              "start": 21,
+              "end": 24,
+              "value": "'y'"
+            },
+            "computed": false,
+            "static": false
+          }
+        ]
+      }
+    },
+    {
+      "type": "ClassDeclaration",
+      "start": 29,
+      "end": 61,
+      "id": {
+        "type": "Identifier",
+        "start": 35,
+        "end": 39,
+        "name": "Foo2"
+      },
+      "body": {
+        "type": "ClassBody",
+        "body": [
+          {
+            "type": "ClassProperty",
+            "start": 45,
+            "end": 46,
+            "key": {
+              "type": "Identifier",
+              "start": 45,
+              "end": 46,
+              "name": "p"
+            },
+            "value": {
+              "type": "Identifier",
+              "start": 45,
+              "end": 46,
+              "name": "p"
+            },
+            "computed": false,
+            "static": false
+          },
+          {
+            "type": "MethodDefinition",
+            "start": 51,
+            "end": 59,
+            "key": {
+              "type": "Identifier",
+              "start": 51,
+              "end": 52,
+              "name": "m"
+            },
+            "value": {
+              "type": "FunctionExpression",
+              "start": 54,
+              "end": 59,
+              "async": false,
+              "generator": false,
+              "arrow": false,
+              "params": [],
+              "body": {
+                "type": "BlockStatement",
+                "start": 57,
+                "end": 59,
+                "body": []
+              }
+            },
+            "computed": false,
+            "static": false
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,74 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 40,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "VariableDeclaration",
+      "start": 0,
+      "end": 39,
+      "declarations": [
+        {
+          "type": "VariableDeclarator",
+          "start": 6,
+          "end": 39,
+          "id": {
+            "type": "ObjectPattern",
+            "start": 6,
+            "end": 13,
+            "properties": [
+              {
+                "type": "Property",
+                "start": 7,
+                "end": 12,
+                "key": {
+                  "type": "Identifier",
+                  "start": 7,
+                  "end": 12,
+                  "name": "async"
+                },
+                "computed": false,
+                "method": false,
+                "shorthand": true,
+                "value": {
+                  "type": "Identifier",
+                  "start": 7,
+                  "end": 12,
+                  "name": "async"
+                },
+                "kind": "init",
+                "extra": {
+                  "shorthand": true
+                }
+              }
+            ]
+          },
+          "init": {
+            "type": "CallExpression",
+            "start": 16,
+            "end": 39,
+            "callee": {
+              "type": "Identifier",
+              "start": 16,
+              "end": 23,
+              "name": "require"
+            },
+            "arguments": [
+              {
+                "type": "Literal",
+                "start": 24,
+                "end": 38,
+                "value": "../lang/task",
+                "raw": "'../lang/task'"
+              }
+            ],
+            "optional": false
+          }
+        }
+      ],
+      "kind": "const"
+    }
+  ]
+}

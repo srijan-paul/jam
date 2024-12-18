@@ -1,0 +1,88 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 79,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ImportDeclaration",
+      "start": 0,
+      "end": 31,
+      "importKind": "type",
+      "specifiers": [
+        {
+          "type": "ImportSpecifier",
+          "start": 14,
+          "end": 17,
+          "imported": {
+            "type": "Identifier",
+            "start": 14,
+            "end": 17,
+            "name": "Foo"
+          },
+          "importKind": null,
+          "local": {
+            "type": "Identifier",
+            "start": 14,
+            "end": 17,
+            "name": "Foo"
+          }
+        }
+      ],
+      "source": {
+        "type": "Literal",
+        "start": 25,
+        "end": 30,
+        "value": "bar",
+        "raw": "\"bar\""
+      },
+      "attributes": []
+    },
+    {
+      "type": "ExportNamedDeclaration",
+      "start": 32,
+      "end": 52,
+      "exportKind": "type",
+      "specifiers": [
+        {
+          "type": "ExportSpecifier",
+          "start": 46,
+          "end": 49,
+          "local": {
+            "type": "Identifier",
+            "start": 46,
+            "end": 49,
+            "name": "Foo"
+          },
+          "exported": {
+            "type": "Identifier",
+            "start": 46,
+            "end": 49,
+            "name": "Foo"
+          }
+        }
+      ],
+      "source": null,
+      "declaration": null
+    },
+    {
+      "type": "ExportAllDeclaration",
+      "start": 53,
+      "end": 78,
+      "exportKind": "type",
+      "source": {
+        "type": "Literal",
+        "start": 72,
+        "end": 77,
+        "value": "bar",
+        "raw": "\"bar\""
+      },
+      "attributes": [],
+      "exported": null
+    }
+  ],
+  "extra": {
+    "topLevelAwait": false
+  }
+}

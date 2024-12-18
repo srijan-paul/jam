@@ -1,0 +1,18 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 7,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 7,
+      "expression": {
+        "type": "Literal",
+        "start": 0,
+        "end": 7,
+        "value": "0b0_1_1"
+      }
+    }
+  ]
+}

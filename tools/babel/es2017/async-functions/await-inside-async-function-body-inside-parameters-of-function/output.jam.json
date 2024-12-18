@@ -1,0 +1,72 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 50,
+  "body": [
+    {
+      "type": "FunctionDeclaration",
+      "start": 0,
+      "end": 49,
+      "id": {
+        "type": "Identifier",
+        "start": 9,
+        "end": 11,
+        "name": "fn"
+      },
+      "async": false,
+      "generator": false,
+      "arrow": false,
+      "params": [
+        {
+          "type": "AssignmentPattern",
+          "start": 12,
+          "end": 21,
+          "left": {
+            "type": "Identifier",
+            "start": 12,
+            "end": 13,
+            "name": "x"
+          },
+          "right": {
+            "type": "FunctionExpression",
+            "start": 16,
+            "end": 45,
+            "async": true,
+            "generator": false,
+            "arrow": false,
+            "params": [],
+            "body": {
+              "type": "BlockStatement",
+              "start": 34,
+              "end": 45,
+              "body": [
+                {
+                  "type": "ExpressionStatement",
+                  "start": 36,
+                  "end": 43,
+                  "expression": {
+                    "type": "AwaitExpression",
+                    "start": 36,
+                    "end": 43,
+                    "argument": {
+                      "type": "Literal",
+                      "start": 42,
+                      "end": 43,
+                      "value": "1"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "body": {
+        "type": "BlockStatement",
+        "start": 47,
+        "end": 49,
+        "body": []
+      }
+    }
+  ]
+}

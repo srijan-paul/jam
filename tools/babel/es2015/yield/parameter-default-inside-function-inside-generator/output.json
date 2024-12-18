@@ -1,0 +1,70 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 47,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "FunctionDeclaration",
+      "start": 0,
+      "end": 47,
+      "id": {
+        "type": "Identifier",
+        "start": 10,
+        "end": 12,
+        "name": "fn"
+      },
+      "generator": true,
+      "async": false,
+      "expression": false,
+      "params": [],
+      "body": {
+        "type": "BlockStatement",
+        "start": 15,
+        "end": 47,
+        "body": [
+          {
+            "type": "FunctionDeclaration",
+            "start": 19,
+            "end": 45,
+            "id": {
+              "type": "Identifier",
+              "start": 28,
+              "end": 31,
+              "name": "fn2"
+            },
+            "generator": false,
+            "async": false,
+            "expression": false,
+            "params": [
+              {
+                "type": "AssignmentPattern",
+                "start": 32,
+                "end": 41,
+                "left": {
+                  "type": "Identifier",
+                  "start": 32,
+                  "end": 33,
+                  "name": "x"
+                },
+                "right": {
+                  "type": "Identifier",
+                  "start": 36,
+                  "end": 41,
+                  "name": "yield"
+                }
+              }
+            ],
+            "body": {
+              "type": "BlockStatement",
+              "start": 43,
+              "end": 45,
+              "body": []
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,87 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 61,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ClassDeclaration",
+      "start": 0,
+      "end": 60,
+      "id": {
+        "type": "Identifier",
+        "start": 6,
+        "end": 11,
+        "name": "Hotel"
+      },
+      "superClass": null,
+      "body": {
+        "type": "ClassBody",
+        "start": 12,
+        "end": 60,
+        "body": [
+          {
+            "type": "MethodDefinition",
+            "start": 16,
+            "end": 58,
+            "static": false,
+            "key": {
+              "type": "PrivateName",
+              "start": 22,
+              "end": 27,
+              "id": {
+                "type": "Identifier",
+                "start": 23,
+                "end": 27,
+                "name": "evil"
+              }
+            },
+            "computed": false,
+            "kind": "method",
+            "value": {
+              "type": "FunctionExpression",
+              "start": 27,
+              "end": 58,
+              "id": null,
+              "generator": false,
+              "async": true,
+              "expression": false,
+              "params": [],
+              "body": {
+                "type": "BlockStatement",
+                "start": 30,
+                "end": 58,
+                "body": [
+                  {
+                    "type": "ExpressionStatement",
+                    "start": 36,
+                    "end": 54,
+                    "expression": {
+                      "type": "AwaitExpression",
+                      "start": 36,
+                      "end": 53,
+                      "argument": {
+                        "type": "CallExpression",
+                        "start": 42,
+                        "end": 53,
+                        "callee": {
+                          "type": "Identifier",
+                          "start": 42,
+                          "end": 51,
+                          "name": "notReally"
+                        },
+                        "arguments": [],
+                        "optional": false
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

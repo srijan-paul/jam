@@ -1,0 +1,86 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 33,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ClassDeclaration",
+      "start": 0,
+      "end": 33,
+      "id": {
+        "type": "Identifier",
+        "start": 6,
+        "end": 7,
+        "name": "A"
+      },
+      "superClass": null,
+      "body": {
+        "type": "ClassBody",
+        "start": 8,
+        "end": 33,
+        "body": [
+          {
+            "type": "ClassPrivateProperty",
+            "start": 12,
+            "end": 25,
+            "static": false,
+            "key": {
+              "type": "PrivateName",
+              "start": 12,
+              "end": 14,
+              "id": {
+                "type": "Identifier",
+                "start": 13,
+                "end": 14,
+                "name": "x"
+              }
+            },
+            "value": {
+              "type": "MemberExpression",
+              "start": 17,
+              "end": 24,
+              "object": {
+                "type": "ThisExpression",
+                "start": 17,
+                "end": 21
+              },
+              "computed": false,
+              "property": {
+                "type": "PrivateName",
+                "start": 22,
+                "end": 24,
+                "id": {
+                  "type": "Identifier",
+                  "start": 23,
+                  "end": 24,
+                  "name": "y"
+                }
+              },
+              "optional": false
+            }
+          },
+          {
+            "type": "ClassPrivateProperty",
+            "start": 28,
+            "end": 31,
+            "static": false,
+            "key": {
+              "type": "PrivateName",
+              "start": 28,
+              "end": 30,
+              "id": {
+                "type": "Identifier",
+                "start": 29,
+                "end": 30,
+                "name": "y"
+              }
+            },
+            "value": null
+          }
+        ]
+      }
+    }
+  ]
+}

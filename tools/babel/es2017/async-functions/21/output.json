@@ -1,0 +1,79 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 38,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 38,
+      "expression": {
+        "type": "FunctionExpression",
+        "start": 1,
+        "end": 37,
+        "id": null,
+        "generator": false,
+        "async": false,
+        "expression": false,
+        "params": [],
+        "body": {
+          "type": "BlockStatement",
+          "start": 12,
+          "end": 37,
+          "body": [
+            {
+              "type": "VariableDeclaration",
+              "start": 14,
+              "end": 24,
+              "declarations": [
+                {
+                  "type": "VariableDeclarator",
+                  "start": 18,
+                  "end": 23,
+                  "id": {
+                    "type": "Identifier",
+                    "start": 18,
+                    "end": 23,
+                    "name": "async"
+                  },
+                  "init": null
+                }
+              ],
+              "kind": "var"
+            },
+            {
+              "type": "ExpressionStatement",
+              "start": 25,
+              "end": 35,
+              "expression": {
+                "type": "AssignmentExpression",
+                "start": 25,
+                "end": 35,
+                "operator": "=",
+                "left": {
+                  "type": "Identifier",
+                  "start": 25,
+                  "end": 30,
+                  "name": "async"
+                },
+                "right": {
+                  "type": "Literal",
+                  "start": 33,
+                  "end": 35,
+                  "value": 10,
+                  "raw": "10"
+                }
+              }
+            }
+          ]
+        },
+        "extra": {
+          "parenthesized": true,
+          "parenStart": 0
+        }
+      }
+    }
+  ]
+}

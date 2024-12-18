@@ -1,0 +1,267 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 197,
+  "sourceType": "module",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExportNamedDeclaration",
+      "start": 36,
+      "end": 86,
+      "specifiers": [],
+      "source": null,
+      "declaration": {
+        "type": "ClassDeclaration",
+        "start": 8,
+        "end": 86,
+        "id": {
+          "type": "Identifier",
+          "start": 65,
+          "end": 66,
+          "name": "C",
+          "trailingComments": [
+            {
+              "type": "CommentBlock",
+              "value": " 6 ",
+              "start": 67,
+              "end": 74
+            }
+          ],
+          "leadingComments": [
+            {
+              "type": "CommentBlock",
+              "value": " 5 ",
+              "start": 57,
+              "end": 64
+            }
+          ]
+        },
+        "superClass": null,
+        "body": {
+          "type": "ClassBody",
+          "start": 75,
+          "end": 86,
+          "body": [],
+          "innerComments": [
+            {
+              "type": "CommentBlock",
+              "value": " 7 ",
+              "start": 77,
+              "end": 84
+            }
+          ],
+          "leadingComments": [
+            {
+              "type": "CommentBlock",
+              "value": " 6 ",
+              "start": 67,
+              "end": 74
+            }
+          ]
+        },
+        "decorators": [
+          {
+            "type": "Decorator",
+            "start": 8,
+            "end": 13,
+            "expression": {
+              "type": "Identifier",
+              "start": 9,
+              "end": 13,
+              "name": "dec1"
+            },
+            "trailingComments": [
+              {
+                "type": "CommentBlock",
+                "value": " 2 ",
+                "start": 14,
+                "end": 21
+              }
+            ]
+          },
+          {
+            "type": "Decorator",
+            "start": 22,
+            "end": 27,
+            "expression": {
+              "type": "Identifier",
+              "start": 23,
+              "end": 27,
+              "name": "dec2"
+            },
+            "trailingComments": [
+              {
+                "type": "CommentBlock",
+                "value": " 3 ",
+                "start": 28,
+                "end": 35
+              }
+            ],
+            "leadingComments": [
+              {
+                "type": "CommentBlock",
+                "value": " 2 ",
+                "start": 14,
+                "end": 21
+              }
+            ]
+          }
+        ],
+        "leadingComments": [
+          {
+            "type": "CommentBlock",
+            "value": " 4 ",
+            "start": 43,
+            "end": 50
+          }
+        ]
+      },
+      "trailingComments": [
+        {
+          "type": "CommentBlock",
+          "value": " 8 ",
+          "start": 87,
+          "end": 94
+        },
+        {
+          "type": "CommentBlock",
+          "value": " A ",
+          "start": 96,
+          "end": 103
+        }
+      ],
+      "leadingComments": [
+        {
+          "type": "CommentBlock",
+          "value": " 1 ",
+          "start": 0,
+          "end": 7
+        }
+      ]
+    },
+    {
+      "type": "ExportDefaultDeclaration",
+      "start": 132,
+      "end": 188,
+      "declaration": {
+        "type": "ClassDeclaration",
+        "start": 104,
+        "end": 188,
+        "id": null,
+        "superClass": null,
+        "body": {
+          "type": "ClassBody",
+          "start": 177,
+          "end": 188,
+          "body": [],
+          "innerComments": [
+            {
+              "type": "CommentBlock",
+              "value": " G ",
+              "start": 179,
+              "end": 186
+            }
+          ],
+          "leadingComments": [
+            {
+              "type": "CommentBlock",
+              "value": " F ",
+              "start": 169,
+              "end": 176
+            }
+          ]
+        },
+        "decorators": [
+          {
+            "type": "Decorator",
+            "start": 104,
+            "end": 109,
+            "expression": {
+              "type": "Identifier",
+              "start": 105,
+              "end": 109,
+              "name": "dec1"
+            },
+            "trailingComments": [
+              {
+                "type": "CommentBlock",
+                "value": " B ",
+                "start": 110,
+                "end": 117
+              }
+            ]
+          },
+          {
+            "type": "Decorator",
+            "start": 118,
+            "end": 123,
+            "expression": {
+              "type": "Identifier",
+              "start": 119,
+              "end": 123,
+              "name": "dec2"
+            },
+            "trailingComments": [
+              {
+                "type": "CommentBlock",
+                "value": " C ",
+                "start": 124,
+                "end": 131
+              }
+            ],
+            "leadingComments": [
+              {
+                "type": "CommentBlock",
+                "value": " B ",
+                "start": 110,
+                "end": 117
+              }
+            ]
+          }
+        ],
+        "leadingComments": [
+          {
+            "type": "CommentBlock",
+            "value": " E ",
+            "start": 155,
+            "end": 162
+          }
+        ]
+      },
+      "innerComments": [
+        {
+          "type": "CommentBlock",
+          "value": " D ",
+          "start": 139,
+          "end": 146
+        }
+      ],
+      "trailingComments": [
+        {
+          "type": "CommentBlock",
+          "value": " H ",
+          "start": 189,
+          "end": 196
+        }
+      ],
+      "leadingComments": [
+        {
+          "type": "CommentBlock",
+          "value": " 8 ",
+          "start": 87,
+          "end": 94
+        },
+        {
+          "type": "CommentBlock",
+          "value": " A ",
+          "start": 96,
+          "end": 103
+        }
+      ]
+    }
+  ],
+  "extra": {
+    "topLevelAwait": false
+  }
+}

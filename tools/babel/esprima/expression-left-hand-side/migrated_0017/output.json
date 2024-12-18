@@ -1,0 +1,90 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 42,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 41,
+      "expression": {
+        "type": "MemberExpression",
+        "start": 0,
+        "end": 41,
+        "object": {
+          "type": "CallExpression",
+          "start": 0,
+          "end": 32,
+          "callee": {
+            "type": "MemberExpression",
+            "start": 0,
+            "end": 21,
+            "object": {
+              "type": "CallExpression",
+              "start": 0,
+              "end": 12,
+              "callee": {
+                "type": "Identifier",
+                "start": 0,
+                "end": 8,
+                "name": "universe"
+              },
+              "arguments": [
+                {
+                  "type": "Literal",
+                  "start": 9,
+                  "end": 11,
+                  "value": 42,
+                  "raw": "42"
+                }
+              ],
+              "optional": false
+            },
+            "computed": false,
+            "property": {
+              "type": "Identifier",
+              "start": 13,
+              "end": 21,
+              "name": "galaxies"
+            },
+            "optional": false
+          },
+          "arguments": [
+            {
+              "type": "Literal",
+              "start": 22,
+              "end": 24,
+              "value": 14,
+              "raw": "14"
+            },
+            {
+              "type": "Literal",
+              "start": 26,
+              "end": 27,
+              "value": 3,
+              "raw": "3"
+            },
+            {
+              "type": "Literal",
+              "start": 29,
+              "end": 31,
+              "value": 77,
+              "raw": "77"
+            }
+          ],
+          "optional": false
+        },
+        "computed": false,
+        "property": {
+          "type": "Identifier",
+          "start": 33,
+          "end": 41,
+          "name": "milkyway"
+        },
+        "optional": false
+      }
+    }
+  ]
+}

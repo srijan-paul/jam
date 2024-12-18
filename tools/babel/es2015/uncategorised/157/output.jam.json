@@ -1,0 +1,112 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 29,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 1,
+      "end": 28,
+      "expression": {
+        "type": "ClassExpression",
+        "start": 1,
+        "end": 28,
+        "body": {
+          "type": "ClassBody",
+          "body": [
+            {
+              "type": "MethodDefinition",
+              "start": 8,
+              "end": 27,
+              "key": {
+                "type": "Identifier",
+                "start": 8,
+                "end": 9,
+                "name": "f"
+              },
+              "value": {
+                "type": "FunctionExpression",
+                "start": 9,
+                "end": 27,
+                "async": false,
+                "generator": false,
+                "arrow": false,
+                "params": [
+                  {
+                    "type": "AssignmentPattern",
+                    "start": 10,
+                    "end": 17,
+                    "left": {
+                      "type": "ObjectPattern",
+                      "start": 10,
+                      "end": 13,
+                      "properties": [
+                        {
+                          "type": "Property",
+                          "start": 11,
+                          "end": 12,
+                          "key": {
+                            "type": "Identifier",
+                            "start": 11,
+                            "end": 12,
+                            "name": "x"
+                          },
+                          "value": {
+                            "type": "Identifier",
+                            "start": 11,
+                            "end": 12,
+                            "name": "x"
+                          },
+                          "kind": "init",
+                          "computed": false,
+                          "shorthand": true,
+                          "method": false
+                        }
+                      ]
+                    },
+                    "right": {
+                      "type": "ObjectExpression",
+                      "start": 16,
+                      "end": 23,
+                      "properties": [
+                        {
+                          "type": "Property",
+                          "start": 17,
+                          "end": 22,
+                          "key": {
+                            "type": "Identifier",
+                            "start": 17,
+                            "end": 18,
+                            "name": "x"
+                          },
+                          "value": {
+                            "type": "Literal",
+                            "start": 20,
+                            "end": 22,
+                            "value": "10"
+                          },
+                          "kind": "init",
+                          "computed": false,
+                          "shorthand": false,
+                          "method": false
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "body": {
+                  "type": "BlockStatement",
+                  "start": 25,
+                  "end": 27,
+                  "body": []
+                }
+              },
+              "computed": false,
+              "static": false
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 112,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 1,
+      "end": 110,
+      "expression": {
+        "type": "ClassExpression",
+        "start": 1,
+        "end": 99,
+        "body": {
+          "type": "ClassBody",
+          "body": [
+            {
+              "type": "MethodDefinition",
+              "start": 50,
+              "end": 89,
+              "key": {
+                "type": "Identifier",
+                "start": 50,
+                "end": 51,
+                "name": "f"
+              },
+              "value": {
+                "type": "FunctionExpression",
+                "start": 60,
+                "end": 89,
+                "async": false,
+                "generator": true,
+                "arrow": false,
+                "params": [],
+                "body": {
+                  "type": "BlockStatement",
+                  "start": 78,
+                  "end": 89,
+                  "body": []
+                }
+              },
+              "computed": false,
+              "static": true
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
