@@ -246,6 +246,12 @@ fn consumeToken(self: *Self) Error!Token {
 pub fn rewind(self: *Self, index: u32, line: u32) void {
     self.index = index;
     self.line = line;
+
+    if (self.eof()) return;
+    _ = std.unicode.utf8ByteSequenceLength(self.source[self.index]) catch {
+        // TODO: make this return an error instead.
+        std.debug.panic("Invalid rewind location", .{});
+    };
 }
 
 /// tokenize a "." or a "..." token, assuming self.index is at '.'

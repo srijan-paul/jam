@@ -51,7 +51,7 @@
         }
       },
       "update": {
-        "type": "UnaryExpression",
+        "type": "UpdateExpression",
         "start": 25,
         "end": 28,
         "operator": "++",

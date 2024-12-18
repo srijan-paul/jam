@@ -174,6 +174,15 @@ pub fn build(b: *std.Build) !void {
     lib_unit_tests.root_module.addImport("syntax", jam_syntax_module);
     lib_unit_tests.root_module.addImport("js", jam_js_module);
 
+    const js_unit_tests = b.addTest(.{
+        .root_source_file = b.path("./src/js/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+
+    js_unit_tests.root_module.addImport("util", util_module);
+    js_unit_tests.root_module.addImport("syntax", jam_syntax_module);
+
     const scope_unit_tests = b.addTest(.{
         .root_source_file = b.path("./src/js/scope.zig"),
         .target = target,
@@ -190,11 +199,13 @@ pub fn build(b: *std.Build) !void {
     });
 
     const run_lib_unit_tests = b.addRunArtifact(lib_unit_tests);
+    const run_js_unit_tests = b.addRunArtifact(js_unit_tests);
     const run_util_unit_tests = b.addRunArtifact(util_unit_tests);
     const run_scope_unit_tests = b.addRunArtifact(scope_unit_tests);
 
     const test_step = b.step("test", "Run unit tests");
     test_step.dependOn(&run_lib_unit_tests.step);
+    test_step.dependOn(&run_js_unit_tests.step);
     test_step.dependOn(&run_util_unit_tests.step);
     test_step.dependOn(&run_scope_unit_tests.step);
 
@@ -204,11 +215,14 @@ pub fn build(b: *std.Build) !void {
     exe.root_module.addImport("syntax", jam_syntax_module);
 
     for (deps.items) |dep| {
-        lib_unit_tests.root_module.addImport(dep.name, dep.module);
-        lib.root_module.addImport(dep.name, dep.module);
-        exe.root_module.addImport(dep.name, dep.module);
-        exe_check.root_module.addImport(dep.name, dep.module);
         jam_js_module.addImport(dep.name, dep.module);
         jam_css_module.addImport(dep.name, dep.module);
+
+        lib.root_module.addImport(dep.name, dep.module);
+        lib_unit_tests.root_module.addImport(dep.name, dep.module);
+        js_unit_tests.root_module.addImport(dep.name, dep.module);
+
+        exe.root_module.addImport(dep.name, dep.module);
+        exe_check.root_module.addImport(dep.name, dep.module);
     }
 }

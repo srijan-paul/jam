@@ -51,7 +51,7 @@
         }
       },
       "update": {
-        "type": "UnaryExpression",
+        "type": "UpdateExpression",
         "start": 24,
         "end": 27,
         "operator": "++",
@@ -119,7 +119,7 @@
       "start": 64,
       "end": 77,
       "test": {
-        "type": "UnaryExpression",
+        "type": "UpdateExpression",
         "start": 71,
         "end": 74,
         "operator": "++",
@@ -361,7 +361,7 @@
         "end": 193,
         "expressions": [
           {
-            "type": "UnaryExpression",
+            "type": "UpdateExpression",
             "start": 185,
             "end": 188,
             "operator": "++",
@@ -373,7 +373,7 @@
             }
           },
           {
-            "type": "UnaryExpression",
+            "type": "UpdateExpression",
             "start": 190,
             "end": 193,
             "operator": "++",

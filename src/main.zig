@@ -4,7 +4,11 @@ const css = @import("css");
 
 /// Parse a javascript file and return a stringified JSON representation of the AST.
 /// The returned slice is owned by the caller.
-fn jsFileToJsonAst(allocator: std.mem.Allocator, file_name: []const u8) ![]const u8 {
+fn jsFileToJsonAst(
+    allocator: std.mem.Allocator,
+    file_name: []const u8,
+    mode: js.Parser.SourceType,
+) ![]const u8 {
     const source = std.fs.cwd().readFileAlloc(
         allocator,
         file_name,
@@ -17,7 +21,7 @@ fn jsFileToJsonAst(allocator: std.mem.Allocator, file_name: []const u8) ![]const
     defer allocator.free(source);
 
     const Parser = js.Parser;
-    var parser = try Parser.init(allocator, source, .{ .source_type = .script });
+    var parser = try Parser.init(allocator, source, .{ .source_type = mode });
     defer parser.deinit();
 
     var result = parser.parse() catch |err| {
@@ -73,19 +77,24 @@ pub fn main() !void {
     defer std.debug.assert(gpa.deinit() == .ok);
 
     var args = std.process.args();
+    var js_parse_mode: js.Parser.SourceType = .script;
     const file_name = blk: {
         _ = args.next(); // skip the program name
-        if (args.next()) |arg| {
-            break :blk arg;
+        while (args.next()) |arg| {
+            if (std.mem.eql(u8, arg, "--esm")) {
+                js_parse_mode = .module;
+            } else {
+                break :blk arg;
+            }
         }
-        std.log.err("expected a file name\n", .{});
+        std.log.err("Usage: jam [--esm] path-to-file.js\n", .{});
         return;
     };
 
     const pretty_ast_str = blk: {
         const file_ext = std.fs.path.extension(file_name);
         if (std.mem.eql(u8, file_ext, ".js")) {
-            break :blk try jsFileToJsonAst(allocator, file_name);
+            break :blk try jsFileToJsonAst(allocator, file_name, js_parse_mode);
         } else if (std.mem.eql(u8, file_ext, ".css")) {
             break :blk try cssFileToJsonAst(allocator, file_name);
         }

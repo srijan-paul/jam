@@ -4019,6 +4019,7 @@ fn primaryExpression(self: *Self) Error!Node.Index {
         self.tokenizer.rewind(cur.start, cur.line);
         self.tokenizer.assume_bslash_starts_regex = true;
 
+        // re-tokenize the regex literal
         self.current.token = try self.tokenizer.next();
         self.current.id = @enumFromInt(self.tokens.items.len);
         try self.saveToken(self.current.token);
@@ -4461,7 +4462,8 @@ fn variableName(self: *Self, token_with_id: TokenWithId) Error!Node.Index {
             }
         },
         .@"var" => {
-            // Look for clashes within, or outside the current scope:
+            // Look for let-bindings with the same name within,
+            // or outside the current scope:
             // ```js
             // let x;
             // {
@@ -4473,8 +4475,7 @@ fn variableName(self: *Self, token_with_id: TokenWithId) Error!Node.Index {
             // variable with the same name.
             var scope: *const ScopeManager.Scope = self.scope.current_scope;
             while (true) {
-                const maybe_existing_var = self.scope.findInScope(scope, name_string);
-                if (maybe_existing_var) |existing_var| {
+                if (self.scope.findInScope(scope, name_string)) |existing_var| {
                     if (existing_var.kind == .lexical_binding) {
                         try self.emitDiagnostic(
                             token_with_id.token.startCoord(self.source),
@@ -5784,11 +5785,6 @@ fn runTestOnFile(tests_dir: std.fs.Dir, file_path: []const u8) !void {
 
     // 3. ensure the AST JSON is equal to the expected JSON
     try t.expectEqualStrings(trimmed_ast_json, ast_json);
-}
-
-test "StringHelper and ScopeManager" {
-    _ = StringHelper;
-    _ = ScopeManager;
 }
 
 test parse {

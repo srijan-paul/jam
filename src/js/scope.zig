@@ -93,6 +93,7 @@ pub fn deinit(self: *Self) void {
     self.scopes.deinit();
 }
 
+/// Create a new scope and set it as currently active
 pub fn enterScope(self: *Self, kind: Scope.Kind, is_strict: bool) AllocError!void {
     const scope = Scope{
         .kind = kind,
@@ -105,12 +106,14 @@ pub fn enterScope(self: *Self, kind: Scope.Kind, is_strict: bool) AllocError!voi
     self.current_scope = self.getScopeMut(scope.id);
 }
 
+/// Exit the current scope, and set its parent as the currently active scope
 pub fn exitScope(self: *Self) void {
     const parent_scope_id = self.current_scope.upper orelse
         std.debug.panic("Bad call to `exitScope` - attempt to exit top-most scope", .{});
     self.current_scope = self.getScopeMut(parent_scope_id);
 }
 
+/// Search for a declaration starting from the current scope and moving outwards.
 pub fn findFromCurrentScope(self: *const Self, name: String) ?*const Variable {
     var cur_scope: *const Scope = self.current_scope;
     while (true) {
@@ -123,6 +126,8 @@ pub fn findFromCurrentScope(self: *const Self, name: String) ?*const Variable {
     return null;
 }
 
+/// Search for a declaration in the current scope using its name.
+/// Do not go to parents
 pub fn findInCurrentScope(self: *const Self, name: String) ?*const Variable {
     return self.findInScope(self.current_scope, name);
 }
@@ -168,23 +173,6 @@ pub fn getScopeMut(self: *Self, id: Scope.Id) *Scope {
     return &self.scopes.items[@intFromEnum(id)];
 }
 
-/// Find the nearest surrounding function scope.
-pub fn nearestFunctionScope(self: *const Self) *const Scope {
-    var scope: *const Scope = self.current_scope;
-    // For "var" bindings, find the nearest surrounding function scope
-    while (scope.kind == .block) {
-        if (scope.upper) |parent| {
-            scope = self.getScope(parent);
-        } else {
-            // we've reached the top-most scope
-            std.debug.assert(scope.kind == .script or scope.kind == .module);
-            break;
-        }
-    }
-
-    return scope;
-}
-
 /// Append a new variable to the currently active scope.
 /// If [kind] is `variable_binding`, then the variable is
 /// added to the nearest function-scope instead.
@@ -195,12 +183,12 @@ pub fn addVariable(
     kind: Variable.Kind,
 ) AllocError!void {
     // Find the scope where this variable should be added.
-    // (Can't add to the current scope because of hoisting).
+    // let bindings are added to the current scope, while
+    // var bindings are added to the nearest function scope.
     const target_scope = blk: {
         var scope = self.current_scope;
         if (kind == .lexical_binding) break :blk scope;
 
-        // For "var" bindings, find the nearest surrounding function scope
         while (scope.kind == .block) {
             if (scope.upper) |parent| {
                 scope = self.getScopeMut(parent);
