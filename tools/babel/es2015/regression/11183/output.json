@@ -51,20 +51,7 @@
         "type": "BlockStatement",
         "start": 28,
         "end": 44,
-        "body": [],
-        "directives": [
-          {
-            "type": "Directive",
-            "start": 30,
-            "end": 42,
-            "value": {
-              "type": "DirectiveLiteral",
-              "start": 30,
-              "end": 42,
-              "value": "use strict"
-            }
-          }
-        ]
+        "body": []
       }
     },
     {
@@ -78,6 +65,5 @@
         "value": 5
       }
     }
-  ],
-  "directives": []
+  ]
 }

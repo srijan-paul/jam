@@ -131,7 +131,7 @@
                     },
                     {
                       "type": "MemberExpression",
-                      "start": 33,
+                      "start": 32,
                       "end": 37,
                       "object": {
                         "type": "Literal",

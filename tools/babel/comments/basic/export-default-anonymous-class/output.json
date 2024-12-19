@@ -41,8 +41,7 @@
                 "type": "BlockStatement",
                 "start": 112,
                 "end": 119,
-                "body": [],
-                "directives": []
+                "body": []
               },
               "leadingComments": [
                 {
@@ -65,6 +64,5 @@
         }
       ]
     }
-  ],
-  "directives": []
+  ]
 }

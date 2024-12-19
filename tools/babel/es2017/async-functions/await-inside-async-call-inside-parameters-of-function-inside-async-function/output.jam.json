@@ -15,9 +15,8 @@
         "end": 16,
         "name": "f"
       },
-      "async": true,
       "generator": false,
-      "arrow": false,
+      "async": true,
       "params": [],
       "body": {
         "type": "BlockStatement",
@@ -34,9 +33,8 @@
               "end": 33,
               "name": "g"
             },
-            "async": false,
             "generator": false,
-            "arrow": false,
+            "async": false,
             "params": [
               {
                 "type": "AssignmentPattern",

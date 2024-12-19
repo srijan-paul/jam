@@ -32,8 +32,8 @@
               "type": "FunctionExpression",
               "start": 31,
               "end": 210,
-              "async": true,
               "generator": true,
+              "async": true,
               "arrow": false,
               "params": [
                 {
@@ -109,6 +109,7 @@
                             "start": 102,
                             "end": 102,
                             "operator": "!",
+                            "prefix": true,
                             "argument": {
                               "type": "MemberExpression",
                               "start": 102,

@@ -10,6 +10,7 @@ const json = std.json;
 const Parser = js.Parser;
 const Allocator = std.mem.Allocator;
 
+/// Result of comparing output from `@babel/parser` to that of jam
 const ParseResult = enum {
     /// The parse was successful, and the AST matched
     pass,

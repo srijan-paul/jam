@@ -15,9 +15,8 @@
         "end": 11,
         "name": "g"
       },
-      "async": false,
       "generator": true,
-      "arrow": false,
+      "async": false,
       "params": [],
       "body": {
         "type": "BlockStatement",
@@ -32,8 +31,8 @@
               "type": "FunctionExpression",
               "start": 16,
               "end": 32,
-              "async": false,
               "generator": false,
+              "async": false,
               "arrow": true,
               "params": [
                 {

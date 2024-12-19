@@ -19,14 +19,15 @@
             "start": 4,
             "end": 9,
             "name": "await"
-          }
+          },
+          "init": null
         }
       ],
       "kind": "var"
     },
     {
       "type": "ExpressionStatement",
-      "start": 12,
+      "start": 11,
       "end": 19,
       "expression": {
         "type": "Identifier",

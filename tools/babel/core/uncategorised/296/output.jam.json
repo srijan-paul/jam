@@ -30,8 +30,8 @@
               "end": 22,
               "name": "eval"
             },
-            "async": false,
             "generator": false,
+            "async": false,
             "arrow": false,
             "params": [],
             "body": {

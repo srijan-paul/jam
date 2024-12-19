@@ -7,7 +7,7 @@
   "body": [
     {
       "type": "ExpressionStatement",
-      "start": 9,
+      "start": 0,
       "end": 113,
       "expression": {
         "type": "ClassExpression",
@@ -30,8 +30,8 @@
                 "type": "FunctionExpression",
                 "start": 43,
                 "end": 91,
-                "async": false,
                 "generator": false,
+                "async": false,
                 "arrow": false,
                 "params": [
                   {
@@ -57,7 +57,7 @@
     },
     {
       "type": "ExpressionStatement",
-      "start": 115,
+      "start": 114,
       "end": 219,
       "expression": {
         "type": "ClassExpression",
@@ -80,8 +80,8 @@
                 "type": "FunctionExpression",
                 "start": 150,
                 "end": 198,
-                "async": false,
                 "generator": false,
+                "async": false,
                 "arrow": false,
                 "params": [
                   {

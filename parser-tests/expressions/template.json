@@ -117,22 +117,22 @@
                 "type": "Property",
                 "start": 39,
                 "end": 42,
+                "method": false,
                 "key": {
                   "type": "Identifier",
                   "start": 39,
                   "end": 40,
                   "name": "x"
                 },
+                "computed": false,
+                "kind": "init",
                 "value": {
                   "type": "Literal",
                   "start": 41,
                   "end": 42,
                   "value": "1"
                 },
-                "kind": "init",
-                "computed": false,
-                "shorthand": false,
-                "method": false
+                "shorthand": false
               }
             ]
           }

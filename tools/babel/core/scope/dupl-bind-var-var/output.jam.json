@@ -19,7 +19,8 @@
             "start": 4,
             "end": 7,
             "name": "foo"
-          }
+          },
+          "init": null
         },
         {
           "type": "VariableDeclarator",
@@ -30,7 +31,8 @@
             "start": 9,
             "end": 12,
             "name": "foo"
-          }
+          },
+          "init": null
         }
       ],
       "kind": "var"

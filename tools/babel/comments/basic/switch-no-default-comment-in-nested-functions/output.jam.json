@@ -36,8 +36,8 @@
           "type": "FunctionExpression",
           "start": 17,
           "end": 295,
-          "async": false,
           "generator": false,
+          "async": false,
           "arrow": false,
           "params": [
             {
@@ -62,9 +62,8 @@
                   "end": 61,
                   "name": "isConstant"
                 },
-                "async": false,
                 "generator": false,
-                "arrow": false,
+                "async": false,
                 "params": [
                   {
                     "type": "Identifier",

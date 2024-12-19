@@ -15,9 +15,8 @@
         "end": 15,
         "name": "normal"
       },
-      "async": false,
       "generator": false,
-      "arrow": false,
+      "async": false,
       "params": [
         {
           "type": "Identifier",

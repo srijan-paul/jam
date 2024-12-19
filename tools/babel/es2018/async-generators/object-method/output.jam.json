@@ -55,8 +55,8 @@
                     "type": "FunctionExpression",
                     "start": 35,
                     "end": 130,
-                    "async": true,
                     "generator": true,
+                    "async": true,
                     "arrow": false,
                     "params": [
                       {
@@ -89,7 +89,8 @@
                                   "start": 62,
                                   "end": 64,
                                   "name": "id"
-                                }
+                                },
+                                "init": null
                               }
                             ],
                             "kind": "const"

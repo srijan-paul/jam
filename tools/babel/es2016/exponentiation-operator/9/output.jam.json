@@ -7,11 +7,11 @@
   "body": [
     {
       "type": "ExpressionStatement",
-      "start": 2,
+      "start": 0,
       "end": 10,
       "expression": {
         "type": "BinaryExpression",
-        "start": 2,
+        "start": 0,
         "end": 9,
         "operator": "**",
         "left": {
@@ -19,6 +19,7 @@
           "start": 2,
           "end": 2,
           "operator": "-",
+          "prefix": true,
           "argument": {
             "type": "Literal",
             "start": 2,

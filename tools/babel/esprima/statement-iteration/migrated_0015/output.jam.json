@@ -50,6 +50,7 @@
         "start": 19,
         "end": 22,
         "operator": "++",
+        "prefix": false,
         "argument": {
           "type": "Identifier",
           "start": 19,

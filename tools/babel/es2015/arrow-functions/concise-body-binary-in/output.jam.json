@@ -8,12 +8,12 @@
     {
       "type": "VariableDeclaration",
       "start": 0,
-      "end": 39,
+      "end": 40,
       "declarations": [
         {
           "type": "VariableDeclarator",
           "start": 6,
-          "end": 39,
+          "end": 40,
           "id": {
             "type": "Identifier",
             "start": 6,
@@ -23,9 +23,9 @@
           "init": {
             "type": "FunctionExpression",
             "start": 10,
-            "end": 39,
-            "async": false,
+            "end": 40,
             "generator": false,
+            "async": false,
             "arrow": true,
             "params": [],
             "body": {
@@ -50,8 +50,8 @@
                     "type": "FunctionExpression",
                     "start": 24,
                     "end": 37,
-                    "async": false,
                     "generator": false,
+                    "async": false,
                     "arrow": true,
                     "params": [
                       {

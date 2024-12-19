@@ -7,11 +7,11 @@
   "body": [
     {
       "type": "ExpressionStatement",
-      "start": 1,
+      "start": 0,
       "end": 9,
       "expression": {
         "type": "MemberExpression",
-        "start": 1,
+        "start": 0,
         "end": 8,
         "object": {
           "type": "OptionalExpression",
@@ -47,15 +47,15 @@
     },
     {
       "type": "ExpressionStatement",
-      "start": 12,
+      "start": 11,
       "end": 22,
       "expression": {
         "type": "CallExpression",
-        "start": 12,
+        "start": 11,
         "end": 21,
         "callee": {
           "type": "MemberExpression",
-          "start": 12,
+          "start": 11,
           "end": 19,
           "object": {
             "type": "OptionalExpression",
@@ -93,31 +93,31 @@
     },
     {
       "type": "ExpressionStatement",
-      "start": 25,
+      "start": 24,
       "end": 39,
       "expression": {
         "type": "OptionalExpression",
-        "start": 25,
+        "start": 24,
         "end": 38,
         "argument": {
           "type": "MemberExpression",
-          "start": 25,
+          "start": 24,
           "end": 38,
           "object": {
             "type": "OptionalExpression",
-            "start": 25,
+            "start": 24,
             "end": 35,
             "argument": {
               "type": "MemberExpression",
-              "start": 25,
+              "start": 24,
               "end": 35,
               "object": {
                 "type": "OptionalExpression",
-                "start": 25,
+                "start": 24,
                 "end": 33,
                 "argument": {
                   "type": "MemberExpression",
-                  "start": 25,
+                  "start": 24,
                   "end": 33,
                   "object": {
                     "type": "OptionalExpression",

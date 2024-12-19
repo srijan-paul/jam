@@ -15,9 +15,8 @@
         "end": 12,
         "name": "bar"
       },
-      "async": false,
       "generator": false,
-      "arrow": false,
+      "async": false,
       "params": [
         {
           "type": "Identifier",

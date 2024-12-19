@@ -14,6 +14,7 @@
         "start": 5,
         "end": 4,
         "operator": "void",
+        "prefix": true,
         "argument": {
           "type": "Identifier",
           "start": 5,

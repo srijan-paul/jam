@@ -7,14 +7,14 @@
   "body": [
     {
       "type": "ExpressionStatement",
-      "start": 1,
-      "end": 50,
+      "start": 0,
+      "end": 51,
       "expression": {
         "type": "FunctionExpression",
         "start": 1,
         "end": 50,
-        "async": false,
         "generator": true,
+        "async": false,
         "arrow": false,
         "params": [],
         "body": {
@@ -54,8 +54,8 @@
                       "type": "FunctionExpression",
                       "start": 41,
                       "end": 46,
-                      "async": false,
                       "generator": true,
+                      "async": false,
                       "arrow": false,
                       "params": [],
                       "body": {

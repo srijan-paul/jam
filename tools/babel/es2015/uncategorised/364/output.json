@@ -22,10 +22,8 @@
         "type": "BlockStatement",
         "start": 17,
         "end": 19,
-        "body": [],
-        "directives": []
+        "body": []
       }
     }
-  ],
-  "directives": []
+  ]
 }

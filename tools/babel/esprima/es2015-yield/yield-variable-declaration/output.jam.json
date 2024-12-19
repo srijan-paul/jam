@@ -19,7 +19,8 @@
             "start": 4,
             "end": 9,
             "name": "yield"
-          }
+          },
+          "init": null
         }
       ],
       "kind": "var"

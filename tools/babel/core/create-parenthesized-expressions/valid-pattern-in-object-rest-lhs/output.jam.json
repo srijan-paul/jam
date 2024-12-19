@@ -33,7 +33,7 @@
                 {
                   "type": "RestElement",
                   "start": 4,
-                  "end": 9,
+                  "end": 10,
                   "argument": {
                     "type": "Identifier",
                     "start": 8,

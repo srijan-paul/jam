@@ -7,7 +7,7 @@
   "body": [
     {
       "type": "ExpressionStatement",
-      "start": 9,
+      "start": 0,
       "end": 98,
       "expression": {
         "type": "ObjectExpression",
@@ -31,8 +31,8 @@
               "type": "FunctionExpression",
               "start": 29,
               "end": 77,
-              "async": false,
               "generator": false,
+              "async": false,
               "arrow": false,
               "params": [
                 {

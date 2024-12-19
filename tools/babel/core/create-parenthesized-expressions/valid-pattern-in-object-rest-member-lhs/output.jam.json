@@ -33,7 +33,7 @@
                 {
                   "type": "RestElement",
                   "start": 4,
-                  "end": 11,
+                  "end": 12,
                   "argument": {
                     "type": "MemberExpression",
                     "start": 8,

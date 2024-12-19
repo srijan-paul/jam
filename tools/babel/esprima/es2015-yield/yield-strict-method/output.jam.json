@@ -18,8 +18,8 @@
     },
     {
       "type": "ExpressionStatement",
-      "start": 15,
-      "end": 29,
+      "start": 14,
+      "end": 30,
       "expression": {
         "type": "ObjectExpression",
         "start": 15,
@@ -42,8 +42,8 @@
               "type": "FunctionExpression",
               "start": 22,
               "end": 27,
-              "async": false,
               "generator": false,
+              "async": false,
               "arrow": false,
               "params": [],
               "body": {

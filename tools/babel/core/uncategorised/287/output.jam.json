@@ -15,9 +15,8 @@
         "end": 13,
         "name": "test"
       },
-      "async": false,
       "generator": false,
-      "arrow": false,
+      "async": false,
       "params": [
         {
           "type": "Identifier",

@@ -7,7 +7,7 @@
   "body": [
     {
       "type": "ExpressionStatement",
-      "start": 17,
+      "start": 8,
       "end": 76,
       "expression": {
         "type": "SequenceExpression",

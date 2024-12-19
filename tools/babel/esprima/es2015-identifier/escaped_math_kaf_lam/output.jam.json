@@ -19,7 +19,8 @@
             "start": 4,
             "end": 22,
             "name": "𞸊𞸋"
-          }
+          },
+          "init": null
         }
       ],
       "kind": "var"

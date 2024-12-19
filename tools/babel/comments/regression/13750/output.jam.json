@@ -12,7 +12,7 @@
       "test": {
         "type": "BinaryExpression",
         "start": 4,
-        "end": 81,
+        "end": 82,
         "operator": "||",
         "left": {
           "type": "BinaryExpression",

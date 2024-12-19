@@ -1287,9 +1287,7 @@ fn numericLiteral(self: *Self) !Token {
     const start = self.index;
     const str = self.source[start..];
 
-    var is_legacy_octal_literal: bool = false;
-
-    const len: u32 = blk: {
+    const len: u32, const toktype: Token.Tag = blk: {
         if (str[0] == '.') {
             var decimal_len = matchDecimalPart(str) orelse
                 return Error.InvalidNumericLiteral;
@@ -1297,7 +1295,7 @@ fn numericLiteral(self: *Self) !Token {
 
             // Just "." is not a valid numeric literal.
             if (decimal_len == 1) return Error.InvalidNumericLiteral;
-            break :blk decimal_len;
+            break :blk .{ decimal_len, .decimal_literal };
         }
 
         if (str.len > 2 and str[0] == '0') {
@@ -1305,19 +1303,19 @@ fn numericLiteral(self: *Self) !Token {
                 'x', 'X' => {
                     const hex_len: u32 = matchHexDigits(str[2..]) orelse
                         return Error.InvalidHexLiteral;
-                    break :blk hex_len + 2;
+                    break :blk .{ hex_len + 2, .hex_literal };
                 },
 
                 'o', 'O' => {
                     const octal_len: u32 = matchOctalDigits(str[2..]) orelse
                         return Error.InvalidNumericLiteral;
-                    break :blk octal_len + 2;
+                    break :blk .{ octal_len + 2, .octal_literal };
                 },
 
                 'b', 'B' => {
                     const binary_len: u32 = matchBinaryDigits(str[2..]) orelse
                         return Error.InvalidBinaryLiteral;
-                    break :blk binary_len + 2;
+                    break :blk .{ binary_len + 2, .binary_literal };
                 },
 
                 else => {},
@@ -1328,24 +1326,19 @@ fn numericLiteral(self: *Self) !Token {
             return Error.InvalidNumericLiteral;
 
         var decimal_len = decimal_match.len;
-        is_legacy_octal_literal = decimal_match.is_octal;
-
-        if (is_legacy_octal_literal) {
+        if (decimal_match.is_octal) {
             // Octal literals starting with "0" are not allowed to have a decimal part.
             // 0012.5 is invalid (octal literal followed by decimal part)
             // 0088.5 is valid (decimal literal followed by decimal part)
-            if (is_legacy_octal_literal) break :blk decimal_len;
+            break :blk .{ decimal_len, .legacy_octal_literal };
         }
 
-        if (decimal_len < str.len) {
+        if (decimal_len < str.len) // '.' decimal_digits
             decimal_len += matchDecimalPart(str[decimal_len..]) orelse 0;
-        }
-
-        if (decimal_len < str.len) {
+        if (decimal_len < str.len) // 'e' exponent_digits
             decimal_len += matchExponentPart(str[decimal_len..]) orelse 0;
-        }
 
-        break :blk decimal_len;
+        break :blk .{ decimal_len, .decimal_literal };
     };
 
     self.index += len;
@@ -1366,7 +1359,7 @@ fn numericLiteral(self: *Self) !Token {
     }
 
     return Token{
-        .tag = if (is_legacy_octal_literal) .legacy_octal_literal else .numeric_literal,
+        .tag = toktype,
         .start = start,
         .len = len,
         .line = self.line,
@@ -1555,26 +1548,26 @@ test Self {
         .{ "\\u{105}bc", .non_ascii_identifier },
         .{ "\\u{105}\\u{5f}", .non_ascii_identifier },
         .{ "\\u{105}\\u005f", .non_ascii_identifier },
-        .{ "0", .numeric_literal },
-        .{ "120", .numeric_literal },
-        .{ "1_000_000", .numeric_literal },
-        .{ "1.5_1_1", .numeric_literal },
-        .{ "1_00_0_000", .numeric_literal },
-        .{ "123", .numeric_literal },
-        .{ "1.5", .numeric_literal },
-        .{ "1.523", .numeric_literal },
-        .{ "1_000_000.523", .numeric_literal },
-        .{ "0x55ffee1", .numeric_literal },
-        .{ "0b1011_0101", .numeric_literal },
-        .{ "0b1", .numeric_literal },
-        .{ "0x5", .numeric_literal },
-        .{ "55e+1", .numeric_literal },
-        .{ "55e-1", .numeric_literal },
-        .{ "55e112", .numeric_literal },
+        .{ "0", .decimal_literal },
+        .{ "120", .decimal_literal },
+        .{ "1_000_000", .decimal_literal },
+        .{ "1.5_1_1", .decimal_literal },
+        .{ "1_00_0_000", .decimal_literal },
+        .{ "123", .decimal_literal },
+        .{ "1.5", .decimal_literal },
+        .{ "1.523", .decimal_literal },
+        .{ "1_000_000.523", .decimal_literal },
+        .{ "0x55ffee1", .hex_literal },
+        .{ "0b1011_0101", .binary_literal },
+        .{ "0b1", .binary_literal },
+        .{ "0x5", .hex_literal },
+        .{ "55e+1", .decimal_literal },
+        .{ "55e-1", .decimal_literal },
+        .{ "55e112", .decimal_literal },
         .{ "055", .legacy_octal_literal },
-        .{ "0XF", .numeric_literal },
-        .{ ".1", .numeric_literal },
-        .{ ".33", .numeric_literal },
+        .{ "0XF", .hex_literal },
+        .{ ".1", .decimal_literal },
+        .{ ".33", .decimal_literal },
         .{ "<<", .@"<<" },
         .{ "<", .@"<" },
         .{ ">>", .@">>" },
@@ -1662,11 +1655,11 @@ test Self {
 
     {
         var tokenizer = try Self.init("123.00 + .333", .{});
-        try t.expectEqual(Token.Tag.numeric_literal, (try tokenizer.next()).tag);
+        try t.expectEqual(Token.Tag.decimal_literal, (try tokenizer.next()).tag);
         try t.expectEqual(Token.Tag.whitespace, (try tokenizer.next()).tag);
         try t.expectEqual(Token.Tag.@"+", (try tokenizer.next()).tag);
         try t.expectEqual(Token.Tag.whitespace, (try tokenizer.next()).tag);
-        try t.expectEqual(Token.Tag.numeric_literal, (try tokenizer.next()).tag);
+        try t.expectEqual(Token.Tag.decimal_literal, (try tokenizer.next()).tag);
     }
 
     {
@@ -1689,7 +1682,7 @@ test Self {
         try t.expectEqual(Token.Tag.identifier, (try tokenizer.next()).tag);
         try t.expectEqual(Token.Tag.@"(", (try tokenizer.next()).tag);
         try t.expectEqual(Token.Tag.@"[", (try tokenizer.next()).tag);
-        try t.expectEqual(Token.Tag.numeric_literal, (try tokenizer.next()).tag);
+        try t.expectEqual(Token.Tag.decimal_literal, (try tokenizer.next()).tag);
         try t.expectEqual(Token.Tag.@"]", (try tokenizer.next()).tag);
         try t.expectEqual(Token.Tag.@")", (try tokenizer.next()).tag);
     }
@@ -1705,7 +1698,7 @@ test Self {
         Token.Tag.identifier,
         Token.Tag.@"(",
         Token.Tag.@"[",
-        Token.Tag.numeric_literal,
+        Token.Tag.decimal_literal,
         Token.Tag.@"]",
         Token.Tag.@")",
     });

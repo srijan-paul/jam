@@ -5,7 +5,7 @@
   "body": [
     {
       "type": "ExpressionStatement",
-      "start": 1,
+      "start": 0,
       "end": 24,
       "expression": {
         "type": "AssignmentExpression",
@@ -21,43 +21,43 @@
               "type": "Property",
               "start": 2,
               "end": 3,
+              "method": false,
               "key": {
                 "type": "Identifier",
                 "start": 2,
                 "end": 3,
                 "name": "a"
               },
+              "computed": false,
+              "kind": "init",
               "value": {
                 "type": "Identifier",
                 "start": 2,
                 "end": 3,
                 "name": "a"
               },
-              "kind": "init",
-              "computed": false,
-              "shorthand": true,
-              "method": false
+              "shorthand": true
             },
             {
               "type": "Property",
               "start": 5,
               "end": 6,
+              "method": false,
               "key": {
                 "type": "Identifier",
                 "start": 5,
                 "end": 6,
                 "name": "b"
               },
+              "computed": false,
+              "kind": "init",
               "value": {
                 "type": "Identifier",
                 "start": 5,
                 "end": 6,
                 "name": "b"
               },
-              "kind": "init",
-              "computed": false,
-              "shorthand": true,
-              "method": false
+              "shorthand": true
             }
           ]
         },
@@ -70,43 +70,43 @@
               "type": "Property",
               "start": 11,
               "end": 15,
+              "method": false,
               "key": {
                 "type": "Identifier",
                 "start": 11,
                 "end": 12,
                 "name": "a"
               },
+              "computed": false,
+              "kind": "init",
               "value": {
                 "type": "Literal",
                 "start": 14,
                 "end": 15,
                 "value": "1"
               },
-              "kind": "init",
-              "computed": false,
-              "shorthand": false,
-              "method": false
+              "shorthand": false
             },
             {
               "type": "Property",
               "start": 17,
               "end": 21,
+              "method": false,
               "key": {
                 "type": "Identifier",
                 "start": 17,
                 "end": 18,
                 "name": "b"
               },
+              "computed": false,
+              "kind": "init",
               "value": {
                 "type": "Literal",
                 "start": 20,
                 "end": 21,
                 "value": "2"
               },
-              "kind": "init",
-              "computed": false,
-              "shorthand": false,
-              "method": false
+              "shorthand": false
             }
           ]
         }
@@ -114,7 +114,7 @@
     },
     {
       "type": "ExpressionStatement",
-      "start": 26,
+      "start": 25,
       "end": 46,
       "expression": {
         "type": "AssignmentExpression",
@@ -195,12 +195,15 @@
                 "type": "Property",
                 "start": 52,
                 "end": 57,
+                "method": false,
                 "key": {
                   "type": "Identifier",
                   "start": 52,
                   "end": 53,
                   "name": "x"
                 },
+                "computed": false,
+                "kind": "init",
                 "value": {
                   "type": "AssignmentPattern",
                   "start": 54,
@@ -218,10 +221,7 @@
                     "value": "1"
                   }
                 },
-                "kind": "init",
-                "computed": false,
-                "shorthand": false,
-                "method": false
+                "shorthand": false
               }
             ]
           },
@@ -237,7 +237,7 @@
     },
     {
       "type": "ExpressionStatement",
-      "start": 66,
+      "start": 65,
       "end": 80,
       "expression": {
         "type": "AssignmentExpression",
@@ -253,12 +253,15 @@
               "type": "Property",
               "start": 67,
               "end": 72,
+              "method": false,
               "key": {
                 "type": "Identifier",
                 "start": 67,
                 "end": 68,
                 "name": "x"
               },
+              "computed": false,
+              "kind": "init",
               "value": {
                 "type": "AssignmentPattern",
                 "start": 69,
@@ -276,10 +279,7 @@
                   "value": "1"
                 }
               },
-              "kind": "init",
-              "computed": false,
-              "shorthand": false,
-              "method": false
+              "shorthand": false
             }
           ]
         },

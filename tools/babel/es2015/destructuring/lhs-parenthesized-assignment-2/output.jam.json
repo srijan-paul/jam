@@ -7,7 +7,7 @@
   "body": [
     {
       "type": "ExpressionStatement",
-      "start": 1,
+      "start": 0,
       "end": 19,
       "expression": {
         "type": "AssignmentExpression",
@@ -21,7 +21,7 @@
           "elements": [
             {
               "type": "AssignmentPattern",
-              "start": 3,
+              "start": 2,
               "end": 10,
               "left": {
                 "type": "Identifier",

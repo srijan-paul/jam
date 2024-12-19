@@ -19,7 +19,8 @@
             "start": 4,
             "end": 11,
             "name": "private"
-          }
+          },
+          "init": null
         },
         {
           "type": "VariableDeclarator",
@@ -30,7 +31,8 @@
             "start": 13,
             "end": 22,
             "name": "protected"
-          }
+          },
+          "init": null
         },
         {
           "type": "VariableDeclarator",
@@ -41,7 +43,8 @@
             "start": 24,
             "end": 30,
             "name": "public"
-          }
+          },
+          "init": null
         },
         {
           "type": "VariableDeclarator",
@@ -52,7 +55,8 @@
             "start": 32,
             "end": 38,
             "name": "static"
-          }
+          },
+          "init": null
         }
       ],
       "kind": "var"

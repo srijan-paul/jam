@@ -19,7 +19,8 @@
             "start": 4,
             "end": 12,
             "name": "ina"
-          }
+          },
+          "init": null
         }
       ],
       "kind": "let"

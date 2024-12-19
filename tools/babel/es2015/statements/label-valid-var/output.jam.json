@@ -29,7 +29,8 @@
               "start": 9,
               "end": 12,
               "name": "bar"
-            }
+            },
+            "init": null
           }
         ],
         "kind": "var"

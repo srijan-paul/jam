@@ -19,7 +19,8 @@
             "start": 4,
             "end": 13,
             "name": "℘℘"
-          }
+          },
+          "init": null
         }
       ],
       "kind": "var"

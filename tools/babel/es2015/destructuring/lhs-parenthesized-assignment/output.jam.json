@@ -7,7 +7,7 @@
   "body": [
     {
       "type": "ExpressionStatement",
-      "start": 1,
+      "start": 0,
       "end": 28,
       "expression": {
         "type": "AssignmentExpression",
@@ -22,7 +22,7 @@
             {
               "type": "Property",
               "start": 3,
-              "end": 18,
+              "end": 19,
               "method": false,
               "key": {
                 "type": "Identifier",
@@ -34,8 +34,8 @@
               "kind": "init",
               "value": {
                 "type": "AssignmentPattern",
-                "start": 7,
-                "end": 18,
+                "start": 6,
+                "end": 19,
                 "left": {
                   "type": "MemberExpression",
                   "start": 7,

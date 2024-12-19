@@ -19,7 +19,8 @@
             "start": 4,
             "end": 13,
             "name": "𞸀"
-          }
+          },
+          "init": null
         }
       ],
       "kind": "var"

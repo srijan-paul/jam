@@ -30,6 +30,7 @@
             "start": 4,
             "end": 7,
             "operator": "--",
+            "prefix": false,
             "argument": {
               "type": "Identifier",
               "start": 4,

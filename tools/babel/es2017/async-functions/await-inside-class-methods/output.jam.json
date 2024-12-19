@@ -13,8 +13,8 @@
         "type": "FunctionExpression",
         "start": 0,
         "end": 40,
-        "async": false,
         "generator": false,
+        "async": false,
         "arrow": true,
         "params": [],
         "body": {
@@ -38,8 +38,8 @@
                   "type": "FunctionExpression",
                   "start": 23,
                   "end": 38,
-                  "async": true,
                   "generator": false,
+                  "async": true,
                   "arrow": false,
                   "params": [],
                   "body": {

@@ -15,9 +15,8 @@
         "end": 29,
         "name": "f"
       },
-      "async": true,
       "generator": false,
-      "arrow": false,
+      "async": true,
       "params": [],
       "body": {
         "type": "BlockStatement",

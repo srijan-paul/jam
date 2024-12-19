@@ -13,13 +13,13 @@
         "type": "FunctionExpression",
         "start": 6,
         "end": 26,
-        "async": true,
         "generator": false,
+        "async": true,
         "arrow": true,
         "params": [],
         "body": {
           "type": "BinaryExpression",
-          "start": 13,
+          "start": 12,
           "end": 26,
           "operator": "**",
           "left": {

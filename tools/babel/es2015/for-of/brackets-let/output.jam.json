@@ -45,7 +45,8 @@
                   "shorthand": true
                 }
               ]
-            }
+            },
+            "init": null
           }
         ],
         "kind": "let"

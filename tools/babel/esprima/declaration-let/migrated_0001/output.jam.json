@@ -24,7 +24,8 @@
                 "start": 6,
                 "end": 7,
                 "name": "x"
-              }
+              },
+              "init": null
             }
           ],
           "kind": "let"

@@ -428,6 +428,10 @@ pub const NodeData = union(enum(u8)) {
     class_field: ClassFieldDefinition,
     class_method: ClassFieldDefinition,
     sequence_expr: SubRange,
+    /// An expression wrapped in parentheses.
+    /// The `start` and `end` tokens for this node are the opening
+    /// and closing braces respectively.
+    parenthesized_expr: Node.Index,
     conditional_expr: Conditional,
     /// Template literals are split into their subelements.
     /// So `Hello ${"world"}` becomes: `template_element, string_literal, template_element`

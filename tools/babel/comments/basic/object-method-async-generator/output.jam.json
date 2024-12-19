@@ -7,11 +7,11 @@
   "body": [
     {
       "type": "ExpressionStatement",
-      "start": 1,
+      "start": 0,
       "end": 117,
       "expression": {
         "type": "CallExpression",
-        "start": 1,
+        "start": 0,
         "end": 116,
         "callee": {
           "type": "ObjectExpression",
@@ -48,8 +48,8 @@
                   "type": "FunctionExpression",
                   "start": 45,
                   "end": 84,
-                  "async": true,
                   "generator": true,
+                  "async": true,
                   "arrow": false,
                   "params": [
                     {
@@ -108,8 +108,8 @@
                     "type": "FunctionExpression",
                     "start": 108,
                     "end": 113,
-                    "async": true,
                     "generator": true,
+                    "async": true,
                     "arrow": false,
                     "params": [],
                     "body": {

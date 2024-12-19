@@ -19,10 +19,19 @@ pub const JsTokenTag = enum(u32) {
     /// See: non_ascii_identifier
     private_non_ascii_identifier,
 
-    numeric_literal,
-    // octal literal starting with '0', but not with '0o' or '0O',
-    // e.g: 012
+    _numeric_range_start,
+    decimal_literal,
+    /// 0(o|O)[0-7]+
+    octal_literal,
+    /// 0(x|X)[0-9|a-f|A-F]+
+    hex_literal,
+    /// 0(b|B)(0|1)+
+    binary_literal,
+    /// octal literal starting with '0', but not with '0o' or '0O',
+    /// e.g: 012
     legacy_octal_literal,
+    _numeric_range_end,
+
     string_literal,
     regex_literal,
     template_literal_start,
@@ -188,6 +197,12 @@ pub const JsTokenTag = enum(u32) {
         const tag_u32: u32 = @intFromEnum(self);
         return tag_u32 > @intFromEnum(JsTokenTag.contextual_keywords_start) and
             tag_u32 < @intFromEnum(JsTokenTag.contextual_keywords_end);
+    }
+
+    pub fn isNumericLiteral(self: JsTokenTag) bool {
+        const tag_u32: u32 = @intFromEnum(self);
+        return tag_u32 > @intFromEnum(JsTokenTag._numeric_range_start) and
+            tag_u32 < @intFromEnum(JsTokenTag._numeric_range_end);
     }
 
     pub fn isStrictModeKeyword(self: JsTokenTag) bool {

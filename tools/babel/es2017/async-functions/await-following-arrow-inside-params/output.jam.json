@@ -7,14 +7,14 @@
   "body": [
     {
       "type": "ExpressionStatement",
-      "start": 1,
+      "start": 0,
       "end": 66,
       "expression": {
         "type": "FunctionExpression",
         "start": 1,
         "end": 64,
-        "async": true,
         "generator": false,
+        "async": true,
         "arrow": false,
         "params": [],
         "body": {
@@ -32,9 +32,8 @@
                 "end": 33,
                 "name": "f"
               },
-              "async": false,
               "generator": false,
-              "arrow": false,
+              "async": false,
               "params": [
                 {
                   "type": "AssignmentPattern",
@@ -50,8 +49,8 @@
                     "type": "FunctionExpression",
                     "start": 36,
                     "end": 44,
-                    "async": false,
                     "generator": false,
+                    "async": false,
                     "arrow": true,
                     "params": [],
                     "body": {

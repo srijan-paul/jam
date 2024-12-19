@@ -33,11 +33,9 @@
                 "name": "await"
               }
             }
-          ],
-          "directives": []
+          ]
         }
       }
     }
-  ],
-  "directives": []
+  ]
 }

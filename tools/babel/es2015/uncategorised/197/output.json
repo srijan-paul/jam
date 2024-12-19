@@ -13,8 +13,7 @@
         "type": "BlockStatement",
         "start": 3,
         "end": 5,
-        "body": [],
-        "directives": []
+        "body": []
       },
       "test": {
         "type": "BooleanLiteral",
@@ -40,6 +39,5 @@
         "arguments": []
       }
     }
-  ],
-  "directives": []
+  ]
 }

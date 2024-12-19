@@ -24,8 +24,8 @@
             "type": "FunctionExpression",
             "start": 9,
             "end": 36,
-            "async": false,
             "generator": false,
+            "async": false,
             "arrow": false,
             "params": [
               {

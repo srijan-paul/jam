@@ -8,13 +8,13 @@
     {
       "type": "ExpressionStatement",
       "start": 0,
-      "end": 22,
+      "end": 23,
       "expression": {
         "type": "FunctionExpression",
         "start": 0,
-        "end": 22,
-        "async": false,
+        "end": 23,
         "generator": false,
+        "async": false,
         "arrow": true,
         "params": [
           {

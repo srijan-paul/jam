@@ -308,6 +308,11 @@ pub fn exportFromDeclaration(_: *Self, _: *const ast.NodeData) Doc.Id {
 pub fn exportAllDeclaration(_: *Self, _: *const ast.NodeData) Doc.Id {
     unreachable;
 }
+
+pub fn parenthesizedExpr(_: *Self, _: *const ast.NodeData) Doc.Id {
+    unreachable;
+}
+
 pub fn none(_: *Self, _: *const ast.NodeData) Doc.Id {
     unreachable;
 }

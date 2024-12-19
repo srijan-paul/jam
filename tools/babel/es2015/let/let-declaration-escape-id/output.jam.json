@@ -19,7 +19,8 @@
             "start": 4,
             "end": 40,
             "name": "ɵResourceLoaderImpl_BaseFactory"
-          }
+          },
+          "init": null
         }
       ],
       "kind": "let"

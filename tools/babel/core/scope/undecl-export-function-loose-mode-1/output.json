@@ -22,8 +22,7 @@
         "type": "BlockStatement",
         "start": 13,
         "end": 15,
-        "body": [],
-        "directives": []
+        "body": []
       }
     },
     {
@@ -52,6 +51,5 @@
       "source": null,
       "declaration": null
     }
-  ],
-  "directives": []
+  ]
 }

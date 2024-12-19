@@ -7,13 +7,14 @@
   "body": [
     {
       "type": "ExpressionStatement",
-      "start": 2,
+      "start": 1,
       "end": 10,
       "expression": {
         "type": "UnaryExpression",
-        "start": 2,
+        "start": 1,
         "end": 1,
         "operator": "-",
+        "prefix": true,
         "argument": {
           "type": "BinaryExpression",
           "start": 2,

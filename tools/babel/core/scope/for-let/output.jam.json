@@ -53,7 +53,8 @@
                   "start": 28,
                   "end": 29,
                   "name": "i"
-                }
+                },
+                "init": null
               }
             ],
             "kind": "let"

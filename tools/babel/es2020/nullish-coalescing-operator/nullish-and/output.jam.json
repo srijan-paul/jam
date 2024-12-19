@@ -12,7 +12,7 @@
       "expression": {
         "type": "BinaryExpression",
         "start": 0,
-        "end": 12,
+        "end": 13,
         "operator": "??",
         "left": {
           "type": "Identifier",

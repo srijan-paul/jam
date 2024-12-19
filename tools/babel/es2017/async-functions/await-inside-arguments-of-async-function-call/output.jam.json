@@ -15,9 +15,8 @@
         "end": 17,
         "name": "fn"
       },
-      "async": true,
       "generator": false,
-      "arrow": false,
+      "async": true,
       "params": [],
       "body": {
         "type": "BlockStatement",

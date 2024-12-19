@@ -17,7 +17,8 @@
             "start": 4,
             "end": 5,
             "name": "a"
-          }
+          },
+          "init": null
         }
       ],
       "kind": "let"
@@ -71,22 +72,22 @@
               "type": "Property",
               "start": 28,
               "end": 34,
+              "method": false,
               "key": {
                 "type": "Identifier",
                 "start": 28,
                 "end": 31,
                 "name": "let"
               },
+              "computed": false,
+              "kind": "init",
               "value": {
                 "type": "Literal",
                 "start": 33,
                 "end": 34,
                 "value": "1"
               },
-              "kind": "init",
-              "computed": false,
-              "shorthand": false,
-              "method": false
+              "shorthand": false
             }
           ]
         }

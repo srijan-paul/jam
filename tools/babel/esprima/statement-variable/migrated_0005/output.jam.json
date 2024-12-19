@@ -19,7 +19,8 @@
             "start": 4,
             "end": 14,
             "name": "implements"
-          }
+          },
+          "init": null
         },
         {
           "type": "VariableDeclarator",
@@ -30,7 +31,8 @@
             "start": 16,
             "end": 25,
             "name": "interface"
-          }
+          },
+          "init": null
         },
         {
           "type": "VariableDeclarator",
@@ -41,7 +43,8 @@
             "start": 27,
             "end": 34,
             "name": "package"
-          }
+          },
+          "init": null
         }
       ],
       "kind": "var"

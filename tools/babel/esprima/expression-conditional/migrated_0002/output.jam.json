@@ -22,7 +22,7 @@
         },
         "right": {
           "type": "ConditionalExpression",
-          "start": 5,
+          "start": 4,
           "end": 15,
           "test": {
             "type": "Literal",

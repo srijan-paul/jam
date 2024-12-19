@@ -19,7 +19,8 @@
             "start": 4,
             "end": 38,
             "name": "in𝐬𝐭𝐚𝐧𝐜𝐞𝐨𝐟"
-          }
+          },
+          "init": null
         }
       ],
       "kind": "let"

@@ -15,9 +15,8 @@
         "end": 26,
         "name": "f"
       },
-      "async": false,
       "generator": false,
-      "arrow": false,
+      "async": false,
       "params": [
         {
           "type": "Identifier",
@@ -35,7 +34,7 @@
     },
     {
       "type": "ExpressionStatement",
-      "start": 101,
+      "start": 92,
       "end": 186,
       "expression": {
         "type": "FunctionExpression",
@@ -47,8 +46,8 @@
           "end": 119,
           "name": "f"
         },
-        "async": false,
         "generator": false,
+        "async": false,
         "arrow": false,
         "params": [
           {

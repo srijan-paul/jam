@@ -3296,7 +3296,10 @@ fn completePropertyPatternDef(self: *Self, key: Node.Index) Error!Node.Index {
 fn destructuredPropertyDefinition(self: *Self) Error!Node.Index {
     switch (self.current.token.tag) {
         .string_literal,
-        .numeric_literal,
+        .decimal_literal,
+        .octal_literal,
+        .hex_literal,
+        .binary_literal,
         .legacy_octal_literal,
         => {
             const key_token = try self.next();
@@ -3409,7 +3412,10 @@ fn objectAssignmentPattern(self: *Self) Error!Node.Index {
             .non_ascii_identifier,
             .identifier,
             .string_literal,
-            .numeric_literal,
+            .decimal_literal,
+            .octal_literal,
+            .hex_literal,
+            .binary_literal,
             .legacy_octal_literal,
             .@"[",
             => {
@@ -4071,8 +4077,11 @@ fn primaryExpression(self: *Self) Error!Node.Index {
             }
             return self.identifier(token);
         },
+        .decimal_literal,
+        .octal_literal,
+        .hex_literal,
+        .binary_literal,
         .legacy_octal_literal,
-        .numeric_literal,
         .regex_literal,
         .string_literal,
         .kw_true,
@@ -4111,7 +4120,7 @@ fn primaryExpression(self: *Self) Error!Node.Index {
 /// Check whether a numeric literal is valid in strict mode.
 /// Decimals and legacy octal literals are not allowed (e.g: 01, 09, 023127, etc.).
 fn isValidStrictModeNumber(self: *const Self, token: *const Token) bool {
-    std.debug.assert(token.tag == .numeric_literal);
+    std.debug.assert(token.tag.isNumericLiteral() and token.tag != .legacy_octal_literal);
     if (token.len == 1) return true; // Just a '0' is fine.
     // 0x, 0b, 0o are Ok. 09 is not.
     return !(self.source[token.start] == '0' and std.ascii.isDigit(self.source[token.start + 1]));
@@ -4129,7 +4138,12 @@ fn parseLiteral(self: *Self, token: TokenWithId) Error!Node.Index {
                 );
                 return Error.UnexpectedToken;
             },
-            .numeric_literal => {
+
+            .decimal_literal,
+            .octal_literal,
+            .hex_literal,
+            .binary_literal,
+            => {
                 if (!self.isValidStrictModeNumber(&token.token)) {
                     try self.emitDiagnostic(
                         token.token.startCoord(self.source),
@@ -4687,8 +4701,8 @@ fn completeArrowParamsOrGroupingExpr(
     const first_expr = try self.assignmentExpression();
     if (!self.current_destructure_kind.can_destruct) {
         const expr = try self.completeSequenceExpr(first_expr);
-        _ = try self.expectToken(.@")");
-        return expr;
+        const rparen = try self.expect(.@")");
+        return self.addNode(.{ .parenthesized_expr = expr }, lparen_id, rparen.id);
     }
 
     // TODO: use scratch space here
@@ -4802,7 +4816,8 @@ fn completeArrowParamsOrGroupingExpr(
     }
 
     if (nodes.items.len == 1) {
-        return nodes.items[0];
+        const expr = nodes.items[0];
+        return self.addNode(.{ .parenthesized_expr = expr }, lparen_id, rparen.id);
     }
 
     const sequence_expr = try self.addSubRange(nodes.items);
@@ -4880,9 +4895,12 @@ fn propertyDefinitionList(self: *Self) Error!?ast.SubRange {
                 try self.scratch.append(property);
             },
 
-            .numeric_literal,
-            .string_literal,
+            .decimal_literal,
+            .octal_literal,
+            .hex_literal,
+            .binary_literal,
             .legacy_octal_literal,
+            .string_literal,
             => {
                 const key_token = try self.next();
                 const key = try self.addNode(
@@ -5124,7 +5142,10 @@ fn classElementName(self: *Self) Error!Node.Index {
             return expr;
         },
         .string_literal,
-        .numeric_literal,
+        .decimal_literal,
+        .octal_literal,
+        .hex_literal,
+        .binary_literal,
         .legacy_octal_literal,
         => {
             return self.addNode(.{ .literal = token.id }, token.id, token.id);

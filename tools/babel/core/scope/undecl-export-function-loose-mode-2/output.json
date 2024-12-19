@@ -48,10 +48,8 @@
         "type": "BlockStatement",
         "start": 27,
         "end": 29,
-        "body": [],
-        "directives": []
+        "body": []
       }
     }
-  ],
-  "directives": []
+  ]
 }

@@ -23,7 +23,8 @@
               "start": 9,
               "end": 11,
               "properties": []
-            }
+            },
+            "init": null
           }
         ],
         "kind": "let"

@@ -7,11 +7,11 @@
   "body": [
     {
       "type": "ExpressionStatement",
-      "start": 5,
+      "start": 0,
       "end": 13,
       "expression": {
         "type": "CallExpression",
-        "start": 5,
+        "start": 0,
         "end": 13,
         "callee": {
           "type": "Identifier",

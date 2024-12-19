@@ -10,24 +10,30 @@ const util = @import("util");
 const Node = ast.Node;
 const Tree = ast.Tree;
 
-const JsonValue = std.json.Value;
+const JValue = std.json.Value;
+const JNull = JValue{ .null = {} };
 
 // TODO: add `loc` with source locations as well.
 pub const EstreeJsonOpts = struct {
     start_end_locs: bool = true,
-    source_type: bool = true,
+    source_type: bool = false,
     /// Always set to `null`. Only used for babel compatibility
     interpreter: bool = false,
 };
 
-pub const BabelEstreeOptions = EstreeJsonOpts{ .interpreter = true };
+/// Options to use for ESTree conversion when the output has to be
+/// compatible with `@babel/parser`.
+pub const BabelEstreeOptions = EstreeJsonOpts{
+    .interpreter = true,
+    .source_type = true,
+};
 
 fn subRangeToJsonArray(
     al: std.mem.Allocator,
     t: *const Tree,
     maybe_args: ?ast.SubRange,
     opts: EstreeJsonOpts,
-) !JsonValue {
+) !JValue {
     var arr = std.json.Array.init(al);
     if (maybe_args) |arguments| {
         const from: usize = @intFromEnum(arguments.from);
@@ -38,7 +44,7 @@ fn subRangeToJsonArray(
             try arr.append(new_arg);
         }
     }
-    return JsonValue{ .array = arr };
+    return JValue{ .array = arr };
 }
 
 fn escapeUtf8(allocator: std.mem.Allocator, str: []const u8) error{
@@ -154,6 +160,7 @@ pub fn jamToEstreeTag(node: ast.NodeData) []const u8 {
         .export_list_declaration => "ExportNamedDeclaration",
         .export_from_declaration => "ExportFromDeclaration",
         .export_all_declaration => "ExportAllDeclaration",
+        .parenthesized_expr => "GroupingExpression",
         .none => unreachable,
     };
 }
@@ -167,20 +174,21 @@ fn nodeToEsTree(
     InvalidCodePoint,
     OutOfMemory,
     BadEscapeSequence,
-}!JsonValue {
+}!JValue {
     const node = t.nodes.get(@intFromEnum(node_id));
     switch (node.data) {
-        .none, .empty_array_item => return JsonValue{ .null = {} },
+        .none, .empty_array_item => return JValue{ .null = {} },
+        .parenthesized_expr => |e| return nodeToEsTree(t, al, e, opts),
         else => {},
     }
 
     var o = std.json.ObjectMap.init(al);
     const tag = jamToEstreeTag(node.data);
-    try o.put("type", JsonValue{ .string = tag });
+    try o.put("type", JValue{ .string = tag });
     if (opts.start_end_locs) {
-        try o.put("start", JsonValue{ .integer = @intCast(t.getToken(node.start).start) });
+        try o.put("start", JValue{ .integer = @intCast(t.getToken(node.start).start) });
         const end_token = t.getToken(node.end);
-        try o.put("end", JsonValue{ .integer = @intCast(end_token.start + end_token.len) });
+        try o.put("end", JValue{ .integer = @intCast(end_token.start + end_token.len) });
     }
 
     switch (node.data) {
@@ -192,20 +200,20 @@ fn nodeToEsTree(
             const token = t.tokens.items[(@intFromEnum(payload.operator))];
             const operator = token.toByteSlice(t.source);
 
-            try o.put("operator", JsonValue{ .string = operator });
+            try o.put("operator", JValue{ .string = operator });
             try o.put("left", lhs);
             try o.put("right", rhs);
         },
 
         .identifier => |s| {
             const name = t.string_pool.toByteSlice(s);
-            try o.put("name", JsonValue{ .string = name });
+            try o.put("name", JValue{ .string = name });
         },
 
         .program => |maybe_statements| {
             const body = try subRangeToJsonArray(al, t, maybe_statements, opts);
-            if (opts.source_type) try o.put("sourceType", JsonValue{ .string = @tagName(t.source_type) });
-            if (opts.interpreter) try o.put("interpreter", JsonValue{ .null = {} });
+            if (opts.source_type) try o.put("sourceType", JValue{ .string = @tagName(t.source_type) });
+            if (opts.interpreter) try o.put("interpreter", JValue{ .null = {} });
             try o.put("body", body);
         },
 
@@ -225,9 +233,9 @@ fn nodeToEsTree(
             const token = t.getToken(token_id);
             const value = token.toByteSlice(t.source);
             if (token.tag == .string_literal) {
-                try o.put("value", JsonValue{ .string = try escapeUtf8(al, value) });
+                try o.put("value", JValue{ .string = try escapeUtf8(al, value) });
             } else {
-                try o.put("value", JsonValue{ .string = value });
+                try o.put("value", JValue{ .string = value });
             }
         },
 
@@ -290,7 +298,9 @@ fn nodeToEsTree(
             const operator = t.tokens.items[(@intFromEnum(payload.operator))];
             const arg = try nodeToEsTree(t, al, payload.operand, opts);
             const operator_str = operator.toByteSlice(t.source);
-            try o.put("operator", JsonValue{ .string = operator_str });
+            try o.put("operator", JValue{ .string = operator_str });
+            const is_prefix = std.meta.activeTag(node.data) != .post_unary_expr;
+            try o.put("prefix", JValue{ .bool = is_prefix });
             try o.put("argument", arg);
         },
 
@@ -300,7 +310,7 @@ fn nodeToEsTree(
                 try o.put("argument", argument);
             }
 
-            try o.put("delegate", JsonValue{ .bool = payload.is_delegated });
+            try o.put("delegate", JValue{ .bool = payload.is_delegated });
         },
 
         .await_expr => |payload| {
@@ -336,12 +346,12 @@ fn nodeToEsTree(
             const shorthand = payload.flags.is_shorthand;
             const method = payload.flags.is_method;
 
-            try o.put("method", JsonValue{ .bool = method });
+            try o.put("method", JValue{ .bool = method });
             try o.put("key", key);
-            try o.put("computed", JsonValue{ .bool = computed });
-            try o.put("kind", JsonValue{ .string = kind });
+            try o.put("computed", JValue{ .bool = computed });
+            try o.put("kind", JValue{ .string = kind });
             try o.put("value", value);
-            try o.put("shorthand", JsonValue{ .bool = shorthand });
+            try o.put("shorthand", JValue{ .bool = shorthand });
         },
 
         .try_statement => |payload| {
@@ -432,7 +442,7 @@ fn nodeToEsTree(
             const kind = @tagName(payload.kind);
 
             try o.put("declarations", declarations);
-            try o.put("kind", JsonValue{ .string = kind });
+            try o.put("kind", JValue{ .string = kind });
         },
 
         .variable_declarator => |payload| {
@@ -442,6 +452,8 @@ fn nodeToEsTree(
             if (payload.init) |init| {
                 const init_ = try nodeToEsTree(t, al, init, opts);
                 try o.put("init", init_);
+            } else {
+                try o.put("init", JNull);
             }
         },
 
@@ -451,7 +463,7 @@ fn nodeToEsTree(
 
             try o.put("object", object);
             try o.put("property", property);
-            try o.put("computed", JsonValue{ .bool = false });
+            try o.put("computed", JValue{ .bool = false });
         },
 
         .computed_member_expr => |payload| {
@@ -460,7 +472,7 @@ fn nodeToEsTree(
 
             try o.put("object", object);
             try o.put("property", property);
-            try o.put("computed", JsonValue{ .bool = true });
+            try o.put("computed", JValue{ .bool = true });
         },
 
         .function_expr, .function_declaration => |payload| {
@@ -474,9 +486,13 @@ fn nodeToEsTree(
                 try o.put("id", id);
             }
 
-            try o.put("async", JsonValue{ .bool = extra.flags.is_async });
-            try o.put("generator", JsonValue{ .bool = extra.flags.is_generator });
-            try o.put("arrow", JsonValue{ .bool = extra.flags.is_arrow });
+            try o.put("generator", JValue{ .bool = extra.flags.is_generator });
+            try o.put("async", JValue{ .bool = extra.flags.is_async });
+
+            // function_declaration can never be `arrow`, so only have the "arrow"
+            // field for function_exprs.
+            if (std.meta.activeTag(node.data) != .function_declaration)
+                try o.put("arrow", JValue{ .bool = extra.flags.is_arrow });
 
             try o.put("params", params);
             try o.put("body", body);
@@ -535,10 +551,10 @@ fn nodeToEsTree(
 
             const body_defs = try subRangeToJsonArray(al, t, payload.body, opts);
             var body = std.json.ObjectMap.init(al);
-            try body.put("type", JsonValue{ .string = "ClassBody" });
+            try body.put("type", JValue{ .string = "ClassBody" });
             try body.put("body", body_defs);
 
-            try o.put("body", JsonValue{ .object = body });
+            try o.put("body", JValue{ .object = body });
         },
 
         .class_field, .class_method => |payload| {
@@ -549,12 +565,12 @@ fn nodeToEsTree(
 
             try o.put("key", key);
             try o.put("value", value);
-            try o.put("computed", JsonValue{ .bool = computed });
-            try o.put("static", JsonValue{ .bool = static });
+            try o.put("computed", JValue{ .bool = computed });
+            try o.put("static", JValue{ .bool = static });
 
             if (payload.flags.kind != .init) {
                 const kind = @tagName(payload.flags.kind);
-                try o.put("kind", JsonValue{ .string = kind });
+                try o.put("kind", JValue{ .string = kind });
             }
         },
 
@@ -572,15 +588,15 @@ fn nodeToEsTree(
                 }
             }
 
-            try o.put("quasis", JsonValue{ .array = quasis });
-            try o.put("expressions", JsonValue{ .array = exprs });
+            try o.put("quasis", JValue{ .array = quasis });
+            try o.put("expressions", JValue{ .array = exprs });
         },
 
         .template_element => |token_id| {
             const value = t.getToken(token_id).toByteSlice(t.source);
-            try o.put("value", JsonValue{ .string = value });
+            try o.put("value", JValue{ .string = value });
             const is_tail = value[0] == '{';
-            try o.put("tail", JsonValue{ .bool = is_tail });
+            try o.put("tail", JValue{ .bool = is_tail });
         },
 
         .throw_statement => |payload| {
@@ -655,12 +671,16 @@ fn nodeToEsTree(
         },
 
         // this should be unreachable
-        .parameters, .none, .arguments => {
+        .parameters,
+        .none,
+        .arguments,
+        .parenthesized_expr,
+        => {
             std.debug.panic("Bad call to nodeToEstree: parameters", .{});
         },
     }
 
-    return JsonValue{ .object = o };
+    return JValue{ .object = o };
 }
 
 pub fn toJsonString(allocator: std.mem.Allocator, t: *const Tree, options: EstreeJsonOpts) ![]u8 {

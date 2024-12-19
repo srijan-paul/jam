@@ -11,8 +11,8 @@
         "type": "FunctionExpression",
         "start": 0,
         "end": 25,
-        "async": false,
         "generator": false,
+        "async": false,
         "arrow": true,
         "params": [
           {
@@ -79,8 +79,8 @@
         "type": "FunctionExpression",
         "start": 27,
         "end": 50,
-        "async": false,
         "generator": false,
+        "async": false,
         "arrow": true,
         "params": [
           {
@@ -142,8 +142,8 @@
         "type": "FunctionExpression",
         "start": 52,
         "end": 65,
-        "async": false,
         "generator": false,
+        "async": false,
         "arrow": true,
         "params": [
           {
@@ -174,8 +174,8 @@
         "type": "FunctionExpression",
         "start": 67,
         "end": 83,
-        "async": false,
         "generator": false,
+        "async": false,
         "arrow": true,
         "params": [
           {

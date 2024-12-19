@@ -22,7 +22,7 @@
             {
               "type": "RestElement",
               "start": 1,
-              "end": 8,
+              "end": 9,
               "argument": {
                 "type": "MemberExpression",
                 "start": 5,

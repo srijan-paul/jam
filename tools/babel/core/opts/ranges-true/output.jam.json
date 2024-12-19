@@ -69,7 +69,7 @@
     },
     {
       "type": "ExpressionStatement",
-      "start": 29,
+      "start": 28,
       "end": 35,
       "expression": {
         "type": "SequenceExpression",

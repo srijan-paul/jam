@@ -15,8 +15,7 @@
       "type": "BlockStatement",
       "start": 7,
       "end": 9,
-      "body": [],
-      "directives": []
+      "body": []
     },
     {
       "type": "ExpressionStatement",
@@ -30,6 +29,5 @@
         "flags": ""
       }
     }
-  ],
-  "directives": []
+  ]
 }

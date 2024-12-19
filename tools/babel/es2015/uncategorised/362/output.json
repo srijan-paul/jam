@@ -50,10 +50,8 @@
         "type": "BlockStatement",
         "start": 24,
         "end": 26,
-        "body": [],
-        "directives": []
+        "body": []
       }
     }
-  ],
-  "directives": []
+  ]
 }

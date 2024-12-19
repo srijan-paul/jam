@@ -7,7 +7,7 @@
   "body": [
     {
       "type": "ExpressionStatement",
-      "start": 1,
+      "start": 0,
       "end": 20,
       "expression": {
         "type": "AssignmentExpression",
@@ -22,7 +22,7 @@
             {
               "type": "Property",
               "start": 3,
-              "end": 10,
+              "end": 11,
               "method": false,
               "key": {
                 "type": "Identifier",

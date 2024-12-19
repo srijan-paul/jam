@@ -7,7 +7,7 @@
   "body": [
     {
       "type": "ExpressionStatement",
-      "start": 8,
+      "start": 7,
       "end": 11,
       "expression": {
         "type": "Literal",
@@ -18,7 +18,7 @@
     },
     {
       "type": "ExpressionStatement",
-      "start": 24,
+      "start": 23,
       "end": 27,
       "expression": {
         "type": "Literal",
@@ -29,7 +29,7 @@
     },
     {
       "type": "ExpressionStatement",
-      "start": 44,
+      "start": 29,
       "end": 48,
       "expression": {
         "type": "Literal",
@@ -40,7 +40,7 @@
     },
     {
       "type": "ExpressionStatement",
-      "start": 62,
+      "start": 50,
       "end": 65,
       "expression": {
         "type": "Literal",

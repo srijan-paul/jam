@@ -41,7 +41,8 @@
             "start": 31,
             "end": 32,
             "name": "a"
-          }
+          },
+          "init": null
         }
       ],
       "kind": "var"

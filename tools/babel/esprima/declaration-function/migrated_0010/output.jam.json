@@ -30,8 +30,8 @@
               "end": 27,
               "name": "arguments"
             },
-            "async": false,
             "generator": false,
+            "async": false,
             "arrow": false,
             "params": [],
             "body": {

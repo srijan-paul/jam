@@ -7,11 +7,11 @@
   "body": [
     {
       "type": "ExpressionStatement",
-      "start": 1,
+      "start": 0,
       "end": 13,
       "expression": {
         "type": "MemberExpression",
-        "start": 1,
+        "start": 0,
         "end": 13,
         "object": {
           "type": "OptionalExpression",

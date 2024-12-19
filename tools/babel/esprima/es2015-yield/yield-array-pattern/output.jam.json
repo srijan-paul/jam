@@ -7,8 +7,8 @@
   "body": [
     {
       "type": "ExpressionStatement",
-      "start": 1,
-      "end": 12,
+      "start": 0,
+      "end": 13,
       "expression": {
         "type": "AssignmentExpression",
         "start": 1,

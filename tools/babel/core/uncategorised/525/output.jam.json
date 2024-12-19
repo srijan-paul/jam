@@ -19,7 +19,8 @@
             "start": 4,
             "end": 5,
             "name": "x"
-          }
+          },
+          "init": null
         }
       ],
       "kind": "let"

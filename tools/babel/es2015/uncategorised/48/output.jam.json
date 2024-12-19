@@ -8,13 +8,13 @@
     {
       "type": "ExpressionStatement",
       "start": 0,
-      "end": 27,
+      "end": 28,
       "expression": {
         "type": "FunctionExpression",
         "start": 0,
-        "end": 27,
-        "async": false,
+        "end": 28,
         "generator": false,
+        "async": false,
         "arrow": true,
         "params": [
           {
@@ -28,8 +28,8 @@
           "type": "FunctionExpression",
           "start": 8,
           "end": 27,
-          "async": false,
           "generator": false,
+          "async": false,
           "arrow": true,
           "params": [
             {

@@ -24,6 +24,7 @@
             "start": 5,
             "end": 4,
             "operator": "void",
+            "prefix": true,
             "argument": {
               "type": "FunctionExpression",
               "start": 5,
@@ -34,8 +35,8 @@
                 "end": 22,
                 "name": "fn"
               },
-              "async": true,
               "generator": false,
+              "async": true,
               "arrow": false,
               "params": [],
               "body": {

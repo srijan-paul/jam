@@ -15,9 +15,8 @@
         "end": 17,
         "name": "fn"
       },
-      "async": true,
       "generator": false,
-      "arrow": false,
+      "async": true,
       "params": [],
       "body": {
         "type": "BlockStatement",
@@ -26,7 +25,7 @@
         "body": [
           {
             "type": "ExpressionStatement",
-            "start": 25,
+            "start": 24,
             "end": 46,
             "expression": {
               "type": "FunctionExpression",
@@ -38,8 +37,8 @@
                 "end": 39,
                 "name": "await"
               },
-              "async": false,
               "generator": false,
+              "async": false,
               "arrow": false,
               "params": [],
               "body": {

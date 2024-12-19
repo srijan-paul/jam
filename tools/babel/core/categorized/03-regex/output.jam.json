@@ -7,14 +7,14 @@
   "body": [
     {
       "type": "ExpressionStatement",
-      "start": 1,
-      "end": 48,
+      "start": 0,
+      "end": 49,
       "expression": {
         "type": "FunctionExpression",
         "start": 1,
         "end": 48,
-        "async": false,
         "generator": false,
+        "async": false,
         "arrow": false,
         "params": [],
         "body": {
@@ -46,8 +46,8 @@
                       "end": 35,
                       "name": "fn"
                     },
-                    "async": false,
                     "generator": false,
+                    "async": false,
                     "arrow": false,
                     "params": [],
                     "body": {

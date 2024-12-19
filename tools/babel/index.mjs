@@ -15,6 +15,7 @@ function removeAstTrivia(ast) {
 	} else if (typeof ast === 'object' && ast !== null) {
 		delete ast['loc'];
 		delete ast['extra']
+		delete ast['directives']
 		const values = Object.values(ast).filter(v => Array.isArray(v) || typeof v === 'object');
 		removeAstTrivia(values);
 	}

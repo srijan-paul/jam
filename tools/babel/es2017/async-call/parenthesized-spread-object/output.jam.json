@@ -39,7 +39,7 @@
                   {
                     "type": "SpreadElement",
                     "start": 18,
-                    "end": 25,
+                    "end": 26,
                     "argument": {
                       "type": "Identifier",
                       "start": 22,

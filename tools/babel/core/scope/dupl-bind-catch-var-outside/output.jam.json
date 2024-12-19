@@ -48,7 +48,8 @@
             "start": 28,
             "end": 31,
             "name": "foo"
-          }
+          },
+          "init": null
         }
       ],
       "kind": "var"

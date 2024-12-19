@@ -19,7 +19,8 @@
             "start": 4,
             "end": 5,
             "name": "x"
-          }
+          },
+          "init": null
         },
         {
           "type": "VariableDeclarator",
@@ -30,7 +31,8 @@
             "start": 7,
             "end": 8,
             "name": "y"
-          }
+          },
+          "init": null
         }
       ],
       "kind": "let"

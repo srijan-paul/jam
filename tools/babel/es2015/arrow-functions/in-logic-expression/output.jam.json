@@ -7,19 +7,19 @@
   "body": [
     {
       "type": "ExpressionStatement",
-      "start": 1,
+      "start": 0,
       "end": 19,
       "expression": {
         "type": "BinaryExpression",
-        "start": 1,
+        "start": 0,
         "end": 18,
         "operator": "||",
         "left": {
           "type": "FunctionExpression",
           "start": 1,
           "end": 9,
-          "async": false,
           "generator": false,
+          "async": false,
           "arrow": true,
           "params": [],
           "body": {
@@ -39,18 +39,18 @@
     },
     {
       "type": "ExpressionStatement",
-      "start": 21,
+      "start": 20,
       "end": 39,
       "expression": {
         "type": "ConditionalExpression",
-        "start": 21,
+        "start": 20,
         "end": 38,
         "test": {
           "type": "FunctionExpression",
           "start": 21,
           "end": 29,
-          "async": false,
           "generator": false,
+          "async": false,
           "arrow": true,
           "params": [],
           "body": {

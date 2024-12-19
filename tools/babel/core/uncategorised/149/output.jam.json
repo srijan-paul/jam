@@ -14,6 +14,7 @@
         "start": 7,
         "end": 6,
         "operator": "delete",
+        "prefix": true,
         "argument": {
           "type": "Identifier",
           "start": 7,

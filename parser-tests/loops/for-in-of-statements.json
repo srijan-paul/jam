@@ -55,6 +55,7 @@
         "start": 25,
         "end": 28,
         "operator": "++",
+        "prefix": false,
         "argument": {
           "type": "Identifier",
           "start": 25,
@@ -127,7 +128,8 @@
               "start": 62,
               "end": 63,
               "name": "x"
-            }
+            },
+            "init": null
           }
         ],
         "kind": "let"
@@ -200,7 +202,8 @@
                   "name": "c"
                 }
               ]
-            }
+            },
+            "init": null
           }
         ],
         "kind": "let"
@@ -282,7 +285,8 @@
               "start": 138,
               "end": 139,
               "name": "x"
-            }
+            },
+            "init": null
           },
           {
             "type": "VariableDeclarator",
@@ -293,7 +297,8 @@
               "start": 141,
               "end": 142,
               "name": "y"
-            }
+            },
+            "init": null
           }
         ],
         "kind": "let"
@@ -322,7 +327,8 @@
               "start": 157,
               "end": 158,
               "name": "x"
-            }
+            },
+            "init": null
           }
         ],
         "kind": "let"
@@ -346,64 +352,64 @@
             "type": "Property",
             "start": 171,
             "end": 172,
+            "method": false,
             "key": {
               "type": "Identifier",
               "start": 171,
               "end": 172,
               "name": "x"
             },
+            "computed": false,
+            "kind": "init",
             "value": {
               "type": "Identifier",
               "start": 171,
               "end": 172,
               "name": "x"
             },
-            "kind": "init",
-            "computed": false,
-            "shorthand": true,
-            "method": false
+            "shorthand": true
           },
           {
             "type": "Property",
             "start": 174,
             "end": 175,
+            "method": false,
             "key": {
               "type": "Identifier",
               "start": 174,
               "end": 175,
               "name": "y"
             },
+            "computed": false,
+            "kind": "init",
             "value": {
               "type": "Identifier",
               "start": 174,
               "end": 175,
               "name": "y"
             },
-            "kind": "init",
-            "computed": false,
-            "shorthand": true,
-            "method": false
+            "shorthand": true
           },
           {
             "type": "Property",
             "start": 177,
             "end": 178,
+            "method": false,
             "key": {
               "type": "Identifier",
               "start": 177,
               "end": 178,
               "name": "z"
             },
+            "computed": false,
+            "kind": "init",
             "value": {
               "type": "Identifier",
               "start": 177,
               "end": 178,
               "name": "z"
             },
-            "kind": "init",
-            "computed": false,
-            "shorthand": true,
-            "method": false
+            "shorthand": true
           }
         ]
       },
@@ -466,12 +472,15 @@
             "type": "Property",
             "start": 214,
             "end": 219,
+            "method": false,
             "key": {
               "type": "Identifier",
               "start": 214,
               "end": 215,
               "name": "x"
             },
+            "computed": false,
+            "kind": "init",
             "value": {
               "type": "MemberExpression",
               "start": 216,
@@ -490,10 +499,7 @@
               },
               "computed": false
             },
-            "kind": "init",
-            "computed": false,
-            "shorthand": false,
-            "method": false
+            "shorthand": false
           }
         ]
       },

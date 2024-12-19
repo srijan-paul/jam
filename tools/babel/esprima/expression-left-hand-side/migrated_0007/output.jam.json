@@ -7,15 +7,15 @@
   "body": [
     {
       "type": "ExpressionStatement",
-      "start": 2,
+      "start": 0,
       "end": 16,
       "expression": {
         "type": "CallExpression",
-        "start": 2,
+        "start": 0,
         "end": 16,
         "callee": {
           "type": "MemberExpression",
-          "start": 2,
+          "start": 0,
           "end": 14,
           "object": {
             "type": "NewExpression",

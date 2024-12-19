@@ -55,6 +55,7 @@
         "start": 24,
         "end": 27,
         "operator": "++",
+        "prefix": false,
         "argument": {
           "type": "Identifier",
           "start": 24,
@@ -123,6 +124,7 @@
         "start": 71,
         "end": 74,
         "operator": "++",
+        "prefix": false,
         "argument": {
           "type": "Identifier",
           "start": 71,
@@ -365,6 +367,7 @@
             "start": 185,
             "end": 188,
             "operator": "++",
+            "prefix": false,
             "argument": {
               "type": "Identifier",
               "start": 185,
@@ -377,6 +380,7 @@
             "start": 190,
             "end": 193,
             "operator": "++",
+            "prefix": false,
             "argument": {
               "type": "Identifier",
               "start": 190,

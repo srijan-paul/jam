@@ -30,6 +30,7 @@
             "start": 6,
             "end": 6,
             "operator": "-",
+            "prefix": true,
             "argument": {
               "type": "Literal",
               "start": 6,

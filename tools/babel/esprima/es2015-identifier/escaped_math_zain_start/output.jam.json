@@ -19,7 +19,8 @@
             "start": 4,
             "end": 15,
             "name": "𞸆_$"
-          }
+          },
+          "init": null
         }
       ],
       "kind": "var"

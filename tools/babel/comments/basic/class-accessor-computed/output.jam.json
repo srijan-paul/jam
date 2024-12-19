@@ -7,7 +7,7 @@
   "body": [
     {
       "type": "ExpressionStatement",
-      "start": 1,
+      "start": 0,
       "end": 99,
       "expression": {
         "type": "ClassExpression",
@@ -30,8 +30,8 @@
                 "type": "FunctionExpression",
                 "start": 56,
                 "end": 95,
-                "async": false,
                 "generator": false,
+                "async": false,
                 "arrow": false,
                 "params": [
                   {
@@ -58,7 +58,7 @@
     },
     {
       "type": "ExpressionStatement",
-      "start": 101,
+      "start": 100,
       "end": 180,
       "expression": {
         "type": "ClassExpression",
@@ -81,8 +81,8 @@
                 "type": "FunctionExpression",
                 "start": 156,
                 "end": 176,
-                "async": false,
                 "generator": false,
+                "async": false,
                 "arrow": false,
                 "params": [],
                 "body": {
@@ -102,7 +102,7 @@
     },
     {
       "type": "ExpressionStatement",
-      "start": 182,
+      "start": 181,
       "end": 215,
       "expression": {
         "type": "ClassExpression",
@@ -125,8 +125,8 @@
                 "type": "FunctionExpression",
                 "start": 206,
                 "end": 211,
-                "async": false,
                 "generator": false,
+                "async": false,
                 "arrow": false,
                 "params": [],
                 "body": {
