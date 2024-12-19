@@ -117,10 +117,6 @@
                   ],
                   "optional": false
                 }
-              },
-              "extra": {
-                "parenthesized": true,
-                "parenStart": 48
               }
             }
           },
@@ -318,10 +314,6 @@
                   ],
                   "optional": false
                 }
-              },
-              "extra": {
-                "parenthesized": true,
-                "parenStart": 171
               }
             }
           },

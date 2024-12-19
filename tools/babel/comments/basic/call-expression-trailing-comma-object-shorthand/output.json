@@ -19,9 +19,6 @@
           "end": 2,
           "name": "fn"
         },
-        "extra": {
-          "trailingComma": 11
-        },
         "arguments": [
           {
             "type": "Identifier",
@@ -53,10 +50,7 @@
                   "end": 9,
                   "name": "b"
                 },
-                "kind": "init",
-                "extra": {
-                  "shorthand": true
-                }
+                "kind": "init"
               }
             ],
             "trailingComments": [

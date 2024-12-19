@@ -2,6 +2,8 @@
   "type": "Program",
   "start": 0,
   "end": 54,
+  "sourceType": "script",
+  "interpreter": null,
   "body": [
     {
       "type": "ExpressionStatement",
@@ -24,64 +26,64 @@
                 "type": "Property",
                 "start": 3,
                 "end": 15,
+                "method": false,
                 "key": {
                   "type": "Identifier",
                   "start": 3,
                   "end": 12,
                   "name": "__proto__"
                 },
+                "computed": false,
+                "kind": "init",
                 "value": {
                   "type": "Identifier",
                   "start": 14,
                   "end": 15,
                   "name": "x"
                 },
-                "kind": "init",
-                "computed": false,
-                "shorthand": false,
-                "method": false
+                "shorthand": false
               },
               {
                 "type": "Property",
                 "start": 17,
                 "end": 29,
+                "method": false,
                 "key": {
                   "type": "Identifier",
                   "start": 17,
                   "end": 26,
                   "name": "__proto__"
                 },
+                "computed": false,
+                "kind": "init",
                 "value": {
                   "type": "Identifier",
                   "start": 28,
                   "end": 29,
                   "name": "y"
                 },
-                "kind": "init",
-                "computed": false,
-                "shorthand": false,
-                "method": false
+                "shorthand": false
               },
               {
                 "type": "Property",
                 "start": 31,
                 "end": 43,
+                "method": false,
                 "key": {
                   "type": "Identifier",
                   "start": 31,
                   "end": 40,
                   "name": "__proto__"
                 },
+                "computed": false,
+                "kind": "init",
                 "value": {
                   "type": "Identifier",
                   "start": 42,
                   "end": 43,
                   "name": "z"
                 },
-                "kind": "init",
-                "computed": false,
-                "shorthand": false,
-                "method": false
+                "shorthand": false
               }
             ]
           }

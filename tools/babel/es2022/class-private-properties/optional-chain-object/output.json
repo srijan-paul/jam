@@ -160,9 +160,6 @@
                       "type": "ArrayExpression",
                       "start": 116,
                       "end": 212,
-                      "extra": {
-                        "trailingComma": 205
-                      },
                       "elements": [
                         {
                           "type": "ChainExpression",

@@ -17,11 +17,7 @@
           "type": "Identifier",
           "start": 5,
           "end": 8,
-          "name": "foo",
-          "extra": {
-            "parenthesized": true,
-            "parenStart": 0
-          }
+          "name": "foo"
         },
         "arguments": [],
         "optional": false

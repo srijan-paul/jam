@@ -50,10 +50,7 @@
                   "raw": "0"
                 }
               },
-              "kind": "init",
-              "extra": {
-                "shorthand": true
-              }
+              "kind": "init"
             }
           ]
         },
@@ -62,10 +59,6 @@
           "start": 11,
           "end": 14,
           "name": "obj"
-        },
-        "extra": {
-          "parenthesized": true,
-          "parenStart": 0
         }
       }
     }

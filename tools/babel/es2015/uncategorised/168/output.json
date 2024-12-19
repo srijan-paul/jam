@@ -61,10 +61,7 @@
                       "end": 19,
                       "name": "w"
                     },
-                    "kind": "init",
-                    "extra": {
-                      "shorthand": true
-                    }
+                    "kind": "init"
                   },
                   {
                     "type": "Property",
@@ -85,10 +82,7 @@
                       "end": 22,
                       "name": "x"
                     },
-                    "kind": "init",
-                    "extra": {
-                      "shorthand": true
-                    }
+                    "kind": "init"
                   }
                 ]
               },

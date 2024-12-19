@@ -37,17 +37,10 @@
         "type": "StringLiteral",
         "start": 47,
         "end": 55,
-        "extra": {
-          "rawValue": "foobar",
-          "raw": "'foobar'"
-        },
         "value": "foobar"
       },
       "attributes": []
     }
   ],
-  "directives": [],
-  "extra": {
-    "topLevelAwait": false
-  }
+  "directives": []
 }

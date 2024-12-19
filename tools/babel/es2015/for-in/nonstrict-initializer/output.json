@@ -128,11 +128,7 @@
                     "raw": "1"
                   }
                 }
-              ],
-              "extra": {
-                "parenthesized": true,
-                "parenStart": 70
-              }
+              ]
             }
           }
         ],

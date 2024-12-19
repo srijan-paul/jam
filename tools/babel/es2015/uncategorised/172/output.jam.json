@@ -2,6 +2,8 @@
   "type": "Program",
   "start": 0,
   "end": 56,
+  "sourceType": "script",
+  "interpreter": null,
   "body": [
     {
       "type": "ExpressionStatement",
@@ -30,12 +32,15 @@
                 "type": "Property",
                 "start": 14,
                 "end": 25,
+                "method": false,
                 "key": {
                   "type": "Identifier",
                   "start": 14,
                   "end": 15,
                   "name": "a"
                 },
+                "computed": false,
+                "kind": "init",
                 "value": {
                   "type": "ObjectExpression",
                   "start": 17,
@@ -45,61 +50,61 @@
                       "type": "Property",
                       "start": 19,
                       "end": 20,
+                      "method": false,
                       "key": {
                         "type": "Identifier",
                         "start": 19,
                         "end": 20,
                         "name": "w"
                       },
+                      "computed": false,
+                      "kind": "init",
                       "value": {
                         "type": "Identifier",
                         "start": 19,
                         "end": 20,
                         "name": "w"
                       },
-                      "kind": "init",
-                      "computed": false,
-                      "shorthand": true,
-                      "method": false
+                      "shorthand": true
                     },
                     {
                       "type": "Property",
                       "start": 22,
                       "end": 23,
+                      "method": false,
                       "key": {
                         "type": "Identifier",
                         "start": 22,
                         "end": 23,
                         "name": "x"
                       },
+                      "computed": false,
+                      "kind": "init",
                       "value": {
                         "type": "Identifier",
                         "start": 22,
                         "end": 23,
                         "name": "x"
                       },
-                      "kind": "init",
-                      "computed": false,
-                      "shorthand": true,
-                      "method": false
+                      "shorthand": true
                     }
                   ]
                 },
-                "kind": "init",
-                "computed": false,
-                "shorthand": false,
-                "method": false
+                "shorthand": false
               },
               {
                 "type": "Property",
                 "start": 27,
                 "end": 36,
+                "method": false,
                 "key": {
                   "type": "Identifier",
                   "start": 27,
                   "end": 28,
                   "name": "b"
                 },
+                "computed": false,
+                "kind": "init",
                 "value": {
                   "type": "ArrayExpression",
                   "start": 30,
@@ -119,10 +124,7 @@
                     }
                   ]
                 },
-                "kind": "init",
-                "computed": false,
-                "shorthand": false,
-                "method": false
+                "shorthand": false
               }
             ]
           },

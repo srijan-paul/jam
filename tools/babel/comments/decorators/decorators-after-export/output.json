@@ -260,8 +260,5 @@
         }
       ]
     }
-  ],
-  "extra": {
-    "topLevelAwait": false
-  }
+  ]
 }

@@ -70,10 +70,7 @@
                             "end": 12,
                             "name": "x"
                           },
-                          "kind": "init",
-                          "extra": {
-                            "shorthand": true
-                          }
+                          "kind": "init"
                         }
                       ]
                     },
@@ -117,10 +114,6 @@
               }
             }
           ]
-        },
-        "extra": {
-          "parenthesized": true,
-          "parenStart": 0
         }
       }
     }

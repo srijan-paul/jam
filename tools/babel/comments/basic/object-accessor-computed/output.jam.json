@@ -2,6 +2,8 @@
   "type": "Program",
   "start": 0,
   "end": 198,
+  "sourceType": "script",
+  "interpreter": null,
   "body": [
     {
       "type": "ExpressionStatement",
@@ -16,12 +18,15 @@
             "type": "Property",
             "start": 32,
             "end": 89,
+            "method": true,
             "key": {
               "type": "Identifier",
               "start": 32,
               "end": 33,
               "name": "f"
             },
+            "computed": false,
+            "kind": "set",
             "value": {
               "type": "FunctionExpression",
               "start": 50,
@@ -44,10 +49,7 @@
                 "body": []
               }
             },
-            "kind": "set",
-            "computed": false,
-            "shorthand": false,
-            "method": true
+            "shorthand": false
           }
         ]
       }
@@ -65,12 +67,15 @@
             "type": "Property",
             "start": 126,
             "end": 164,
+            "method": true,
             "key": {
               "type": "Identifier",
               "start": 126,
               "end": 127,
               "name": "f"
             },
+            "computed": false,
+            "kind": "get",
             "value": {
               "type": "FunctionExpression",
               "start": 144,
@@ -86,10 +91,7 @@
                 "body": []
               }
             },
-            "kind": "get",
-            "computed": false,
-            "shorthand": false,
-            "method": true
+            "shorthand": false
           }
         ]
       }
@@ -107,12 +109,15 @@
             "type": "Property",
             "start": 185,
             "end": 193,
+            "method": true,
             "key": {
               "type": "Identifier",
               "start": 185,
               "end": 186,
               "name": "f"
             },
+            "computed": false,
+            "kind": "get",
             "value": {
               "type": "FunctionExpression",
               "start": 188,
@@ -128,10 +133,7 @@
                 "body": []
               }
             },
-            "kind": "get",
-            "computed": false,
-            "shorthand": false,
-            "method": true
+            "shorthand": false
           }
         ]
       }

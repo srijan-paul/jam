@@ -49,10 +49,7 @@
                     "name": "defaultValue"
                   }
                 },
-                "kind": "init",
-                "extra": {
-                  "shorthand": true
-                }
+                "kind": "init"
               }
             ]
           },

@@ -47,10 +47,7 @@
                   "end": 15,
                   "name": "a"
                 },
-                "kind": "init",
-                "extra": {
-                  "shorthand": true
-                }
+                "kind": "init"
               },
               {
                 "type": "Property",
@@ -71,10 +68,7 @@
                   "end": 18,
                   "name": "b"
                 },
-                "kind": "init",
-                "extra": {
-                  "shorthand": true
-                }
+                "kind": "init"
               }
             ]
           }
@@ -84,10 +78,6 @@
           "start": 21,
           "end": 23,
           "body": []
-        },
-        "extra": {
-          "parenthesized": true,
-          "parenStart": 0
         }
       }
     }

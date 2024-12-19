@@ -185,10 +185,6 @@
               ]
             }
           ]
-        },
-        "extra": {
-          "parenthesized": true,
-          "parenStart": 94
         }
       }
     }

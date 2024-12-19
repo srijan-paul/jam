@@ -79,10 +79,7 @@
                             "raw": "1"
                           }
                         },
-                        "kind": "init",
-                        "extra": {
-                          "shorthand": true
-                        }
+                        "kind": "init"
                       }
                     ]
                   },

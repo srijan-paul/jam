@@ -64,10 +64,7 @@
                           "end": 16,
                           "name": "x"
                         },
-                        "kind": "init",
-                        "extra": {
-                          "shorthand": true
-                        }
+                        "kind": "init"
                       }
                     ]
                   },
@@ -111,11 +108,7 @@
             },
             "kind": "init"
           }
-        ],
-        "extra": {
-          "parenthesized": true,
-          "parenStart": 0
-        }
+        ]
       }
     }
   ]

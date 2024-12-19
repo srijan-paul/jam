@@ -68,12 +68,7 @@
             },
             "shorthand": false
           }
-        ],
-        "extra": {
-          "trailingComma": 35,
-          "parenthesized": true,
-          "parenStart": 0
-        }
+        ]
       }
     }
   ]

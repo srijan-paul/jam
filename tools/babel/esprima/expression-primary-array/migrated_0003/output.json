@@ -24,9 +24,6 @@
           "type": "ArrayExpression",
           "start": 4,
           "end": 11,
-          "extra": {
-            "trailingComma": 8
-          },
           "elements": [
             {
               "type": "Literal",

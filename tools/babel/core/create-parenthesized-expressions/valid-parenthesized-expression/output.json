@@ -14,11 +14,7 @@
         "start": 1,
         "end": 8,
         "value": "hello",
-        "raw": "\"hello\"",
-        "extra": {
-          "parenthesized": true,
-          "parenStart": 0
-        }
+        "raw": "\"hello\""
       }
     }
   ]

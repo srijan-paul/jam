@@ -20,11 +20,7 @@
           "name": "async"
         },
         "arguments": [],
-        "optional": false,
-        "extra": {
-          "parenthesized": true,
-          "parenStart": 0
-        }
+        "optional": false
       }
     }
   ]

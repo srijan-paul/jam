@@ -2,6 +2,8 @@
   "type": "Program",
   "start": 0,
   "end": 29,
+  "sourceType": "script",
+  "interpreter": null,
   "body": [
     {
       "type": "ExpressionStatement",
@@ -45,22 +47,22 @@
                           "type": "Property",
                           "start": 11,
                           "end": 12,
+                          "method": false,
                           "key": {
                             "type": "Identifier",
                             "start": 11,
                             "end": 12,
                             "name": "x"
                           },
+                          "computed": false,
+                          "kind": "init",
                           "value": {
                             "type": "Identifier",
                             "start": 11,
                             "end": 12,
                             "name": "x"
                           },
-                          "kind": "init",
-                          "computed": false,
-                          "shorthand": true,
-                          "method": false
+                          "shorthand": true
                         }
                       ]
                     },
@@ -73,22 +75,22 @@
                           "type": "Property",
                           "start": 17,
                           "end": 22,
+                          "method": false,
                           "key": {
                             "type": "Identifier",
                             "start": 17,
                             "end": 18,
                             "name": "x"
                           },
+                          "computed": false,
+                          "kind": "init",
                           "value": {
                             "type": "Literal",
                             "start": 20,
                             "end": 22,
                             "value": "10"
                           },
-                          "kind": "init",
-                          "computed": false,
-                          "shorthand": false,
-                          "method": false
+                          "shorthand": false
                         }
                       ]
                     }

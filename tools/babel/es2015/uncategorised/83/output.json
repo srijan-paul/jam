@@ -29,8 +29,5 @@
       }
     }
   ],
-  "directives": [],
-  "extra": {
-    "topLevelAwait": false
-  }
+  "directives": []
 }

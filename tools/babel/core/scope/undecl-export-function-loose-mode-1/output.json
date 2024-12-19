@@ -53,8 +53,5 @@
       "declaration": null
     }
   ],
-  "directives": [],
-  "extra": {
-    "topLevelAwait": false
-  }
+  "directives": []
 }

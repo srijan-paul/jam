@@ -38,10 +38,7 @@
                 "end": 8,
                 "name": "a"
               },
-              "kind": "init",
-              "extra": {
-                "shorthand": true
-              }
+              "kind": "init"
             },
             {
               "type": "Property",
@@ -133,10 +130,7 @@
                       "end": 40,
                       "name": "a"
                     },
-                    "kind": "init",
-                    "extra": {
-                      "shorthand": true
-                    }
+                    "kind": "init"
                   }
                 ]
               },
@@ -224,10 +218,6 @@
           "end": 83,
           "value": 0,
           "raw": "0"
-        },
-        "extra": {
-          "parenthesized": true,
-          "parenStart": 0
         }
       }
     }

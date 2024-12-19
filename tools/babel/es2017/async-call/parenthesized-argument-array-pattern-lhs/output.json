@@ -38,11 +38,7 @@
                     "type": "Identifier",
                     "start": 9,
                     "end": 10,
-                    "name": "a",
-                    "extra": {
-                      "parenthesized": true,
-                      "parenStart": 8
-                    }
+                    "name": "a"
                   },
                   "right": {
                     "type": "ArrayExpression",

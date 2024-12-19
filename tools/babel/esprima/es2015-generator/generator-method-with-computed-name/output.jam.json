@@ -2,6 +2,8 @@
   "type": "Program",
   "start": 0,
   "end": 52,
+  "sourceType": "script",
+  "interpreter": null,
   "body": [
     {
       "type": "ExpressionStatement",
@@ -33,6 +35,7 @@
                     "type": "Property",
                     "start": 30,
                     "end": 46,
+                    "method": true,
                     "key": {
                       "type": "YieldExpression",
                       "start": 30,
@@ -45,6 +48,8 @@
                       },
                       "delegate": false
                     },
+                    "computed": false,
+                    "kind": "init",
                     "value": {
                       "type": "FunctionExpression",
                       "start": 41,
@@ -60,10 +65,7 @@
                         "body": []
                       }
                     },
-                    "kind": "init",
-                    "computed": false,
-                    "shorthand": false,
-                    "method": true
+                    "shorthand": false
                   }
                 ]
               }

@@ -2,6 +2,8 @@
   "type": "Program",
   "start": 0,
   "end": 34,
+  "sourceType": "script",
+  "interpreter": null,
   "body": [
     {
       "type": "VariableDeclaration",
@@ -27,12 +29,15 @@
                 "type": "Property",
                 "start": 11,
                 "end": 31,
+                "method": true,
                 "key": {
                   "type": "Identifier",
                   "start": 11,
                   "end": 15,
                   "name": "test"
                 },
+                "computed": false,
+                "kind": "init",
                 "value": {
                   "type": "FunctionExpression",
                   "start": 16,
@@ -66,10 +71,7 @@
                     ]
                   }
                 },
-                "kind": "init",
-                "computed": false,
-                "shorthand": false,
-                "method": true
+                "shorthand": false
               }
             ]
           }

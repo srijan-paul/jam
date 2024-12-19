@@ -20,10 +20,6 @@
           "start": 7,
           "end": 9,
           "body": []
-        },
-        "extra": {
-          "parenthesized": true,
-          "parenStart": 0
         }
       }
     }

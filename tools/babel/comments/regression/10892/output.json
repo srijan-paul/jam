@@ -32,10 +32,6 @@
         "type": "StringLiteral",
         "start": 20,
         "end": 25,
-        "extra": {
-          "rawValue": "bar",
-          "raw": "\"bar\""
-        },
         "value": "bar"
       },
       "attributes": [],
@@ -68,8 +64,5 @@
       ]
     }
   ],
-  "directives": [],
-  "extra": {
-    "topLevelAwait": false
-  }
+  "directives": []
 }

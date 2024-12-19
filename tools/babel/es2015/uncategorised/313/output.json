@@ -43,10 +43,7 @@
                 "end": 22,
                 "name": "message"
               },
-              "kind": "init",
-              "extra": {
-                "shorthand": true
-              }
+              "kind": "init"
             }
           ]
         },

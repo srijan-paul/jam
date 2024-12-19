@@ -2,6 +2,8 @@
   "type": "Program",
   "start": 0,
   "end": 33,
+  "sourceType": "script",
+  "interpreter": null,
   "body": [
     {
       "type": "ExpressionStatement",
@@ -16,12 +18,15 @@
             "type": "Property",
             "start": 2,
             "end": 31,
+            "method": false,
             "key": {
               "type": "Identifier",
               "start": 2,
               "end": 3,
               "name": "f"
             },
+            "computed": false,
+            "kind": "init",
             "value": {
               "type": "FunctionExpression",
               "start": 5,
@@ -43,22 +48,22 @@
                         "type": "Property",
                         "start": 15,
                         "end": 16,
+                        "method": false,
                         "key": {
                           "type": "Identifier",
                           "start": 15,
                           "end": 16,
                           "name": "x"
                         },
+                        "computed": false,
+                        "kind": "init",
                         "value": {
                           "type": "Identifier",
                           "start": 15,
                           "end": 16,
                           "name": "x"
                         },
-                        "kind": "init",
-                        "computed": false,
-                        "shorthand": true,
-                        "method": false
+                        "shorthand": true
                       }
                     ]
                   },
@@ -71,22 +76,22 @@
                         "type": "Property",
                         "start": 21,
                         "end": 26,
+                        "method": false,
                         "key": {
                           "type": "Identifier",
                           "start": 21,
                           "end": 22,
                           "name": "x"
                         },
+                        "computed": false,
+                        "kind": "init",
                         "value": {
                           "type": "Literal",
                           "start": 24,
                           "end": 26,
                           "value": "10"
                         },
-                        "kind": "init",
-                        "computed": false,
-                        "shorthand": false,
-                        "method": false
+                        "shorthand": false
                       }
                     ]
                   }
@@ -99,10 +104,7 @@
                 "body": []
               }
             },
-            "kind": "init",
-            "computed": false,
-            "shorthand": false,
-            "method": false
+            "shorthand": false
           }
         ]
       }

@@ -26,9 +26,6 @@
         "type": "RegExpLiteral",
         "start": 10,
         "end": 15,
-        "extra": {
-          "raw": "/foo/"
-        },
         "pattern": "foo",
         "flags": ""
       }

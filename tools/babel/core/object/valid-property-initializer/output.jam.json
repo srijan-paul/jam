@@ -2,6 +2,8 @@
   "type": "Program",
   "start": 0,
   "end": 69,
+  "sourceType": "script",
+  "interpreter": null,
   "body": [
     {
       "type": "VariableDeclaration",
@@ -49,12 +51,15 @@
                   "type": "Property",
                   "start": 29,
                   "end": 41,
+                  "method": false,
                   "key": {
                     "type": "Identifier",
                     "start": 29,
                     "end": 32,
                     "name": "bar"
                   },
+                  "computed": false,
+                  "kind": "init",
                   "value": {
                     "type": "AssignmentPattern",
                     "start": 34,
@@ -72,10 +77,7 @@
                       "value": "123"
                     }
                   },
-                  "kind": "init",
-                  "computed": false,
-                  "shorthand": false,
-                  "method": false
+                  "shorthand": false
                 }
               ]
             },
@@ -88,43 +90,43 @@
                   "type": "Property",
                   "start": 49,
                   "end": 56,
+                  "method": false,
                   "key": {
                     "type": "Identifier",
                     "start": 49,
                     "end": 52,
                     "name": "foo"
                   },
+                  "computed": false,
+                  "kind": "init",
                   "value": {
                     "type": "Literal",
                     "start": 54,
                     "end": 56,
                     "value": "24"
                   },
-                  "kind": "init",
-                  "computed": false,
-                  "shorthand": false,
-                  "method": false
+                  "shorthand": false
                 },
                 {
                   "type": "Property",
                   "start": 58,
                   "end": 65,
+                  "method": false,
                   "key": {
                     "type": "Identifier",
                     "start": 58,
                     "end": 61,
                     "name": "bar"
                   },
+                  "computed": false,
+                  "kind": "init",
                   "value": {
                     "type": "Literal",
                     "start": 63,
                     "end": 65,
                     "value": "45"
                   },
-                  "kind": "init",
-                  "computed": false,
-                  "shorthand": false,
-                  "method": false
+                  "shorthand": false
                 }
               ]
             }

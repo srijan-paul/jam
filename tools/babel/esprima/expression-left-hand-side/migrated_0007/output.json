@@ -27,11 +27,7 @@
               "end": 9,
               "name": "foo"
             },
-            "arguments": [],
-            "extra": {
-              "parenthesized": true,
-              "parenStart": 0
-            }
+            "arguments": []
           },
           "computed": false,
           "property": {

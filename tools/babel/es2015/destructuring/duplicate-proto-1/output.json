@@ -68,10 +68,6 @@
           "start": 34,
           "end": 36,
           "properties": []
-        },
-        "extra": {
-          "parenthesized": true,
-          "parenStart": 0
         }
       }
     }

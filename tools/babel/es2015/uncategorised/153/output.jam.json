@@ -2,6 +2,8 @@
   "type": "Program",
   "start": 0,
   "end": 28,
+  "sourceType": "script",
+  "interpreter": null,
   "body": [
     {
       "type": "FunctionDeclaration",
@@ -30,22 +32,22 @@
                 "type": "Property",
                 "start": 12,
                 "end": 13,
+                "method": false,
                 "key": {
                   "type": "Identifier",
                   "start": 12,
                   "end": 13,
                   "name": "x"
                 },
+                "computed": false,
+                "kind": "init",
                 "value": {
                   "type": "Identifier",
                   "start": 12,
                   "end": 13,
                   "name": "x"
                 },
-                "kind": "init",
-                "computed": false,
-                "shorthand": true,
-                "method": false
+                "shorthand": true
               }
             ]
           },
@@ -58,22 +60,22 @@
                 "type": "Property",
                 "start": 18,
                 "end": 23,
+                "method": false,
                 "key": {
                   "type": "Identifier",
                   "start": 18,
                   "end": 19,
                   "name": "x"
                 },
+                "computed": false,
+                "kind": "init",
                 "value": {
                   "type": "Literal",
                   "start": 21,
                   "end": 23,
                   "value": "10"
                 },
-                "kind": "init",
-                "computed": false,
-                "shorthand": false,
-                "method": false
+                "shorthand": false
               }
             ]
           }

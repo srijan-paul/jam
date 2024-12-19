@@ -41,9 +41,6 @@
                 "start": 15,
                 "end": 20,
                 "name": "await"
-              },
-              "extra": {
-                "shorthand": true
               }
             }
           ]

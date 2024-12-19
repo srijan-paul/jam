@@ -33,11 +33,7 @@
               "start": 19,
               "end": 24,
               "delegate": false,
-              "argument": null,
-              "extra": {
-                "parenthesized": true,
-                "parenStart": 18
-              }
+              "argument": null
             }
           },
           {

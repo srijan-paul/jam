@@ -118,10 +118,6 @@
               "raw": "3"
             }
           },
-          "extra": {
-            "parenthesized": true,
-            "parenStart": 49
-          },
           "leadingComments": [
             {
               "type": "CommentBlock",

@@ -13,17 +13,10 @@
         "type": "StringLiteral",
         "start": 14,
         "end": 19,
-        "extra": {
-          "rawValue": "foo",
-          "raw": "\"foo\""
-        },
         "value": "foo"
       },
       "attributes": []
     }
   ],
-  "directives": [],
-  "extra": {
-    "topLevelAwait": false
-  }
+  "directives": []
 }

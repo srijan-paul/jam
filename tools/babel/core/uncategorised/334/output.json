@@ -18,11 +18,7 @@
           "start": 1,
           "end": 2,
           "value": 1,
-          "raw": "1",
-          "extra": {
-            "parenthesized": true,
-            "parenStart": 0
-          }
+          "raw": "1"
         },
         "operator": "/",
         "right": {

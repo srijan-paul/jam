@@ -53,11 +53,7 @@
                     "end": 10,
                     "name": "b"
                   },
-                  "optional": false,
-                  "extra": {
-                    "parenthesized": true,
-                    "parenStart": 6
-                  }
+                  "optional": false
                 },
                 "right": {
                   "type": "MemberExpression",
@@ -76,11 +72,7 @@
                     "end": 18,
                     "name": "d"
                   },
-                  "optional": false,
-                  "extra": {
-                    "parenthesized": true,
-                    "parenStart": 14
-                  }
+                  "optional": false
                 }
               },
               "kind": "init"
@@ -92,10 +84,6 @@
           "start": 24,
           "end": 26,
           "properties": []
-        },
-        "extra": {
-          "parenthesized": true,
-          "parenStart": 0
         }
       }
     }

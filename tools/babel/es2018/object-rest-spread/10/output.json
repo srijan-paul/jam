@@ -38,10 +38,7 @@
                   "end": 7,
                   "name": "x"
                 },
-                "kind": "init",
-                "extra": {
-                  "shorthand": true
-                }
+                "kind": "init"
               },
               {
                 "type": "Property",
@@ -62,15 +59,9 @@
                   "end": 10,
                   "name": "y"
                 },
-                "kind": "init",
-                "extra": {
-                  "shorthand": true
-                }
+                "kind": "init"
               }
-            ],
-            "extra": {
-              "trailingComma": 10
-            }
+            ]
           },
           "init": {
             "type": "Identifier",

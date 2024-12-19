@@ -52,10 +52,7 @@
                     "end": 9,
                     "name": "b"
                   },
-                  "kind": "init",
-                  "extra": {
-                    "shorthand": true
-                  }
+                  "kind": "init"
                 }
               ]
             }

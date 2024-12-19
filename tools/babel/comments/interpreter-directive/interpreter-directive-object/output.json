@@ -43,10 +43,7 @@
                   "end": 38,
                   "name": "spawn"
                 },
-                "kind": "init",
-                "extra": {
-                  "shorthand": true
-                }
+                "kind": "init"
               }
             ]
           },

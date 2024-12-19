@@ -52,11 +52,7 @@
                       "end": 11,
                       "name": "b"
                     },
-                    "optional": false,
-                    "extra": {
-                      "parenthesized": true,
-                      "parenStart": 7
-                    }
+                    "optional": false
                   }
                 }
               ]

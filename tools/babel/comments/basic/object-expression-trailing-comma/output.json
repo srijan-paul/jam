@@ -39,9 +39,6 @@
                   "name": "x"
                 },
                 "kind": "init",
-                "extra": {
-                  "shorthand": true
-                },
                 "trailingComments": [
                   {
                     "type": "CommentBlock",
@@ -66,9 +63,6 @@
                 ]
               }
             ],
-            "extra": {
-              "trailingComma": 35
-            },
             "trailingComments": [
               {
                 "type": "CommentBlock",

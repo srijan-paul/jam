@@ -18,9 +18,6 @@
           "type": "ArrayPattern",
           "start": 0,
           "end": 4,
-          "extra": {
-            "trailingComma": 2
-          },
           "elements": [
             null,
             null

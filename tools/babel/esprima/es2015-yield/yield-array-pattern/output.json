@@ -32,10 +32,6 @@
           "start": 11,
           "end": 12,
           "name": "x"
-        },
-        "extra": {
-          "parenthesized": true,
-          "parenStart": 0
         }
       }
     }

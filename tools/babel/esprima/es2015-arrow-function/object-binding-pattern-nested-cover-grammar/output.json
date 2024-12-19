@@ -153,10 +153,7 @@
                                                                                                     "name": "b"
                                                                                                   }
                                                                                                 },
-                                                                                                "kind": "init",
-                                                                                                "extra": {
-                                                                                                  "shorthand": true
-                                                                                                }
+                                                                                                "kind": "init"
                                                                                               }
                                                                                             ]
                                                                                           }

@@ -25,11 +25,7 @@
             "raw": "\"foo\""
           },
           "options": null,
-          "attributes": null,
-          "extra": {
-            "parenthesized": true,
-            "parenStart": 4
-          }
+          "attributes": null
         },
         "arguments": []
       }

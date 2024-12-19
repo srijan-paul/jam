@@ -2,6 +2,8 @@
   "type": "Program",
   "start": 0,
   "end": 36,
+  "sourceType": "script",
+  "interpreter": null,
   "body": [
     {
       "type": "VariableDeclaration",
@@ -27,64 +29,64 @@
                 "type": "Property",
                 "start": 11,
                 "end": 14,
+                "method": false,
                 "key": {
                   "type": "Identifier",
                   "start": 11,
                   "end": 14,
                   "name": "get"
                 },
+                "computed": false,
+                "kind": "init",
                 "value": {
                   "type": "Identifier",
                   "start": 11,
                   "end": 14,
                   "name": "get"
                 },
-                "kind": "init",
-                "computed": false,
-                "shorthand": true,
-                "method": false
+                "shorthand": true
               },
               {
                 "type": "Property",
                 "start": 16,
                 "end": 20,
+                "method": false,
                 "key": {
                   "type": "Identifier",
                   "start": 16,
                   "end": 20,
                   "name": "eval"
                 },
+                "computed": false,
+                "kind": "init",
                 "value": {
                   "type": "Identifier",
                   "start": 16,
                   "end": 20,
                   "name": "eval"
                 },
-                "kind": "init",
-                "computed": false,
-                "shorthand": true,
-                "method": false
+                "shorthand": true
               },
               {
                 "type": "Property",
                 "start": 22,
                 "end": 31,
+                "method": false,
                 "key": {
                   "type": "Identifier",
                   "start": 22,
                   "end": 31,
                   "name": "arguments"
                 },
+                "computed": false,
+                "kind": "init",
                 "value": {
                   "type": "Identifier",
                   "start": 22,
                   "end": 31,
                   "name": "arguments"
                 },
-                "kind": "init",
-                "computed": false,
-                "shorthand": true,
-                "method": false
+                "shorthand": true
               }
             ]
           }

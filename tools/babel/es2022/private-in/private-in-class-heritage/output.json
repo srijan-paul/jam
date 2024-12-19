@@ -103,10 +103,6 @@
                         "start": 60,
                         "end": 62,
                         "properties": []
-                      },
-                      "extra": {
-                        "parenthesized": true,
-                        "parenStart": 53
                       }
                     },
                     "body": {

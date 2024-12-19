@@ -39,11 +39,7 @@
           "start": 10,
           "end": 11,
           "value": 6,
-          "raw": "6",
-          "extra": {
-            "parenthesized": true,
-            "parenStart": 9
-          }
+          "raw": "6"
         }
       }
     }

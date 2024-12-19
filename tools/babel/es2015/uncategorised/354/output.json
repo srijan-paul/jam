@@ -13,16 +13,10 @@
         "type": "RegExpLiteral",
         "start": 15,
         "end": 20,
-        "extra": {
-          "raw": "/foo/"
-        },
         "pattern": "foo",
         "flags": ""
       }
     }
   ],
-  "directives": [],
-  "extra": {
-    "topLevelAwait": false
-  }
+  "directives": []
 }

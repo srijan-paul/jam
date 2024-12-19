@@ -2,6 +2,8 @@
   "type": "Program",
   "start": 0,
   "end": 134,
+  "sourceType": "script",
+  "interpreter": null,
   "body": [
     {
       "type": "VariableDeclaration",
@@ -27,22 +29,28 @@
                 "type": "Property",
                 "start": 20,
                 "end": 130,
+                "method": false,
                 "key": {
                   "type": "Identifier",
                   "start": 27,
                   "end": 35,
                   "name": "queryAll"
                 },
+                "computed": false,
+                "kind": "init",
                 "value": {
                   "type": "Property",
                   "start": 27,
                   "end": 130,
+                  "method": true,
                   "key": {
                     "type": "Identifier",
                     "start": 27,
                     "end": 35,
                     "name": "queryAll"
                   },
+                  "computed": false,
+                  "kind": "init",
                   "value": {
                     "type": "FunctionExpression",
                     "start": 35,
@@ -149,15 +157,9 @@
                       ]
                     }
                   },
-                  "kind": "init",
-                  "computed": false,
-                  "shorthand": false,
-                  "method": true
+                  "shorthand": false
                 },
-                "kind": "init",
-                "computed": false,
-                "shorthand": false,
-                "method": false
+                "shorthand": false
               }
             ]
           }

@@ -27,10 +27,6 @@
             "start": 7,
             "end": 9,
             "body": []
-          },
-          "extra": {
-            "parenthesized": true,
-            "parenStart": 0
           }
         },
         "operator": "||",
@@ -65,10 +61,6 @@
             "start": 27,
             "end": 29,
             "body": []
-          },
-          "extra": {
-            "parenthesized": true,
-            "parenStart": 20
           }
         },
         "consequent": {

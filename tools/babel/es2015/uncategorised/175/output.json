@@ -78,10 +78,7 @@
                               "end": 13,
                               "name": "w"
                             },
-                            "kind": "init",
-                            "extra": {
-                              "shorthand": true
-                            }
+                            "kind": "init"
                           },
                           {
                             "type": "Property",
@@ -102,10 +99,7 @@
                               "end": 16,
                               "name": "x"
                             },
-                            "kind": "init",
-                            "extra": {
-                              "shorthand": true
-                            }
+                            "kind": "init"
                           }
                         ]
                       },
@@ -187,11 +181,7 @@
             },
             "shorthand": false
           }
-        ],
-        "extra": {
-          "parenthesized": true,
-          "parenStart": 0
-        }
+        ]
       }
     }
   ]

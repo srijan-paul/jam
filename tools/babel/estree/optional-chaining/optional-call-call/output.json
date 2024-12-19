@@ -29,10 +29,6 @@
             },
             "optional": true,
             "arguments": []
-          },
-          "extra": {
-            "parenthesized": true,
-            "parenStart": 0
           }
         },
         "arguments": [],

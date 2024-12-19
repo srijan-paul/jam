@@ -44,10 +44,7 @@
                   "end": 16,
                   "name": "async"
                 },
-                "kind": "init",
-                "extra": {
-                  "shorthand": true
-                }
+                "kind": "init"
               },
               {
                 "type": "Property",
@@ -68,10 +65,7 @@
                   "end": 21,
                   "name": "bar"
                 },
-                "kind": "init",
-                "extra": {
-                  "shorthand": true
-                }
+                "kind": "init"
               }
             ]
           }

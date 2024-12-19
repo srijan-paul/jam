@@ -25,10 +25,6 @@
             "end": 3,
             "value": 5,
             "raw": "5"
-          },
-          "extra": {
-            "parenthesized": true,
-            "parenStart": 0
           }
         },
         "operator": "**",

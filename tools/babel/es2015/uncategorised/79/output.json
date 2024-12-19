@@ -13,16 +13,9 @@
         "type": "NumericLiteral",
         "start": 15,
         "end": 17,
-        "extra": {
-          "rawValue": 42,
-          "raw": "42"
-        },
         "value": 42
       }
     }
   ],
-  "directives": [],
-  "extra": {
-    "topLevelAwait": false
-  }
+  "directives": []
 }

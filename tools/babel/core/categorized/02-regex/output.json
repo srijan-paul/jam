@@ -53,10 +53,6 @@
           "start": 23,
           "end": 24,
           "name": "i"
-        },
-        "extra": {
-          "parenthesized": true,
-          "parenStart": 0
         }
       }
     }

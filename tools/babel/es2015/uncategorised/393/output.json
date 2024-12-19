@@ -53,10 +53,7 @@
                     "properties": []
                   }
                 },
-                "kind": "init",
-                "extra": {
-                  "shorthand": true
-                }
+                "kind": "init"
               }
             ]
           }

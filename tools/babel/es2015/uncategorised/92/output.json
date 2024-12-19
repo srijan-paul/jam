@@ -26,17 +26,10 @@
         "type": "StringLiteral",
         "start": 14,
         "end": 22,
-        "extra": {
-          "rawValue": "jquery",
-          "raw": "\"jquery\""
-        },
         "value": "jquery"
       },
       "attributes": []
     }
   ],
-  "directives": [],
-  "extra": {
-    "topLevelAwait": false
-  }
+  "directives": []
 }

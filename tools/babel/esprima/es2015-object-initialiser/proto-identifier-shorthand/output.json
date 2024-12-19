@@ -55,16 +55,9 @@
               "end": 29,
               "name": "__proto__"
             },
-            "kind": "init",
-            "extra": {
-              "shorthand": true
-            }
+            "kind": "init"
           }
-        ],
-        "extra": {
-          "parenthesized": true,
-          "parenStart": 0
-        }
+        ]
       }
     }
   ]

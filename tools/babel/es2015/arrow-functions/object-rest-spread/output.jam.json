@@ -2,6 +2,8 @@
   "type": "Program",
   "start": 0,
   "end": 45,
+  "sourceType": "script",
+  "interpreter": null,
   "body": [
     {
       "type": "VariableDeclaration",
@@ -35,22 +37,22 @@
                     "type": "Property",
                     "start": 14,
                     "end": 19,
+                    "method": false,
                     "key": {
                       "type": "Identifier",
                       "start": 14,
                       "end": 19,
                       "name": "title"
                     },
+                    "computed": false,
+                    "kind": "init",
                     "value": {
                       "type": "Identifier",
                       "start": 14,
                       "end": 19,
                       "name": "title"
                     },
-                    "kind": "init",
-                    "computed": false,
-                    "shorthand": true,
-                    "method": false
+                    "shorthand": true
                   },
                   {
                     "type": "RestElement",

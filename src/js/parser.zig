@@ -5788,10 +5788,9 @@ fn runTestOnFile(tests_dir: std.fs.Dir, file_path: []const u8) !void {
     };
 
     defer result.deinit();
-    const root_node = result.tree.root;
 
     // 1. prettify the AST as a JSON string
-    const ast_json = try estree.toJsonString(t.allocator, result.tree, root_node);
+    const ast_json = try estree.toJsonString(t.allocator, result.tree, .{});
     defer t.allocator.free(ast_json);
 
     // 2. For every `<filename>.js`, read the corresponding `<filename>.json` file

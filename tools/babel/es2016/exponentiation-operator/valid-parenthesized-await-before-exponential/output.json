@@ -32,10 +32,6 @@
               "end": 20,
               "value": 5,
               "raw": "5"
-            },
-            "extra": {
-              "parenthesized": true,
-              "parenStart": 12
             }
           },
           "operator": "**",

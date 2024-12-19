@@ -2,6 +2,8 @@
   "type": "Program",
   "start": 0,
   "end": 13,
+  "sourceType": "script",
+  "interpreter": null,
   "body": [
     {
       "type": "ExpressionStatement",
@@ -27,22 +29,22 @@
               "type": "Property",
               "start": 5,
               "end": 6,
+              "method": false,
               "key": {
                 "type": "Identifier",
                 "start": 5,
                 "end": 6,
                 "name": "x"
               },
+              "computed": false,
+              "kind": "init",
               "value": {
                 "type": "Identifier",
                 "start": 5,
                 "end": 6,
                 "name": "x"
               },
-              "kind": "init",
-              "computed": false,
-              "shorthand": true,
-              "method": false
+              "shorthand": true
             },
             {
               "type": "SpreadElement",

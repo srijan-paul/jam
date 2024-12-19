@@ -2,6 +2,8 @@
   "type": "Program",
   "start": 0,
   "end": 86,
+  "sourceType": "script",
+  "interpreter": null,
   "body": [
     {
       "type": "ExpressionStatement",
@@ -21,54 +23,57 @@
               "type": "Property",
               "start": 7,
               "end": 8,
+              "method": false,
               "key": {
                 "type": "Identifier",
                 "start": 7,
                 "end": 8,
                 "name": "a"
               },
+              "computed": false,
+              "kind": "init",
               "value": {
                 "type": "Identifier",
                 "start": 7,
                 "end": 8,
                 "name": "a"
               },
-              "kind": "init",
-              "computed": false,
-              "shorthand": true,
-              "method": false
+              "shorthand": true
             },
             {
               "type": "Property",
               "start": 14,
               "end": 17,
+              "method": false,
               "key": {
                 "type": "Identifier",
                 "start": 14,
                 "end": 15,
                 "name": "a"
               },
+              "computed": false,
+              "kind": "init",
               "value": {
                 "type": "Identifier",
                 "start": 16,
                 "end": 17,
                 "name": "a"
               },
-              "kind": "init",
-              "computed": false,
-              "shorthand": false,
-              "method": false
+              "shorthand": false
             },
             {
               "type": "Property",
               "start": 23,
               "end": 28,
+              "method": false,
               "key": {
                 "type": "Identifier",
                 "start": 23,
                 "end": 24,
                 "name": "a"
               },
+              "computed": false,
+              "kind": "init",
               "value": {
                 "type": "AssignmentPattern",
                 "start": 25,
@@ -86,21 +91,21 @@
                   "name": "a"
                 }
               },
-              "kind": "init",
-              "computed": false,
-              "shorthand": false,
-              "method": false
+              "shorthand": false
             },
             {
               "type": "Property",
               "start": 35,
               "end": 41,
+              "method": false,
               "key": {
                 "type": "Identifier",
                 "start": 35,
                 "end": 36,
                 "name": "a"
               },
+              "computed": true,
+              "kind": "init",
               "value": {
                 "type": "ObjectPattern",
                 "start": 38,
@@ -110,40 +115,40 @@
                     "type": "Property",
                     "start": 39,
                     "end": 40,
+                    "method": false,
                     "key": {
                       "type": "Identifier",
                       "start": 39,
                       "end": 40,
                       "name": "a"
                     },
+                    "computed": false,
+                    "kind": "init",
                     "value": {
                       "type": "Identifier",
                       "start": 39,
                       "end": 40,
                       "name": "a"
                     },
-                    "kind": "init",
-                    "computed": false,
-                    "shorthand": true,
-                    "method": false
+                    "shorthand": true
                   }
                 ]
               },
-              "kind": "init",
-              "computed": true,
-              "shorthand": false,
-              "method": false
+              "shorthand": false
             },
             {
               "type": "Property",
               "start": 47,
               "end": 62,
+              "method": false,
               "key": {
                 "type": "Identifier",
                 "start": 47,
                 "end": 48,
                 "name": "a"
               },
+              "computed": false,
+              "kind": "init",
               "value": {
                 "type": "MemberExpression",
                 "start": 49,
@@ -168,21 +173,21 @@
                 },
                 "computed": true
               },
-              "kind": "init",
-              "computed": false,
-              "shorthand": false,
-              "method": false
+              "shorthand": false
             },
             {
               "type": "Property",
               "start": 69,
               "end": 77,
+              "method": false,
               "key": {
                 "type": "Identifier",
                 "start": 69,
                 "end": 70,
                 "name": "a"
               },
+              "computed": false,
+              "kind": "init",
               "value": {
                 "type": "MemberExpression",
                 "start": 71,
@@ -200,10 +205,7 @@
                 },
                 "computed": false
               },
-              "kind": "init",
-              "computed": false,
-              "shorthand": false,
-              "method": false
+              "shorthand": false
             }
           ]
         },

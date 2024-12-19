@@ -137,10 +137,6 @@
             }
           ]
         },
-        "extra": {
-          "parenthesized": true,
-          "parenStart": 0
-        },
         "trailingComments": [
           {
             "type": "CommentBlock",
@@ -295,10 +291,6 @@
               "end": 128
             }
           ]
-        },
-        "extra": {
-          "parenthesized": true,
-          "parenStart": 114
         },
         "trailingComments": [
           {

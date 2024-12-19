@@ -29,10 +29,6 @@
             "start": 6,
             "end": 7,
             "name": "b"
-          },
-          "extra": {
-            "parenthesized": true,
-            "parenStart": 0
           }
         },
         "operator": "??",

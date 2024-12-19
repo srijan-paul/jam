@@ -55,10 +55,6 @@
                   "end": 31,
                   "name": "a"
                 }
-              },
-              "extra": {
-                "parenthesized": true,
-                "parenStart": 18
               }
             }
           },
@@ -93,10 +89,6 @@
                   "end": 55,
                   "name": "a"
                 }
-              },
-              "extra": {
-                "parenthesized": true,
-                "parenStart": 36
               }
             }
           },
@@ -131,10 +123,6 @@
                   "end": 81,
                   "name": "a"
                 }
-              },
-              "extra": {
-                "parenthesized": true,
-                "parenStart": 60
               }
             }
           }

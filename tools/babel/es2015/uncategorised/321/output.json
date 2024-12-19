@@ -38,10 +38,7 @@
                   "end": 6,
                   "name": "x"
                 },
-                "kind": "init",
-                "extra": {
-                  "shorthand": true
-                }
+                "kind": "init"
               }
             ]
           },

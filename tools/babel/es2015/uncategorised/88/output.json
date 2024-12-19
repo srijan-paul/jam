@@ -26,10 +26,6 @@
         "type": "StringLiteral",
         "start": 20,
         "end": 22,
-        "extra": {
-          "rawValue": "",
-          "raw": "\"\""
-        },
         "value": ""
       },
       "attributes": []
@@ -61,8 +57,5 @@
       "declaration": null
     }
   ],
-  "directives": [],
-  "extra": {
-    "topLevelAwait": false
-  }
+  "directives": []
 }

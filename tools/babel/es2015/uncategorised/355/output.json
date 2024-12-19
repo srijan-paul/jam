@@ -55,10 +55,7 @@
                   "raw": "null"
                 }
               },
-              "kind": "init",
-              "extra": {
-                "shorthand": true
-              }
+              "kind": "init"
             }
           ]
         }

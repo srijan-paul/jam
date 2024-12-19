@@ -33,10 +33,7 @@
               "end": 3,
               "name": "x"
             },
-            "kind": "init",
-            "extra": {
-              "shorthand": true
-            }
+            "kind": "init"
           },
           {
             "type": "SpreadElement",
@@ -68,10 +65,7 @@
               "end": 12,
               "name": "a"
             },
-            "kind": "init",
-            "extra": {
-              "shorthand": true
-            }
+            "kind": "init"
           },
           {
             "type": "SpreadElement",
@@ -103,17 +97,9 @@
               "end": 21,
               "name": "c"
             },
-            "kind": "init",
-            "extra": {
-              "shorthand": true
-            }
+            "kind": "init"
           }
-        ],
-        "extra": {
-          "trailingComma": 21,
-          "parenthesized": true,
-          "parenStart": 0
-        }
+        ]
       }
     }
   ]

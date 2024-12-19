@@ -50,10 +50,7 @@
                   "raw": "42"
                 }
               },
-              "kind": "init",
-              "extra": {
-                "shorthand": true
-              }
+              "kind": "init"
             },
             {
               "type": "Property",
@@ -96,10 +93,6 @@
           "start": 23,
           "end": 25,
           "properties": []
-        },
-        "extra": {
-          "parenthesized": true,
-          "parenStart": 0
         }
       }
     }

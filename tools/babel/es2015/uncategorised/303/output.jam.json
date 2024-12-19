@@ -2,6 +2,8 @@
   "type": "Program",
   "start": 0,
   "end": 16,
+  "sourceType": "script",
+  "interpreter": null,
   "body": [
     {
       "type": "VariableDeclaration",
@@ -21,22 +23,22 @@
                 "type": "Property",
                 "start": 5,
                 "end": 8,
+                "method": false,
                 "key": {
                   "type": "Identifier",
                   "start": 5,
                   "end": 8,
                   "name": "get"
                 },
+                "computed": false,
+                "kind": "init",
                 "value": {
                   "type": "Identifier",
                   "start": 5,
                   "end": 8,
                   "name": "get"
                 },
-                "kind": "init",
-                "computed": false,
-                "shorthand": true,
-                "method": false
+                "shorthand": true
               }
             ]
           },

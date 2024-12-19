@@ -19,9 +19,6 @@
           "end": 3,
           "name": "log"
         },
-        "extra": {
-          "trailingComma": 13
-        },
         "arguments": [
           {
             "type": "Identifier",

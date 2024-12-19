@@ -54,8 +54,5 @@
         "optional": false
       }
     }
-  ],
-  "extra": {
-    "topLevelAwait": false
-  }
+  ]
 }

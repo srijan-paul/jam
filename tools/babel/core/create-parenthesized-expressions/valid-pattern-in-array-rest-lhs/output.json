@@ -27,11 +27,7 @@
                 "type": "Identifier",
                 "start": 5,
                 "end": 6,
-                "name": "a",
-                "extra": {
-                  "parenthesized": true,
-                  "parenStart": 4
-                }
+                "name": "a"
               }
             }
           ]

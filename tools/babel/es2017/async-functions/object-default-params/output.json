@@ -65,10 +65,7 @@
                         "raw": "\"bar\""
                       }
                     },
-                    "kind": "init",
-                    "extra": {
-                      "shorthand": true
-                    }
+                    "kind": "init"
                   }
                 ]
               }

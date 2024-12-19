@@ -37,7 +37,7 @@ const tests_to_run = [_][]const u8{
     "comments",
 };
 
-fn runTest(al: Allocator, d: std.fs.Dir, filename: []const u8, out: *json.ObjectMap) !ParseResult {
+fn runTest(al: Allocator, d: std.fs.Dir, key: []const u8, filename: []const u8, out: *json.ObjectMap) !ParseResult {
     // Read the expected json output
     const expected_json = try d.readFileAlloc(al, "output.json", std.math.maxInt(u32));
     const expected = try json.parseFromSlice(json.Value, al, expected_json, .{});
@@ -64,7 +64,7 @@ fn runTest(al: Allocator, d: std.fs.Dir, filename: []const u8, out: *json.Object
     const estree_json: []const u8 = try js.estree.toJsonString(
         al,
         result.tree,
-        result.tree.root,
+        js.estree.BabelEstreeOptions,
     );
 
     try d.writeFile(.{
@@ -79,7 +79,7 @@ fn runTest(al: Allocator, d: std.fs.Dir, filename: []const u8, out: *json.Object
     else
         .fail_with_ast_mismatch;
 
-    try out.put(filename, json.Value{ .string = @tagName(test_result) });
+    try out.put(key, json.Value{ .string = @tagName(test_result) });
     return test_result;
 }
 
@@ -100,9 +100,8 @@ fn runTests(al: Allocator, babel_tests_dir: []const u8) !json.ObjectMap {
 
             // For every .js file, parse and compare ASTs with babel
             const parent_dir_path = std.fs.path.dirname(entry.path) orelse continue;
-            if (std.mem.eql(u8, parent_dir_path, "class-private-methods/combined")) continue;
-
-            _ = try runTest(al, entry.dir, entry.basename, &out);
+            const key = try std.fs.path.join(al, &.{ subdir_path, parent_dir_path });
+            _ = try runTest(al, entry.dir, key, entry.basename, &out);
         }
     }
 

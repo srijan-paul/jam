@@ -29,11 +29,7 @@
             "start": 5,
             "end": 6,
             "value": 0,
-            "raw": "0",
-            "extra": {
-              "parenthesized": true,
-              "parenStart": 4
-            }
+            "raw": "0"
           },
           "consequent": {
             "type": "Literal",

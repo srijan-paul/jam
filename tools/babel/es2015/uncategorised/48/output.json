@@ -70,15 +70,7 @@
                 "end": 26,
                 "name": "z"
               }
-            ],
-            "extra": {
-              "parenthesized": true,
-              "parenStart": 18
-            }
-          },
-          "extra": {
-            "parenthesized": true,
-            "parenStart": 7
+            ]
           }
         }
       }

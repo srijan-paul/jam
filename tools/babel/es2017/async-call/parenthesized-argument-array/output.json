@@ -40,11 +40,7 @@
                     "type": "Identifier",
                     "start": 19,
                     "end": 22,
-                    "name": "foo",
-                    "extra": {
-                      "parenthesized": true,
-                      "parenStart": 18
-                    }
+                    "name": "foo"
                   }
                 ]
               }

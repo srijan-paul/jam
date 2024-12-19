@@ -2,6 +2,8 @@
   "type": "Program",
   "start": 0,
   "end": 50,
+  "sourceType": "script",
+  "interpreter": null,
   "body": [
     {
       "type": "TryStatement",
@@ -43,33 +45,36 @@
                   "type": "Property",
                   "start": 21,
                   "end": 22,
+                  "method": false,
                   "key": {
                     "type": "Identifier",
                     "start": 21,
                     "end": 22,
                     "name": "c"
                   },
+                  "computed": false,
+                  "kind": "init",
                   "value": {
                     "type": "Identifier",
                     "start": 21,
                     "end": 22,
                     "name": "c"
                   },
-                  "kind": "init",
-                  "computed": false,
-                  "shorthand": true,
-                  "method": false
+                  "shorthand": true
                 },
                 {
                   "type": "Property",
                   "start": 24,
                   "end": 29,
+                  "method": false,
                   "key": {
                     "type": "Identifier",
                     "start": 24,
                     "end": 25,
                     "name": "d"
                   },
+                  "computed": false,
+                  "kind": "init",
                   "value": {
                     "type": "AssignmentExpression",
                     "start": 26,
@@ -88,21 +93,21 @@
                       "value": "0"
                     }
                   },
-                  "kind": "init",
-                  "computed": false,
-                  "shorthand": false,
-                  "method": false
+                  "shorthand": false
                 },
                 {
                   "type": "Property",
                   "start": 32,
                   "end": 38,
+                  "method": false,
                   "key": {
                     "type": "Identifier",
                     "start": 32,
                     "end": 33,
                     "name": "f"
                   },
+                  "computed": true,
+                  "kind": "init",
                   "value": {
                     "type": "AssignmentExpression",
                     "start": 35,
@@ -121,10 +126,7 @@
                       "value": "0"
                     }
                   },
-                  "kind": "init",
-                  "computed": true,
-                  "shorthand": false,
-                  "method": false
+                  "shorthand": false
                 },
                 {
                   "type": "AssignmentPattern",

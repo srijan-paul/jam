@@ -84,11 +84,7 @@
                   },
                   "kind": "init"
                 }
-              ],
-              "extra": {
-                "parenthesized": true,
-                "parenStart": 16
-              }
+              ]
             }
           }
         }

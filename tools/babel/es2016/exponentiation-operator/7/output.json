@@ -38,10 +38,6 @@
               "value": 1,
               "raw": "1"
             }
-          },
-          "extra": {
-            "parenthesized": true,
-            "parenStart": 0
           }
         },
         "operator": "*",

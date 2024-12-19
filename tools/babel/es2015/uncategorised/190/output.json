@@ -43,10 +43,7 @@
                       "end": 8,
                       "name": "a"
                     },
-                    "kind": "init",
-                    "extra": {
-                      "shorthand": true
-                    }
+                    "kind": "init"
                   },
                   {
                     "type": "Property",
@@ -67,10 +64,7 @@
                       "end": 11,
                       "name": "b"
                     },
-                    "kind": "init",
-                    "extra": {
-                      "shorthand": true
-                    }
+                    "kind": "init"
                   }
                 ]
               },

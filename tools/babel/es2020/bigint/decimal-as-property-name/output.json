@@ -210,11 +210,7 @@
             },
             "shorthand": false
           }
-        ],
-        "extra": {
-          "parenthesized": true,
-          "parenStart": 0
-        }
+        ]
       }
     }
   ]

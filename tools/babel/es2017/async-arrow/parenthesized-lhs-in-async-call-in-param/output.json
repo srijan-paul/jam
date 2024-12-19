@@ -53,11 +53,7 @@
                         "type": "Identifier",
                         "start": 19,
                         "end": 20,
-                        "name": "f",
-                        "extra": {
-                          "parenthesized": true,
-                          "parenStart": 18
-                        }
+                        "name": "f"
                       },
                       "right": {
                         "type": "ArrayExpression",

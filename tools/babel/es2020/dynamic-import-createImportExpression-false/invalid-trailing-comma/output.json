@@ -13,9 +13,6 @@
         "type": "ImportExpression",
         "start": 0,
         "end": 14,
-        "extra": {
-          "trailingComma": 12
-        },
         "source": {
           "type": "Literal",
           "start": 7,

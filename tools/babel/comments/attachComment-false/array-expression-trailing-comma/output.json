@@ -92,9 +92,6 @@
             "type": "ArrayExpression",
             "start": 105,
             "end": 162,
-            "extra": {
-              "trailingComma": 140
-            },
             "elements": [
               {
                 "type": "Literal",
@@ -163,9 +160,6 @@
             "type": "ArrayExpression",
             "start": 191,
             "end": 220,
-            "extra": {
-              "trailingComma": 200
-            },
             "elements": [
               {
                 "type": "Literal",

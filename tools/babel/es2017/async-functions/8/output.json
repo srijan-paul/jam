@@ -38,10 +38,7 @@
                   "end": 12,
                   "name": "async"
                 },
-                "kind": "init",
-                "extra": {
-                  "shorthand": true
-                }
+                "kind": "init"
               }
             ]
           },

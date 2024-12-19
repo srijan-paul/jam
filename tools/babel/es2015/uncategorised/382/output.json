@@ -30,10 +30,6 @@
               "type": "NumericLiteral",
               "start": 17,
               "end": 18,
-              "extra": {
-                "rawValue": 1,
-                "raw": "1"
-              },
               "value": 1
             }
           }
@@ -42,8 +38,5 @@
       }
     }
   ],
-  "directives": [],
-  "extra": {
-    "topLevelAwait": false
-  }
+  "directives": []
 }

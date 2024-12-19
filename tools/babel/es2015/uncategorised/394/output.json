@@ -121,10 +121,6 @@
               "type": "StringLiteral",
               "start": 32,
               "end": 35,
-              "extra": {
-                "rawValue": "c",
-                "raw": "'c'"
-              },
               "value": "c"
             }
           }

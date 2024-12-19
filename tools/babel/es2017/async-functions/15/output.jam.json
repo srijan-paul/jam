@@ -2,6 +2,8 @@
   "type": "Program",
   "start": 0,
   "end": 54,
+  "sourceType": "script",
+  "interpreter": null,
   "body": [
     {
       "type": "VariableDeclaration",
@@ -27,43 +29,49 @@
                 "type": "Property",
                 "start": 10,
                 "end": 14,
+                "method": false,
                 "key": {
                   "type": "Identifier",
                   "start": 10,
                   "end": 11,
                   "name": "a"
                 },
+                "computed": false,
+                "kind": "init",
                 "value": {
                   "type": "Literal",
                   "start": 13,
                   "end": 14,
                   "value": "1"
                 },
-                "kind": "init",
-                "computed": false,
-                "shorthand": false,
-                "method": false
+                "shorthand": false
               },
               {
                 "type": "Property",
                 "start": 16,
                 "end": 52,
+                "method": false,
                 "key": {
                   "type": "Identifier",
                   "start": 22,
                   "end": 25,
                   "name": "foo"
                 },
+                "computed": false,
+                "kind": "init",
                 "value": {
                   "type": "Property",
                   "start": 22,
                   "end": 52,
+                  "method": true,
                   "key": {
                     "type": "Identifier",
                     "start": 22,
                     "end": 25,
                     "name": "foo"
                   },
+                  "computed": false,
+                  "kind": "init",
                   "value": {
                     "type": "FunctionExpression",
                     "start": 25,
@@ -103,15 +111,9 @@
                       ]
                     }
                   },
-                  "kind": "init",
-                  "computed": false,
-                  "shorthand": false,
-                  "method": true
+                  "shorthand": false
                 },
-                "kind": "init",
-                "computed": false,
-                "shorthand": false,
-                "method": false
+                "shorthand": false
               }
             ]
           }

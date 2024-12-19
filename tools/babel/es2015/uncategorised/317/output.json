@@ -30,9 +30,6 @@
                   "type": "RegExpLiteral",
                   "start": 3,
                   "end": 7,
-                  "extra": {
-                    "raw": "/\\d/"
-                  },
                   "pattern": "\\d",
                   "flags": ""
                 },
@@ -49,10 +46,6 @@
                   "type": "StringLiteral",
                   "start": 13,
                   "end": 16,
-                  "extra": {
-                    "rawValue": "1",
-                    "raw": "'1'"
-                  },
                   "value": "1"
                 }
               ]
@@ -62,10 +55,6 @@
               "type": "NumericLiteral",
               "start": 18,
               "end": 19,
-              "extra": {
-                "rawValue": 0,
-                "raw": "0"
-              },
               "value": 0
             }
           }

@@ -63,10 +63,7 @@
                   "end": 14,
                   "name": "c"
                 },
-                "kind": "init",
-                "extra": {
-                  "shorthand": true
-                }
+                "kind": "init"
               },
               {
                 "type": "Property",
@@ -98,10 +95,7 @@
                     "name": "e"
                   }
                 },
-                "kind": "init",
-                "extra": {
-                  "shorthand": true
-                }
+                "kind": "init"
               },
               {
                 "type": "Property",
@@ -162,11 +156,7 @@
                         "start": 33,
                         "end": 34,
                         "value": 0,
-                        "raw": "0",
-                        "extra": {
-                          "parenthesized": true,
-                          "parenStart": 32
-                        }
+                        "raw": "0"
                       },
                       "computed": false,
                       "property": {

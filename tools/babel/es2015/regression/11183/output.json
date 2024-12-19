@@ -31,10 +31,6 @@
         "type": "NumericLiteral",
         "start": 11,
         "end": 13,
-        "extra": {
-          "rawValue": 5,
-          "raw": "05"
-        },
         "value": 5
       }
     },
@@ -65,11 +61,6 @@
               "type": "DirectiveLiteral",
               "start": 30,
               "end": 42,
-              "extra": {
-                "rawValue": "use strict",
-                "raw": "'use strict'",
-                "expressionValue": "use strict"
-              },
               "value": "use strict"
             }
           }
@@ -84,10 +75,6 @@
         "type": "NumericLiteral",
         "start": 45,
         "end": 47,
-        "extra": {
-          "rawValue": 5,
-          "raw": "05"
-        },
         "value": 5
       }
     }

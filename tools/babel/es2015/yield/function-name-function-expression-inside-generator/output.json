@@ -47,10 +47,6 @@
                 "start": 37,
                 "end": 39,
                 "body": []
-              },
-              "extra": {
-                "parenthesized": true,
-                "parenStart": 19
               }
             }
           }

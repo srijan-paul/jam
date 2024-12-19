@@ -32,17 +32,10 @@
         "type": "StringLiteral",
         "start": 31,
         "end": 39,
-        "extra": {
-          "rawValue": "crypto",
-          "raw": "\"crypto\""
-        },
         "value": "crypto"
       },
       "attributes": []
     }
   ],
-  "directives": [],
-  "extra": {
-    "topLevelAwait": false
-  }
+  "directives": []
 }

@@ -24,10 +24,6 @@
             "type": "StringLiteral",
             "start": 71,
             "end": 98,
-            "extra": {
-              "rawValue": "shouldHaveFilenameLocProp",
-              "raw": "\"shouldHaveFilenameLocProp\""
-            },
             "value": "shouldHaveFilenameLocProp"
           }
         }

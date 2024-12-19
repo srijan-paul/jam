@@ -36,11 +36,7 @@
                 "end": 5,
                 "name": "x"
               },
-              "optional": false,
-              "extra": {
-                "parenthesized": true,
-                "parenStart": 1
-              }
+              "optional": false
             }
           ]
         },

@@ -47,10 +47,7 @@
                         "end": 15,
                         "name": "length"
                       },
-                      "kind": "init",
-                      "extra": {
-                        "shorthand": true
-                      }
+                      "kind": "init"
                     }
                   ]
                 }

@@ -42,10 +42,7 @@
                   "end": 12,
                   "name": "x"
                 },
-                "kind": "init",
-                "extra": {
-                  "shorthand": true
-                }
+                "kind": "init"
               },
               {
                 "type": "RestElement",
@@ -66,10 +63,6 @@
           "start": 21,
           "end": 24,
           "body": []
-        },
-        "extra": {
-          "parenthesized": true,
-          "parenStart": 0
         }
       }
     }

@@ -2,6 +2,8 @@
   "type": "Program",
   "start": 0,
   "end": 118,
+  "sourceType": "script",
+  "interpreter": null,
   "body": [
     {
       "type": "ExpressionStatement",
@@ -20,22 +22,28 @@
               "type": "Property",
               "start": 11,
               "end": 84,
+              "method": false,
               "key": {
                 "type": "Identifier",
                 "start": 35,
                 "end": 36,
                 "name": "f"
               },
+              "computed": false,
+              "kind": "init",
               "value": {
                 "type": "Property",
                 "start": 35,
                 "end": 84,
+                "method": true,
                 "key": {
                   "type": "Identifier",
                   "start": 35,
                   "end": 36,
                   "name": "f"
                 },
+                "computed": false,
+                "kind": "init",
                 "value": {
                   "type": "FunctionExpression",
                   "start": 45,
@@ -58,15 +66,9 @@
                     "body": []
                   }
                 },
-                "kind": "init",
-                "computed": false,
-                "shorthand": false,
-                "method": true
+                "shorthand": false
               },
-              "kind": "init",
-              "computed": false,
-              "shorthand": false,
-              "method": false
+              "shorthand": false
             }
           ]
         },
@@ -80,22 +82,28 @@
                 "type": "Property",
                 "start": 91,
                 "end": 113,
+                "method": false,
                 "key": {
                   "type": "Identifier",
                   "start": 106,
                   "end": 107,
                   "name": "f"
                 },
+                "computed": false,
+                "kind": "init",
                 "value": {
                   "type": "Property",
                   "start": 106,
                   "end": 113,
+                  "method": true,
                   "key": {
                     "type": "Identifier",
                     "start": 106,
                     "end": 107,
                     "name": "f"
                   },
+                  "computed": false,
+                  "kind": "init",
                   "value": {
                     "type": "FunctionExpression",
                     "start": 108,
@@ -111,15 +119,9 @@
                       "body": []
                     }
                   },
-                  "kind": "init",
-                  "computed": false,
-                  "shorthand": false,
-                  "method": true
+                  "shorthand": false
                 },
-                "kind": "init",
-                "computed": false,
-                "shorthand": false,
-                "method": false
+                "shorthand": false
               }
             ]
           }

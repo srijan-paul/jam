@@ -81,8 +81,5 @@
       "attributes": [],
       "exported": null
     }
-  ],
-  "extra": {
-    "topLevelAwait": false
-  }
+  ]
 }

@@ -23,11 +23,7 @@
               "type": "Identifier",
               "start": 2,
               "end": 3,
-              "name": "x",
-              "extra": {
-                "parenthesized": true,
-                "parenStart": 1
-              }
+              "name": "x"
             }
           ]
         },

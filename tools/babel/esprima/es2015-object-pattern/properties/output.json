@@ -38,10 +38,7 @@
                   "end": 6,
                   "name": "a"
                 },
-                "kind": "init",
-                "extra": {
-                  "shorthand": true
-                }
+                "kind": "init"
               },
               {
                 "type": "Property",
@@ -74,10 +71,7 @@
                     "raw": "0"
                   }
                 },
-                "kind": "init",
-                "extra": {
-                  "shorthand": true
-                }
+                "kind": "init"
               },
               {
                 "type": "Property",

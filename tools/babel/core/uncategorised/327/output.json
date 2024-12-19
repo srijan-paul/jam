@@ -24,10 +24,6 @@
           "type": "NumericLiteral",
           "start": 12,
           "end": 13,
-          "extra": {
-            "rawValue": 2,
-            "raw": "2"
-          },
           "value": 2
         }
       }

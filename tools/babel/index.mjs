@@ -9,13 +9,14 @@ const subdirs = [
 ]
 
 // taken and modified from https://github.com/babel/babel/issues/11239
-function removeASTLocation(ast) {
+function removeAstTrivia(ast) {
 	if (Array.isArray(ast)) {
-		ast.forEach(a => removeASTLocation(a));
+		ast.forEach(a => removeAstTrivia(a));
 	} else if (typeof ast === 'object' && ast !== null) {
 		delete ast['loc'];
+		delete ast['extra']
 		const values = Object.values(ast).filter(v => Array.isArray(v) || typeof v === 'object');
-		removeASTLocation(values);
+		removeAstTrivia(values);
 	}
 };
 
@@ -29,7 +30,6 @@ for (const subdir of subdirs) {
 
 		const ext = path.extname(jsFile)
 		if (ext !== ".js" && ext !== ".mjs") continue;
-		console.log(jsFile)
 
 		const parentDir = path.dirname(jsFile)
 		const optionsFile = path.join(parentDir, "options.json")
@@ -45,7 +45,7 @@ for (const subdir of subdirs) {
 		let ast;
 		try {
 			ast = parse(code, options)
-			removeASTLocation(ast)
+			removeAstTrivia(ast)
 		} catch (error) {
 			ast = { error: error.toString() }
 		}

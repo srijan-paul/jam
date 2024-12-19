@@ -126,11 +126,7 @@
                 }
               ]
             }
-          ],
-          "extra": {
-            "parenthesized": true,
-            "parenStart": 0
-          }
+          ]
         },
         "arguments": [
           {

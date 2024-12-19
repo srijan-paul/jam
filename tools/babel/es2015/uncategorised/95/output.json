@@ -60,17 +60,10 @@
         "type": "StringLiteral",
         "start": 48,
         "end": 56,
-        "extra": {
-          "rawValue": "crypto",
-          "raw": "\"crypto\""
-        },
         "value": "crypto"
       },
       "attributes": []
     }
   ],
-  "directives": [],
-  "extra": {
-    "topLevelAwait": false
-  }
+  "directives": []
 }

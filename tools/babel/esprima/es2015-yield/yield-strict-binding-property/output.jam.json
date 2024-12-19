@@ -2,6 +2,8 @@
   "type": "Program",
   "start": 0,
   "end": 38,
+  "sourceType": "script",
+  "interpreter": null,
   "body": [
     {
       "type": "ExpressionStatement",
@@ -32,22 +34,22 @@
                 "type": "Property",
                 "start": 20,
                 "end": 28,
+                "method": false,
                 "key": {
                   "type": "Identifier",
                   "start": 20,
                   "end": 25,
                   "name": "yield"
                 },
+                "computed": false,
+                "kind": "init",
                 "value": {
                   "type": "Identifier",
                   "start": 27,
                   "end": 28,
                   "name": "x"
                 },
-                "kind": "init",
-                "computed": false,
-                "shorthand": false,
-                "method": false
+                "shorthand": false
               }
             ]
           },

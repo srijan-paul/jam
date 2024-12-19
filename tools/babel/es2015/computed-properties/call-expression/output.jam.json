@@ -2,6 +2,8 @@
   "type": "Program",
   "start": 0,
   "end": 29,
+  "sourceType": "script",
+  "interpreter": null,
   "body": [
     {
       "type": "VariableDeclaration",
@@ -27,6 +29,7 @@
                 "type": "Property",
                 "start": 15,
                 "end": 25,
+                "method": false,
                 "key": {
                   "type": "CallExpression",
                   "start": 15,
@@ -39,16 +42,15 @@
                   },
                   "arguments": []
                 },
+                "computed": true,
+                "kind": "init",
                 "value": {
                   "type": "Literal",
                   "start": 23,
                   "end": 25,
                   "value": "\"\""
                 },
-                "kind": "init",
-                "computed": true,
-                "shorthand": false,
-                "method": false
+                "shorthand": false
               }
             ]
           }

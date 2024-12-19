@@ -128,10 +128,6 @@
               ]
             }
           ]
-        },
-        "extra": {
-          "parenthesized": true,
-          "parenStart": 0
         }
       }
     },
@@ -237,10 +233,6 @@
               ]
             }
           ]
-        },
-        "extra": {
-          "parenthesized": true,
-          "parenStart": 100
         }
       }
     },
@@ -298,10 +290,6 @@
               ]
             }
           ]
-        },
-        "extra": {
-          "parenthesized": true,
-          "parenStart": 181
         }
       }
     }

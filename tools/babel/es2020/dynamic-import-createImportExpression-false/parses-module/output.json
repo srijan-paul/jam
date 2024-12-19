@@ -23,18 +23,11 @@
             "type": "StringLiteral",
             "start": 7,
             "end": 16,
-            "extra": {
-              "rawValue": "test.js",
-              "raw": "'test.js'"
-            },
             "value": "test.js"
           }
         ]
       }
     }
   ],
-  "directives": [],
-  "extra": {
-    "topLevelAwait": false
-  }
+  "directives": []
 }

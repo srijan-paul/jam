@@ -13,9 +13,6 @@
         "type": "ArrayExpression",
         "start": 0,
         "end": 7,
-        "extra": {
-          "trailingComma": 5
-        },
         "elements": [
           {
             "type": "SpreadElement",

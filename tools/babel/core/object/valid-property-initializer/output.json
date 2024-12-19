@@ -61,10 +61,7 @@
                       "raw": "123"
                     }
                   },
-                  "kind": "init",
-                  "extra": {
-                    "shorthand": true
-                  }
+                  "kind": "init"
                 },
                 {
                   "type": "Property",
@@ -99,10 +96,7 @@
                   },
                   "kind": "init"
                 }
-              ],
-              "extra": {
-                "trailingComma": 41
-              }
+              ]
             },
             "right": {
               "type": "ObjectExpression",

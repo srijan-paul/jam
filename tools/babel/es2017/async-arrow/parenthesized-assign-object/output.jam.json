@@ -2,6 +2,8 @@
   "type": "Program",
   "start": 0,
   "end": 44,
+  "sourceType": "script",
+  "interpreter": null,
   "body": [
     {
       "type": "ExpressionStatement",
@@ -24,43 +26,43 @@
                 "type": "Property",
                 "start": 9,
                 "end": 21,
+                "method": false,
                 "key": {
                   "type": "Identifier",
                   "start": 9,
                   "end": 18,
                   "name": "__proto__"
                 },
+                "computed": false,
+                "kind": "init",
                 "value": {
                   "type": "Identifier",
                   "start": 20,
                   "end": 21,
                   "name": "x"
                 },
-                "kind": "init",
-                "computed": false,
-                "shorthand": false,
-                "method": false
+                "shorthand": false
               },
               {
                 "type": "Property",
                 "start": 23,
                 "end": 35,
+                "method": false,
                 "key": {
                   "type": "Identifier",
                   "start": 23,
                   "end": 32,
                   "name": "__proto__"
                 },
+                "computed": false,
+                "kind": "init",
                 "value": {
                   "type": "Identifier",
                   "start": 34,
                   "end": 35,
                   "name": "y"
                 },
-                "kind": "init",
-                "computed": false,
-                "shorthand": false,
-                "method": false
+                "shorthand": false
               }
             ]
           }

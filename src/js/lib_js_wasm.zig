@@ -100,11 +100,7 @@ fn parseJsImpl(source: []const u8, source_type: root.Parser.SourceType) !ParseRe
 
     defer result.deinit();
 
-    const json_str = try root.estree.toJsonString(
-        wasm_allocator,
-        result.tree,
-        result.tree.root,
-    );
+    const json_str = try root.estree.toJsonString(wasm_allocator, result.tree, .{});
     const json_str_z = try nullTerminate(json_str);
     return ParseResult{
         .ok = true,

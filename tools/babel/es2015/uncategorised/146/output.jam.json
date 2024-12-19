@@ -2,6 +2,8 @@
   "type": "Program",
   "start": 0,
   "end": 12,
+  "sourceType": "script",
+  "interpreter": null,
   "body": [
     {
       "type": "ExpressionStatement",
@@ -16,12 +18,15 @@
             "type": "Property",
             "start": 3,
             "end": 10,
+            "method": true,
             "key": {
               "type": "Identifier",
               "start": 3,
               "end": 4,
               "name": "x"
             },
+            "computed": true,
+            "kind": "init",
             "value": {
               "type": "FunctionExpression",
               "start": 5,
@@ -37,10 +42,7 @@
                 "body": []
               }
             },
-            "kind": "init",
-            "computed": true,
-            "shorthand": false,
-            "method": true
+            "shorthand": false
           }
         ]
       }

@@ -42,10 +42,6 @@
           "start": 20,
           "end": 22,
           "body": []
-        },
-        "extra": {
-          "parenthesized": true,
-          "parenStart": 0
         }
       }
     }

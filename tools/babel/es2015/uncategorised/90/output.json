@@ -32,18 +32,11 @@
         "type": "StringLiteral",
         "start": 24,
         "end": 31,
-        "extra": {
-          "rawValue": "other",
-          "raw": "\"other\""
-        },
         "value": "other"
       },
       "declaration": null,
       "attributes": []
     }
   ],
-  "directives": [],
-  "extra": {
-    "topLevelAwait": false
-  }
+  "directives": []
 }

@@ -39,10 +39,6 @@
             "end": 12,
             "value": 2,
             "raw": "2"
-          },
-          "extra": {
-            "parenthesized": true,
-            "parenStart": 5
           }
         }
       }

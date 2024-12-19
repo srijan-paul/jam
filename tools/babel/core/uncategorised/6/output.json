@@ -31,10 +31,6 @@
             "end": 6,
             "value": 2,
             "raw": "2"
-          },
-          "extra": {
-            "parenthesized": true,
-            "parenStart": 0
           }
         },
         "operator": "*",

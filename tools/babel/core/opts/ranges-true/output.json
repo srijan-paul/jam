@@ -44,10 +44,6 @@
               8,
               9
             ],
-            "extra": {
-              "rawValue": 1,
-              "raw": "1"
-            },
             "value": 1
           }
         }
@@ -108,10 +104,6 @@
                 24,
                 25
               ],
-              "extra": {
-                "rawValue": 1,
-                "raw": "1"
-              },
               "value": 1
             }
           }
@@ -144,10 +136,6 @@
               29,
               30
             ],
-            "extra": {
-              "rawValue": 1,
-              "raw": "1"
-            },
             "value": 1
           },
           {
@@ -158,17 +146,9 @@
               32,
               33
             ],
-            "extra": {
-              "rawValue": 2,
-              "raw": "2"
-            },
             "value": 2
           }
-        ],
-        "extra": {
-          "parenthesized": true,
-          "parenStart": 28
-        }
+        ]
       }
     }
   ],

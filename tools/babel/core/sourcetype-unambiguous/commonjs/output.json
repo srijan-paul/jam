@@ -35,10 +35,6 @@
                 "type": "StringLiteral",
                 "start": 18,
                 "end": 23,
-                "extra": {
-                  "rawValue": "foo",
-                  "raw": "\"foo\""
-                },
                 "value": "foo"
               }
             ]
@@ -48,8 +44,5 @@
       "kind": "var"
     }
   ],
-  "directives": [],
-  "extra": {
-    "topLevelAwait": false
-  }
+  "directives": []
 }

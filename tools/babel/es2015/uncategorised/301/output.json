@@ -37,17 +37,10 @@
         "type": "StringLiteral",
         "start": 26,
         "end": 31,
-        "extra": {
-          "rawValue": "baz",
-          "raw": "'baz'"
-        },
         "value": "baz"
       },
       "attributes": []
     }
   ],
-  "directives": [],
-  "extra": {
-    "topLevelAwait": false
-  }
+  "directives": []
 }

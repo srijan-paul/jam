@@ -26,10 +26,6 @@
           "start": 35,
           "end": 36,
           "name": "i",
-          "extra": {
-            "parenthesized": true,
-            "parenStart": 11
-          },
           "trailingComments": [
             {
               "type": "CommentBlock",

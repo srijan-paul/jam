@@ -35,10 +35,6 @@
               "name": "b"
             },
             "optional": true
-          },
-          "extra": {
-            "parenthesized": true,
-            "parenStart": 0
           }
         },
         "computed": false,
@@ -85,10 +81,6 @@
                 "name": "b"
               },
               "optional": true
-            },
-            "extra": {
-              "parenthesized": true,
-              "parenStart": 11
             }
           },
           "computed": false,
@@ -146,10 +138,6 @@
                     "name": "b"
                   },
                   "optional": true
-                },
-                "extra": {
-                  "parenthesized": true,
-                  "parenStart": 24
                 }
               },
               "computed": false,

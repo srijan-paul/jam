@@ -2,6 +2,8 @@
   "type": "Program",
   "start": 0,
   "end": 32,
+  "sourceType": "script",
+  "interpreter": null,
   "body": [
     {
       "type": "VariableDeclaration",
@@ -21,22 +23,22 @@
                 "type": "Property",
                 "start": 5,
                 "end": 6,
+                "method": false,
                 "key": {
                   "type": "Identifier",
                   "start": 5,
                   "end": 6,
                   "name": "a"
                 },
+                "computed": false,
+                "kind": "init",
                 "value": {
                   "type": "Identifier",
                   "start": 5,
                   "end": 6,
                   "name": "a"
                 },
-                "kind": "init",
-                "computed": false,
-                "shorthand": true,
-                "method": false
+                "shorthand": true
               },
               {
                 "type": "AssignmentPattern",
@@ -59,33 +61,36 @@
                 "type": "Property",
                 "start": 11,
                 "end": 14,
+                "method": false,
                 "key": {
                   "type": "Identifier",
                   "start": 11,
                   "end": 12,
                   "name": "c"
                 },
+                "computed": false,
+                "kind": "init",
                 "value": {
                   "type": "Identifier",
                   "start": 13,
                   "end": 14,
                   "name": "d"
                 },
-                "kind": "init",
-                "computed": false,
-                "shorthand": false,
-                "method": false
+                "shorthand": false
               },
               {
                 "type": "Property",
                 "start": 15,
                 "end": 20,
+                "method": false,
                 "key": {
                   "type": "Identifier",
                   "start": 15,
                   "end": 16,
                   "name": "e"
                 },
+                "computed": false,
+                "kind": "init",
                 "value": {
                   "type": "AssignmentPattern",
                   "start": 17,
@@ -103,21 +108,21 @@
                     "value": "0"
                   }
                 },
-                "kind": "init",
-                "computed": false,
-                "shorthand": false,
-                "method": false
+                "shorthand": false
               },
               {
                 "type": "Property",
                 "start": 22,
                 "end": 28,
+                "method": false,
                 "key": {
                   "type": "Identifier",
                   "start": 22,
                   "end": 23,
                   "name": "g"
                 },
+                "computed": false,
+                "kind": "init",
                 "value": {
                   "type": "ArrayExpression",
                   "start": 25,
@@ -131,10 +136,7 @@
                     }
                   ]
                 },
-                "kind": "init",
-                "computed": false,
-                "shorthand": false,
-                "method": false
+                "shorthand": false
               }
             ]
           },
