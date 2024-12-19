@@ -386,6 +386,22 @@ pub const ExportedDeclaration = struct {
     default: bool = false,
 };
 
+pub const Number = struct {
+    value_id: ExtraData.Index,
+    token: Token.Index,
+
+    /// Get the value of this numeric literal as an f64
+    pub fn value(self: Number, t: *const Tree) f64 {
+        const info = t.getExtraData(self.value_id);
+        return info.number_value;
+    }
+};
+
+pub const Boolean = struct {
+    value: bool,
+    token: Token.Index,
+};
+
 pub const NodeData = union(enum(u8)) {
     program: ?SubRange,
     assignment_expr: BinaryPayload,
@@ -410,7 +426,13 @@ pub const NodeData = union(enum(u8)) {
     update_expr: UnaryPayload,
 
     identifier: String,
-    literal: Token.Index,
+
+    string_literal: Token.Index,
+    number_literal: Number,
+    boolean_literal: Boolean,
+    null_literal: Token.Index,
+    regex_literal: Token.Index,
+
     this: Token.Index,
     /// Represents a "missing" item in an array literal: `[,]`
     empty_array_item,
@@ -536,6 +558,7 @@ pub const ExtraData = union {
         /// Flags: generator, async, arrow, etc.
         flags: FunctionFlags,
     },
+    number_value: f64,
     for_iterator: ForIterator,
     for_in_of_iterator: ForInOfIterator,
     class: ClassInfo,

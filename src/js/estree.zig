@@ -47,7 +47,7 @@ fn subRangeToJsonArray(
     return JValue{ .array = arr };
 }
 
-fn escapeUtf8(allocator: std.mem.Allocator, str: []const u8) error{
+fn processEscapes(allocator: std.mem.Allocator, str: []const u8) error{
     OutOfMemory,
     InvalidCodePoint,
     BadEscapeSequence,
@@ -107,7 +107,14 @@ pub fn jamToEstreeTag(node: ast.NodeData) []const u8 {
         .yield_expr => "YieldExpression",
         .update_expr => "UpdateExpression",
         .identifier => "Identifier",
-        .literal => "Literal",
+
+        .string_literal,
+        .number_literal,
+        .null_literal,
+        .boolean_literal,
+        .regex_literal,
+        => "Literal",
+
         .this => "ThisExpression",
         .empty_array_item => "EmptyArrayItem",
         .array_literal => "ArrayExpression",
@@ -229,14 +236,46 @@ fn nodeToEsTree(
             const elements = try subRangeToJsonArray(al, t, maybe_elements, opts);
             try o.put("elements", elements);
         },
-        .literal => |token_id| {
+
+        .string_literal => |token_id| {
             const token = t.getToken(token_id);
-            const value = token.toByteSlice(t.source);
-            if (token.tag == .string_literal) {
-                try o.put("value", JValue{ .string = try escapeUtf8(al, value) });
-            } else {
-                try o.put("value", JValue{ .string = value });
-            }
+            const raw = token.toByteSlice(t.source);
+            try o.put("value", JValue{
+                .string = try processEscapes(al, raw[0 .. raw.len - 2]),
+            });
+            try o.put("raw", JValue{ .string = raw });
+        },
+
+        .null_literal => |token_id| {
+            const token = t.getToken(token_id);
+            const raw = token.toByteSlice(t.source);
+            try o.put("value", JNull);
+            try o.put("raw", JValue{ .string = raw });
+        },
+
+        .boolean_literal => |b| {
+            const token = t.getToken(b.token);
+            const raw = token.toByteSlice(t.source);
+            try o.put("value", JValue{ .bool = b.value });
+            try o.put("raw", JValue{ .string = raw });
+        },
+
+        .number_literal => |num| {
+            const token = t.getToken(num.token);
+            const raw = token.toByteSlice(t.source);
+            const value = num.value(t);
+            if (value == @trunc(value))
+                try o.put("value", JValue{ .number_string = raw })
+            else
+                try o.put("value", JValue{ .float = num.value(t) });
+
+            try o.put("raw", JValue{ .string = raw });
+        },
+
+        .regex_literal => |token_id| {
+            const token = t.getToken(token_id);
+            const raw = token.toByteSlice(t.source);
+            try o.put("raw", JValue{ .string = raw });
         },
 
         .export_from_declaration => |payload| {

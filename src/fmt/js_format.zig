@@ -149,9 +149,26 @@ pub fn updateExpr(_: *Self, _: *const ast.NodeData) Doc.Id {
 pub fn identifier(_: *Self, _: *const ast.NodeData) Doc.Id {
     unreachable;
 }
-pub fn literal(_: *Self, _: *const ast.NodeData) Doc.Id {
+pub fn numberLiteral(_: *Self, _: *const ast.NodeData) Doc.Id {
     unreachable;
 }
+
+pub fn stringLiteral(_: *Self, _: *const ast.NodeData) Doc.Id {
+    unreachable;
+}
+
+pub fn regexLiteral(_: *Self, _: *const ast.NodeData) Doc.Id {
+    unreachable;
+}
+
+pub fn booleanLiteral(_: *Self, _: *const ast.NodeData) Doc.Id {
+    unreachable;
+}
+
+pub fn nullLiteral(_: *Self, _: *const ast.NodeData) Doc.Id {
+    unreachable;
+}
+
 pub fn this(_: *Self, _: *const ast.NodeData) Doc.Id {
     unreachable;
 }

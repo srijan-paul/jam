@@ -4158,17 +4158,134 @@ fn parseLiteral(self: *Self, token: TokenWithId) Error!Node.Index {
     }
 
     self.current_destructure_kind.setNoAssignOrDestruct();
-    return self.addNode(
-        .{ .literal = token.id },
-        token.id,
-        token.id,
-    );
+    const payload = switch (token.token.tag) {
+        .string_literal => ast.NodeData{ .string_literal = token.id },
+        .kw_null => ast.NodeData{ .null_literal = token.id },
+        .kw_false, .kw_true => ast.NodeData{
+            .boolean_literal = .{
+                .token = token.id,
+                .value = token.token.tag == .kw_true,
+            },
+        },
+        .regex_literal => ast.NodeData{ .regex_literal = token.id },
+        else => ast.NodeData{ .number_literal = try self.parseNumericToken(&token) },
+    };
+
+    return self.addNode(payload, token.id, token.id);
+}
+
+fn parseNumericToken(self: *Self, token: *const TokenWithId) Error!ast.Number {
+    const str = token.token.toByteSlice(self.source);
+    const value: f64 = switch (token.token.tag) {
+        .legacy_octal_literal,
+        .octal_literal,
+        => parseOctal(str),
+        .decimal_literal => parseDecimal(str),
+        .binary_literal => parseBinary(str),
+        .hex_literal => parseHex(str),
+        else => unreachable,
+    };
+
+    return ast.Number{
+        .token = token.id,
+        .value_id = try self.addExtraData(
+            ast.ExtraData{ .number_value = value },
+        ),
+    };
+}
+
+fn parseDecimal(str: []const u8) f64 {
+    var i: usize = 0;
+    var decimal_part: u64 = 0;
+    while (i < str.len and std.ascii.isDigit(str[i])) : (i += 1) {
+        const ch = str[i];
+        decimal_part = decimal_part * 10 + @as(u64, @intCast(ch - '0'));
+    }
+
+    var val: f64 = @floatFromInt(decimal_part);
+
+    if (i < str.len and str[i] == '.') {
+        i += 1; // eat '.'
+        var frac: f64 = 0.1;
+        while (i < str.len and std.ascii.isDigit(str[i])) : (i += 1) {
+            const ch = str[i];
+            val += frac * @as(f64, @floatFromInt(@as(u64, @intCast(ch - '0'))));
+            frac *= 0.1;
+        }
+    }
+
+    if (i < str.len and (str[i] == 'e' or str[i] == 'E')) {
+        i += 1; // eat 'e' or 'E'
+        const sign = blk: {
+            if (str[i] == '+' or str[i] == '-') {
+                const sgn_char = str[i];
+                i += 1;
+                break :blk sgn_char;
+            } else {
+                break :blk '+';
+            }
+        };
+
+        var exp: f64 = 0;
+        while (i < str.len and std.ascii.isDigit(str[i])) : (i += 1) {
+            const ch = str[i];
+            exp = exp * 10 + @as(f64, @floatFromInt(@as(u64, @intCast(ch - '0'))));
+        }
+
+        if (sign == '-') exp = -exp;
+        val *= std.math.pow(f64, 10.0, exp);
+    }
+
+    return val;
+}
+
+fn parseOctal(str: []const u8) f64 {
+    std.debug.assert(str[0] == '0');
+
+    const numeric = if (str[1] == 'O' or str[1] == 'o')
+        str[2..]
+    else
+        str[1..];
+
+    var val: i64 = 0;
+    for (numeric) |ch|
+        val = val * 8 + @as(i64, @intCast(ch - '0'));
+
+    return @floatFromInt(val);
+}
+
+fn parseBinary(str: []const u8) f64 {
+    std.debug.assert(str[0] == '0');
+    std.debug.assert(str[1] == 'b' or str[1] == 'B');
+
+    var val: i64 = 0;
+    for (str[2..]) |ch| {
+        val = val * 2 + @as(i64, @intCast(ch - '0'));
+    }
+    return @floatFromInt(val);
+}
+
+fn parseHex(str: []const u8) f64 {
+    std.debug.assert(str[0] == '0');
+    std.debug.assert(str[1] == 'x' or str[1] == 'X');
+
+    var val: i64 = 0;
+    for (str[2..]) |ch| {
+        val <<= 4;
+        switch (ch) {
+            '0'...'9' => val |= @intCast(ch - '0'),
+            'a'...'f', 'A'...'F' => val |= @intCast(ch - 'a' + 10),
+            else => unreachable,
+        }
+    }
+
+    return @floatFromInt(val);
 }
 
 fn stringLiteral(self: *Self) Error!Node.Index {
     const token = try self.expect(.string_literal);
     self.current_destructure_kind.setNoAssignOrDestruct();
-    return self.addNode(.{ .literal = token.id }, token.id, token.id);
+    return self.addNode(.{ .string_literal = token.id }, token.id, token.id);
 }
 
 fn stringLiteralFromToken(
@@ -4176,7 +4293,7 @@ fn stringLiteralFromToken(
     token_id: Token.Index,
 ) Error!Node.Index {
     self.current_destructure_kind.setNoAssignOrDestruct();
-    return self.addNode(.{ .literal = token_id }, token_id, token_id);
+    return self.addNode(.{ .string_literal = token_id }, token_id, token_id);
 }
 
 /// Parse an arrow function that starts with an identifier token.
@@ -4903,11 +5020,7 @@ fn propertyDefinitionList(self: *Self) Error!?ast.SubRange {
             .string_literal,
             => {
                 const key_token = try self.next();
-                const key = try self.addNode(
-                    .{ .literal = key_token.id },
-                    key_token.id,
-                    key_token.id,
-                );
+                const key = try self.parseLiteral(key_token);
 
                 const property_expr = try self.completePropertyDef(key, .{});
                 destructure_kind.update(self.current_destructure_kind);
@@ -5147,9 +5260,7 @@ fn classElementName(self: *Self) Error!Node.Index {
         .hex_literal,
         .binary_literal,
         .legacy_octal_literal,
-        => {
-            return self.addNode(.{ .literal = token.id }, token.id, token.id);
-        },
+        => return try self.parseLiteral(token),
         else => {
             if (token.token.tag.isKeyword())
                 return self.identifier(token);
@@ -5500,10 +5611,10 @@ fn checkDirective(self: *const Self, stmt: Node.Index) DirectiveKind {
     );
 
     const expr = data[expr_id];
-    if (std.meta.activeTag(expr) != .literal)
+    if (std.meta.activeTag(expr) != .string_literal)
         return .not_directive;
 
-    const literal_token = self.getToken(expr.literal);
+    const literal_token = self.getToken(expr.string_literal);
     if (literal_token.tag != .string_literal)
         return .not_directive;
 

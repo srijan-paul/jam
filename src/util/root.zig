@@ -9,6 +9,7 @@ const std = @import("std");
 /// Copy `value` to a the heap and return a pointer.
 /// This function is mostly used for debugging and pretty-printing,
 /// and should be avoided in runtime code.
+// TODO: get rid of this
 pub fn copy(al: std.mem.Allocator, value: anytype) !*@TypeOf(value) {
     const ptr = try al.create(@TypeOf(value));
     ptr.* = value;

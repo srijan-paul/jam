@@ -165,7 +165,11 @@ pub fn Traverser(TControl: type) type {
                 },
 
                 // leaf nodes cannot be explored further
-                .literal,
+                .number_literal,
+                .string_literal,
+                .boolean_literal,
+                .null_literal,
+                .regex_literal,
                 .identifier,
                 .template_element,
                 .empty_statement,
@@ -234,7 +238,7 @@ test Traverser {
         .assignment_expr,
         .identifier,
         .binary_expr,
-        .literal,
-        .literal,
+        .number_literal,
+        .number_literal,
     }, ctrl.visited.items);
 }
