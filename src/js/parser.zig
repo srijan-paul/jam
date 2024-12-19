@@ -135,6 +135,9 @@ pub const Config = struct {
     jsx: bool = false,
     /// Enable typescript support
     typescript: bool = false,
+    /// Add a special ast node for expressions wrapped in '()'.
+    /// Parses `(a)` as `parenthesized_expression {  identifier }` instead of  { identifier }
+    preserve_parens: bool = true,
 };
 
 // arranged in highest to lowest binding order
@@ -261,6 +264,8 @@ scope: ScopeManager,
 /// Reset to `false` after an async arrow function is parsed.
 is_current_arrow_func_async: bool = false,
 
+config: Config,
+
 /// Bit-flags to keep track of whether the
 /// most recently parsed expression can be destructured.
 const DestructureKind = packed struct(u8) {
@@ -384,6 +389,7 @@ pub fn init(
         .tokenizer = try Tokenizer.init(source, config),
         // SAFETY: initialized below in the call to `self.startTokenizer()`
         .current = undefined,
+        .config = config,
 
         .allocator = allocator,
         .source = source,
@@ -4783,6 +4789,7 @@ fn completeArrowParamsOrGroupingExpr(
     if (!self.current_destructure_kind.can_destruct) {
         const expr = try self.completeSequenceExpr(first_expr);
         const rparen = try self.expect(.@")");
+        if (!self.config.preserve_parens) return expr;
         return self.addNode(.{ .parenthesized_expr = expr }, lparen_id, rparen.id);
     }
 
@@ -4898,6 +4905,7 @@ fn completeArrowParamsOrGroupingExpr(
 
     if (nodes.items.len == 1) {
         const expr = nodes.items[0];
+        if (!self.config.preserve_parens) return expr;
         return self.addNode(.{ .parenthesized_expr = expr }, lparen_id, rparen.id);
     }
 

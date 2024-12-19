@@ -131,7 +131,7 @@ fn testOnPassingFile(
     var parser = try Parser.init(
         allocator,
         source,
-        .{ .source_type = source_type },
+        .{ .source_type = source_type, .preserve_parens = false },
     );
     defer parser.deinit();
 
@@ -148,7 +148,7 @@ fn testOnPassingFile(
     var parser2 = try Parser.init(
         allocator,
         source_explicit,
-        .{ .source_type = source_type },
+        .{ .source_type = source_type, .preserve_parens = false },
     );
     defer parser2.deinit();
 
