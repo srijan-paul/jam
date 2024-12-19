@@ -34,7 +34,8 @@
                   "type": "Literal",
                   "start": 15,
                   "end": 28,
-                  "value": "'use\u0000strict'"
+                  "value": "use\u0000strict",
+                  "raw": "'use\\nstrict'"
                 }
               },
               {

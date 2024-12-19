@@ -57,7 +57,8 @@
                 "type": "Literal",
                 "start": 24,
                 "end": 38,
-                "value": "'../lang/task'"
+                "value": "../lang/task",
+                "raw": "'../lang/task'"
               }
             ]
           }

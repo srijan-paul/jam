@@ -24,7 +24,8 @@
             "type": "Literal",
             "start": 19,
             "end": 20,
-            "value": "1"
+            "value": 1,
+            "raw": "1"
           },
           "consequent": [
             {
@@ -58,7 +59,8 @@
                     "type": "Literal",
                     "start": 38,
                     "end": 41,
-                    "value": "'1'"
+                    "value": "1",
+                    "raw": "'1'"
                   }
                 ]
               }

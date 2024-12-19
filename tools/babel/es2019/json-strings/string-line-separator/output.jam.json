@@ -13,7 +13,8 @@
         "type": "Literal",
         "start": 1,
         "end": 17,
-        "value": "\"before after\""
+        "value": "before after",
+        "raw": "\"before after\""
       }
     }
   ]

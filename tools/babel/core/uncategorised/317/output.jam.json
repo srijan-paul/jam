@@ -23,7 +23,8 @@
           "type": "Literal",
           "start": 9,
           "end": 13,
-          "value": "true"
+          "value": true,
+          "raw": "true"
         },
         "consequent": {
           "type": "BreakStatement",

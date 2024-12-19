@@ -24,7 +24,8 @@
             "type": "Literal",
             "start": 71,
             "end": 98,
-            "value": "\"shouldHaveFilenameLocProp\""
+            "value": "shouldHaveFilenameLocProp",
+            "raw": "\"shouldHaveFilenameLocProp\""
           }
         }
       ],

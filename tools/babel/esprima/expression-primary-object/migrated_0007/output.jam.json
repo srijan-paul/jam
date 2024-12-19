@@ -34,7 +34,8 @@
                 "type": "Literal",
                 "start": 6,
                 "end": 14,
-                "value": "\"answer\""
+                "value": "answer",
+                "raw": "\"answer\""
               },
               "computed": false,
               "kind": "init",
@@ -42,7 +43,8 @@
                 "type": "Literal",
                 "start": 16,
                 "end": 18,
-                "value": "42"
+                "value": 42,
+                "raw": "42"
               },
               "shorthand": false
             }

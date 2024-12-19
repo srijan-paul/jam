@@ -13,7 +13,8 @@
         "type": "Literal",
         "start": 0,
         "end": 16,
-        "value": "\"HelloĊorld\""
+        "value": "HelloĊorld",
+        "raw": "\"Hello\\412World\""
       }
     }
   ]

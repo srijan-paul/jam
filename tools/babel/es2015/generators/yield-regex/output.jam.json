@@ -35,7 +35,7 @@
                 "type": "Literal",
                 "start": 23,
                 "end": 26,
-                "value": "/z/"
+                "raw": "/z/"
               },
               "delegate": true
             }

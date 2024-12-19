@@ -28,7 +28,7 @@
               "type": "Literal",
               "start": 8,
               "end": 13,
-              "value": "/42/g"
+              "raw": "/42/g"
             },
             "property": {
               "type": "Identifier",

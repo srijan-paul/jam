@@ -44,7 +44,8 @@
               "type": "Literal",
               "start": 14,
               "end": 25,
-              "value": "\"__proto__\""
+              "value": "__proto__",
+              "raw": "\"__proto__\""
             },
             "computed": false,
             "kind": "init",
@@ -52,7 +53,8 @@
               "type": "Literal",
               "start": 27,
               "end": 31,
-              "value": "null"
+              "value": null,
+              "raw": "null"
             },
             "shorthand": false
           }

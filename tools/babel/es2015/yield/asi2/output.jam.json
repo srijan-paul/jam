@@ -48,7 +48,7 @@
               "type": "Literal",
               "start": 24,
               "end": 28,
-              "value": "/1/g"
+              "raw": "/1/g"
             }
           }
         ]

@@ -34,7 +34,8 @@
                 "type": "Literal",
                 "start": 6,
                 "end": 14,
-                "value": "'method'"
+                "value": "method",
+                "raw": "'method'"
               },
               "computed": false,
               "kind": "init",

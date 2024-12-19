@@ -78,7 +78,8 @@
                   "type": "Literal",
                   "start": 55,
                   "end": 56,
-                  "value": "1"
+                  "value": 1,
+                  "raw": "1"
                 },
                 "right": {
                   "type": "CallExpression",
@@ -271,7 +272,8 @@
                   "type": "Literal",
                   "start": 178,
                   "end": 179,
-                  "value": "1"
+                  "value": 1,
+                  "raw": "1"
                 },
                 "right": {
                   "type": "CallExpression",

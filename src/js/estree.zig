@@ -241,7 +241,7 @@ fn nodeToEsTree(
             const token = t.getToken(token_id);
             const raw = token.toByteSlice(t.source);
             try o.put("value", JValue{
-                .string = try processEscapes(al, raw[0 .. raw.len - 2]),
+                .string = try processEscapes(al, raw[1 .. raw.len - 1]),
             });
             try o.put("raw", JValue{ .string = raw });
         },

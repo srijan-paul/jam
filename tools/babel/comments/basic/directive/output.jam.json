@@ -13,7 +13,8 @@
         "type": "Literal",
         "start": 7,
         "end": 19,
-        "value": "\"use strict\""
+        "value": "use strict",
+        "raw": "\"use strict\""
       }
     }
   ]

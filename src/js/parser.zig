@@ -4195,48 +4195,7 @@ fn parseNumericToken(self: *Self, token: *const TokenWithId) Error!ast.Number {
 }
 
 fn parseDecimal(str: []const u8) f64 {
-    var i: usize = 0;
-    var decimal_part: u64 = 0;
-    while (i < str.len and std.ascii.isDigit(str[i])) : (i += 1) {
-        const ch = str[i];
-        decimal_part = decimal_part * 10 + @as(u64, @intCast(ch - '0'));
-    }
-
-    var val: f64 = @floatFromInt(decimal_part);
-
-    if (i < str.len and str[i] == '.') {
-        i += 1; // eat '.'
-        var frac: f64 = 0.1;
-        while (i < str.len and std.ascii.isDigit(str[i])) : (i += 1) {
-            const ch = str[i];
-            val += frac * @as(f64, @floatFromInt(@as(u64, @intCast(ch - '0'))));
-            frac *= 0.1;
-        }
-    }
-
-    if (i < str.len and (str[i] == 'e' or str[i] == 'E')) {
-        i += 1; // eat 'e' or 'E'
-        const sign = blk: {
-            if (str[i] == '+' or str[i] == '-') {
-                const sgn_char = str[i];
-                i += 1;
-                break :blk sgn_char;
-            } else {
-                break :blk '+';
-            }
-        };
-
-        var exp: f64 = 0;
-        while (i < str.len and std.ascii.isDigit(str[i])) : (i += 1) {
-            const ch = str[i];
-            exp = exp * 10 + @as(f64, @floatFromInt(@as(u64, @intCast(ch - '0'))));
-        }
-
-        if (sign == '-') exp = -exp;
-        val *= std.math.pow(f64, 10.0, exp);
-    }
-
-    return val;
+    return std.fmt.parseFloat(f64, str) catch unreachable;
 }
 
 fn parseOctal(str: []const u8) f64 {
@@ -4248,8 +4207,10 @@ fn parseOctal(str: []const u8) f64 {
         str[1..];
 
     var val: i64 = 0;
-    for (numeric) |ch|
+    for (numeric) |ch| {
+        if (ch == '_') continue;
         val = val * 8 + @as(i64, @intCast(ch - '0'));
+    }
 
     return @floatFromInt(val);
 }
@@ -4260,6 +4221,7 @@ fn parseBinary(str: []const u8) f64 {
 
     var val: i64 = 0;
     for (str[2..]) |ch| {
+        if (ch == '_') continue;
         val = val * 2 + @as(i64, @intCast(ch - '0'));
     }
     return @floatFromInt(val);
@@ -4274,7 +4236,9 @@ fn parseHex(str: []const u8) f64 {
         val <<= 4;
         switch (ch) {
             '0'...'9' => val |= @intCast(ch - '0'),
-            'a'...'f', 'A'...'F' => val |= @intCast(ch - 'a' + 10),
+            'a'...'f' => val |= @intCast(ch - 'a' + 10),
+            'A'...'F' => val |= @intCast(ch - 'A' + 10),
+            '_' => {},
             else => unreachable,
         }
     }

@@ -13,7 +13,8 @@
         "type": "Literal",
         "start": 3,
         "end": 4,
-        "value": "1"
+        "value": 1,
+        "raw": "1"
       },
       "consequent": {
         "type": "ExpressionStatement",
@@ -23,7 +24,7 @@
           "type": "Literal",
           "start": 5,
           "end": 12,
-          "value": "/  foo/"
+          "raw": "/  foo/"
         }
       },
       "alternate": null

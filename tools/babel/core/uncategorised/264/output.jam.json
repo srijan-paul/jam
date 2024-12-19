@@ -13,7 +13,8 @@
         "type": "Literal",
         "start": 0,
         "end": 15,
-        "value": "\"use\u000020strict\""
+        "value": "use\u000020strict",
+        "raw": "\"use\\x20strict\""
       }
     },
     {

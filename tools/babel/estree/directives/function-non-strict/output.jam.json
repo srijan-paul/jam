@@ -31,7 +31,8 @@
               "type": "Literal",
               "start": 20,
               "end": 30,
-              "value": "\"use smth\""
+              "value": "use smth",
+              "raw": "\"use smth\""
             }
           },
           {
@@ -47,13 +48,15 @@
                 "type": "Literal",
                 "start": 33,
                 "end": 34,
-                "value": "1"
+                "value": 1,
+                "raw": "1"
               },
               "right": {
                 "type": "Literal",
                 "start": 35,
                 "end": 36,
-                "value": "1"
+                "value": 1,
+                "raw": "1"
               }
             }
           }

@@ -24,7 +24,8 @@
             "type": "Literal",
             "start": 23,
             "end": 25,
-            "value": "42"
+            "value": 42,
+            "raw": "42"
           },
           "consequent": [
             {

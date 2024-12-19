@@ -86,7 +86,8 @@
               "type": "Literal",
               "start": 33,
               "end": 34,
-              "value": "0"
+              "value": 0,
+              "raw": "0"
             },
             "computed": false,
             "static": false
@@ -105,7 +106,8 @@
               "type": "Literal",
               "start": 40,
               "end": 41,
-              "value": "1"
+              "value": 1,
+              "raw": "1"
             },
             "computed": false,
             "static": false

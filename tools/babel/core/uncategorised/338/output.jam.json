@@ -23,7 +23,8 @@
               "type": "Literal",
               "start": 2,
               "end": 3,
-              "value": "1"
+              "value": 1,
+              "raw": "1"
             },
             "computed": false,
             "kind": "init",
@@ -42,7 +43,8 @@
                 "type": "Literal",
                 "start": 10,
                 "end": 11,
-                "value": "2"
+                "value": 2,
+                "raw": "2"
               }
             },
             "shorthand": false

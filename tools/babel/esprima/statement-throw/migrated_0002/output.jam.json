@@ -31,7 +31,8 @@
               "type": "Literal",
               "start": 17,
               "end": 24,
-              "value": "\"Error\""
+              "value": "Error",
+              "raw": "\"Error\""
             },
             "shorthand": false
           }

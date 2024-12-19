@@ -23,20 +23,23 @@
             "type": "Literal",
             "start": 1,
             "end": 2,
-            "value": "1"
+            "value": 1,
+            "raw": "1"
           },
           "right": {
             "type": "Literal",
             "start": 7,
             "end": 8,
-            "value": "2"
+            "value": 2,
+            "raw": "2"
           }
         },
         "right": {
           "type": "Literal",
           "start": 14,
           "end": 15,
-          "value": "3"
+          "value": 3,
+          "raw": "3"
         }
       }
     }

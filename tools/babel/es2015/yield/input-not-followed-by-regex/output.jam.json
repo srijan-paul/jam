@@ -50,7 +50,8 @@
                   "type": "Literal",
                   "start": 31,
                   "end": 32,
-                  "value": "1"
+                  "value": 1,
+                  "raw": "1"
                 }
               }
             }

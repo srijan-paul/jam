@@ -106,7 +106,8 @@
             "type": "Literal",
             "start": 32,
             "end": 35,
-            "value": "'c'"
+            "value": "c",
+            "raw": "'c'"
           },
           "computed": true
         },

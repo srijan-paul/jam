@@ -32,7 +32,8 @@
               "type": "Literal",
               "start": 26,
               "end": 27,
-              "value": "1"
+              "value": 1,
+              "raw": "1"
             },
             "computed": false,
             "static": true

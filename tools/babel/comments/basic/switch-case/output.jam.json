@@ -23,7 +23,8 @@
           "type": "Literal",
           "start": 46,
           "end": 51,
-          "value": "false"
+          "value": false,
+          "raw": "false"
         },
         "cases": [
           {
@@ -34,7 +35,8 @@
               "type": "Literal",
               "start": 89,
               "end": 94,
-              "value": "false"
+              "value": false,
+              "raw": "false"
             },
             "consequent": [
               {
@@ -64,7 +66,8 @@
               "type": "Literal",
               "start": 190,
               "end": 195,
-              "value": "false"
+              "value": false,
+              "raw": "false"
             },
             "consequent": [
               {

@@ -577,7 +577,8 @@
               "type": "Literal",
               "start": 298,
               "end": 299,
-              "value": "0"
+              "value": 0,
+              "raw": "0"
             },
             "computed": false,
             "static": false
@@ -606,7 +607,8 @@
               "type": "Literal",
               "start": 325,
               "end": 328,
-              "value": "'a'"
+              "value": "a",
+              "raw": "'a'"
             },
             "value": {
               "type": "FunctionExpression",

@@ -24,7 +24,7 @@
             "type": "Literal",
             "start": 8,
             "end": 16,
-            "value": "/[x-z]/i"
+            "raw": "/[x-z]/i"
           }
         }
       ],

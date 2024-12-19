@@ -52,7 +52,8 @@
               "type": "Literal",
               "start": 25,
               "end": 29,
-              "value": "null"
+              "value": null,
+              "raw": "null"
             },
             "shorthand": false
           }

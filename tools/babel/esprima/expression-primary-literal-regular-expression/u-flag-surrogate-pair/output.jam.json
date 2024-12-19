@@ -24,7 +24,7 @@
             "type": "Literal",
             "start": 8,
             "end": 41,
-            "value": "/[\\uD834\\uDF06-\\uD834\\uDF08a-z]/u"
+            "raw": "/[\\uD834\\uDF06-\\uD834\\uDF08a-z]/u"
           }
         }
       ],

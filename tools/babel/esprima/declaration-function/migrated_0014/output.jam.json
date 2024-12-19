@@ -36,13 +36,15 @@
                 "type": "Literal",
                 "start": 18,
                 "end": 30,
-                "value": "\"use strict\""
+                "value": "use strict",
+                "raw": "\"use strict\""
               },
               "right": {
                 "type": "Literal",
                 "start": 33,
                 "end": 35,
-                "value": "42"
+                "value": 42,
+                "raw": "42"
               }
             }
           }

@@ -13,7 +13,8 @@
         "type": "Literal",
         "start": 0,
         "end": 14,
-        "value": "\"Hello\u0001orld\""
+        "value": "Hello\u0001orld",
+        "raw": "\"Hello\\1World\""
       }
     }
   ]

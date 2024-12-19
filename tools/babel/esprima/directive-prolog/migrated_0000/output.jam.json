@@ -34,7 +34,8 @@
                   "type": "Literal",
                   "start": 15,
                   "end": 30,
-                  "value": "'use\u000020strict'"
+                  "value": "use\u000020strict",
+                  "raw": "'use\\x20strict'"
                 }
               },
               {

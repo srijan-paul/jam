@@ -60,7 +60,8 @@
             "type": "Literal",
             "start": 40,
             "end": 44,
-            "value": "2014"
+            "value": 2014,
+            "raw": "2014"
           }
         ]
       }

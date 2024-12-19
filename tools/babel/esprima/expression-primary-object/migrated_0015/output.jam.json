@@ -34,7 +34,8 @@
                 "type": "Literal",
                 "start": 10,
                 "end": 17,
-                "value": "\"undef\""
+                "value": "undef",
+                "raw": "\"undef\""
               },
               "computed": false,
               "kind": "get",

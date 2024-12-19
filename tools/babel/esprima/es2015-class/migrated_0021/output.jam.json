@@ -26,7 +26,8 @@
               "type": "Literal",
               "start": 17,
               "end": 28,
-              "value": "\"prototype\""
+              "value": "prototype",
+              "raw": "\"prototype\""
             },
             "value": {
               "type": "FunctionExpression",

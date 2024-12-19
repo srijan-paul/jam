@@ -42,7 +42,8 @@
                 "type": "Literal",
                 "start": 11,
                 "end": 13,
-                "value": "42"
+                "value": 42,
+                "raw": "42"
               },
               "shorthand": false
             }

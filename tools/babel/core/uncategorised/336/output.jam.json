@@ -23,7 +23,8 @@
                 "type": "Literal",
                 "start": 2,
                 "end": 3,
-                "value": "1"
+                "value": 1,
+                "raw": "1"
               }
             ]
           }
@@ -38,7 +39,7 @@
         "type": "Literal",
         "start": 6,
         "end": 11,
-        "value": "/foo/"
+        "raw": "/foo/"
       }
     }
   ]

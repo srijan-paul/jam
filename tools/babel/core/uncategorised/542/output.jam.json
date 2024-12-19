@@ -21,7 +21,8 @@
             "type": "Literal",
             "start": 0,
             "end": 5,
-            "value": "\"foo\""
+            "value": "foo",
+            "raw": "\"foo\""
           },
           "property": {
             "type": "Identifier",
@@ -36,7 +37,8 @@
             "type": "Literal",
             "start": 13,
             "end": 16,
-            "value": "\" \""
+            "value": " ",
+            "raw": "\" \""
           }
         ]
       }

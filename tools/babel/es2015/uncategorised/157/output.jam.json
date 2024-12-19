@@ -88,7 +88,8 @@
                             "type": "Literal",
                             "start": 20,
                             "end": 22,
-                            "value": "10"
+                            "value": 10,
+                            "raw": "10"
                           },
                           "shorthand": false
                         }

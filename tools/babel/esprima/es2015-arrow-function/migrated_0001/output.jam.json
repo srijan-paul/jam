@@ -28,7 +28,8 @@
           "type": "Literal",
           "start": 5,
           "end": 11,
-          "value": "\"test\""
+          "value": "test",
+          "raw": "\"test\""
         }
       }
     }

@@ -45,13 +45,15 @@
               "type": "Literal",
               "start": 21,
               "end": 24,
-              "value": "'y'"
+              "value": "y",
+              "raw": "'y'"
             },
             "value": {
               "type": "Literal",
               "start": 21,
               "end": 24,
-              "value": "'y'"
+              "value": "y",
+              "raw": "'y'"
             },
             "computed": false,
             "static": false

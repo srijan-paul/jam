@@ -75,13 +75,15 @@
                           "type": "Literal",
                           "start": 25,
                           "end": 26,
-                          "value": "1"
+                          "value": 1,
+                          "raw": "1"
                         },
                         "right": {
                           "type": "Literal",
                           "start": 29,
                           "end": 30,
-                          "value": "1"
+                          "value": 1,
+                          "raw": "1"
                         }
                       }
                     ]

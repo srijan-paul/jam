@@ -13,7 +13,8 @@
         "type": "Literal",
         "start": 7,
         "end": 8,
-        "value": "1"
+        "value": 1,
+        "raw": "1"
       },
       "body": {
         "type": "ExpressionStatement",
@@ -23,7 +24,7 @@
           "type": "Literal",
           "start": 10,
           "end": 15,
-          "value": "/foo/"
+          "raw": "/foo/"
         }
       }
     }

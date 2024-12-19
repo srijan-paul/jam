@@ -34,7 +34,8 @@
                 "type": "Literal",
                 "start": 10,
                 "end": 12,
-                "value": "10"
+                "value": 10,
+                "raw": "10"
               },
               "computed": false,
               "kind": "get",

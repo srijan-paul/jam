@@ -13,7 +13,8 @@
         "type": "Literal",
         "start": 0,
         "end": 30,
-        "value": "\"\u0000u{20BB7}\u0000u{91CE}\u0000u{5BB6}\""
+        "value": "\u0000u{20BB7}\u0000u{91CE}\u0000u{5BB6}",
+        "raw": "\"\\\\u{20BB7}\\\\u{91CE}\\\\u{5BB6}\""
       }
     }
   ]

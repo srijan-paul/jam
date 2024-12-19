@@ -13,7 +13,8 @@
         "type": "Literal",
         "start": 1,
         "end": 13,
-        "value": "\"use strict\""
+        "value": "use strict",
+        "raw": "\"use strict\""
       }
     },
     {
@@ -28,7 +29,8 @@
           "type": "Literal",
           "start": 17,
           "end": 29,
-          "value": "\"use strict\""
+          "value": "use strict",
+          "raw": "\"use strict\""
         },
         "property": {
           "type": "Identifier",
@@ -51,7 +53,8 @@
           "type": "Literal",
           "start": 35,
           "end": 47,
-          "value": "\"use strict\""
+          "value": "use strict",
+          "raw": "\"use strict\""
         },
         "property": {
           "type": "Identifier",
@@ -74,7 +77,8 @@
           "type": "Literal",
           "start": 54,
           "end": 66,
-          "value": "\"use strict\""
+          "value": "use strict",
+          "raw": "\"use strict\""
         },
         "quasi": {
           "type": "TemplateLiteral",
@@ -105,7 +109,8 @@
           "type": "Literal",
           "start": 73,
           "end": 85,
-          "value": "\"use strict\""
+          "value": "use strict",
+          "raw": "\"use strict\""
         },
         "arguments": [
           {
@@ -129,7 +134,8 @@
           "type": "Literal",
           "start": 92,
           "end": 104,
-          "value": "\"use strict\""
+          "value": "use strict",
+          "raw": "\"use strict\""
         },
         "property": {
           "type": "Identifier",
@@ -152,7 +158,8 @@
           "type": "Literal",
           "start": 113,
           "end": 125,
-          "value": "\"use strict\""
+          "value": "use strict",
+          "raw": "\"use strict\""
         },
         "property": {
           "type": "Identifier",
@@ -175,7 +182,8 @@
           "type": "Literal",
           "start": 135,
           "end": 147,
-          "value": "\"use strict\""
+          "value": "use strict",
+          "raw": "\"use strict\""
         },
         "quasi": {
           "type": "TemplateLiteral",
@@ -206,7 +214,8 @@
           "type": "Literal",
           "start": 157,
           "end": 169,
-          "value": "\"use strict\""
+          "value": "use strict",
+          "raw": "\"use strict\""
         },
         "arguments": [
           {
@@ -226,7 +235,8 @@
         "type": "Literal",
         "start": 257,
         "end": 261,
-        "value": "\"\u0005"
+        "value": "\u0005",
+        "raw": "\"\\5\""
       }
     },
     {
@@ -259,7 +269,8 @@
                 "type": "Literal",
                 "start": 280,
                 "end": 292,
-                "value": "\"use strict\""
+                "value": "use strict",
+                "raw": "\"use strict\""
               },
               "property": {
                 "type": "Identifier",
@@ -278,7 +289,8 @@
               "type": "Literal",
               "start": 300,
               "end": 304,
-              "value": "\"\u0005"
+              "value": "\u0005",
+              "raw": "\"\\5\""
             }
           }
         ]
@@ -314,7 +326,8 @@
                 "type": "Literal",
                 "start": 325,
                 "end": 337,
-                "value": "\"use strict\""
+                "value": "use strict",
+                "raw": "\"use strict\""
               },
               "property": {
                 "type": "Identifier",
@@ -333,7 +346,8 @@
               "type": "Literal",
               "start": 346,
               "end": 350,
-              "value": "\"\u0005"
+              "value": "\u0005",
+              "raw": "\"\\5\""
             }
           }
         ]
@@ -369,7 +383,8 @@
                 "type": "Literal",
                 "start": 371,
                 "end": 383,
-                "value": "\"use strict\""
+                "value": "use strict",
+                "raw": "\"use strict\""
               },
               "quasi": {
                 "type": "TemplateLiteral",
@@ -396,7 +411,8 @@
               "type": "Literal",
               "start": 392,
               "end": 396,
-              "value": "\"\u0005"
+              "value": "\u0005",
+              "raw": "\"\\5\""
             }
           }
         ]
@@ -432,7 +448,8 @@
                 "type": "Literal",
                 "start": 417,
                 "end": 429,
-                "value": "\"use strict\""
+                "value": "use strict",
+                "raw": "\"use strict\""
               },
               "arguments": [
                 {
@@ -452,7 +469,8 @@
               "type": "Literal",
               "start": 438,
               "end": 442,
-              "value": "\"\u0005"
+              "value": "\u0005",
+              "raw": "\"\\5\""
             }
           }
         ]
@@ -488,7 +506,8 @@
                 "type": "Literal",
                 "start": 463,
                 "end": 475,
-                "value": "\"use strict\""
+                "value": "use strict",
+                "raw": "\"use strict\""
               },
               "property": {
                 "type": "Identifier",
@@ -507,7 +526,8 @@
               "type": "Literal",
               "start": 486,
               "end": 490,
-              "value": "\"\u0005"
+              "value": "\u0005",
+              "raw": "\"\\5\""
             }
           }
         ]
@@ -543,7 +563,8 @@
                 "type": "Literal",
                 "start": 511,
                 "end": 523,
-                "value": "\"use strict\""
+                "value": "use strict",
+                "raw": "\"use strict\""
               },
               "property": {
                 "type": "Identifier",
@@ -562,7 +583,8 @@
               "type": "Literal",
               "start": 535,
               "end": 539,
-              "value": "\"\u0005"
+              "value": "\u0005",
+              "raw": "\"\\5\""
             }
           }
         ]
@@ -598,7 +620,8 @@
                 "type": "Literal",
                 "start": 560,
                 "end": 572,
-                "value": "\"use strict\""
+                "value": "use strict",
+                "raw": "\"use strict\""
               },
               "quasi": {
                 "type": "TemplateLiteral",
@@ -625,7 +648,8 @@
               "type": "Literal",
               "start": 584,
               "end": 588,
-              "value": "\"\u0005"
+              "value": "\u0005",
+              "raw": "\"\\5\""
             }
           }
         ]
@@ -661,7 +685,8 @@
                 "type": "Literal",
                 "start": 609,
                 "end": 621,
-                "value": "\"use strict\""
+                "value": "use strict",
+                "raw": "\"use strict\""
               },
               "arguments": [
                 {
@@ -681,7 +706,8 @@
               "type": "Literal",
               "start": 633,
               "end": 637,
-              "value": "\"\u0005"
+              "value": "\u0005",
+              "raw": "\"\\5\""
             }
           }
         ]
@@ -734,7 +760,8 @@
                 "type": "Literal",
                 "start": 667,
                 "end": 679,
-                "value": "\"use strict\""
+                "value": "use strict",
+                "raw": "\"use strict\""
               },
               "property": {
                 "type": "Identifier",
@@ -753,7 +780,8 @@
               "type": "Literal",
               "start": 687,
               "end": 691,
-              "value": "\"\u0005"
+              "value": "\u0005",
+              "raw": "\"\\5\""
             }
           }
         ]
@@ -806,7 +834,8 @@
                 "type": "Literal",
                 "start": 721,
                 "end": 733,
-                "value": "\"use strict\""
+                "value": "use strict",
+                "raw": "\"use strict\""
               },
               "property": {
                 "type": "Identifier",
@@ -825,7 +854,8 @@
               "type": "Literal",
               "start": 742,
               "end": 746,
-              "value": "\"\u0005"
+              "value": "\u0005",
+              "raw": "\"\\5\""
             }
           }
         ]
@@ -878,7 +908,8 @@
                 "type": "Literal",
                 "start": 776,
                 "end": 788,
-                "value": "\"use strict\""
+                "value": "use strict",
+                "raw": "\"use strict\""
               },
               "quasi": {
                 "type": "TemplateLiteral",
@@ -905,7 +936,8 @@
               "type": "Literal",
               "start": 797,
               "end": 801,
-              "value": "\"\u0005"
+              "value": "\u0005",
+              "raw": "\"\\5\""
             }
           }
         ]
@@ -958,7 +990,8 @@
                 "type": "Literal",
                 "start": 831,
                 "end": 843,
-                "value": "\"use strict\""
+                "value": "use strict",
+                "raw": "\"use strict\""
               },
               "arguments": [
                 {
@@ -978,7 +1011,8 @@
               "type": "Literal",
               "start": 852,
               "end": 856,
-              "value": "\"\u0005"
+              "value": "\u0005",
+              "raw": "\"\\5\""
             }
           }
         ]
@@ -1031,7 +1065,8 @@
                 "type": "Literal",
                 "start": 886,
                 "end": 898,
-                "value": "\"use strict\""
+                "value": "use strict",
+                "raw": "\"use strict\""
               },
               "property": {
                 "type": "Identifier",
@@ -1050,7 +1085,8 @@
               "type": "Literal",
               "start": 909,
               "end": 913,
-              "value": "\"\u0005"
+              "value": "\u0005",
+              "raw": "\"\\5\""
             }
           }
         ]
@@ -1103,7 +1139,8 @@
                 "type": "Literal",
                 "start": 943,
                 "end": 955,
-                "value": "\"use strict\""
+                "value": "use strict",
+                "raw": "\"use strict\""
               },
               "property": {
                 "type": "Identifier",
@@ -1122,7 +1159,8 @@
               "type": "Literal",
               "start": 967,
               "end": 971,
-              "value": "\"\u0005"
+              "value": "\u0005",
+              "raw": "\"\\5\""
             }
           }
         ]
@@ -1175,7 +1213,8 @@
                 "type": "Literal",
                 "start": 1001,
                 "end": 1013,
-                "value": "\"use strict\""
+                "value": "use strict",
+                "raw": "\"use strict\""
               },
               "quasi": {
                 "type": "TemplateLiteral",
@@ -1202,7 +1241,8 @@
               "type": "Literal",
               "start": 1025,
               "end": 1029,
-              "value": "\"\u0005"
+              "value": "\u0005",
+              "raw": "\"\\5\""
             }
           }
         ]
@@ -1255,7 +1295,8 @@
                 "type": "Literal",
                 "start": 1059,
                 "end": 1071,
-                "value": "\"use strict\""
+                "value": "use strict",
+                "raw": "\"use strict\""
               },
               "arguments": [
                 {
@@ -1275,7 +1316,8 @@
               "type": "Literal",
               "start": 1083,
               "end": 1087,
-              "value": "\"\u0005"
+              "value": "\u0005",
+              "raw": "\"\\5\""
             }
           }
         ]
@@ -1307,7 +1349,8 @@
               "type": "Literal",
               "start": 1108,
               "end": 1110,
-              "value": "05"
+              "value": 05,
+              "raw": "05"
             }
           },
           {
@@ -1318,7 +1361,8 @@
               "type": "Literal",
               "start": 1114,
               "end": 1126,
-              "value": "\"use strict\""
+              "value": "use strict",
+              "raw": "\"use strict\""
             }
           }
         ]

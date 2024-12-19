@@ -34,7 +34,8 @@
                   "type": "Literal",
                   "start": 21,
                   "end": 22,
-                  "value": "3"
+                  "value": 3,
+                  "raw": "3"
                 },
                 "delegate": false
               }

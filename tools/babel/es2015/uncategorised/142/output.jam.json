@@ -28,13 +28,15 @@
                 "type": "Literal",
                 "start": 3,
                 "end": 6,
-                "value": "\"x\""
+                "value": "x",
+                "raw": "\"x\""
               },
               "right": {
                 "type": "Literal",
                 "start": 9,
                 "end": 12,
-                "value": "\"y\""
+                "value": "y",
+                "raw": "\"y\""
               }
             },
             "computed": true,
@@ -43,7 +45,8 @@
               "type": "Literal",
               "start": 15,
               "end": 17,
-              "value": "10"
+              "value": 10,
+              "raw": "10"
             },
             "shorthand": false
           }

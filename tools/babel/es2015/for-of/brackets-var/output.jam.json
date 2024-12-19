@@ -55,7 +55,7 @@
         "type": "Literal",
         "start": 16,
         "end": 19,
-        "value": "/b/"
+        "raw": "/b/"
       },
       "body": {
         "type": "BlockStatement",

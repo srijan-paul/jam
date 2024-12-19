@@ -48,7 +48,8 @@
                       "type": "Literal",
                       "start": 28,
                       "end": 29,
-                      "value": "1"
+                      "value": 1,
+                      "raw": "1"
                     }
                   }
                 ]
@@ -73,7 +74,8 @@
               "type": "Literal",
               "start": 44,
               "end": 45,
-              "value": "2"
+              "value": 2,
+              "raw": "2"
             },
             "shorthand": false
           }

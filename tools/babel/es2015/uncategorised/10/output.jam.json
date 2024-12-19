@@ -13,7 +13,8 @@
         "type": "Literal",
         "start": 0,
         "end": 3,
-        "value": "0O2"
+        "value": 0O2,
+        "raw": "0O2"
       }
     }
   ]

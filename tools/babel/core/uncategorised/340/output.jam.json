@@ -42,7 +42,7 @@
         "type": "Literal",
         "start": 10,
         "end": 15,
-        "value": "/foo/"
+        "raw": "/foo/"
       }
     }
   ]

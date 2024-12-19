@@ -50,7 +50,8 @@
                     "type": "Literal",
                     "start": 46,
                     "end": 47,
-                    "value": "2"
+                    "value": 2,
+                    "raw": "2"
                   },
                   "computed": false,
                   "static": false

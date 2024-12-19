@@ -47,7 +47,8 @@
               "type": "Literal",
               "start": 7,
               "end": 8,
-              "value": "0"
+              "value": 0,
+              "raw": "0"
             }
           }
         ]

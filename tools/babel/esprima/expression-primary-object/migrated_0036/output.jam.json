@@ -23,7 +23,8 @@
               "type": "Literal",
               "start": 3,
               "end": 14,
-              "value": "\"__proto__\""
+              "value": "__proto__",
+              "raw": "\"__proto__\""
             },
             "computed": true,
             "kind": "init",
@@ -31,7 +32,8 @@
               "type": "Literal",
               "start": 16,
               "end": 17,
-              "value": "0"
+              "value": 0,
+              "raw": "0"
             },
             "shorthand": false
           },
@@ -44,7 +46,8 @@
               "type": "Literal",
               "start": 20,
               "end": 31,
-              "value": "\"__proto__\""
+              "value": "__proto__",
+              "raw": "\"__proto__\""
             },
             "computed": true,
             "kind": "init",
@@ -52,7 +55,8 @@
               "type": "Literal",
               "start": 33,
               "end": 34,
-              "value": "0"
+              "value": 0,
+              "raw": "0"
             },
             "shorthand": false
           }

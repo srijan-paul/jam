@@ -28,7 +28,8 @@
               "type": "Literal",
               "start": 5,
               "end": 7,
-              "value": ".5"
+              "value": 5e-1,
+              "raw": ".5"
             }
           }
         ]

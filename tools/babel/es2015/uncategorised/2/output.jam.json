@@ -13,7 +13,8 @@
         "type": "Literal",
         "start": 0,
         "end": 27,
-        "value": "\"𠮷野家\""
+        "value": "𠮷野家",
+        "raw": "\"\\u{20BB7}\\u{91CE}\\u{5BB6}\""
       }
     }
   ]

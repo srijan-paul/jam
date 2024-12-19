@@ -30,14 +30,16 @@
               "type": "Literal",
               "start": 19,
               "end": 20,
-              "value": "5"
+              "value": 5,
+              "raw": "5"
             }
           },
           "right": {
             "type": "Literal",
             "start": 25,
             "end": 26,
-            "value": "6"
+            "value": 6,
+            "raw": "6"
           }
         }
       }

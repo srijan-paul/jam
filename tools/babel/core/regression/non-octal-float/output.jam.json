@@ -13,7 +13,8 @@
         "type": "Literal",
         "start": 0,
         "end": 4,
-        "value": "09.5"
+        "value": 9.5e0,
+        "raw": "09.5"
       }
     }
   ]

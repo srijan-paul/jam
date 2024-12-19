@@ -108,7 +108,8 @@
                             "type": "Literal",
                             "start": 116,
                             "end": 136,
-                            "value": "\"SequenceExpression\""
+                            "value": "SequenceExpression",
+                            "raw": "\"SequenceExpression\""
                           },
                           "consequent": [
                             {
@@ -187,7 +188,8 @@
                                         "type": "Literal",
                                         "start": 215,
                                         "end": 216,
-                                        "value": "1"
+                                        "value": 1,
+                                        "raw": "1"
                                       }
                                     },
                                     "computed": true
@@ -207,7 +209,8 @@
                         "type": "Literal",
                         "start": 280,
                         "end": 285,
-                        "value": "false"
+                        "value": false,
+                        "raw": "false"
                       }
                     }
                   ]

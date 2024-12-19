@@ -18,7 +18,8 @@
             "type": "Literal",
             "start": 16,
             "end": 21,
-            "value": "false"
+            "value": false,
+            "raw": "false"
           },
           "body": {
             "type": "BlockStatement",
@@ -35,7 +36,8 @@
             "type": "Literal",
             "start": 23,
             "end": 28,
-            "value": "false"
+            "value": false,
+            "raw": "false"
           }
         }
       ]

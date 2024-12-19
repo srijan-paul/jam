@@ -23,7 +23,8 @@
           "type": "Literal",
           "start": 13,
           "end": 17,
-          "value": "true"
+          "value": true,
+          "raw": "true"
         },
         "body": {
           "type": "BlockStatement",

@@ -26,7 +26,8 @@
               "type": "Literal",
               "start": 9,
               "end": 22,
-              "value": "'constructor'"
+              "value": "constructor",
+              "raw": "'constructor'"
             },
             "value": {
               "type": "FunctionExpression",

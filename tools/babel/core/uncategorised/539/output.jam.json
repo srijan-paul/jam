@@ -38,7 +38,8 @@
               "type": "Literal",
               "start": 16,
               "end": 28,
-              "value": "'use strict'"
+              "value": "use strict",
+              "raw": "'use strict'"
             }
           }
         ]

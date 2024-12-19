@@ -29,7 +29,8 @@
                 "type": "Literal",
                 "start": 12,
                 "end": 14,
-                "value": "14"
+                "value": 14,
+                "raw": "14"
               }
             },
             {
@@ -46,7 +47,8 @@
                 "type": "Literal",
                 "start": 20,
                 "end": 21,
-                "value": "3"
+                "value": 3,
+                "raw": "3"
               }
             },
             {
@@ -63,7 +65,8 @@
                 "type": "Literal",
                 "start": 27,
                 "end": 31,
-                "value": "1977"
+                "value": 1977,
+                "raw": "1977"
               }
             }
           ],

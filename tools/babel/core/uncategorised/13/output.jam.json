@@ -29,20 +29,23 @@
               "type": "Literal",
               "start": 6,
               "end": 7,
-              "value": "1"
+              "value": 1,
+              "raw": "1"
             },
             {
               "type": "Literal",
               "start": 9,
               "end": 10,
-              "value": "2"
+              "value": 2,
+              "raw": "2"
             },
             null,
             {
               "type": "Literal",
               "start": 13,
               "end": 14,
-              "value": "3"
+              "value": 3,
+              "raw": "3"
             }
           ]
         }

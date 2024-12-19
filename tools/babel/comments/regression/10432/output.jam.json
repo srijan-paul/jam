@@ -74,7 +74,8 @@
             "type": "Literal",
             "start": 74,
             "end": 83,
-            "value": "'connect'"
+            "value": "connect",
+            "raw": "'connect'"
           },
           {
             "type": "FunctionExpression",
@@ -113,7 +114,8 @@
                           "type": "Literal",
                           "start": 107,
                           "end": 122,
-                          "value": "'Connected to '"
+                          "value": "Connected to ",
+                          "raw": "'Connected to '"
                         },
                         "right": {
                           "type": "Identifier",

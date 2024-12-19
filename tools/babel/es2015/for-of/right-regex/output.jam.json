@@ -33,7 +33,7 @@
         "type": "Literal",
         "start": 14,
         "end": 20,
-        "value": "/foo/g"
+        "raw": "/foo/g"
       },
       "body": {
         "type": "EmptyStatement",
