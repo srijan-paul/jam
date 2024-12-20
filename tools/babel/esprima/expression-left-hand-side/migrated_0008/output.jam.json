@@ -32,7 +32,8 @@
             "end": 12,
             "name": "baz"
           }
-        ]
+        ],
+        "optional": false
       }
     }
   ]

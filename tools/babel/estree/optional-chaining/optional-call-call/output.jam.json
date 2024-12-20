@@ -27,10 +27,12 @@
               "end": 4,
               "name": "foo"
             },
-            "arguments": []
+            "arguments": [],
+            "optional": false
           }
         },
-        "arguments": []
+        "arguments": [],
+        "optional": false
       }
     }
   ]

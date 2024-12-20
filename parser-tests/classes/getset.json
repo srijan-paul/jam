@@ -17,13 +17,13 @@
           "end": 17,
           "name": "B"
         },
+        "computed": false,
         "property": {
           "type": "Identifier",
           "start": 18,
           "end": 19,
           "name": "C"
-        },
-        "computed": false
+        }
       },
       "id": {
         "type": "Identifier",
@@ -36,7 +36,7 @@
         "body": [
           {
             "type": "MethodDefinition",
-            "start": 27,
+            "start": 23,
             "end": 43,
             "key": {
               "type": "Identifier",
@@ -46,11 +46,12 @@
             },
             "value": {
               "type": "FunctionExpression",
-              "start": 28,
+              "start": 23,
               "end": 43,
               "generator": false,
               "async": false,
               "arrow": false,
+              "expression": true,
               "params": [],
               "body": {
                 "type": "BlockStatement",
@@ -78,7 +79,7 @@
           },
           {
             "type": "MethodDefinition",
-            "start": 50,
+            "start": 45,
             "end": 69,
             "key": {
               "type": "Literal",
@@ -89,11 +90,12 @@
             },
             "value": {
               "type": "FunctionExpression",
-              "start": 54,
+              "start": 45,
               "end": 69,
               "generator": false,
               "async": false,
               "arrow": false,
+              "expression": true,
               "params": [],
               "body": {
                 "type": "BlockStatement",
@@ -121,7 +123,7 @@
           },
           {
             "type": "MethodDefinition",
-            "start": 76,
+            "start": 71,
             "end": 87,
             "key": {
               "type": "Literal",
@@ -132,11 +134,12 @@
             },
             "value": {
               "type": "FunctionExpression",
-              "start": 80,
+              "start": 71,
               "end": 87,
               "generator": false,
               "async": false,
               "arrow": false,
+              "expression": true,
               "params": [
                 {
                   "type": "Identifier",
@@ -158,7 +161,7 @@
           },
           {
             "type": "MethodDefinition",
-            "start": 93,
+            "start": 89,
             "end": 110,
             "key": {
               "type": "Identifier",
@@ -168,11 +171,12 @@
             },
             "value": {
               "type": "FunctionExpression",
-              "start": 94,
+              "start": 89,
               "end": 110,
               "generator": false,
               "async": false,
               "arrow": false,
+              "expression": true,
               "params": [
                 {
                   "type": "Identifier",
@@ -207,7 +211,7 @@
           },
           {
             "type": "MethodDefinition",
-            "start": 123,
+            "start": 112,
             "end": 144,
             "key": {
               "type": "Identifier",
@@ -217,11 +221,12 @@
             },
             "value": {
               "type": "FunctionExpression",
-              "start": 129,
+              "start": 112,
               "end": 144,
               "generator": false,
               "async": false,
               "arrow": false,
+              "expression": true,
               "params": [],
               "body": {
                 "type": "BlockStatement",
@@ -249,7 +254,7 @@
           },
           {
             "type": "MethodDefinition",
-            "start": 157,
+            "start": 146,
             "end": 170,
             "key": {
               "type": "Identifier",
@@ -259,11 +264,12 @@
             },
             "value": {
               "type": "FunctionExpression",
-              "start": 163,
+              "start": 146,
               "end": 170,
               "generator": false,
               "async": false,
               "arrow": false,
+              "expression": true,
               "params": [
                 {
                   "type": "Identifier",

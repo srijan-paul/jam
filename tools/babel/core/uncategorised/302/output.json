@@ -20,15 +20,7 @@
             "end": 5,
             "name": "x"
           },
-          "init": null,
-          "trailingComments": [
-            {
-              "type": "CommentBlock",
-              "value": " comment ",
-              "start": 6,
-              "end": 19
-            }
-          ]
+          "init": null
         }
       ],
       "kind": "var"

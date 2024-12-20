@@ -77,13 +77,14 @@
                 "name": "meta"
               }
             },
+            "computed": false,
             "property": {
               "type": "Identifier",
               "start": 47,
               "end": 50,
               "name": "url"
             },
-            "computed": false
+            "optional": false
           }
         }
       ],
@@ -136,13 +137,14 @@
             "name": "meta"
           }
         },
+        "computed": false,
         "property": {
           "type": "Identifier",
           "start": 77,
           "end": 80,
           "name": "url"
         },
-        "computed": false
+        "optional": false
       }
     },
     {
@@ -175,13 +177,14 @@
               "name": "meta"
             }
           },
+          "computed": false,
           "property": {
             "type": "Identifier",
             "start": 94,
             "end": 108,
             "name": "couldBeMutable"
           },
-          "computed": false
+          "optional": false
         },
         "right": {
           "type": "Literal",

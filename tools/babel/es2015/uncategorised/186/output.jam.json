@@ -36,14 +36,14 @@
                     "name": "a"
                   },
                   "computed": false,
-                  "kind": "init",
+                  "shorthand": true,
                   "value": {
                     "type": "Identifier",
                     "start": 3,
                     "end": 4,
                     "name": "a"
                   },
-                  "shorthand": true
+                  "kind": "init"
                 },
                 {
                   "type": "Property",
@@ -57,14 +57,14 @@
                     "name": "b"
                   },
                   "computed": false,
-                  "kind": "init",
+                  "shorthand": true,
                   "value": {
                     "type": "Identifier",
                     "start": 6,
                     "end": 7,
                     "name": "b"
                   },
-                  "shorthand": true
+                  "kind": "init"
                 }
               ]
             },

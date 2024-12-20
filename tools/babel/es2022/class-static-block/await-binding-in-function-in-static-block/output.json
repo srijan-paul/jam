@@ -325,15 +325,7 @@
             ]
           }
         }
-      },
-      "trailingComments": [
-        {
-          "type": "CommentLine",
-          "value": " await in function expression is allowed",
-          "start": 214,
-          "end": 256
-        }
-      ]
+      }
     },
     {
       "type": "ExpressionStatement",
@@ -397,15 +389,7 @@
             ]
           }
         }
-      },
-      "leadingComments": [
-        {
-          "type": "CommentLine",
-          "value": " await in function expression is allowed",
-          "start": 214,
-          "end": 256
-        }
-      ]
+      }
     }
   ]
 }

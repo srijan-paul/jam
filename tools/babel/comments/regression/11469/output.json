@@ -57,15 +57,7 @@
                   }
                 ]
               }
-            },
-            "trailingComments": [
-              {
-                "type": "CommentBlock",
-                "value": " Trailing comment ",
-                "start": 58,
-                "end": 80
-              }
-            ]
+            }
           }
         ]
       }
@@ -171,15 +163,7 @@
                 "end": 163,
                 "body": []
               }
-            },
-            "trailingComments": [
-              {
-                "type": "CommentLine",
-                "value": " this.member = 'value';",
-                "start": 166,
-                "end": 191
-              }
-            ]
+            }
           }
         ]
       }

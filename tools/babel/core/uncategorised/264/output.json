@@ -15,8 +15,7 @@
         "end": 15,
         "value": "use strict",
         "raw": "\"use\\x20strict\""
-      },
-      "directive": "use\\x20strict"
+      }
     },
     {
       "type": "WithStatement",

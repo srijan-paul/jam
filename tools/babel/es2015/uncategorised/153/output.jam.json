@@ -17,6 +17,7 @@
       },
       "generator": false,
       "async": false,
+      "expression": false,
       "params": [
         {
           "type": "AssignmentPattern",
@@ -39,14 +40,14 @@
                   "name": "x"
                 },
                 "computed": false,
-                "kind": "init",
+                "shorthand": true,
                 "value": {
                   "type": "Identifier",
                   "start": 12,
                   "end": 13,
                   "name": "x"
                 },
-                "shorthand": true
+                "kind": "init"
               }
             ]
           },
@@ -67,7 +68,7 @@
                   "name": "x"
                 },
                 "computed": false,
-                "kind": "init",
+                "shorthand": false,
                 "value": {
                   "type": "Literal",
                   "start": 21,
@@ -75,7 +76,7 @@
                   "value": 10,
                   "raw": "10"
                 },
-                "shorthand": false
+                "kind": "init"
               }
             ]
           }

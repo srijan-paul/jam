@@ -33,6 +33,7 @@
             "generator": false,
             "async": true,
             "arrow": true,
+            "expression": true,
             "params": [
               {
                 "type": "Identifier",
@@ -78,7 +79,8 @@
             "end": 35,
             "name": "b"
           }
-        ]
+        ],
+        "optional": false
       }
     }
   ]

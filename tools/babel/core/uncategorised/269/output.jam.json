@@ -42,7 +42,8 @@
                   "end": 29,
                   "name": "hi"
                 },
-                "arguments": []
+                "arguments": [],
+                "optional": false
               }
             },
             {

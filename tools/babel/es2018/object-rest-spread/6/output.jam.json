@@ -26,14 +26,14 @@
               "name": "x"
             },
             "computed": false,
-            "kind": "init",
+            "shorthand": true,
             "value": {
               "type": "Identifier",
               "start": 2,
               "end": 3,
               "name": "x"
             },
-            "shorthand": true
+            "kind": "init"
           },
           {
             "type": "SpreadElement",
@@ -58,14 +58,14 @@
               "name": "a"
             },
             "computed": false,
-            "kind": "init",
+            "shorthand": true,
             "value": {
               "type": "Identifier",
               "start": 11,
               "end": 12,
               "name": "a"
             },
-            "shorthand": true
+            "kind": "init"
           },
           {
             "type": "SpreadElement",
@@ -90,14 +90,14 @@
               "name": "c"
             },
             "computed": false,
-            "kind": "init",
+            "shorthand": true,
             "value": {
               "type": "Identifier",
               "start": 20,
               "end": 21,
               "name": "c"
             },
-            "shorthand": true
+            "kind": "init"
           }
         ]
       }

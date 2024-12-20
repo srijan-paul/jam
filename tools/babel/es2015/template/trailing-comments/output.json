@@ -43,15 +43,7 @@
             "tail": true
           }
         ]
-      },
-      "trailingComments": [
-        {
-          "type": "CommentLine",
-          "value": " comment",
-          "start": 7,
-          "end": 17
-        }
-      ]
+      }
     }
   ]
 }

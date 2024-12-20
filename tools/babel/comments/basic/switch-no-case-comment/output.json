@@ -29,14 +29,6 @@
           "start": 18,
           "end": 23
         }
-      ],
-      "trailingComments": [
-        {
-          "type": "CommentBlock",
-          "value": "3",
-          "start": 26,
-          "end": 31
-        }
       ]
     }
   ]

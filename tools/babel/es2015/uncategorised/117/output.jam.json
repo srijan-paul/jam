@@ -20,7 +20,7 @@
         "body": [
           {
             "type": "MethodDefinition",
-            "start": 13,
+            "start": 9,
             "end": 20,
             "key": {
               "type": "Identifier",
@@ -30,11 +30,12 @@
             },
             "value": {
               "type": "FunctionExpression",
-              "start": 14,
+              "start": 9,
               "end": 20,
               "generator": false,
               "async": false,
               "arrow": false,
+              "expression": true,
               "params": [
                 {
                   "type": "Identifier",

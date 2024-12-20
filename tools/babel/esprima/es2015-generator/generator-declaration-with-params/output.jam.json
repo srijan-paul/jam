@@ -17,6 +17,7 @@
       },
       "generator": true,
       "async": false,
+      "expression": false,
       "params": [
         {
           "type": "Identifier",

@@ -20,7 +20,7 @@
         "body": [
           {
             "type": "MethodDefinition",
-            "start": 21,
+            "start": 14,
             "end": 210,
             "key": {
               "type": "Identifier",
@@ -30,11 +30,12 @@
             },
             "value": {
               "type": "FunctionExpression",
-              "start": 31,
+              "start": 14,
               "end": 210,
               "generator": true,
               "async": true,
               "arrow": false,
+              "expression": true,
               "params": [
                 {
                   "type": "Identifier",
@@ -84,7 +85,8 @@
                                 "end": 74,
                                 "name": "path"
                               }
-                            ]
+                            ],
+                            "optional": false
                           }
                         }
                       }
@@ -120,13 +122,14 @@
                                 "end": 106,
                                 "name": "file"
                               },
+                              "computed": false,
                               "property": {
                                 "type": "Identifier",
                                 "start": 107,
                                 "end": 110,
                                 "name": "EOF"
                               },
-                              "computed": false
+                              "optional": false
                             }
                           },
                           "body": {
@@ -160,15 +163,17 @@
                                           "end": 138,
                                           "name": "file"
                                         },
+                                        "computed": false,
                                         "property": {
                                           "type": "Identifier",
                                           "start": 139,
                                           "end": 147,
                                           "name": "readLine"
                                         },
-                                        "computed": false
+                                        "optional": false
                                       },
-                                      "arguments": []
+                                      "arguments": [],
+                                      "optional": false
                                     }
                                   },
                                   "delegate": false
@@ -207,15 +212,17 @@
                                   "end": 191,
                                   "name": "file"
                                 },
+                                "computed": false,
                                 "property": {
                                   "type": "Identifier",
                                   "start": 192,
                                   "end": 197,
                                   "name": "close"
                                 },
-                                "computed": false
+                                "optional": false
                               },
-                              "arguments": []
+                              "arguments": [],
+                              "optional": false
                             }
                           }
                         }

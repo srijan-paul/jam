@@ -61,6 +61,7 @@
       },
       "generator": true,
       "async": false,
+      "expression": false,
       "params": [],
       "body": {
         "type": "BlockStatement",
@@ -82,7 +83,7 @@
               "body": [
                 {
                   "type": "MethodDefinition",
-                  "start": 61,
+                  "start": 56,
                   "end": 93,
                   "key": {
                     "type": "YieldExpression",
@@ -92,11 +93,12 @@
                   },
                   "value": {
                     "type": "FunctionExpression",
-                    "start": 67,
+                    "start": 56,
                     "end": 93,
                     "generator": false,
                     "async": false,
                     "arrow": false,
+                    "expression": true,
                     "params": [],
                     "body": {
                       "type": "BlockStatement",
@@ -124,7 +126,7 @@
                 },
                 {
                   "type": "MethodDefinition",
-                  "start": 103,
+                  "start": 98,
                   "end": 138,
                   "key": {
                     "type": "YieldExpression",
@@ -134,11 +136,12 @@
                   },
                   "value": {
                     "type": "FunctionExpression",
-                    "start": 109,
+                    "start": 98,
                     "end": 138,
                     "generator": false,
                     "async": false,
                     "arrow": false,
+                    "expression": true,
                     "params": [
                       {
                         "type": "Identifier",

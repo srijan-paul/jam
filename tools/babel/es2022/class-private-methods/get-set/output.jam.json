@@ -20,7 +20,7 @@
         "body": [
           {
             "type": "MethodDefinition",
-            "start": 20,
+            "start": 16,
             "end": 52,
             "key": {
               "type": "Identifier",
@@ -30,11 +30,12 @@
             },
             "value": {
               "type": "FunctionExpression",
-              "start": 25,
+              "start": 16,
               "end": 52,
               "generator": false,
               "async": false,
               "arrow": false,
+              "expression": true,
               "params": [],
               "body": {
                 "type": "BlockStatement",
@@ -55,7 +56,8 @@
                         "end": 45,
                         "name": "ohNo"
                       },
-                      "arguments": []
+                      "arguments": [],
+                      "optional": false
                     }
                   }
                 ]
@@ -67,7 +69,7 @@
           },
           {
             "type": "MethodDefinition",
-            "start": 59,
+            "start": 55,
             "end": 97,
             "key": {
               "type": "Identifier",
@@ -77,11 +79,12 @@
             },
             "value": {
               "type": "FunctionExpression",
-              "start": 64,
+              "start": 55,
               "end": 97,
               "generator": false,
               "async": false,
               "arrow": false,
+              "expression": true,
               "params": [
                 {
                   "type": "Identifier",
@@ -116,7 +119,8 @@
                           "end": 91,
                           "name": "x"
                         }
-                      ]
+                      ],
+                      "optional": false
                     }
                   }
                 ]

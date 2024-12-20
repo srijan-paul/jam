@@ -37,7 +37,8 @@
             "end": 12,
             "name": "b"
           }
-        ]
+        ],
+        "optional": false
       }
     }
   ]

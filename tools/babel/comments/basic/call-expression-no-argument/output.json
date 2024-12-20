@@ -17,15 +17,7 @@
           "type": "Identifier",
           "start": 0,
           "end": 3,
-          "name": "foo",
-          "trailingComments": [
-            {
-              "type": "CommentBlock",
-              "value": " 1 ",
-              "start": 4,
-              "end": 11
-            }
-          ]
+          "name": "foo"
         },
         "arguments": [],
         "innerComments": [

@@ -30,13 +30,14 @@
               "end": 13,
               "raw": "/42/g"
             },
+            "computed": false,
             "property": {
               "type": "Identifier",
               "start": 14,
               "end": 18,
               "name": "test"
             },
-            "computed": false
+            "optional": false
           }
         }
       ],

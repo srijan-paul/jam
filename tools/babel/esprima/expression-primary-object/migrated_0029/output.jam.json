@@ -26,7 +26,7 @@
               "name": "i"
             },
             "computed": false,
-            "kind": "get",
+            "shorthand": false,
             "value": {
               "type": "FunctionExpression",
               "start": 8,
@@ -34,6 +34,7 @@
               "generator": false,
               "async": false,
               "arrow": false,
+              "expression": true,
               "params": [],
               "body": {
                 "type": "BlockStatement",
@@ -42,7 +43,7 @@
                 "body": []
               }
             },
-            "shorthand": false
+            "kind": "get"
           },
           {
             "type": "Property",
@@ -56,7 +57,7 @@
               "name": "i"
             },
             "computed": false,
-            "kind": "init",
+            "shorthand": false,
             "value": {
               "type": "Literal",
               "start": 19,
@@ -64,7 +65,7 @@
               "value": 42,
               "raw": "42"
             },
-            "shorthand": false
+            "kind": "init"
           }
         ]
       }

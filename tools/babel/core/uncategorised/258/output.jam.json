@@ -9,32 +9,14 @@
       "type": "LabeledStatement",
       "start": 0,
       "end": 61,
-      "label": {
-        "type": "Identifier",
-        "start": 0,
-        "end": 7,
-        "name": "target1"
-      },
       "body": {
         "type": "LabeledStatement",
         "start": 9,
         "end": 61,
-        "label": {
-          "type": "Identifier",
-          "start": 9,
-          "end": 16,
-          "name": "target2"
-        },
         "body": {
           "type": "LabeledStatement",
           "start": 18,
           "end": 61,
-          "label": {
-            "type": "Identifier",
-            "start": 18,
-            "end": 25,
-            "name": "target3"
-          },
           "body": {
             "type": "WhileStatement",
             "start": 27,
@@ -64,8 +46,26 @@
                 }
               ]
             }
+          },
+          "label": {
+            "type": "Identifier",
+            "start": 18,
+            "end": 25,
+            "name": "target3"
           }
+        },
+        "label": {
+          "type": "Identifier",
+          "start": 9,
+          "end": 16,
+          "name": "target2"
         }
+      },
+      "label": {
+        "type": "Identifier",
+        "start": 0,
+        "end": 7,
+        "name": "target1"
       }
     }
   ]

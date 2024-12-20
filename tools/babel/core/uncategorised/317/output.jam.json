@@ -9,12 +9,6 @@
       "type": "LabeledStatement",
       "start": 0,
       "end": 25,
-      "label": {
-        "type": "Identifier",
-        "start": 0,
-        "end": 3,
-        "name": "foo"
-      },
       "body": {
         "type": "IfStatement",
         "start": 5,
@@ -38,6 +32,12 @@
           }
         },
         "alternate": null
+      },
+      "label": {
+        "type": "Identifier",
+        "start": 0,
+        "end": 3,
+        "name": "foo"
       }
     }
   ]

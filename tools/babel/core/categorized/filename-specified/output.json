@@ -28,15 +28,7 @@
           }
         }
       ],
-      "kind": "var",
-      "leadingComments": [
-        {
-          "type": "CommentLine",
-          "value": " This comment should have a filename prop attached to loc",
-          "start": 0,
-          "end": 59
-        }
-      ]
+      "kind": "var"
     }
   ]
 }

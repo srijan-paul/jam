@@ -81,7 +81,7 @@
                 "name": "let"
               },
               "computed": false,
-              "kind": "init",
+              "shorthand": false,
               "value": {
                 "type": "Literal",
                 "start": 33,
@@ -89,7 +89,7 @@
                 "value": 1,
                 "raw": "1"
               },
-              "shorthand": false
+              "kind": "init"
             }
           ]
         }
@@ -114,13 +114,13 @@
             "end": 40,
             "name": "let"
           },
+          "computed": false,
           "property": {
             "type": "Identifier",
             "start": 41,
             "end": 44,
             "name": "let"
-          },
-          "computed": false
+          }
         },
         "right": {
           "type": "Literal",

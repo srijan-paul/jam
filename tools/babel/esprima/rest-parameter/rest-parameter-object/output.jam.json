@@ -17,6 +17,7 @@
       },
       "generator": false,
       "async": false,
+      "expression": false,
       "params": [
         {
           "type": "RestElement",
@@ -39,14 +40,14 @@
                   "name": "a"
                 },
                 "computed": false,
-                "kind": "init",
+                "shorthand": true,
                 "value": {
                   "type": "Identifier",
                   "start": 15,
                   "end": 16,
                   "name": "a"
                 },
-                "shorthand": true
+                "kind": "init"
               }
             ]
           }

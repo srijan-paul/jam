@@ -31,14 +31,14 @@
                   "name": "x"
                 },
                 "computed": false,
-                "kind": "init",
+                "shorthand": false,
                 "value": {
                   "type": "Identifier",
                   "start": 9,
                   "end": 14,
                   "name": "yield"
                 },
-                "shorthand": false
+                "kind": "init"
               }
             ]
           },

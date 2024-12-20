@@ -17,6 +17,7 @@
       },
       "generator": true,
       "async": false,
+      "expression": false,
       "params": [],
       "body": {
         "type": "BlockStatement",
@@ -34,6 +35,7 @@
               "generator": false,
               "async": false,
               "arrow": true,
+              "expression": true,
               "params": [],
               "body": {
                 "type": "Identifier",
@@ -54,6 +56,7 @@
               "generator": false,
               "async": false,
               "arrow": true,
+              "expression": true,
               "params": [],
               "body": {
                 "type": "BlockStatement",

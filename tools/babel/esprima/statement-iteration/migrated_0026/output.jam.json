@@ -19,13 +19,14 @@
           "end": 6,
           "name": "a"
         },
+        "computed": false,
         "property": {
           "type": "Identifier",
           "start": 7,
           "end": 9,
           "name": "in"
         },
-        "computed": false
+        "optional": false
       },
       "right": {
         "type": "Identifier",

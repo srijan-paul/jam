@@ -38,6 +38,7 @@
               "generator": false,
               "async": true,
               "arrow": false,
+              "expression": true,
               "params": [],
               "body": {
                 "type": "BlockStatement",

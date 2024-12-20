@@ -37,14 +37,14 @@
                 "name": "y"
               },
               "computed": false,
-              "kind": "init",
+              "shorthand": true,
               "value": {
                 "type": "Identifier",
                 "start": 6,
                 "end": 7,
                 "name": "y"
               },
-              "shorthand": true
+              "kind": "init"
             },
             {
               "type": "Property",
@@ -58,14 +58,14 @@
                 "name": "z"
               },
               "computed": false,
-              "kind": "init",
+              "shorthand": true,
               "value": {
                 "type": "Identifier",
                 "start": 9,
                 "end": 10,
                 "name": "z"
               },
-              "shorthand": true
+              "kind": "init"
             }
           ]
         }

@@ -16,6 +16,7 @@
         "generator": false,
         "async": false,
         "arrow": true,
+        "expression": true,
         "params": [
           {
             "type": "ObjectPattern",
@@ -34,14 +35,14 @@
                   "name": "__proto__"
                 },
                 "computed": false,
-                "kind": "init",
+                "shorthand": false,
                 "value": {
                   "type": "Identifier",
                   "start": 14,
                   "end": 15,
                   "name": "x"
                 },
-                "shorthand": false
+                "kind": "init"
               },
               {
                 "type": "Property",
@@ -55,14 +56,14 @@
                   "name": "__proto__"
                 },
                 "computed": false,
-                "kind": "init",
+                "shorthand": false,
                 "value": {
                   "type": "Identifier",
                   "start": 28,
                   "end": 29,
                   "name": "y"
                 },
-                "shorthand": false
+                "kind": "init"
               },
               {
                 "type": "Property",
@@ -76,14 +77,14 @@
                   "name": "__proto__"
                 },
                 "computed": false,
-                "kind": "init",
+                "shorthand": false,
                 "value": {
                   "type": "Identifier",
                   "start": 42,
                   "end": 43,
                   "name": "z"
                 },
-                "shorthand": false
+                "kind": "init"
               }
             ]
           }

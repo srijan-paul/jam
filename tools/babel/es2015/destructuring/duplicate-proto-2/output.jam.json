@@ -36,14 +36,14 @@
                     "name": "__proto__"
                   },
                   "computed": false,
-                  "kind": "init",
+                  "shorthand": false,
                   "value": {
                     "type": "Identifier",
                     "start": 15,
                     "end": 16,
                     "name": "x"
                   },
-                  "shorthand": false
+                  "kind": "init"
                 },
                 {
                   "type": "Property",
@@ -57,14 +57,14 @@
                     "name": "__proto__"
                   },
                   "computed": false,
-                  "kind": "init",
+                  "shorthand": false,
                   "value": {
                     "type": "Identifier",
                     "start": 29,
                     "end": 30,
                     "name": "y"
                   },
-                  "shorthand": false
+                  "kind": "init"
                 }
               ]
             }

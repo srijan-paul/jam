@@ -31,7 +31,7 @@
                 "name": "a"
               },
               "computed": false,
-              "kind": "init",
+              "shorthand": false,
               "value": {
                 "type": "AssignmentPattern",
                 "start": 6,
@@ -46,13 +46,14 @@
                     "end": 8,
                     "name": "a"
                   },
+                  "computed": false,
                   "property": {
                     "type": "Identifier",
                     "start": 9,
                     "end": 10,
                     "name": "b"
                   },
-                  "computed": false
+                  "optional": false
                 },
                 "right": {
                   "type": "MemberExpression",
@@ -64,16 +65,17 @@
                     "end": 16,
                     "name": "c"
                   },
+                  "computed": false,
                   "property": {
                     "type": "Identifier",
                     "start": 17,
                     "end": 18,
                     "name": "d"
                   },
-                  "computed": false
+                  "optional": false
                 }
               },
-              "shorthand": false
+              "kind": "init"
             }
           ]
         },

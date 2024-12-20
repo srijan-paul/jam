@@ -19,15 +19,7 @@
             "start": 8,
             "end": 13,
             "name": "error"
-          },
-          "trailingComments": [
-            {
-              "type": "CommentLine",
-              "value": " Comment",
-              "start": 13,
-              "end": 23
-            }
-          ]
+          }
         },
         {
           "type": "ExpressionStatement",
@@ -38,15 +30,7 @@
             "start": 24,
             "end": 29,
             "name": "error"
-          },
-          "leadingComments": [
-            {
-              "type": "CommentLine",
-              "value": " Comment",
-              "start": 13,
-              "end": 23
-            }
-          ]
+          }
         }
       ]
     }

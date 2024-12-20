@@ -46,13 +46,14 @@
                     "end": 34,
                     "name": "console"
                   },
+                  "computed": false,
                   "property": {
                     "type": "Identifier",
                     "start": 35,
                     "end": 38,
                     "name": "log"
                   },
-                  "computed": false
+                  "optional": false
                 },
                 "arguments": [
                   {
@@ -62,7 +63,8 @@
                     "value": "1",
                     "raw": "'1'"
                   }
-                ]
+                ],
+                "optional": false
               }
             }
           ]

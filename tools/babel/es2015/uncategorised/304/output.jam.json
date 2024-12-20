@@ -31,7 +31,7 @@
                   "name": "propName"
                 },
                 "computed": false,
-                "kind": "init",
+                "shorthand": false,
                 "value": {
                   "type": "AssignmentPattern",
                   "start": 15,
@@ -49,7 +49,7 @@
                     "name": "defaultValue"
                   }
                 },
-                "shorthand": false
+                "kind": "init"
               }
             ]
           },

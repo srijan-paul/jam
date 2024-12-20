@@ -31,15 +31,17 @@
               "value": 42,
               "raw": "42"
             }
-          ]
+          ],
+          "optional": false
         },
+        "computed": false,
         "property": {
           "type": "Identifier",
           "start": 13,
           "end": 21,
           "name": "galaxies"
         },
-        "computed": false
+        "optional": false
       }
     }
   ]

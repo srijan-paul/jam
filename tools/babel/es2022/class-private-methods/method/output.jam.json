@@ -30,11 +30,12 @@
             },
             "value": {
               "type": "FunctionExpression",
-              "start": 26,
+              "start": 16,
               "end": 62,
               "generator": false,
               "async": false,
               "arrow": false,
+              "expression": true,
               "params": [],
               "body": {
                 "type": "BlockStatement",
@@ -55,7 +56,8 @@
                         "end": 55,
                         "name": "violentPeople"
                       },
-                      "arguments": []
+                      "arguments": [],
+                      "optional": false
                     }
                   }
                 ]

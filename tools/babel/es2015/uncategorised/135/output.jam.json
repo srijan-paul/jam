@@ -20,7 +20,7 @@
         "body": [
           {
             "type": "MethodDefinition",
-            "start": 21,
+            "start": 10,
             "end": 29,
             "key": {
               "type": "Identifier",
@@ -30,11 +30,12 @@
             },
             "value": {
               "type": "FunctionExpression",
-              "start": 24,
+              "start": 10,
               "end": 29,
               "generator": false,
               "async": false,
               "arrow": false,
+              "expression": true,
               "params": [],
               "body": {
                 "type": "BlockStatement",
@@ -49,7 +50,7 @@
           },
           {
             "type": "MethodDefinition",
-            "start": 41,
+            "start": 30,
             "end": 50,
             "key": {
               "type": "Identifier",
@@ -59,11 +60,12 @@
             },
             "value": {
               "type": "FunctionExpression",
-              "start": 44,
+              "start": 30,
               "end": 50,
               "generator": false,
               "async": false,
               "arrow": false,
+              "expression": true,
               "params": [
                 {
                   "type": "Identifier",
@@ -85,7 +87,7 @@
           },
           {
             "type": "MethodDefinition",
-            "start": 55,
+            "start": 51,
             "end": 63,
             "key": {
               "type": "Identifier",
@@ -95,11 +97,12 @@
             },
             "value": {
               "type": "FunctionExpression",
-              "start": 58,
+              "start": 51,
               "end": 63,
               "generator": false,
               "async": false,
               "arrow": false,
+              "expression": true,
               "params": [],
               "body": {
                 "type": "BlockStatement",
@@ -114,7 +117,7 @@
           },
           {
             "type": "MethodDefinition",
-            "start": 68,
+            "start": 64,
             "end": 77,
             "key": {
               "type": "Identifier",
@@ -124,11 +127,12 @@
             },
             "value": {
               "type": "FunctionExpression",
-              "start": 71,
+              "start": 64,
               "end": 77,
               "generator": false,
               "async": false,
               "arrow": false,
+              "expression": true,
               "params": [
                 {
                   "type": "Identifier",

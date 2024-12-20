@@ -9,12 +9,6 @@
       "type": "LabeledStatement",
       "start": 0,
       "end": 44,
-      "label": {
-        "type": "Identifier",
-        "start": 0,
-        "end": 9,
-        "name": "__proto__"
-      },
       "body": {
         "type": "WhileStatement",
         "start": 11,
@@ -44,6 +38,12 @@
             }
           ]
         }
+      },
+      "label": {
+        "type": "Identifier",
+        "start": 0,
+        "end": 9,
+        "name": "__proto__"
       }
     }
   ]

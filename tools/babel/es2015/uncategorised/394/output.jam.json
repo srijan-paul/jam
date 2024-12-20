@@ -67,13 +67,14 @@
             "end": 19,
             "name": "a"
           },
+          "computed": false,
           "property": {
             "type": "Identifier",
             "start": 20,
             "end": 21,
             "name": "b"
           },
-          "computed": false
+          "optional": false
         },
         "right": {
           "type": "ObjectExpression",

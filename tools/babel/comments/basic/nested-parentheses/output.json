@@ -25,62 +25,8 @@
           "type": "Identifier",
           "start": 35,
           "end": 36,
-          "name": "i",
-          "trailingComments": [
-            {
-              "type": "CommentBlock",
-              "value": " 4 ",
-              "start": 36,
-              "end": 43
-            },
-            {
-              "type": "CommentBlock",
-              "value": " 5 ",
-              "start": 44,
-              "end": 51
-            },
-            {
-              "type": "CommentBlock",
-              "value": " 6 ",
-              "start": 52,
-              "end": 59
-            }
-          ],
-          "leadingComments": [
-            {
-              "type": "CommentBlock",
-              "value": " 0 ",
-              "start": 4,
-              "end": 11
-            },
-            {
-              "type": "CommentBlock",
-              "value": " 1 ",
-              "start": 12,
-              "end": 19
-            },
-            {
-              "type": "CommentBlock",
-              "value": " 2 ",
-              "start": 20,
-              "end": 27
-            },
-            {
-              "type": "CommentBlock",
-              "value": " 3 ",
-              "start": 28,
-              "end": 35
-            }
-          ]
-        },
-        "trailingComments": [
-          {
-            "type": "CommentBlock",
-            "value": " 7 ",
-            "start": 60,
-            "end": 67
-          }
-        ]
+          "name": "i"
+        }
       }
     }
   ]

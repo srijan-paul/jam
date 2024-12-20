@@ -8,15 +8,7 @@
     {
       "type": "EmptyStatement",
       "start": 5,
-      "end": 6,
-      "leadingComments": [
-        {
-          "type": "CommentLine",
-          "value": "",
-          "start": 0,
-          "end": 4
-        }
-      ]
+      "end": 6
     }
   ]
 }

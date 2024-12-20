@@ -37,8 +37,7 @@
                   "end": 28,
                   "value": "use\nstrict",
                   "raw": "'use\\nstrict'"
-                },
-                "directive": "use\\nstrict"
+                }
               },
               {
                 "type": "WithStatement",

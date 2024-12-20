@@ -37,8 +37,7 @@
                   "end": 28,
                   "value": "use strict",
                   "raw": "'use strict'"
-                },
-                "directive": "use strict"
+                }
               },
               {
                 "type": "ExpressionStatement",
@@ -50,8 +49,7 @@
                   "end": 34,
                   "value": "\u0000",
                   "raw": "'\u0000'"
-                },
-                "directive": "\u0000"
+                }
               }
             ]
           }

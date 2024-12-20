@@ -17,6 +17,7 @@
       },
       "generator": true,
       "async": false,
+      "expression": false,
       "params": [],
       "body": {
         "type": "BlockStatement",
@@ -41,15 +42,17 @@
                   "end": 19,
                   "name": "obj"
                 },
+                "computed": false,
                 "property": {
                   "type": "Identifier",
                   "start": 20,
                   "end": 25,
                   "name": "yield"
                 },
-                "computed": false
+                "optional": false
               },
-              "arguments": []
+              "arguments": [],
+              "optional": false
             }
           }
         ]

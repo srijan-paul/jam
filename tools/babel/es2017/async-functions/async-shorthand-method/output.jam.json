@@ -26,7 +26,7 @@
               "name": "get"
             },
             "computed": false,
-            "kind": "init",
+            "shorthand": false,
             "value": {
               "type": "Property",
               "start": 11,
@@ -39,7 +39,7 @@
                 "name": "get"
               },
               "computed": false,
-              "kind": "init",
+              "shorthand": false,
               "value": {
                 "type": "FunctionExpression",
                 "start": 14,
@@ -47,6 +47,7 @@
                 "generator": false,
                 "async": true,
                 "arrow": false,
+                "expression": true,
                 "params": [],
                 "body": {
                   "type": "BlockStatement",
@@ -55,9 +56,9 @@
                   "body": []
                 }
               },
-              "shorthand": false
+              "kind": "init"
             },
-            "shorthand": false
+            "kind": "init"
           },
           {
             "type": "Property",
@@ -71,7 +72,7 @@
               "name": "set"
             },
             "computed": false,
-            "kind": "init",
+            "shorthand": false,
             "value": {
               "type": "Property",
               "start": 29,
@@ -84,7 +85,7 @@
                 "name": "set"
               },
               "computed": false,
-              "kind": "init",
+              "shorthand": false,
               "value": {
                 "type": "FunctionExpression",
                 "start": 32,
@@ -92,6 +93,7 @@
                 "generator": false,
                 "async": true,
                 "arrow": false,
+                "expression": true,
                 "params": [],
                 "body": {
                   "type": "BlockStatement",
@@ -100,9 +102,9 @@
                   "body": []
                 }
               },
-              "shorthand": false
+              "kind": "init"
             },
-            "shorthand": false
+            "kind": "init"
           }
         ]
       }

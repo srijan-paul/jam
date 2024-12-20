@@ -53,8 +53,7 @@
                     "end": 49,
                     "value": "use strict",
                     "raw": "\"use strict\""
-                  },
-                  "directive": "use strict"
+                  }
                 }
               ]
             }

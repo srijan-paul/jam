@@ -24,13 +24,14 @@
             "value": 123.,
             "raw": "123."
           },
+          "computed": false,
           "property": {
             "type": "Identifier",
             "start": 5,
             "end": 13,
             "name": "toString"
           },
-          "computed": false
+          "optional": false
         },
         "arguments": [
           {
@@ -40,7 +41,8 @@
             "value": 10,
             "raw": "10"
           }
-        ]
+        ],
+        "optional": false
       }
     }
   ]

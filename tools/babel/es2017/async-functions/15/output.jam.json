@@ -37,7 +37,7 @@
                   "name": "a"
                 },
                 "computed": false,
-                "kind": "init",
+                "shorthand": false,
                 "value": {
                   "type": "Literal",
                   "start": 13,
@@ -45,7 +45,7 @@
                   "value": 1,
                   "raw": "1"
                 },
-                "shorthand": false
+                "kind": "init"
               },
               {
                 "type": "Property",
@@ -59,7 +59,7 @@
                   "name": "foo"
                 },
                 "computed": false,
-                "kind": "init",
+                "shorthand": false,
                 "value": {
                   "type": "Property",
                   "start": 22,
@@ -72,7 +72,7 @@
                     "name": "foo"
                   },
                   "computed": false,
-                  "kind": "init",
+                  "shorthand": false,
                   "value": {
                     "type": "FunctionExpression",
                     "start": 25,
@@ -80,6 +80,7 @@
                     "generator": false,
                     "async": true,
                     "arrow": false,
+                    "expression": true,
                     "params": [
                       {
                         "type": "Identifier",
@@ -112,9 +113,9 @@
                       ]
                     }
                   },
-                  "shorthand": false
+                  "kind": "init"
                 },
-                "shorthand": false
+                "kind": "init"
               }
             ]
           }

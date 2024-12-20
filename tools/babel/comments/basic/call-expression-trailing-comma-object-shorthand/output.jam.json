@@ -43,18 +43,19 @@
                   "name": "b"
                 },
                 "computed": false,
-                "kind": "init",
+                "shorthand": true,
                 "value": {
                   "type": "Identifier",
                   "start": 8,
                   "end": 9,
                   "name": "b"
                 },
-                "shorthand": true
+                "kind": "init"
               }
             ]
           }
-        ]
+        ],
+        "optional": false
       }
     }
   ]

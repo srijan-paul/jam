@@ -42,7 +42,8 @@
                   "end": 31,
                   "name": "stuff"
                 }
-              ]
+              ],
+              "optional": false
             }
           }
         ]

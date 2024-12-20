@@ -15,8 +15,7 @@
         "end": 14,
         "value": "Hello\u0000World",
         "raw": "\"Hello\\0World\""
-      },
-      "directive": "Hello\\0World"
+      }
     }
   ]
 }

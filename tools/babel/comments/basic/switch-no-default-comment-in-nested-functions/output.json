@@ -206,15 +206,7 @@
                             "end": 136,
                             "value": "SequenceExpression",
                             "raw": "\"SequenceExpression\""
-                          },
-                          "trailingComments": [
-                            {
-                              "type": "CommentLine",
-                              "value": " no default",
-                              "start": 232,
-                              "end": 245
-                            }
-                          ]
+                          }
                         }
                       ]
                     },

@@ -31,29 +31,32 @@
                 "end": 5,
                 "name": "earth"
               },
+              "computed": false,
               "property": {
                 "type": "Identifier",
                 "start": 6,
                 "end": 10,
                 "name": "asia"
               },
-              "computed": false
+              "optional": false
             },
+            "computed": false,
             "property": {
               "type": "Identifier",
               "start": 11,
               "end": 20,
               "name": "Indonesia"
             },
-            "computed": false
+            "optional": false
           },
+          "computed": false,
           "property": {
             "type": "Identifier",
             "start": 21,
             "end": 39,
             "name": "prepareForElection"
           },
-          "computed": false
+          "optional": false
         },
         "arguments": [
           {
@@ -63,7 +66,8 @@
             "value": 2014,
             "raw": "2014"
           }
-        ]
+        ],
+        "optional": false
       }
     }
   ]

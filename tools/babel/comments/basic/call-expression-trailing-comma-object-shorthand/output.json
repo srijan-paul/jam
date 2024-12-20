@@ -52,26 +52,10 @@
                 },
                 "kind": "init"
               }
-            ],
-            "trailingComments": [
-              {
-                "type": "CommentBlock",
-                "value": " comment 1 ",
-                "start": 13,
-                "end": 28
-              }
             ]
           }
         ],
-        "optional": false,
-        "trailingComments": [
-          {
-            "type": "CommentBlock",
-            "value": " comment 2 ",
-            "start": 30,
-            "end": 45
-          }
-        ]
+        "optional": false
       }
     }
   ]

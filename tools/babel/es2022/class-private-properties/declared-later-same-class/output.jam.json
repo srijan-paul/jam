@@ -37,13 +37,14 @@
                 "start": 17,
                 "end": 21
               },
+              "computed": false,
               "property": {
                 "type": "Identifier",
                 "start": 22,
                 "end": 24,
                 "name": "#y"
               },
-              "computed": false
+              "optional": false
             },
             "computed": false,
             "static": false

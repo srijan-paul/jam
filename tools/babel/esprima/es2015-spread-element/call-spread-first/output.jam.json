@@ -43,7 +43,8 @@
             "end": 12,
             "name": "z"
           }
-        ]
+        ],
+        "optional": false
       }
     }
   ]

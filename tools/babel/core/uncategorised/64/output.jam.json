@@ -34,7 +34,8 @@
                 "end": 31,
                 "name": "doThat"
               },
-              "arguments": []
+              "arguments": [],
+              "optional": false
             }
           }
         ]

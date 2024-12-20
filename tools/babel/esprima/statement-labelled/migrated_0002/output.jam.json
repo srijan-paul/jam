@@ -9,12 +9,6 @@
       "type": "LabeledStatement",
       "start": 0,
       "end": 15,
-      "label": {
-        "type": "Identifier",
-        "start": 0,
-        "end": 9,
-        "name": "__proto__"
-      },
       "body": {
         "type": "ExpressionStatement",
         "start": 11,
@@ -25,6 +19,12 @@
           "end": 15,
           "name": "test"
         }
+      },
+      "label": {
+        "type": "Identifier",
+        "start": 0,
+        "end": 9,
+        "name": "__proto__"
       }
     }
   ]

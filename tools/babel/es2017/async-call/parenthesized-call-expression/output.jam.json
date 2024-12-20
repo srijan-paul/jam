@@ -44,13 +44,14 @@
                       "end": 10,
                       "name": "a"
                     },
+                    "computed": false,
                     "property": {
                       "type": "Identifier",
                       "start": 11,
                       "end": 12,
                       "name": "b"
                     },
-                    "computed": false
+                    "optional": false
                   },
                   "right": {
                     "type": "ArrayExpression",
@@ -68,7 +69,8 @@
               "elements": []
             }
           }
-        ]
+        ],
+        "optional": false
       }
     }
   ]

@@ -37,7 +37,7 @@
                   "name": "queryAll"
                 },
                 "computed": false,
-                "kind": "init",
+                "shorthand": false,
                 "value": {
                   "type": "Property",
                   "start": 27,
@@ -50,7 +50,7 @@
                     "name": "queryAll"
                   },
                   "computed": false,
-                  "kind": "init",
+                  "shorthand": false,
                   "value": {
                     "type": "FunctionExpression",
                     "start": 35,
@@ -58,6 +58,7 @@
                     "generator": true,
                     "async": true,
                     "arrow": false,
+                    "expression": true,
                     "params": [
                       {
                         "type": "Identifier",
@@ -131,13 +132,14 @@
                                           "start": 99,
                                           "end": 103
                                         },
+                                        "computed": false,
                                         "property": {
                                           "type": "Identifier",
                                           "start": 104,
                                           "end": 109,
                                           "name": "query"
                                         },
-                                        "computed": false
+                                        "optional": false
                                       },
                                       "arguments": [
                                         {
@@ -146,7 +148,8 @@
                                           "end": 112,
                                           "name": "id"
                                         }
-                                      ]
+                                      ],
+                                      "optional": false
                                     }
                                   },
                                   "delegate": false
@@ -158,9 +161,9 @@
                       ]
                     }
                   },
-                  "shorthand": false
+                  "kind": "init"
                 },
-                "shorthand": false
+                "kind": "init"
               }
             ]
           }

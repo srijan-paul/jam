@@ -13,23 +13,7 @@
         "type": "Identifier",
         "start": 25,
         "end": 26,
-        "name": "f",
-        "trailingComments": [
-          {
-            "type": "CommentBlock",
-            "value": " 3 ",
-            "start": 27,
-            "end": 34
-          }
-        ],
-        "leadingComments": [
-          {
-            "type": "CommentBlock",
-            "value": " 2 ",
-            "start": 17,
-            "end": 24
-          }
-        ]
+        "name": "f"
       },
       "generator": false,
       "async": false,
@@ -39,29 +23,7 @@
           "type": "Identifier",
           "start": 44,
           "end": 45,
-          "name": "a",
-          "trailingComments": [
-            {
-              "type": "CommentBlock",
-              "value": " 5 ",
-              "start": 46,
-              "end": 53
-            },
-            {
-              "type": "CommentBlock",
-              "value": " 6 ",
-              "start": 55,
-              "end": 62
-            }
-          ],
-          "leadingComments": [
-            {
-              "type": "CommentBlock",
-              "value": " 4 ",
-              "start": 36,
-              "end": 43
-            }
-          ]
+          "name": "a"
         }
       ],
       "body": {
@@ -76,32 +38,8 @@
             "start": 74,
             "end": 81
           }
-        ],
-        "leadingComments": [
-          {
-            "type": "CommentBlock",
-            "value": " 7 ",
-            "start": 64,
-            "end": 71
-          }
         ]
-      },
-      "trailingComments": [
-        {
-          "type": "CommentBlock",
-          "value": " 9 ",
-          "start": 84,
-          "end": 91
-        }
-      ],
-      "leadingComments": [
-        {
-          "type": "CommentBlock",
-          "value": " 1 ",
-          "start": 0,
-          "end": 7
-        }
-      ]
+      }
     },
     {
       "type": "ExpressionStatement",
@@ -115,23 +53,7 @@
           "type": "Identifier",
           "start": 118,
           "end": 119,
-          "name": "f",
-          "trailingComments": [
-            {
-              "type": "CommentBlock",
-              "value": " 3 ",
-              "start": 120,
-              "end": 127
-            }
-          ],
-          "leadingComments": [
-            {
-              "type": "CommentBlock",
-              "value": " 2 ",
-              "start": 110,
-              "end": 117
-            }
-          ]
+          "name": "f"
         },
         "generator": false,
         "async": false,
@@ -141,29 +63,7 @@
             "type": "Identifier",
             "start": 137,
             "end": 138,
-            "name": "a",
-            "trailingComments": [
-              {
-                "type": "CommentBlock",
-                "value": " 5 ",
-                "start": 139,
-                "end": 146
-              },
-              {
-                "type": "CommentBlock",
-                "value": " 6 ",
-                "start": 148,
-                "end": 155
-              }
-            ],
-            "leadingComments": [
-              {
-                "type": "CommentBlock",
-                "value": " 4 ",
-                "start": 129,
-                "end": 136
-              }
-            ]
+            "name": "a"
           }
         ],
         "body": {
@@ -178,41 +78,9 @@
               "start": 167,
               "end": 174
             }
-          ],
-          "leadingComments": [
-            {
-              "type": "CommentBlock",
-              "value": " 7 ",
-              "start": 157,
-              "end": 164
-            }
           ]
-        },
-        "trailingComments": [
-          {
-            "type": "CommentBlock",
-            "value": " 9 ",
-            "start": 177,
-            "end": 184
-          }
-        ],
-        "leadingComments": [
-          {
-            "type": "CommentBlock",
-            "value": " 1 ",
-            "start": 93,
-            "end": 100
-          }
-        ]
-      },
-      "leadingComments": [
-        {
-          "type": "CommentBlock",
-          "value": " 9 ",
-          "start": 84,
-          "end": 91
         }
-      ]
+      }
     }
   ]
 }

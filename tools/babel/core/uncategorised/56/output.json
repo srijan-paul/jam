@@ -15,15 +15,7 @@
         "end": 19,
         "value": 42,
         "raw": "42"
-      },
-      "leadingComments": [
-        {
-          "type": "CommentLine",
-          "value": " Hello, world!",
-          "start": 0,
-          "end": 16
-        }
-      ]
+      }
     }
   ]
 }

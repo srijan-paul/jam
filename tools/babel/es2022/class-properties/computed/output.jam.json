@@ -20,7 +20,7 @@
         "body": [
           {
             "type": "ClassProperty",
-            "start": 15,
+            "start": 14,
             "end": 16,
             "key": {
               "type": "Identifier",
@@ -39,7 +39,7 @@
           },
           {
             "type": "ClassProperty",
-            "start": 21,
+            "start": 20,
             "end": 24,
             "key": {
               "type": "Literal",
@@ -76,7 +76,7 @@
         "body": [
           {
             "type": "ClassProperty",
-            "start": 45,
+            "start": 44,
             "end": 46,
             "key": {
               "type": "Identifier",
@@ -95,7 +95,7 @@
           },
           {
             "type": "MethodDefinition",
-            "start": 51,
+            "start": 50,
             "end": 59,
             "key": {
               "type": "Identifier",
@@ -105,11 +105,12 @@
             },
             "value": {
               "type": "FunctionExpression",
-              "start": 54,
+              "start": 50,
               "end": 59,
               "generator": false,
               "async": false,
               "arrow": false,
+              "expression": true,
               "params": [],
               "body": {
                 "type": "BlockStatement",

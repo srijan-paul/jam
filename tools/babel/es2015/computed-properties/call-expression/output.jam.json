@@ -40,10 +40,11 @@
                     "end": 18,
                     "name": "bar"
                   },
-                  "arguments": []
+                  "arguments": [],
+                  "optional": false
                 },
                 "computed": true,
-                "kind": "init",
+                "shorthand": false,
                 "value": {
                   "type": "Literal",
                   "start": 23,
@@ -51,7 +52,7 @@
                   "value": "",
                   "raw": "\"\""
                 },
-                "shorthand": false
+                "kind": "init"
               }
             ]
           }

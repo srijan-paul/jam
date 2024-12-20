@@ -25,15 +25,7 @@
               "start": 24,
               "end": 28,
               "name": "dec1"
-            },
-            "trailingComments": [
-              {
-                "type": "CommentBlock",
-                "value": " 3 ",
-                "start": 29,
-                "end": 36
-              }
-            ]
+            }
           },
           {
             "type": "Decorator",
@@ -44,46 +36,14 @@
               "start": 38,
               "end": 42,
               "name": "dec2"
-            },
-            "trailingComments": [
-              {
-                "type": "CommentBlock",
-                "value": " 4 ",
-                "start": 43,
-                "end": 50
-              }
-            ],
-            "leadingComments": [
-              {
-                "type": "CommentBlock",
-                "value": " 3 ",
-                "start": 29,
-                "end": 36
-              }
-            ]
+            }
           }
         ],
         "id": {
           "type": "Identifier",
           "start": 65,
           "end": 66,
-          "name": "C",
-          "trailingComments": [
-            {
-              "type": "CommentBlock",
-              "value": " 6 ",
-              "start": 67,
-              "end": 74
-            }
-          ],
-          "leadingComments": [
-            {
-              "type": "CommentBlock",
-              "value": " 5 ",
-              "start": 57,
-              "end": 64
-            }
-          ]
+          "name": "C"
         },
         "superClass": null,
         "body": {
@@ -98,47 +58,9 @@
               "start": 77,
               "end": 84
             }
-          ],
-          "leadingComments": [
-            {
-              "type": "CommentBlock",
-              "value": " 6 ",
-              "start": 67,
-              "end": 74
-            }
           ]
-        },
-        "leadingComments": [
-          {
-            "type": "CommentBlock",
-            "value": " 2 ",
-            "start": 15,
-            "end": 22
-          }
-        ]
-      },
-      "trailingComments": [
-        {
-          "type": "CommentBlock",
-          "value": " 8 ",
-          "start": 87,
-          "end": 94
-        },
-        {
-          "type": "CommentBlock",
-          "value": " A ",
-          "start": 96,
-          "end": 103
         }
-      ],
-      "leadingComments": [
-        {
-          "type": "CommentBlock",
-          "value": " 1 ",
-          "start": 0,
-          "end": 7
-        }
-      ]
+      }
     },
     {
       "type": "ExportDefaultDeclaration",
@@ -158,15 +80,7 @@
               "start": 136,
               "end": 140,
               "name": "dec1"
-            },
-            "trailingComments": [
-              {
-                "type": "CommentBlock",
-                "value": " D ",
-                "start": 141,
-                "end": 148
-              }
-            ]
+            }
           },
           {
             "type": "Decorator",
@@ -177,23 +91,7 @@
               "start": 150,
               "end": 154,
               "name": "dec2"
-            },
-            "trailingComments": [
-              {
-                "type": "CommentBlock",
-                "value": " E ",
-                "start": 155,
-                "end": 162
-              }
-            ],
-            "leadingComments": [
-              {
-                "type": "CommentBlock",
-                "value": " D ",
-                "start": 141,
-                "end": 148
-              }
-            ]
+            }
           }
         ],
         "id": null,
@@ -210,24 +108,8 @@
               "start": 179,
               "end": 186
             }
-          ],
-          "leadingComments": [
-            {
-              "type": "CommentBlock",
-              "value": " F ",
-              "start": 169,
-              "end": 176
-            }
           ]
-        },
-        "leadingComments": [
-          {
-            "type": "CommentBlock",
-            "value": " C ",
-            "start": 127,
-            "end": 134
-          }
-        ]
+        }
       },
       "innerComments": [
         {
@@ -235,28 +117,6 @@
           "value": " B ",
           "start": 111,
           "end": 118
-        }
-      ],
-      "trailingComments": [
-        {
-          "type": "CommentBlock",
-          "value": " H ",
-          "start": 189,
-          "end": 196
-        }
-      ],
-      "leadingComments": [
-        {
-          "type": "CommentBlock",
-          "value": " 8 ",
-          "start": 87,
-          "end": 94
-        },
-        {
-          "type": "CommentBlock",
-          "value": " A ",
-          "start": 96,
-          "end": 103
         }
       ]
     }

@@ -15,21 +15,7 @@
         "end": 2,
         "value": 42,
         "raw": "42"
-      },
-      "trailingComments": [
-        {
-          "type": "CommentBlock",
-          "value": "the",
-          "start": 3,
-          "end": 10
-        },
-        {
-          "type": "CommentBlock",
-          "value": "answer",
-          "start": 11,
-          "end": 21
-        }
-      ]
+      }
     }
   ]
 }

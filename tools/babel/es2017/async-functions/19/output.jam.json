@@ -51,7 +51,8 @@
                 "value": 2,
                 "raw": "2"
               }
-            ]
+            ],
+            "optional": false
           },
           {
             "type": "Identifier",
@@ -59,7 +60,8 @@
             "end": 19,
             "name": "b"
           }
-        ]
+        ],
+        "optional": false
       }
     }
   ]

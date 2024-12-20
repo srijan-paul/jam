@@ -16,6 +16,7 @@
         "generator": false,
         "async": false,
         "arrow": false,
+        "expression": true,
         "params": [
           {
             "type": "ObjectPattern",
@@ -34,14 +35,14 @@
                   "name": "x"
                 },
                 "computed": false,
-                "kind": "init",
+                "shorthand": true,
                 "value": {
                   "type": "Identifier",
                   "start": 11,
                   "end": 12,
                   "name": "x"
                 },
-                "shorthand": true
+                "kind": "init"
               },
               {
                 "type": "RestElement",

@@ -21,23 +21,25 @@
             "type": "NewExpression",
             "start": 2,
             "end": 9,
+            "arguments": [],
             "callee": {
               "type": "Identifier",
               "start": 6,
               "end": 9,
               "name": "foo"
-            },
-            "arguments": []
+            }
           },
+          "computed": false,
           "property": {
             "type": "Identifier",
             "start": 11,
             "end": 14,
             "name": "bar"
           },
-          "computed": false
+          "optional": false
         },
-        "arguments": []
+        "arguments": [],
+        "optional": false
       }
     }
   ]

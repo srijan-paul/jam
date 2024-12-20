@@ -26,7 +26,7 @@
         "body": [
           {
             "type": "MethodDefinition",
-            "start": 23,
+            "start": 19,
             "end": 31,
             "key": {
               "type": "Identifier",
@@ -36,11 +36,12 @@
             },
             "value": {
               "type": "FunctionExpression",
-              "start": 26,
+              "start": 19,
               "end": 31,
               "generator": false,
               "async": false,
               "arrow": false,
+              "expression": true,
               "params": [],
               "body": {
                 "type": "BlockStatement",

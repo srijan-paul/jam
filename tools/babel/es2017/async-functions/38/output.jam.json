@@ -31,14 +31,14 @@
                   "name": "async"
                 },
                 "computed": false,
-                "kind": "init",
+                "shorthand": false,
                 "value": {
                   "type": "Identifier",
                   "start": 15,
                   "end": 18,
                   "name": "foo"
                 },
-                "shorthand": false
+                "kind": "init"
               }
             ]
           },

@@ -27,7 +27,7 @@
               "raw": "\"__proto__\""
             },
             "computed": false,
-            "kind": "init",
+            "shorthand": false,
             "value": {
               "type": "Literal",
               "start": 16,
@@ -35,7 +35,7 @@
               "value": null,
               "raw": "null"
             },
-            "shorthand": false
+            "kind": "init"
           },
           {
             "type": "Property",
@@ -49,14 +49,14 @@
               "name": "__proto__"
             },
             "computed": false,
-            "kind": "init",
+            "shorthand": true,
             "value": {
               "type": "Identifier",
               "start": 22,
               "end": 31,
               "name": "__proto__"
             },
-            "shorthand": true
+            "kind": "init"
           }
         ]
       }

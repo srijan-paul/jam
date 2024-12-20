@@ -30,7 +30,8 @@
             "end": 7,
             "name": "keep"
           },
-          "arguments": []
+          "arguments": [],
+          "optional": false
         }
       }
     }

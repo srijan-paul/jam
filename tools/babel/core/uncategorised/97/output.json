@@ -15,8 +15,7 @@
         "end": 16,
         "value": "Hello812World",
         "raw": "\"Hello\\812World\""
-      },
-      "directive": "Hello\\812World"
+      }
     }
   ]
 }

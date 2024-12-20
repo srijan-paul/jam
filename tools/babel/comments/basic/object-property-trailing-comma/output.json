@@ -67,15 +67,7 @@
                   "value": "2",
                   "raw": "'2'"
                 },
-                "kind": "init",
-                "leadingComments": [
-                  {
-                    "type": "CommentLine",
-                    "value": " comment 1",
-                    "start": 22,
-                    "end": 34
-                  }
-                ]
+                "kind": "init"
               },
               {
                 "type": "Property",
@@ -97,37 +89,13 @@
                   "value": "3",
                   "raw": "'3'"
                 },
-                "kind": "init",
-                "trailingComments": [
-                  {
-                    "type": "CommentLine",
-                    "value": " comment 3",
-                    "start": 68,
-                    "end": 80
-                  }
-                ],
-                "leadingComments": [
-                  {
-                    "type": "CommentLine",
-                    "value": " comment 2",
-                    "start": 45,
-                    "end": 57
-                  }
-                ]
+                "kind": "init"
               }
             ]
           }
         }
       ],
-      "kind": "var",
-      "trailingComments": [
-        {
-          "type": "CommentLine",
-          "value": " comment 4",
-          "start": 84,
-          "end": 96
-        }
-      ]
+      "kind": "var"
     }
   ]
 }

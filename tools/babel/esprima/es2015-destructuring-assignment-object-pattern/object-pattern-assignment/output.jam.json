@@ -31,14 +31,14 @@
                 "name": "a"
               },
               "computed": false,
-              "kind": "init",
+              "shorthand": true,
               "value": {
                 "type": "Identifier",
                 "start": 7,
                 "end": 8,
                 "name": "a"
               },
-              "shorthand": true
+              "kind": "init"
             },
             {
               "type": "Property",
@@ -52,14 +52,14 @@
                 "name": "a"
               },
               "computed": false,
-              "kind": "init",
+              "shorthand": false,
               "value": {
                 "type": "Identifier",
                 "start": 16,
                 "end": 17,
                 "name": "a"
               },
-              "shorthand": false
+              "kind": "init"
             },
             {
               "type": "Property",
@@ -73,7 +73,7 @@
                 "name": "a"
               },
               "computed": false,
-              "kind": "init",
+              "shorthand": false,
               "value": {
                 "type": "AssignmentPattern",
                 "start": 25,
@@ -91,7 +91,7 @@
                   "name": "a"
                 }
               },
-              "shorthand": false
+              "kind": "init"
             },
             {
               "type": "Property",
@@ -105,7 +105,7 @@
                 "name": "a"
               },
               "computed": true,
-              "kind": "init",
+              "shorthand": false,
               "value": {
                 "type": "ObjectPattern",
                 "start": 38,
@@ -123,18 +123,18 @@
                       "name": "a"
                     },
                     "computed": false,
-                    "kind": "init",
+                    "shorthand": true,
                     "value": {
                       "type": "Identifier",
                       "start": 39,
                       "end": 40,
                       "name": "a"
                     },
-                    "shorthand": true
+                    "kind": "init"
                   }
                 ]
               },
-              "shorthand": false
+              "kind": "init"
             },
             {
               "type": "Property",
@@ -148,7 +148,7 @@
                 "name": "a"
               },
               "computed": false,
-              "kind": "init",
+              "shorthand": false,
               "value": {
                 "type": "MemberExpression",
                 "start": 49,
@@ -163,7 +163,8 @@
                     "end": 58,
                     "name": "some_call"
                   },
-                  "arguments": []
+                  "arguments": [],
+                  "optional": false
                 },
                 "property": {
                   "type": "Identifier",
@@ -173,7 +174,7 @@
                 },
                 "computed": true
               },
-              "shorthand": false
+              "kind": "init"
             },
             {
               "type": "Property",
@@ -187,7 +188,7 @@
                 "name": "a"
               },
               "computed": false,
-              "kind": "init",
+              "shorthand": false,
               "value": {
                 "type": "MemberExpression",
                 "start": 71,
@@ -197,15 +198,16 @@
                   "start": 71,
                   "end": 75
                 },
+                "computed": false,
                 "property": {
                   "type": "Identifier",
                   "start": 76,
                   "end": 77,
                   "name": "a"
                 },
-                "computed": false
+                "optional": false
               },
-              "shorthand": false
+              "kind": "init"
             }
           ]
         },

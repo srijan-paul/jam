@@ -20,7 +20,7 @@
         "body": [
           {
             "type": "MethodDefinition",
-            "start": 25,
+            "start": 18,
             "end": 128,
             "key": {
               "type": "Identifier",
@@ -30,11 +30,12 @@
             },
             "value": {
               "type": "FunctionExpression",
-              "start": 33,
+              "start": 18,
               "end": 128,
               "generator": true,
               "async": true,
               "arrow": false,
+              "expression": true,
               "params": [
                 {
                   "type": "Identifier",
@@ -108,13 +109,14 @@
                                     "start": 97,
                                     "end": 101
                                   },
+                                  "computed": false,
                                   "property": {
                                     "type": "Identifier",
                                     "start": 102,
                                     "end": 107,
                                     "name": "query"
                                   },
-                                  "computed": false
+                                  "optional": false
                                 },
                                 "arguments": [
                                   {
@@ -123,7 +125,8 @@
                                     "end": 110,
                                     "name": "id"
                                   }
-                                ]
+                                ],
+                                "optional": false
                               }
                             },
                             "delegate": false

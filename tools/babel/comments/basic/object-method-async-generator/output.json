@@ -27,23 +27,7 @@
                 "type": "Identifier",
                 "start": 35,
                 "end": 36,
-                "name": "f",
-                "trailingComments": [
-                  {
-                    "type": "CommentBlock",
-                    "value": " 4 ",
-                    "start": 37,
-                    "end": 44
-                  }
-                ],
-                "leadingComments": [
-                  {
-                    "type": "CommentBlock",
-                    "value": " 3 ",
-                    "start": 27,
-                    "end": 34
-                  }
-                ]
+                "name": "f"
               },
               "computed": false,
               "kind": "init",
@@ -60,53 +44,15 @@
                     "type": "Identifier",
                     "start": 54,
                     "end": 55,
-                    "name": "a",
-                    "trailingComments": [
-                      {
-                        "type": "CommentBlock",
-                        "value": " 6 ",
-                        "start": 56,
-                        "end": 63
-                      },
-                      {
-                        "type": "CommentBlock",
-                        "value": " 7 ",
-                        "start": 65,
-                        "end": 72
-                      }
-                    ],
-                    "leadingComments": [
-                      {
-                        "type": "CommentBlock",
-                        "value": " 5 ",
-                        "start": 46,
-                        "end": 53
-                      }
-                    ]
+                    "name": "a"
                   }
                 ],
                 "body": {
                   "type": "BlockStatement",
                   "start": 82,
                   "end": 84,
-                  "body": [],
-                  "leadingComments": [
-                    {
-                      "type": "CommentBlock",
-                      "value": " 8 ",
-                      "start": 74,
-                      "end": 81
-                    }
-                  ]
-                },
-                "leadingComments": [
-                  {
-                    "type": "CommentBlock",
-                    "value": " 4 ",
-                    "start": 37,
-                    "end": 44
-                  }
-                ]
+                  "body": []
+                }
               },
               "innerComments": [
                 {
@@ -116,15 +62,7 @@
                   "end": 24
                 }
               ],
-              "shorthand": false,
-              "leadingComments": [
-                {
-                  "type": "CommentBlock",
-                  "value": " 1 ",
-                  "start": 3,
-                  "end": 10
-                }
-              ]
+              "shorthand": false
             }
           ]
         },

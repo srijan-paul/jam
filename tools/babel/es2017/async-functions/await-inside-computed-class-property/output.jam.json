@@ -16,6 +16,7 @@
         "generator": false,
         "async": true,
         "arrow": true,
+        "expression": true,
         "params": [],
         "body": {
           "type": "ClassExpression",
@@ -26,7 +27,7 @@
             "body": [
               {
                 "type": "MethodDefinition",
-                "start": 23,
+                "start": 22,
                 "end": 38,
                 "key": {
                   "type": "AwaitExpression",
@@ -42,11 +43,12 @@
                 },
                 "value": {
                   "type": "FunctionExpression",
-                  "start": 32,
+                  "start": 22,
                   "end": 38,
                   "generator": false,
                   "async": false,
                   "arrow": false,
+                  "expression": true,
                   "params": [],
                   "body": {
                     "type": "BlockStatement",

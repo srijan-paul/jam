@@ -40,23 +40,7 @@
               "start": 43,
               "end": 46,
               "body": []
-            },
-            "trailingComments": [
-              {
-                "type": "CommentBlock",
-                "value": " bar ",
-                "start": 47,
-                "end": 56
-              }
-            ],
-            "leadingComments": [
-              {
-                "type": "CommentBlock",
-                "value": " infinite ",
-                "start": 15,
-                "end": 29
-              }
-            ]
+            }
           },
           {
             "type": "VariableDeclaration",
@@ -76,15 +60,7 @@
                 "init": null
               }
             ],
-            "kind": "var",
-            "leadingComments": [
-              {
-                "type": "CommentBlock",
-                "value": " bar ",
-                "start": 47,
-                "end": 56
-              }
-            ]
+            "kind": "var"
           }
         ]
       }

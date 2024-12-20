@@ -117,15 +117,7 @@
               "value": 3,
               "raw": "3"
             }
-          },
-          "leadingComments": [
-            {
-              "type": "CommentBlock",
-              "value": " istanbul ignore next ",
-              "start": 22,
-              "end": 48
-            }
-          ]
+          }
         }
       },
       "consequent": {

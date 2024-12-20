@@ -31,11 +31,12 @@
             },
             "value": {
               "type": "FunctionExpression",
-              "start": 22,
+              "start": 9,
               "end": 26,
               "generator": false,
               "async": false,
               "arrow": false,
+              "expression": true,
               "params": [],
               "body": {
                 "type": "BlockStatement",
@@ -49,7 +50,7 @@
           },
           {
             "type": "MethodDefinition",
-            "start": 28,
+            "start": 27,
             "end": 46,
             "key": {
               "type": "Literal",
@@ -60,11 +61,12 @@
             },
             "value": {
               "type": "FunctionExpression",
-              "start": 42,
+              "start": 27,
               "end": 46,
               "generator": false,
               "async": false,
               "arrow": false,
+              "expression": true,
               "params": [],
               "body": {
                 "type": "BlockStatement",

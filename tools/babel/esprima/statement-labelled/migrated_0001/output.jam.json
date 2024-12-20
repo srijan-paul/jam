@@ -9,12 +9,6 @@
       "type": "LabeledStatement",
       "start": 0,
       "end": 31,
-      "label": {
-        "type": "Identifier",
-        "start": 0,
-        "end": 5,
-        "name": "start"
-      },
       "body": {
         "type": "WhileStatement",
         "start": 7,
@@ -37,6 +31,12 @@
             "name": "start"
           }
         }
+      },
+      "label": {
+        "type": "Identifier",
+        "start": 0,
+        "end": 5,
+        "name": "start"
       }
     }
   ]

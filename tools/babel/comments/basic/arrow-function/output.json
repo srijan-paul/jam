@@ -51,44 +51,14 @@
             "type": "Identifier",
             "start": 19,
             "end": 20,
-            "name": "x",
-            "trailingComments": [
-              {
-                "type": "CommentBlock",
-                "value": "2",
-                "start": 20,
-                "end": 25
-              },
-              {
-                "type": "CommentBlock",
-                "value": "3",
-                "start": 26,
-                "end": 31
-              }
-            ],
-            "leadingComments": [
-              {
-                "type": "CommentBlock",
-                "value": "1",
-                "start": 14,
-                "end": 19
-              }
-            ]
+            "name": "x"
           }
         ],
         "body": {
           "type": "BlockStatement",
           "start": 48,
           "end": 50,
-          "body": [],
-          "leadingComments": [
-            {
-              "type": "CommentBlock",
-              "value": "5",
-              "start": 42,
-              "end": 47
-            }
-          ]
+          "body": []
         },
         "innerComments": [
           {

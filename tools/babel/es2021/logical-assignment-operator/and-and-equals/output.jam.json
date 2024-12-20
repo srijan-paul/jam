@@ -47,13 +47,14 @@
             "end": 12,
             "name": "obj"
           },
+          "computed": false,
           "property": {
             "type": "Identifier",
             "start": 13,
             "end": 14,
             "name": "a"
           },
-          "computed": false
+          "optional": false
         },
         "right": {
           "type": "Identifier",

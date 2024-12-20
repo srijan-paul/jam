@@ -80,15 +80,7 @@
                   "end": 84,
                   "value": 1,
                   "raw": "1"
-                },
-                "trailingComments": [
-                  {
-                    "type": "CommentLine",
-                    "value": "no default",
-                    "start": 113,
-                    "end": 125
-                  }
-                ]
+                }
               }
             ]
           }

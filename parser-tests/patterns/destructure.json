@@ -29,14 +29,14 @@
                 "name": "a"
               },
               "computed": false,
-              "kind": "init",
+              "shorthand": true,
               "value": {
                 "type": "Identifier",
                 "start": 2,
                 "end": 3,
                 "name": "a"
               },
-              "shorthand": true
+              "kind": "init"
             },
             {
               "type": "Property",
@@ -50,14 +50,14 @@
                 "name": "b"
               },
               "computed": false,
-              "kind": "init",
+              "shorthand": true,
               "value": {
                 "type": "Identifier",
                 "start": 5,
                 "end": 6,
                 "name": "b"
               },
-              "shorthand": true
+              "kind": "init"
             }
           ]
         },
@@ -78,7 +78,7 @@
                 "name": "a"
               },
               "computed": false,
-              "kind": "init",
+              "shorthand": false,
               "value": {
                 "type": "Literal",
                 "start": 14,
@@ -86,7 +86,7 @@
                 "value": 1,
                 "raw": "1"
               },
-              "shorthand": false
+              "kind": "init"
             },
             {
               "type": "Property",
@@ -100,7 +100,7 @@
                 "name": "b"
               },
               "computed": false,
-              "kind": "init",
+              "shorthand": false,
               "value": {
                 "type": "Literal",
                 "start": 20,
@@ -108,7 +108,7 @@
                 "value": 2,
                 "raw": "2"
               },
-              "shorthand": false
+              "kind": "init"
             }
           ]
         }
@@ -207,7 +207,7 @@
                   "name": "x"
                 },
                 "computed": false,
-                "kind": "init",
+                "shorthand": false,
                 "value": {
                   "type": "AssignmentPattern",
                   "start": 54,
@@ -226,7 +226,7 @@
                     "raw": "1"
                   }
                 },
-                "shorthand": false
+                "kind": "init"
               }
             ]
           },
@@ -266,7 +266,7 @@
                 "name": "x"
               },
               "computed": false,
-              "kind": "init",
+              "shorthand": false,
               "value": {
                 "type": "AssignmentPattern",
                 "start": 69,
@@ -285,7 +285,7 @@
                   "raw": "1"
                 }
               },
-              "shorthand": false
+              "kind": "init"
             }
           ]
         },

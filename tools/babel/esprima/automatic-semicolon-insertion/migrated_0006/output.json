@@ -25,15 +25,7 @@
             "type": "ContinueStatement",
             "start": 15,
             "end": 23,
-            "label": null,
-            "trailingComments": [
-              {
-                "type": "CommentBlock",
-                "value": " Multiline\nComment ",
-                "start": 24,
-                "end": 47
-              }
-            ]
+            "label": null
           },
           {
             "type": "ExpressionStatement",
@@ -44,15 +36,7 @@
               "start": 47,
               "end": 52,
               "name": "there"
-            },
-            "leadingComments": [
-              {
-                "type": "CommentBlock",
-                "value": " Multiline\nComment ",
-                "start": 24,
-                "end": 47
-              }
-            ]
+            }
           }
         ]
       }

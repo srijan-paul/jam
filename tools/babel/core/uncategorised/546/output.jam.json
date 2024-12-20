@@ -31,14 +31,14 @@
                   "name": "public"
                 },
                 "computed": false,
-                "kind": "init",
+                "shorthand": true,
                 "value": {
                   "type": "Identifier",
                   "start": 8,
                   "end": 14,
                   "name": "public"
                 },
-                "shorthand": true
+                "kind": "init"
               }
             ]
           },
@@ -52,7 +52,8 @@
               "end": 22,
               "name": "foo"
             },
-            "arguments": []
+            "arguments": [],
+            "optional": false
           }
         }
       ],

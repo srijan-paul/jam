@@ -23,13 +23,14 @@
             "end": 3,
             "name": "foo"
           },
+          "computed": false,
           "property": {
             "type": "Identifier",
             "start": 5,
             "end": 8,
             "name": "bar"
           },
-          "computed": false
+          "optional": false
         }
       }
     }

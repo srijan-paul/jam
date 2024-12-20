@@ -13,15 +13,7 @@
         "type": "Identifier",
         "start": 25,
         "end": 26,
-        "name": "a",
-        "leadingComments": [
-          {
-            "type": "CommentBlock",
-            "value": " bar ",
-            "start": 14,
-            "end": 23
-          }
-        ]
+        "name": "a"
       },
       "consequent": {
         "type": "BlockStatement",
@@ -29,15 +21,7 @@
         "end": 30,
         "body": []
       },
-      "alternate": null,
-      "leadingComments": [
-        {
-          "type": "CommentBlock",
-          "value": " foo ",
-          "start": 0,
-          "end": 9
-        }
-      ]
+      "alternate": null
     }
   ]
 }

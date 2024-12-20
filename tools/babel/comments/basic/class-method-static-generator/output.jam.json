@@ -18,7 +18,7 @@
           "body": [
             {
               "type": "MethodDefinition",
-              "start": 50,
+              "start": 25,
               "end": 89,
               "key": {
                 "type": "Identifier",
@@ -28,11 +28,12 @@
               },
               "value": {
                 "type": "FunctionExpression",
-                "start": 60,
+                "start": 25,
                 "end": 89,
                 "generator": true,
                 "async": false,
                 "arrow": false,
+                "expression": true,
                 "params": [],
                 "body": {
                   "type": "BlockStatement",

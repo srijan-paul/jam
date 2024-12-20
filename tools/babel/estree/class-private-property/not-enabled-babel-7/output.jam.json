@@ -40,7 +40,7 @@
           },
           {
             "type": "ClassProperty",
-            "start": 35,
+            "start": 28,
             "end": 46,
             "key": {
               "type": "Identifier",

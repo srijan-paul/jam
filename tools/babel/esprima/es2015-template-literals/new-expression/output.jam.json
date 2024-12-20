@@ -13,6 +13,7 @@
         "type": "NewExpression",
         "start": 0,
         "end": 11,
+        "arguments": [],
         "callee": {
           "type": "TaggedTemplateExpression",
           "start": 4,
@@ -38,8 +39,7 @@
             ],
             "expressions": []
           }
-        },
-        "arguments": []
+        }
       }
     }
   ]

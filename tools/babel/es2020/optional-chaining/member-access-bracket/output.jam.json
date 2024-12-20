@@ -176,13 +176,14 @@
               "end": 72,
               "name": "obj"
             },
+            "computed": false,
             "property": {
               "type": "Identifier",
               "start": 73,
               "end": 74,
               "name": "a"
             },
-            "computed": false
+            "optional": false
           },
           "property": {
             "type": "Identifier",
@@ -216,13 +217,14 @@
               "end": 87,
               "name": "obj"
             },
+            "computed": false,
             "property": {
               "type": "Identifier",
               "start": 88,
               "end": 89,
               "name": "a"
             },
-            "computed": false
+            "optional": false
           },
           "property": {
             "type": "Literal",

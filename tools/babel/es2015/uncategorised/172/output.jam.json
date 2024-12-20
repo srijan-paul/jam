@@ -22,6 +22,7 @@
         "generator": false,
         "async": false,
         "arrow": false,
+        "expression": true,
         "params": [
           {
             "type": "ObjectPattern",
@@ -40,7 +41,7 @@
                   "name": "a"
                 },
                 "computed": false,
-                "kind": "init",
+                "shorthand": false,
                 "value": {
                   "type": "ObjectExpression",
                   "start": 17,
@@ -58,14 +59,14 @@
                         "name": "w"
                       },
                       "computed": false,
-                      "kind": "init",
+                      "shorthand": true,
                       "value": {
                         "type": "Identifier",
                         "start": 19,
                         "end": 20,
                         "name": "w"
                       },
-                      "shorthand": true
+                      "kind": "init"
                     },
                     {
                       "type": "Property",
@@ -79,18 +80,18 @@
                         "name": "x"
                       },
                       "computed": false,
-                      "kind": "init",
+                      "shorthand": true,
                       "value": {
                         "type": "Identifier",
                         "start": 22,
                         "end": 23,
                         "name": "x"
                       },
-                      "shorthand": true
+                      "kind": "init"
                     }
                   ]
                 },
-                "shorthand": false
+                "kind": "init"
               },
               {
                 "type": "Property",
@@ -104,7 +105,7 @@
                   "name": "b"
                 },
                 "computed": false,
-                "kind": "init",
+                "shorthand": false,
                 "value": {
                   "type": "ArrayExpression",
                   "start": 30,
@@ -124,7 +125,7 @@
                     }
                   ]
                 },
-                "shorthand": false
+                "kind": "init"
               }
             ]
           },

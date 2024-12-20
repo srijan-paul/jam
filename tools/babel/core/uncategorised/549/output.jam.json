@@ -31,14 +31,14 @@
                   "name": "arguments"
                 },
                 "computed": false,
-                "kind": "init",
+                "shorthand": true,
                 "value": {
                   "type": "Identifier",
                   "start": 8,
                   "end": 17,
                   "name": "arguments"
                 },
-                "shorthand": true
+                "kind": "init"
               }
             ]
           },
@@ -52,7 +52,8 @@
               "end": 25,
               "name": "foo"
             },
-            "arguments": []
+            "arguments": [],
+            "optional": false
           }
         }
       ],

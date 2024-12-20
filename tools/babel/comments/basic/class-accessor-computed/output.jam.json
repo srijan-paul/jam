@@ -18,7 +18,7 @@
           "body": [
             {
               "type": "MethodDefinition",
-              "start": 38,
+              "start": 17,
               "end": 95,
               "key": {
                 "type": "Identifier",
@@ -28,11 +28,12 @@
               },
               "value": {
                 "type": "FunctionExpression",
-                "start": 56,
+                "start": 17,
                 "end": 95,
                 "generator": false,
                 "async": false,
                 "arrow": false,
+                "expression": true,
                 "params": [
                   {
                     "type": "Identifier",
@@ -69,7 +70,7 @@
           "body": [
             {
               "type": "MethodDefinition",
-              "start": 138,
+              "start": 117,
               "end": 176,
               "key": {
                 "type": "Identifier",
@@ -79,11 +80,12 @@
               },
               "value": {
                 "type": "FunctionExpression",
-                "start": 156,
+                "start": 117,
                 "end": 176,
                 "generator": false,
                 "async": false,
                 "arrow": false,
+                "expression": true,
                 "params": [],
                 "body": {
                   "type": "BlockStatement",
@@ -113,7 +115,7 @@
           "body": [
             {
               "type": "MethodDefinition",
-              "start": 203,
+              "start": 190,
               "end": 211,
               "key": {
                 "type": "Identifier",
@@ -123,11 +125,12 @@
               },
               "value": {
                 "type": "FunctionExpression",
-                "start": 206,
+                "start": 190,
                 "end": 211,
                 "generator": false,
                 "async": false,
                 "arrow": false,
+                "expression": true,
                 "params": [],
                 "body": {
                   "type": "BlockStatement",

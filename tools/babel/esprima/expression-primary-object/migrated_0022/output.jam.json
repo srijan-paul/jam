@@ -38,7 +38,7 @@
                 "raw": "\"null\""
               },
               "computed": false,
-              "kind": "set",
+              "shorthand": false,
               "value": {
                 "type": "FunctionExpression",
                 "start": 16,
@@ -46,6 +46,7 @@
                 "generator": false,
                 "async": false,
                 "arrow": false,
+                "expression": true,
                 "params": [
                   {
                     "type": "Identifier",
@@ -85,7 +86,7 @@
                   ]
                 }
               },
-              "shorthand": false
+              "kind": "set"
             }
           ]
         }

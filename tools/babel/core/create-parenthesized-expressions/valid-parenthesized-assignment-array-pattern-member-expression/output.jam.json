@@ -29,13 +29,14 @@
                 "end": 3,
                 "name": "a"
               },
+              "computed": false,
               "property": {
                 "type": "Identifier",
                 "start": 4,
                 "end": 5,
                 "name": "x"
               },
-              "computed": false
+              "optional": false
             }
           ]
         },

@@ -15,15 +15,7 @@
         "end": 15,
         "value": "before after",
         "raw": "\"before after\""
-      },
-      "trailingComments": [
-        {
-          "type": "CommentLine",
-          "value": "      ^ That's a U+2029 PARAGRAPH SEPARATOR UTF-16 char (between 'before' and 'after')",
-          "start": 18,
-          "end": 106
-        }
-      ]
+      }
     }
   ]
 }

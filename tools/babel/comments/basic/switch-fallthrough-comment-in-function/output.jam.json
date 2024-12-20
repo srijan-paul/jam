@@ -17,6 +17,7 @@
       },
       "generator": false,
       "async": false,
+      "expression": false,
       "params": [
         {
           "type": "Identifier",
@@ -80,7 +81,8 @@
                         "end": 130,
                         "name": "doIt"
                       },
-                      "arguments": []
+                      "arguments": [],
+                      "optional": false
                     }
                   }
                 ]

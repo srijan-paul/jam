@@ -16,6 +16,7 @@
         "generator": false,
         "async": false,
         "arrow": true,
+        "expression": true,
         "params": [
           {
             "type": "Identifier",
@@ -41,7 +42,7 @@
                 "name": "property"
               },
               "computed": false,
-              "kind": "init",
+              "shorthand": false,
               "value": {
                 "type": "Literal",
                 "start": 18,
@@ -49,7 +50,7 @@
                 "value": 42,
                 "raw": "42"
               },
-              "shorthand": false
+              "kind": "init"
             }
           ]
         }

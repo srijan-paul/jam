@@ -67,15 +67,7 @@
             "end": 20,
             "value": 1,
             "raw": "1"
-          },
-          "trailingComments": [
-            {
-              "type": "CommentLine",
-              "value": " comment",
-              "start": 47,
-              "end": 57
-            }
-          ]
+          }
         },
         {
           "type": "SwitchCase",
@@ -89,15 +81,7 @@
               "label": null
             }
           ],
-          "test": null,
-          "leadingComments": [
-            {
-              "type": "CommentLine",
-              "value": " comment",
-              "start": 47,
-              "end": 57
-            }
-          ]
+          "test": null
         }
       ]
     }

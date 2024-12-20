@@ -15,15 +15,7 @@
         "end": 2,
         "value": 42,
         "raw": "42"
-      },
-      "trailingComments": [
-        {
-          "type": "CommentLine",
-          "value": " line comment",
-          "start": 3,
-          "end": 18
-        }
-      ]
+      }
     }
   ]
 }

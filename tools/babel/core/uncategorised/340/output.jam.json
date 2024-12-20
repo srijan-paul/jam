@@ -19,13 +19,14 @@
           "end": 3,
           "name": "foo"
         },
+        "computed": false,
         "property": {
           "type": "Identifier",
           "start": 4,
           "end": 6,
           "name": "in"
         },
-        "computed": false
+        "optional": false
       }
     },
     {

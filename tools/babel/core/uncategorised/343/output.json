@@ -46,15 +46,7 @@
             "raw": "10"
           }
         }
-      },
-      "trailingComments": [
-        {
-          "type": "CommentLine",
-          "value": " nothing",
-          "start": 13,
-          "end": 24
-        }
-      ]
+      }
     }
   ]
 }

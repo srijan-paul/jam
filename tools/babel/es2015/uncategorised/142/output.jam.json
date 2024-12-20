@@ -40,7 +40,7 @@
               }
             },
             "computed": true,
-            "kind": "init",
+            "shorthand": false,
             "value": {
               "type": "Literal",
               "start": 15,
@@ -48,7 +48,7 @@
               "value": 10,
               "raw": "10"
             },
-            "shorthand": false
+            "kind": "init"
           }
         ]
       }

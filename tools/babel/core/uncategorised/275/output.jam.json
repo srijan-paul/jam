@@ -26,7 +26,7 @@
               "name": "message"
             },
             "computed": false,
-            "kind": "init",
+            "shorthand": false,
             "value": {
               "type": "Literal",
               "start": 17,
@@ -34,7 +34,7 @@
               "value": "Error",
               "raw": "\"Error\""
             },
-            "shorthand": false
+            "kind": "init"
           }
         ]
       }

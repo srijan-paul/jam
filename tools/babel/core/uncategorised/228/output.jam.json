@@ -29,7 +29,8 @@
             "end": 24,
             "name": "goodMorning"
           },
-          "arguments": []
+          "arguments": [],
+          "optional": false
         }
       },
       "alternate": null

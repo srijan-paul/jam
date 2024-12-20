@@ -24,13 +24,14 @@
             "value": "foo",
             "raw": "\"foo\""
           },
+          "computed": false,
           "property": {
             "type": "Identifier",
             "start": 7,
             "end": 12,
             "name": "split"
           },
-          "computed": false
+          "optional": false
         },
         "arguments": [
           {
@@ -40,7 +41,8 @@
             "value": " ",
             "raw": "\" \""
           }
-        ]
+        ],
+        "optional": false
       }
     }
   ]

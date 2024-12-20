@@ -60,7 +60,7 @@
                     "name": "bar"
                   },
                   "computed": false,
-                  "kind": "init",
+                  "shorthand": false,
                   "value": {
                     "type": "AssignmentPattern",
                     "start": 34,
@@ -79,7 +79,7 @@
                       "raw": "123"
                     }
                   },
-                  "shorthand": false
+                  "kind": "init"
                 }
               ]
             },
@@ -100,7 +100,7 @@
                     "name": "foo"
                   },
                   "computed": false,
-                  "kind": "init",
+                  "shorthand": false,
                   "value": {
                     "type": "Literal",
                     "start": 54,
@@ -108,7 +108,7 @@
                     "value": 24,
                     "raw": "24"
                   },
-                  "shorthand": false
+                  "kind": "init"
                 },
                 {
                   "type": "Property",
@@ -122,7 +122,7 @@
                     "name": "bar"
                   },
                   "computed": false,
-                  "kind": "init",
+                  "shorthand": false,
                   "value": {
                     "type": "Literal",
                     "start": 63,
@@ -130,7 +130,7 @@
                     "value": 45,
                     "raw": "45"
                   },
-                  "shorthand": false
+                  "kind": "init"
                 }
               ]
             }

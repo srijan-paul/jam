@@ -20,7 +20,7 @@
         "body": [
           {
             "type": "ClassProperty",
-            "start": 19,
+            "start": 12,
             "end": 22,
             "key": {
               "type": "Identifier",
@@ -39,7 +39,7 @@
           },
           {
             "type": "ClassProperty",
-            "start": 32,
+            "start": 25,
             "end": 39,
             "key": {
               "type": "Identifier",

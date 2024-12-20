@@ -32,13 +32,14 @@
           "value": "use strict",
           "raw": "\"use strict\""
         },
+        "computed": false,
         "property": {
           "type": "Identifier",
           "start": 30,
           "end": 33,
           "name": "foo"
         },
-        "computed": false
+        "optional": false
       }
     },
     {
@@ -119,7 +120,8 @@
             "end": 89,
             "name": "foo"
           }
-        ]
+        ],
+        "optional": false
       }
     },
     {
@@ -137,13 +139,14 @@
           "value": "use strict",
           "raw": "\"use strict\""
         },
+        "computed": false,
         "property": {
           "type": "Identifier",
           "start": 108,
           "end": 111,
           "name": "foo"
         },
-        "computed": false
+        "optional": false
       }
     },
     {
@@ -224,7 +227,8 @@
             "end": 176,
             "name": "foo"
           }
-        ]
+        ],
+        "optional": false
       }
     },
     {
@@ -251,6 +255,7 @@
       },
       "generator": false,
       "async": false,
+      "expression": false,
       "params": [],
       "body": {
         "type": "BlockStatement",
@@ -272,13 +277,14 @@
                 "value": "use strict",
                 "raw": "\"use strict\""
               },
+              "computed": false,
               "property": {
                 "type": "Identifier",
                 "start": 293,
                 "end": 296,
                 "name": "foo"
               },
-              "computed": false
+              "optional": false
             }
           },
           {
@@ -308,6 +314,7 @@
       },
       "generator": false,
       "async": false,
+      "expression": false,
       "params": [],
       "body": {
         "type": "BlockStatement",
@@ -365,6 +372,7 @@
       },
       "generator": false,
       "async": false,
+      "expression": false,
       "params": [],
       "body": {
         "type": "BlockStatement",
@@ -430,6 +438,7 @@
       },
       "generator": false,
       "async": false,
+      "expression": false,
       "params": [],
       "body": {
         "type": "BlockStatement",
@@ -458,7 +467,8 @@
                   "end": 433,
                   "name": "foo"
                 }
-              ]
+              ],
+              "optional": false
             }
           },
           {
@@ -488,6 +498,7 @@
       },
       "generator": false,
       "async": false,
+      "expression": false,
       "params": [],
       "body": {
         "type": "BlockStatement",
@@ -509,13 +520,14 @@
                 "value": "use strict",
                 "raw": "\"use strict\""
               },
+              "computed": false,
               "property": {
                 "type": "Identifier",
                 "start": 479,
                 "end": 482,
                 "name": "foo"
               },
-              "computed": false
+              "optional": false
             }
           },
           {
@@ -545,6 +557,7 @@
       },
       "generator": false,
       "async": false,
+      "expression": false,
       "params": [],
       "body": {
         "type": "BlockStatement",
@@ -602,6 +615,7 @@
       },
       "generator": false,
       "async": false,
+      "expression": false,
       "params": [],
       "body": {
         "type": "BlockStatement",
@@ -667,6 +681,7 @@
       },
       "generator": false,
       "async": false,
+      "expression": false,
       "params": [],
       "body": {
         "type": "BlockStatement",
@@ -695,7 +710,8 @@
                   "end": 628,
                   "name": "foo"
                 }
-              ]
+              ],
+              "optional": false
             }
           },
           {
@@ -725,6 +741,7 @@
       },
       "generator": false,
       "async": false,
+      "expression": false,
       "params": [],
       "body": {
         "type": "BlockStatement",
@@ -745,7 +762,8 @@
                 "end": 661,
                 "name": "foo"
               },
-              "arguments": []
+              "arguments": [],
+              "optional": false
             }
           },
           {
@@ -763,13 +781,14 @@
                 "value": "use strict",
                 "raw": "\"use strict\""
               },
+              "computed": false,
               "property": {
                 "type": "Identifier",
                 "start": 680,
                 "end": 683,
                 "name": "bar"
               },
-              "computed": false
+              "optional": false
             }
           },
           {
@@ -799,6 +818,7 @@
       },
       "generator": false,
       "async": false,
+      "expression": false,
       "params": [],
       "body": {
         "type": "BlockStatement",
@@ -819,7 +839,8 @@
                 "end": 715,
                 "name": "foo"
               },
-              "arguments": []
+              "arguments": [],
+              "optional": false
             }
           },
           {
@@ -873,6 +894,7 @@
       },
       "generator": false,
       "async": false,
+      "expression": false,
       "params": [],
       "body": {
         "type": "BlockStatement",
@@ -893,7 +915,8 @@
                 "end": 770,
                 "name": "foo"
               },
-              "arguments": []
+              "arguments": [],
+              "optional": false
             }
           },
           {
@@ -955,6 +978,7 @@
       },
       "generator": false,
       "async": false,
+      "expression": false,
       "params": [],
       "body": {
         "type": "BlockStatement",
@@ -975,7 +999,8 @@
                 "end": 825,
                 "name": "foo"
               },
-              "arguments": []
+              "arguments": [],
+              "optional": false
             }
           },
           {
@@ -1000,7 +1025,8 @@
                   "end": 847,
                   "name": "bar"
                 }
-              ]
+              ],
+              "optional": false
             }
           },
           {
@@ -1030,6 +1056,7 @@
       },
       "generator": false,
       "async": false,
+      "expression": false,
       "params": [],
       "body": {
         "type": "BlockStatement",
@@ -1050,7 +1077,8 @@
                 "end": 880,
                 "name": "foo"
               },
-              "arguments": []
+              "arguments": [],
+              "optional": false
             }
           },
           {
@@ -1068,13 +1096,14 @@
                 "value": "use strict",
                 "raw": "\"use strict\""
               },
+              "computed": false,
               "property": {
                 "type": "Identifier",
                 "start": 902,
                 "end": 905,
                 "name": "bar"
               },
-              "computed": false
+              "optional": false
             }
           },
           {
@@ -1104,6 +1133,7 @@
       },
       "generator": false,
       "async": false,
+      "expression": false,
       "params": [],
       "body": {
         "type": "BlockStatement",
@@ -1124,7 +1154,8 @@
                 "end": 937,
                 "name": "foo"
               },
-              "arguments": []
+              "arguments": [],
+              "optional": false
             }
           },
           {
@@ -1178,6 +1209,7 @@
       },
       "generator": false,
       "async": false,
+      "expression": false,
       "params": [],
       "body": {
         "type": "BlockStatement",
@@ -1198,7 +1230,8 @@
                 "end": 995,
                 "name": "foo"
               },
-              "arguments": []
+              "arguments": [],
+              "optional": false
             }
           },
           {
@@ -1260,6 +1293,7 @@
       },
       "generator": false,
       "async": false,
+      "expression": false,
       "params": [],
       "body": {
         "type": "BlockStatement",
@@ -1280,7 +1314,8 @@
                 "end": 1053,
                 "name": "foo"
               },
-              "arguments": []
+              "arguments": [],
+              "optional": false
             }
           },
           {
@@ -1305,7 +1340,8 @@
                   "end": 1078,
                   "name": "bar"
                 }
-              ]
+              ],
+              "optional": false
             }
           },
           {
@@ -1335,6 +1371,7 @@
       },
       "generator": false,
       "async": false,
+      "expression": false,
       "params": [],
       "body": {
         "type": "BlockStatement",

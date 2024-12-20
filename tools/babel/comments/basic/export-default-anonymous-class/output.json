@@ -42,27 +42,11 @@
                 "start": 112,
                 "end": 119,
                 "body": []
-              },
-              "leadingComments": [
-                {
-                  "type": "CommentBlock",
-                  "value": "*\n     * this is method1.\n     ",
-                  "start": 63,
-                  "end": 98
-                }
-              ]
+              }
             }
           ]
         }
-      },
-      "leadingComments": [
-        {
-          "type": "CommentBlock",
-          "value": "*\n * this is anonymous class.\n ",
-          "start": 0,
-          "end": 35
-        }
-      ]
+      }
     }
   ]
 }

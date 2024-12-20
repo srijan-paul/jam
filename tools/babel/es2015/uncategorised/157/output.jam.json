@@ -28,11 +28,12 @@
               },
               "value": {
                 "type": "FunctionExpression",
-                "start": 9,
+                "start": 8,
                 "end": 27,
                 "generator": false,
                 "async": false,
                 "arrow": false,
+                "expression": true,
                 "params": [
                   {
                     "type": "AssignmentPattern",
@@ -55,14 +56,14 @@
                             "name": "x"
                           },
                           "computed": false,
-                          "kind": "init",
+                          "shorthand": true,
                           "value": {
                             "type": "Identifier",
                             "start": 11,
                             "end": 12,
                             "name": "x"
                           },
-                          "shorthand": true
+                          "kind": "init"
                         }
                       ]
                     },
@@ -83,7 +84,7 @@
                             "name": "x"
                           },
                           "computed": false,
-                          "kind": "init",
+                          "shorthand": false,
                           "value": {
                             "type": "Literal",
                             "start": 20,
@@ -91,7 +92,7 @@
                             "value": 10,
                             "raw": "10"
                           },
-                          "shorthand": false
+                          "kind": "init"
                         }
                       ]
                     }

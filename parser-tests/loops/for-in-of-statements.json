@@ -373,14 +373,14 @@
               "name": "x"
             },
             "computed": false,
-            "kind": "init",
+            "shorthand": true,
             "value": {
               "type": "Identifier",
               "start": 171,
               "end": 172,
               "name": "x"
             },
-            "shorthand": true
+            "kind": "init"
           },
           {
             "type": "Property",
@@ -394,14 +394,14 @@
               "name": "y"
             },
             "computed": false,
-            "kind": "init",
+            "shorthand": true,
             "value": {
               "type": "Identifier",
               "start": 174,
               "end": 175,
               "name": "y"
             },
-            "shorthand": true
+            "kind": "init"
           },
           {
             "type": "Property",
@@ -415,14 +415,14 @@
               "name": "z"
             },
             "computed": false,
-            "kind": "init",
+            "shorthand": true,
             "value": {
               "type": "Identifier",
               "start": 177,
               "end": 178,
               "name": "z"
             },
-            "shorthand": true
+            "kind": "init"
           }
         ]
       },
@@ -493,7 +493,7 @@
               "name": "x"
             },
             "computed": false,
-            "kind": "init",
+            "shorthand": false,
             "value": {
               "type": "MemberExpression",
               "start": 216,
@@ -504,15 +504,15 @@
                 "end": 217,
                 "name": "y"
               },
+              "computed": false,
               "property": {
                 "type": "Identifier",
                 "start": 218,
                 "end": 219,
                 "name": "z"
-              },
-              "computed": false
+              }
             },
-            "shorthand": false
+            "kind": "init"
           }
         ]
       },

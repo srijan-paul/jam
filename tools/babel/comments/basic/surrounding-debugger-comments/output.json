@@ -27,23 +27,7 @@
           {
             "type": "DebuggerStatement",
             "start": 36,
-            "end": 45,
-            "trailingComments": [
-              {
-                "type": "CommentBlock",
-                "value": " after ",
-                "start": 50,
-                "end": 61
-              }
-            ],
-            "leadingComments": [
-              {
-                "type": "CommentBlock",
-                "value": " before ",
-                "start": 19,
-                "end": 31
-              }
-            ]
+            "end": 45
           }
         ]
       }

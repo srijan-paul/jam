@@ -31,14 +31,14 @@
                   "name": "async"
                 },
                 "computed": false,
-                "kind": "init",
+                "shorthand": true,
                 "value": {
                   "type": "Identifier",
                   "start": 7,
                   "end": 12,
                   "name": "async"
                 },
-                "shorthand": true
+                "kind": "init"
               }
             ]
           },
@@ -60,7 +60,8 @@
                 "value": "../lang/task",
                 "raw": "'../lang/task'"
               }
-            ]
+            ],
+            "optional": false
           }
         }
       ],

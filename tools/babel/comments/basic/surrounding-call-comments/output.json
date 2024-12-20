@@ -40,23 +40,7 @@
               },
               "arguments": [],
               "optional": false
-            },
-            "trailingComments": [
-              {
-                "type": "CommentBlock",
-                "value": " after ",
-                "start": 47,
-                "end": 58
-              }
-            ],
-            "leadingComments": [
-              {
-                "type": "CommentBlock",
-                "value": " before ",
-                "start": 19,
-                "end": 31
-              }
-            ]
+            }
           }
         ]
       }

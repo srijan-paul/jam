@@ -37,7 +37,8 @@
               "name": "b"
             }
           }
-        ]
+        ],
+        "optional": false
       }
     }
   ]

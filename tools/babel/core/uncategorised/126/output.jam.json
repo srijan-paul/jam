@@ -39,15 +39,17 @@
                   "value": 42,
                   "raw": "42"
                 }
-              ]
+              ],
+              "optional": false
             },
+            "computed": false,
             "property": {
               "type": "Identifier",
               "start": 13,
               "end": 21,
               "name": "galaxies"
             },
-            "computed": false
+            "optional": false
           },
           "arguments": [
             {
@@ -71,15 +73,17 @@
               "value": 77,
               "raw": "77"
             }
-          ]
+          ],
+          "optional": false
         },
+        "computed": false,
         "property": {
           "type": "Identifier",
           "start": 33,
           "end": 41,
           "name": "milkyway"
         },
-        "computed": false
+        "optional": false
       }
     }
   ]

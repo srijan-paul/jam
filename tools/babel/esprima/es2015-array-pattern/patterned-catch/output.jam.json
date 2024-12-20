@@ -53,14 +53,14 @@
                     "name": "c"
                   },
                   "computed": false,
-                  "kind": "init",
+                  "shorthand": true,
                   "value": {
                     "type": "Identifier",
                     "start": 21,
                     "end": 22,
                     "name": "c"
                   },
-                  "shorthand": true
+                  "kind": "init"
                 },
                 {
                   "type": "Property",
@@ -74,7 +74,7 @@
                     "name": "d"
                   },
                   "computed": false,
-                  "kind": "init",
+                  "shorthand": false,
                   "value": {
                     "type": "AssignmentExpression",
                     "start": 26,
@@ -94,7 +94,7 @@
                       "raw": "0"
                     }
                   },
-                  "shorthand": false
+                  "kind": "init"
                 },
                 {
                   "type": "Property",
@@ -108,7 +108,7 @@
                     "name": "f"
                   },
                   "computed": true,
-                  "kind": "init",
+                  "shorthand": false,
                   "value": {
                     "type": "AssignmentExpression",
                     "start": 35,
@@ -128,7 +128,7 @@
                       "raw": "0"
                     }
                   },
-                  "shorthand": false
+                  "kind": "init"
                 },
                 {
                   "type": "AssignmentPattern",

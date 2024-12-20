@@ -19,7 +19,8 @@
           "end": 3,
           "name": "foo"
         },
-        "arguments": []
+        "arguments": [],
+        "optional": false
       }
     }
   ]

@@ -146,13 +146,13 @@
                   "end": 51,
                   "name": "bar"
                 },
+                "computed": false,
                 "property": {
                   "type": "Identifier",
                   "start": 53,
                   "end": 56,
                   "name": "baz"
-                },
-                "computed": false
+                }
               }
             },
             "right": {

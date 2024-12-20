@@ -73,15 +73,7 @@
                         "value": 42,
                         "raw": "42"
                       }
-                    },
-                    "leadingComments": [
-                      {
-                        "type": "CommentLine",
-                        "value": " here await is an identifier reference",
-                        "start": 30,
-                        "end": 70
-                      }
-                    ]
+                    }
                   }
                 ]
               }

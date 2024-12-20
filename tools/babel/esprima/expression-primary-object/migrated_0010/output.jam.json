@@ -37,7 +37,7 @@
                 "name": "undef"
               },
               "computed": false,
-              "kind": "get",
+              "shorthand": false,
               "value": {
                 "type": "FunctionExpression",
                 "start": 15,
@@ -45,6 +45,7 @@
                 "generator": false,
                 "async": false,
                 "arrow": false,
+                "expression": true,
                 "params": [],
                 "body": {
                   "type": "BlockStatement",
@@ -53,7 +54,7 @@
                   "body": []
                 }
               },
-              "shorthand": false
+              "kind": "get"
             }
           ]
         }

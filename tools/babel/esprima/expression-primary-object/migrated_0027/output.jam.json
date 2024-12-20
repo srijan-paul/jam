@@ -38,7 +38,7 @@
                 "raw": "\"__proto__\""
               },
               "computed": false,
-              "kind": "init",
+              "shorthand": false,
               "value": {
                 "type": "Literal",
                 "start": 18,
@@ -46,7 +46,7 @@
                 "value": 2,
                 "raw": "2"
               },
-              "shorthand": false
+              "kind": "init"
             }
           ]
         }

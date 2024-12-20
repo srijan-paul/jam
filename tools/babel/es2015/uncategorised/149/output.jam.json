@@ -37,7 +37,7 @@
                   "name": "test"
                 },
                 "computed": false,
-                "kind": "init",
+                "shorthand": false,
                 "value": {
                   "type": "FunctionExpression",
                   "start": 16,
@@ -45,6 +45,7 @@
                   "generator": true,
                   "async": false,
                   "arrow": false,
+                  "expression": true,
                   "params": [],
                   "body": {
                     "type": "BlockStatement",
@@ -71,7 +72,7 @@
                     ]
                   }
                 },
-                "shorthand": false
+                "kind": "init"
               }
             ]
           }

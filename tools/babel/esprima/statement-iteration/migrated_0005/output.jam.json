@@ -30,7 +30,8 @@
             "end": 7,
             "name": "that"
           },
-          "arguments": []
+          "arguments": [],
+          "optional": false
         }
       }
     }

@@ -20,7 +20,7 @@
         "body": [
           {
             "type": "ClassProperty",
-            "start": 21,
+            "start": 14,
             "end": 28,
             "key": {
               "type": "Identifier",
@@ -40,7 +40,7 @@
           },
           {
             "type": "MethodDefinition",
-            "start": 39,
+            "start": 32,
             "end": 82,
             "key": {
               "type": "Identifier",
@@ -50,11 +50,12 @@
             },
             "value": {
               "type": "FunctionExpression",
-              "start": 43,
+              "start": 32,
               "end": 82,
               "generator": false,
               "async": false,
               "arrow": false,
+              "expression": true,
               "params": [],
               "body": {
                 "type": "BlockStatement",
@@ -95,22 +96,24 @@
                                   "end": 62,
                                   "name": "Foo"
                                 },
+                                "computed": false,
                                 "property": {
                                   "type": "Identifier",
                                   "start": 64,
                                   "end": 66,
                                   "name": "#x"
                                 },
-                                "computed": false
+                                "optional": false
                               }
                             },
+                            "computed": false,
                             "property": {
                               "type": "Identifier",
                               "start": 67,
                               "end": 74,
                               "name": "toFixed"
                             },
-                            "computed": false
+                            "optional": false
                           }
                         },
                         "arguments": [
@@ -121,7 +124,8 @@
                             "value": 2,
                             "raw": "2"
                           }
-                        ]
+                        ],
+                        "optional": false
                       }
                     }
                   }

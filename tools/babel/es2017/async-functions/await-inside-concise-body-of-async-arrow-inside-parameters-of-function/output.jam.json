@@ -17,6 +17,7 @@
       },
       "generator": false,
       "async": false,
+      "expression": false,
       "params": [
         {
           "type": "AssignmentPattern",
@@ -35,6 +36,7 @@
             "generator": false,
             "async": true,
             "arrow": true,
+            "expression": true,
             "params": [],
             "body": {
               "type": "AwaitExpression",

@@ -37,7 +37,7 @@
                 "name": "x"
               },
               "computed": false,
-              "kind": "init",
+              "shorthand": false,
               "value": {
                 "type": "Literal",
                 "start": 9,
@@ -45,7 +45,7 @@
                 "value": 1,
                 "raw": "1"
               },
-              "shorthand": false
+              "kind": "init"
             },
             {
               "type": "Property",
@@ -59,7 +59,7 @@
                 "name": "x"
               },
               "computed": false,
-              "kind": "init",
+              "shorthand": false,
               "value": {
                 "type": "Literal",
                 "start": 15,
@@ -67,7 +67,7 @@
                 "value": 2,
                 "raw": "2"
               },
-              "shorthand": false
+              "kind": "init"
             }
           ]
         }

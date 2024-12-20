@@ -27,6 +27,7 @@
             "generator": false,
             "async": false,
             "arrow": true,
+            "expression": true,
             "params": [
               {
                 "type": "ObjectPattern",
@@ -45,14 +46,14 @@
                       "name": "title"
                     },
                     "computed": false,
-                    "kind": "init",
+                    "shorthand": true,
                     "value": {
                       "type": "Identifier",
                       "start": 14,
                       "end": 19,
                       "name": "title"
                     },
-                    "shorthand": true
+                    "kind": "init"
                   },
                   {
                     "type": "RestElement",

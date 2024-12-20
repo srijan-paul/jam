@@ -31,7 +31,7 @@
                 "name": "a"
               },
               "computed": false,
-              "kind": "init",
+              "shorthand": false,
               "value": {
                 "type": "MemberExpression",
                 "start": 7,
@@ -42,15 +42,16 @@
                   "end": 8,
                   "name": "a"
                 },
+                "computed": false,
                 "property": {
                   "type": "Identifier",
                   "start": 9,
                   "end": 10,
                   "name": "b"
                 },
-                "computed": false
+                "optional": false
               },
-              "shorthand": false
+              "kind": "init"
             }
           ]
         },

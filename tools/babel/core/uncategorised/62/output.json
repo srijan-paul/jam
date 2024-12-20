@@ -15,15 +15,7 @@
         "end": 6,
         "value": 42,
         "raw": "42"
-      },
-      "leadingComments": [
-        {
-          "type": "CommentBlock",
-          "value": "",
-          "start": 0,
-          "end": 4
-        }
-      ]
+      }
     }
   ]
 }

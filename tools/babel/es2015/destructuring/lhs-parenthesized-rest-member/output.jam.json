@@ -33,13 +33,14 @@
                   "end": 6,
                   "name": "a"
                 },
+                "computed": false,
                 "property": {
                   "type": "Identifier",
                   "start": 7,
                   "end": 8,
                   "name": "b"
                 },
-                "computed": false
+                "optional": false
               }
             }
           ]

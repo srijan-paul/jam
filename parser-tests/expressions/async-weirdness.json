@@ -61,6 +61,7 @@
         "generator": false,
         "async": false,
         "arrow": true,
+        "expression": true,
         "params": [
           {
             "type": "Identifier",
@@ -88,6 +89,7 @@
         "generator": false,
         "async": true,
         "arrow": true,
+        "expression": true,
         "params": [
           {
             "type": "Identifier",
@@ -151,6 +153,7 @@
         "generator": false,
         "async": true,
         "arrow": true,
+        "expression": true,
         "params": [
           {
             "type": "Identifier",

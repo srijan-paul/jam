@@ -34,15 +34,7 @@
                   "start": 34,
                   "end": 35,
                   "name": "f"
-                },
-                "trailingComments": [
-                  {
-                    "type": "CommentBlock",
-                    "value": " 4 ",
-                    "start": 36,
-                    "end": 43
-                  }
-                ]
+                }
               },
               "kind": "method",
               "value": {
@@ -58,29 +50,7 @@
                     "type": "Identifier",
                     "start": 53,
                     "end": 54,
-                    "name": "a",
-                    "trailingComments": [
-                      {
-                        "type": "CommentBlock",
-                        "value": " 6 ",
-                        "start": 55,
-                        "end": 62
-                      },
-                      {
-                        "type": "CommentBlock",
-                        "value": " 7 ",
-                        "start": 64,
-                        "end": 71
-                      }
-                    ],
-                    "leadingComments": [
-                      {
-                        "type": "CommentBlock",
-                        "value": " 5 ",
-                        "start": 45,
-                        "end": 52
-                      }
-                    ]
+                    "name": "a"
                   }
                 ],
                 "body": {
@@ -95,69 +65,13 @@
                       "start": 83,
                       "end": 90
                     }
-                  ],
-                  "leadingComments": [
-                    {
-                      "type": "CommentBlock",
-                      "value": " 8 ",
-                      "start": 73,
-                      "end": 80
-                    }
                   ]
-                },
-                "leadingComments": [
-                  {
-                    "type": "CommentBlock",
-                    "value": " 4 ",
-                    "start": 36,
-                    "end": 43
-                  }
-                ]
+                }
               },
-              "computed": false,
-              "trailingComments": [
-                {
-                  "type": "CommentBlock",
-                  "value": " 10 ",
-                  "start": 93,
-                  "end": 101
-                }
-              ],
-              "leadingComments": [
-                {
-                  "type": "CommentBlock",
-                  "value": " 3 ",
-                  "start": 25,
-                  "end": 32
-                }
-              ]
-            }
-          ],
-          "leadingComments": [
-            {
-              "type": "CommentBlock",
-              "value": " 2 ",
-              "start": 15,
-              "end": 22
+              "computed": false
             }
           ]
-        },
-        "trailingComments": [
-          {
-            "type": "CommentBlock",
-            "value": " 11 ",
-            "start": 104,
-            "end": 112
-          }
-        ],
-        "leadingComments": [
-          {
-            "type": "CommentBlock",
-            "value": " 1 ",
-            "start": 1,
-            "end": 8
-          }
-        ]
+        }
       }
     }
   ]

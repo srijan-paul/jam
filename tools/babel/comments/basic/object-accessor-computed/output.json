@@ -23,23 +23,7 @@
               "type": "Identifier",
               "start": 32,
               "end": 33,
-              "name": "f",
-              "trailingComments": [
-                {
-                  "type": "CommentBlock",
-                  "value": " 4 ",
-                  "start": 33,
-                  "end": 40
-                }
-              ],
-              "leadingComments": [
-                {
-                  "type": "CommentBlock",
-                  "value": " 3 ",
-                  "start": 25,
-                  "end": 32
-                }
-              ]
+              "name": "f"
             },
             "computed": true,
             "kind": "set",
@@ -56,53 +40,15 @@
                   "type": "Identifier",
                   "start": 59,
                   "end": 60,
-                  "name": "a",
-                  "trailingComments": [
-                    {
-                      "type": "CommentBlock",
-                      "value": " 7 ",
-                      "start": 61,
-                      "end": 68
-                    },
-                    {
-                      "type": "CommentBlock",
-                      "value": " 8 ",
-                      "start": 70,
-                      "end": 77
-                    }
-                  ],
-                  "leadingComments": [
-                    {
-                      "type": "CommentBlock",
-                      "value": " 6 ",
-                      "start": 51,
-                      "end": 58
-                    }
-                  ]
+                  "name": "a"
                 }
               ],
               "body": {
                 "type": "BlockStatement",
                 "start": 87,
                 "end": 89,
-                "body": [],
-                "leadingComments": [
-                  {
-                    "type": "CommentBlock",
-                    "value": " 9 ",
-                    "start": 79,
-                    "end": 86
-                  }
-                ]
-              },
-              "leadingComments": [
-                {
-                  "type": "CommentBlock",
-                  "value": " 5 ",
-                  "start": 42,
-                  "end": 49
-                }
-              ]
+                "body": []
+              }
             },
             "innerComments": [
               {
@@ -112,15 +58,7 @@
                 "end": 22
               }
             ],
-            "shorthand": false,
-            "leadingComments": [
-              {
-                "type": "CommentBlock",
-                "value": " 1 ",
-                "start": 3,
-                "end": 10
-              }
-            ]
+            "shorthand": false
           }
         ]
       }
@@ -143,23 +81,7 @@
               "type": "Identifier",
               "start": 126,
               "end": 127,
-              "name": "f",
-              "trailingComments": [
-                {
-                  "type": "CommentBlock",
-                  "value": " 4 ",
-                  "start": 127,
-                  "end": 134
-                }
-              ],
-              "leadingComments": [
-                {
-                  "type": "CommentBlock",
-                  "value": " 3 ",
-                  "start": 119,
-                  "end": 126
-                }
-              ]
+              "name": "f"
             },
             "computed": true,
             "kind": "get",
@@ -176,15 +98,7 @@
                 "type": "BlockStatement",
                 "start": 162,
                 "end": 164,
-                "body": [],
-                "leadingComments": [
-                  {
-                    "type": "CommentBlock",
-                    "value": " 7 ",
-                    "start": 154,
-                    "end": 161
-                  }
-                ]
+                "body": []
               },
               "innerComments": [
                 {
@@ -192,14 +106,6 @@
                   "value": " 6 ",
                   "start": 145,
                   "end": 152
-                }
-              ],
-              "leadingComments": [
-                {
-                  "type": "CommentBlock",
-                  "value": " 5 ",
-                  "start": 136,
-                  "end": 143
                 }
               ]
             },
@@ -211,15 +117,7 @@
                 "end": 116
               }
             ],
-            "shorthand": false,
-            "leadingComments": [
-              {
-                "type": "CommentBlock",
-                "value": " 1 ",
-                "start": 97,
-                "end": 104
-              }
-            ]
+            "shorthand": false
           }
         ]
       }

@@ -1186,151 +1186,173 @@ fn classElement(self: *Self, saw_constructor_inout: *bool) Error!Node.Index {
 
             return self.parseClassMethodBody(
                 ctor_key,
-                .{ .is_static = false, .kind = .constructor },
-                .{},
+                .{
+                    .start_position = ctor.id,
+                    .method_flags = .{},
+                    .field_flags = .{ .is_static = false, .kind = .constructor },
+                },
             );
         },
-        else => return self.classPropertyWithModifier(.{}, .{}),
+        else => return self.classPropertyWithModifier(.{ .start_position = self.current.id }),
     }
 }
+
+/// Temporary state maintained when parsing
+/// a class property of method.
+const ClassFieldModifiers = struct {
+    start_position: Token.Index,
+    field_flags: ast.ClassFieldFlags = .{},
+    method_flags: ast.FunctionFlags = .{},
+};
 
 /// Parse a class property definition that has 0 or more modifiers like 'async', 'static', etc.
 /// This function is called when the parser is at the start of a class element, i.e the first modifier token
 /// (or name token, if the field has no modifiers).
-fn classPropertyWithModifier(self: *Self, flags: ast.ClassFieldFlags, fn_flags: ast.FunctionFlags) Error!Node.Index {
-    switch (self.current.token.tag) {
-        .kw_async => {
-            const async_kw = try self.next();
-            if ((canStartClassElementName(&self.current.token) or
-                self.current.token.tag == .@"*") and
-                self.current.token.line == async_kw.token.line)
-            {
-                if (fn_flags.is_async) {
-                    try self.emitBadTokenDiagnostic(
-                        "Duplicate 'async' modifier",
-                        &async_kw.token,
-                    );
-                    return Error.UnexpectedToken;
-                }
+fn classPropertyWithModifier(self: *Self, modifiers: ClassFieldModifiers) Error!Node.Index {
+    return switch (self.current.token.tag) {
+        .kw_async => try self.asyncClassProperty(modifiers),
+        .kw_static => try self.staticClassProperty(modifiers),
+        .@"*" => try self.generatorClassProperty(modifiers),
+        else => try self.classProperty(modifiers),
+    };
+}
 
-                return self.classPropertyWithModifier(
-                    flags,
-                    .{
-                        .is_async = true,
-                        .is_generator = fn_flags.is_generator,
-                        .is_arrow = false,
-                    },
-                );
-            } else {
-                const key = try self.identifier(async_kw);
-                return self.completeClassFieldDef(key, flags, fn_flags);
-            }
-        },
+/// Parse a class property with an 'async' modifier.
+fn asyncClassProperty(self: *Self, modifiers: ClassFieldModifiers) Error!Node.Index {
+    const async_kw = try self.next();
+    if ((canStartClassElementName(&self.current.token) or
+        self.current.token.tag == .@"*") and
+        self.current.token.line == async_kw.token.line)
+    {
+        // An async method, like `class A { async f() { return 1; } }`
+        if (modifiers.method_flags.is_async) {
+            try self.emitBadTokenDiagnostic(
+                "Duplicate 'async' modifier",
+                &async_kw.token,
+            );
+            return Error.UnexpectedToken;
+        }
 
-        .kw_static => {
-            const static_kw = try self.next();
-            if ((canStartClassElementName(&self.current.token) or
-                self.current.token.tag == .@"*") and
-                self.current.token.line == static_kw.token.line)
-            {
-                if (flags.is_static) {
-                    try self.emitDiagnosticOnToken(
-                        static_kw.token,
-                        "Duplicate 'static' modifier",
-                        .{},
-                    );
-                    return Error.UnexpectedToken;
-                }
-
-                if (fn_flags.is_async) {
-                    try self.emitDiagnosticOnToken(
-                        static_kw.token,
-                        "'static' modifier must precede 'async' modifier",
-                        .{},
-                    );
-                    return Error.UnexpectedToken;
-                }
-
-                return self.classPropertyWithModifier(
-                    .{
-                        .is_static = true,
-                        .is_computed = flags.is_computed,
-                        .kind = flags.kind,
-                    },
-                    fn_flags,
-                );
-            } else {
-                const key = try self.identifier(static_kw);
-                return self.completeClassFieldDef(key, flags, fn_flags);
-            }
-        },
-
-        .@"*" => {
-            _ = try self.nextToken();
-
-            if (!canStartClassElementName(&self.current.token)) {
-                try self.emitBadTokenDiagnostic(
-                    "a method name after '*'",
-                    &self.current.token,
-                );
-                return Error.UnexpectedToken;
-            }
-
-            const key = try self.classElementName();
-            return self.parseClassMethodBody(key, flags, .{
-                .is_generator = true,
-                .is_async = fn_flags.is_async,
-                .is_arrow = false,
-            });
-        },
-
-        else => {
-            // Check for 'get' or 'set'
-            const kind: ast.ClassFieldKind = blk: {
-                const token_str = self.current.token.toByteSlice(self.source);
-                if (std.mem.eql(u8, token_str, "get"))
-                    break :blk .get;
-                if (std.mem.eql(u8, token_str, "set"))
-                    break :blk .set;
-                break :blk .init;
-            };
-
-            if (kind == .get or kind == .set) {
-                const get_or_set = try self.next(); // eat 'get' or 'set'
-                if (canStartClassElementName(&self.current.token)) {
-                    // Getter or Setter.
-                    const key = try self.classElementName();
-                    var field_flags = flags;
-                    field_flags.kind = kind;
-                    std.debug.assert(!fn_flags.is_generator);
-                    return self.parseClassMethodBody(key, field_flags, fn_flags);
-                }
-
-                // Probably a regular field named 'get' or 'set',
-                // like `class A { get() { return 1 }; set = 2;  } `
-                const key = try self.identifier(get_or_set);
-                return self.completeClassFieldDef(key, flags, fn_flags);
-            }
-
-            const key = try self.classElementName();
-            return self.completeClassFieldDef(key, flags, fn_flags);
-        },
+        var new_modifiers = modifiers;
+        new_modifiers.method_flags.is_async = true;
+        return self.classPropertyWithModifier(new_modifiers);
+    } else {
+        // A regular field named 'async', like `class A { async = 5; }`
+        // or `class A { async() { return 1; } }`
+        const key = try self.identifier(async_kw);
+        return self.completeClassProperty(key, modifiers);
     }
 }
 
+/// Parse a class property with a 'static' keyword.
+/// This can be a static field, static method, or a field with the name "static".
+/// All of these are valid:
+/// ```
+/// class A {
+///    static x = 5;
+///    static() { return 1; }
+///    static f() { return 1; }
+/// }
+/// ```
+fn staticClassProperty(self: *Self, modifiers: ClassFieldModifiers) Error!Node.Index {
+    const static_kw = try self.next();
+    if ((canStartClassElementName(&self.current.token) or
+        self.current.token.tag == .@"*") and
+        self.current.token.line == static_kw.token.line)
+    {
+        if (modifiers.field_flags.is_static) {
+            try self.emitDiagnosticOnToken(
+                static_kw.token,
+                "Duplicate 'static' modifier",
+                .{},
+            );
+            return Error.UnexpectedToken;
+        }
+
+        if (modifiers.method_flags.is_async) {
+            try self.emitDiagnosticOnToken(
+                static_kw.token,
+                "'static' modifier must precede 'async' modifier",
+                .{},
+            );
+            return Error.UnexpectedToken;
+        }
+
+        var new_modifiers = modifiers;
+        new_modifiers.field_flags.is_static = true;
+        return self.classPropertyWithModifier(new_modifiers);
+    } else {
+        const key = try self.identifier(static_kw);
+        return self.completeClassProperty(key, modifiers);
+    }
+}
+
+/// Parse a class method starting with a '*' token.
+fn generatorClassProperty(self: *Self, modifiers: ClassFieldModifiers) Error!Node.Index {
+    const star_token = try self.nextToken();
+    std.debug.assert(star_token.tag == .@"*");
+
+    if (!canStartClassElementName(&self.current.token)) {
+        try self.emitBadTokenDiagnostic("a method name after '*'", &self.current.token);
+        return Error.UnexpectedToken;
+    }
+
+    const key = try self.classElementName();
+    // arrow functions cannot be generators.
+    // this should've raised an error already instead of getting this
+    // far in the parser.
+    std.debug.assert(!modifiers.method_flags.is_arrow);
+
+    var new_modifiers = modifiers;
+    new_modifiers.method_flags.is_generator = true;
+    return self.parseClassMethodBody(key, new_modifiers);
+}
+
+fn classProperty(self: *Self, modifiers: ClassFieldModifiers) Error!Node.Index {
+    // Check for 'get' or 'set'
+    const kind: ast.ClassFieldKind = blk: {
+        const token_str = self.current.token.toByteSlice(self.source);
+        if (std.mem.eql(u8, token_str, "get"))
+            break :blk .get;
+        if (std.mem.eql(u8, token_str, "set"))
+            break :blk .set;
+        break :blk .init;
+    };
+
+    if (kind == .get or kind == .set) {
+        std.debug.assert(!modifiers.method_flags.is_generator);
+
+        const get_or_set = try self.next(); // eat 'get' or 'set'
+        if (canStartClassElementName(&self.current.token)) {
+            // Getter or Setter.
+            const key = try self.classElementName();
+            var new_state = modifiers;
+            new_state.field_flags.kind = kind;
+            return self.parseClassMethodBody(key, new_state);
+        }
+
+        // Probably a regular field named 'get' or 'set',
+        // like `class A { get() { return 1 }; set = 2;  } `
+        const key = try self.identifier(get_or_set);
+        return self.completeClassProperty(key, modifiers);
+    }
+
+    const key = try self.classElementName();
+    return self.completeClassProperty(key, modifiers);
+}
+
 /// Assuming that the key has been parsed, complete the property definition.
-fn completeClassFieldDef(
+fn completeClassProperty(
     self: *Self,
     key: Node.Index,
-    flags: ast.ClassFieldFlags,
-    fn_flags: ast.FunctionFlags,
+    modifiers: ClassFieldModifiers,
 ) Error!Node.Index {
     if (self.current.token.tag == .@"(") {
         self.current_destructure_kind.setNoAssignOrDestruct();
-        return self.parseClassMethodBody(key, flags, fn_flags);
+        return self.parseClassMethodBody(key, modifiers);
     }
 
-    if (fn_flags.is_async) {
+    if (modifiers.method_flags.is_async) {
         // disallow fields like `async x = 5;`
         try self.emitDiagnosticOnNode(
             key,
@@ -1339,16 +1361,16 @@ fn completeClassFieldDef(
         return Error.IllegalModifier;
     }
 
+    const start_pos = modifiers.start_position;
     if (self.current.token.tag == .@"=") {
         _ = try self.nextToken();
         const value = try self.assignExpressionNoPattern();
-        const start_pos = self.nodes.items(.start)[@intFromEnum(key)];
         var end_pos = self.nodes.items(.end)[@intFromEnum(value)];
         end_pos = try self.semiColon(end_pos);
         const kv_node = ast.ClassFieldDefinition{
             .key = key,
             .value = value,
-            .flags = flags,
+            .flags = modifiers.field_flags,
         };
         return self.addNode(.{ .class_field = kv_node }, start_pos, end_pos);
     }
@@ -1360,12 +1382,11 @@ fn completeClassFieldDef(
         .value = key,
         .flags = ast.ClassFieldFlags{
             .kind = .init,
-            .is_computed = flags.is_computed,
-            .is_static = flags.is_static,
+            .is_computed = modifiers.field_flags.is_computed,
+            .is_static = modifiers.field_flags.is_static,
         },
     };
 
-    const start_pos = self.nodes.items(.start)[@intFromEnum(key)];
     return self.addNode(.{ .class_field = kv_node }, start_pos, end_pos);
 }
 
@@ -1374,16 +1395,14 @@ fn completeClassFieldDef(
 fn parseClassMethodBody(
     self: *Self,
     key: Node.Index,
-    flags: ast.ClassFieldFlags,
-    fn_flags: ast.FunctionFlags,
+    modifiers: ClassFieldModifiers,
 ) Error!Node.Index {
     std.debug.assert(self.current.token.tag == .@"(");
 
-    const start_pos = self.current.id;
     const func_expr = try self.parseFunctionBody(
-        start_pos,
+        modifiers.start_position,
         null,
-        fn_flags,
+        modifiers.method_flags,
         false,
     );
 
@@ -1391,11 +1410,11 @@ fn parseClassMethodBody(
     const kv_node = ast.ClassFieldDefinition{
         .key = key,
         .value = func_expr,
-        .flags = flags,
+        .flags = modifiers.field_flags,
     };
 
-    if (flags.kind == .get or flags.kind == .set) {
-        if (fn_flags.is_async) {
+    if (modifiers.field_flags.kind == .get or modifiers.field_flags.kind == .set) {
+        if (modifiers.method_flags.is_async) {
             try self.emitDiagnosticOnNode(
                 key,
                 "'async' modifier cannot be used on getters or setters",
@@ -1408,14 +1427,13 @@ fn parseClassMethodBody(
         // (the if expression looks stupid but is necessary because those are different enum types with same member names)
         try self.checkGetterOrSetterParams(
             func_expr,
-            if (flags.kind == .get) .get else .set,
+            if (modifiers.field_flags.kind == .get) .get else .set,
         );
     }
 
-    const key_start = self.nodes.items(.start)[@intFromEnum(key)];
     return self.addNode(
         .{ .class_method = kv_node },
-        key_start,
+        modifiers.start_position,
         end_pos,
     );
 }
@@ -3647,17 +3665,19 @@ fn completeNewExpression(self: *Self, new_token_id: Token.Index) Error!Node.Inde
     const expr = try self.memberExpression();
     const expr_end_pos = self.nodes.items(.end)[@intFromEnum(expr)];
 
+    const arguments = if (self.isAtToken(.@"("))
+        try self.args()
+    else
+        try self.addNode(
+            .{ .arguments = null },
+            expr_end_pos,
+            expr_end_pos,
+        );
+
     return try self.addNode(.{
         .new_expr = .{
             .callee = expr,
-            .arguments = if (self.isAtToken(.@"("))
-                try self.args()
-            else
-                try self.addNode(
-                    .{ .arguments = null },
-                    new_token_id,
-                    new_token_id,
-                ),
+            .arguments = arguments,
         },
     }, new_token_id, expr_end_pos);
 }
@@ -5477,7 +5497,7 @@ fn parseFunctionBody(
     try self.scope.enterScope(.function, self.context.strict);
     defer self.scope.exitScope();
 
-    const params = try self.parseFormalParameters();
+    const parameters = try self.parseFormalParameters();
 
     // Allow return statements inside function
     const ctx = self.context;
@@ -5498,7 +5518,7 @@ fn parseFunctionBody(
     );
 
     const function = ast.Function{
-        .parameters = params,
+        .parameters = parameters,
         .body = body,
         .info = function_data,
     };

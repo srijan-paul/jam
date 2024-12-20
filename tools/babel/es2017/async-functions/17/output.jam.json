@@ -33,6 +33,7 @@
             "generator": false,
             "async": true,
             "arrow": true,
+            "expression": true,
             "params": [
               {
                 "type": "Identifier",
@@ -53,7 +54,8 @@
               }
             }
           }
-        ]
+        ],
+        "optional": false
       }
     }
   ]

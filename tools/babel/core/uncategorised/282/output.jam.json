@@ -28,7 +28,8 @@
                 "end": 12,
                 "name": "doThat"
               },
-              "arguments": []
+              "arguments": [],
+              "optional": false
             }
           }
         ]
@@ -69,7 +70,8 @@
                     "end": 35,
                     "name": "e"
                   }
-                ]
+                ],
+                "optional": false
               }
             }
           ]
@@ -101,7 +103,8 @@
                   "end": 62,
                   "name": "stuff"
                 }
-              ]
+              ],
+              "optional": false
             }
           }
         ]

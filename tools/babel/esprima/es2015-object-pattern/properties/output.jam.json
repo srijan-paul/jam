@@ -31,14 +31,14 @@
                   "name": "a"
                 },
                 "computed": false,
-                "kind": "init",
+                "shorthand": true,
                 "value": {
                   "type": "Identifier",
                   "start": 5,
                   "end": 6,
                   "name": "a"
                 },
-                "shorthand": true
+                "kind": "init"
               },
               {
                 "type": "AssignmentPattern",
@@ -70,14 +70,14 @@
                   "name": "c"
                 },
                 "computed": false,
-                "kind": "init",
+                "shorthand": false,
                 "value": {
                   "type": "Identifier",
                   "start": 13,
                   "end": 14,
                   "name": "d"
                 },
-                "shorthand": false
+                "kind": "init"
               },
               {
                 "type": "Property",
@@ -91,7 +91,7 @@
                   "name": "e"
                 },
                 "computed": false,
-                "kind": "init",
+                "shorthand": false,
                 "value": {
                   "type": "AssignmentPattern",
                   "start": 17,
@@ -110,7 +110,7 @@
                     "raw": "0"
                   }
                 },
-                "shorthand": false
+                "kind": "init"
               },
               {
                 "type": "Property",
@@ -124,7 +124,7 @@
                   "name": "g"
                 },
                 "computed": false,
-                "kind": "init",
+                "shorthand": false,
                 "value": {
                   "type": "ArrayExpression",
                   "start": 25,
@@ -138,7 +138,7 @@
                     }
                   ]
                 },
-                "shorthand": false
+                "kind": "init"
               }
             ]
           },

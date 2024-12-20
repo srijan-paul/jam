@@ -40,7 +40,7 @@
           },
           {
             "type": "MethodDefinition",
-            "start": 25,
+            "start": 24,
             "end": 52,
             "key": {
               "type": "Identifier",
@@ -50,11 +50,12 @@
             },
             "value": {
               "type": "FunctionExpression",
-              "start": 27,
+              "start": 24,
               "end": 52,
               "generator": true,
               "async": false,
               "arrow": false,
+              "expression": true,
               "params": [],
               "body": {
                 "type": "BlockStatement",
@@ -79,7 +80,8 @@
                           "end": 45,
                           "name": "bar"
                         },
-                        "arguments": []
+                        "arguments": [],
+                        "optional": false
                       },
                       "delegate": false
                     }
@@ -112,7 +114,7 @@
           },
           {
             "type": "MethodDefinition",
-            "start": 71,
+            "start": 67,
             "end": 91,
             "key": {
               "type": "Identifier",
@@ -122,11 +124,12 @@
             },
             "value": {
               "type": "FunctionExpression",
-              "start": 72,
+              "start": 67,
               "end": 91,
               "generator": false,
               "async": false,
               "arrow": false,
+              "expression": true,
               "params": [],
               "body": {
                 "type": "BlockStatement",
@@ -154,7 +157,7 @@
           },
           {
             "type": "MethodDefinition",
-            "start": 98,
+            "start": 94,
             "end": 117,
             "key": {
               "type": "Identifier",
@@ -164,11 +167,12 @@
             },
             "value": {
               "type": "FunctionExpression",
-              "start": 100,
+              "start": 94,
               "end": 117,
               "generator": false,
               "async": false,
               "arrow": false,
+              "expression": true,
               "params": [
                 {
                   "type": "Identifier",
@@ -212,11 +216,12 @@
             },
             "value": {
               "type": "FunctionExpression",
-              "start": 123,
+              "start": 121,
               "end": 157,
               "generator": false,
               "async": false,
               "arrow": false,
+              "expression": true,
               "params": [],
               "body": {
                 "type": "BlockStatement",
@@ -241,15 +246,17 @@
                           "end": 143,
                           "name": "Math"
                         },
+                        "computed": false,
                         "property": {
                           "type": "Identifier",
                           "start": 144,
                           "end": 150,
                           "name": "random"
                         },
-                        "computed": false
+                        "optional": false
                       },
-                      "arguments": []
+                      "arguments": [],
+                      "optional": false
                     }
                   }
                 ]

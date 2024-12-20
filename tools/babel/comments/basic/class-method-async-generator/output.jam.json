@@ -20,7 +20,7 @@
         "body": [
           {
             "type": "MethodDefinition",
-            "start": 42,
+            "start": 18,
             "end": 91,
             "key": {
               "type": "Identifier",
@@ -30,11 +30,12 @@
             },
             "value": {
               "type": "FunctionExpression",
-              "start": 52,
+              "start": 18,
               "end": 91,
               "generator": true,
               "async": true,
               "arrow": false,
+              "expression": true,
               "params": [
                 {
                   "type": "Identifier",
@@ -69,7 +70,7 @@
           "body": [
             {
               "type": "MethodDefinition",
-              "start": 118,
+              "start": 103,
               "end": 125,
               "key": {
                 "type": "Identifier",
@@ -79,11 +80,12 @@
               },
               "value": {
                 "type": "FunctionExpression",
-                "start": 120,
+                "start": 103,
                 "end": 125,
                 "generator": true,
                 "async": true,
                 "arrow": false,
+                "expression": true,
                 "params": [],
                 "body": {
                   "type": "BlockStatement",

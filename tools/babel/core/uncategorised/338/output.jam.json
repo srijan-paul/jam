@@ -27,7 +27,7 @@
               "raw": "1"
             },
             "computed": false,
-            "kind": "init",
+            "shorthand": false,
             "value": {
               "type": "BinaryExpression",
               "start": 5,
@@ -47,7 +47,7 @@
                 "raw": "2"
               }
             },
-            "shorthand": false
+            "kind": "init"
           }
         ]
       }

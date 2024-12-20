@@ -30,7 +30,8 @@
             "end": 24,
             "name": "doSomething"
           },
-          "arguments": []
+          "arguments": [],
+          "optional": false
         }
       }
     }

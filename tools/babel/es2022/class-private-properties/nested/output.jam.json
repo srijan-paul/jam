@@ -70,11 +70,12 @@
             },
             "value": {
               "type": "FunctionExpression",
-              "start": 48,
+              "start": 37,
               "end": 527,
               "generator": false,
               "async": false,
               "arrow": false,
+              "expression": true,
               "params": [
                 {
                   "type": "AssignmentPattern",
@@ -136,13 +137,14 @@
                           "start": 69,
                           "end": 73
                         },
+                        "computed": false,
                         "property": {
                           "type": "Identifier",
                           "start": 74,
                           "end": 76,
                           "name": "#x"
                         },
-                        "computed": false
+                        "optional": false
                       },
                       "right": {
                         "type": "UnaryExpression",
@@ -177,13 +179,14 @@
                           "start": 87,
                           "end": 91
                         },
+                        "computed": false,
                         "property": {
                           "type": "Identifier",
                           "start": 92,
                           "end": 94,
                           "name": "#y"
                         },
-                        "computed": false
+                        "optional": false
                       },
                       "right": {
                         "type": "UnaryExpression",
@@ -218,13 +221,14 @@
                           "start": 106,
                           "end": 110
                         },
+                        "computed": false,
                         "property": {
                           "type": "Identifier",
                           "start": 111,
                           "end": 114,
                           "name": "foo"
                         },
-                        "computed": false
+                        "optional": false
                       },
                       "right": {
                         "type": "ClassExpression",
@@ -285,11 +289,12 @@
                               },
                               "value": {
                                 "type": "FunctionExpression",
-                                "start": 171,
+                                "start": 160,
                                 "end": 239,
                                 "generator": false,
                                 "async": false,
                                 "arrow": false,
+                                "expression": true,
                                 "params": [
                                   {
                                     "type": "AssignmentPattern",
@@ -351,13 +356,14 @@
                                             "start": 196,
                                             "end": 200
                                           },
+                                          "computed": false,
                                           "property": {
                                             "type": "Identifier",
                                             "start": 201,
                                             "end": 203,
                                             "name": "#x"
                                           },
-                                          "computed": false
+                                          "optional": false
                                         },
                                         "right": {
                                           "type": "UnaryExpression",
@@ -392,13 +398,14 @@
                                             "start": 218,
                                             "end": 222
                                           },
+                                          "computed": false,
                                           "property": {
                                             "type": "Identifier",
                                             "start": 223,
                                             "end": 225,
                                             "name": "#y"
                                           },
-                                          "computed": false
+                                          "optional": false
                                         },
                                         "right": {
                                           "type": "UnaryExpression",
@@ -424,7 +431,7 @@
                             },
                             {
                               "type": "MethodDefinition",
-                              "start": 251,
+                              "start": 247,
                               "end": 273,
                               "key": {
                                 "type": "Identifier",
@@ -434,11 +441,12 @@
                               },
                               "value": {
                                 "type": "FunctionExpression",
-                                "start": 252,
+                                "start": 247,
                                 "end": 273,
                                 "generator": false,
                                 "async": false,
                                 "arrow": false,
+                                "expression": true,
                                 "params": [],
                                 "body": {
                                   "type": "BlockStatement",
@@ -458,13 +466,14 @@
                                           "start": 264,
                                           "end": 268
                                         },
+                                        "computed": false,
                                         "property": {
                                           "type": "Identifier",
                                           "start": 269,
                                           "end": 271,
                                           "name": "#x"
                                         },
-                                        "computed": false
+                                        "optional": false
                                       }
                                     }
                                   ]
@@ -476,7 +485,7 @@
                             },
                             {
                               "type": "MethodDefinition",
-                              "start": 284,
+                              "start": 280,
                               "end": 313,
                               "key": {
                                 "type": "Identifier",
@@ -486,11 +495,12 @@
                               },
                               "value": {
                                 "type": "FunctionExpression",
-                                "start": 285,
+                                "start": 280,
                                 "end": 313,
                                 "generator": false,
                                 "async": false,
                                 "arrow": false,
+                                "expression": true,
                                 "params": [
                                   {
                                     "type": "Identifier",
@@ -522,13 +532,14 @@
                                             "start": 295,
                                             "end": 299
                                           },
+                                          "computed": false,
                                           "property": {
                                             "type": "Identifier",
                                             "start": 300,
                                             "end": 302,
                                             "name": "#x"
                                           },
-                                          "computed": false
+                                          "optional": false
                                         },
                                         "right": {
                                           "type": "UnaryExpression",
@@ -554,7 +565,7 @@
                             },
                             {
                               "type": "MethodDefinition",
-                              "start": 325,
+                              "start": 321,
                               "end": 347,
                               "key": {
                                 "type": "Identifier",
@@ -564,11 +575,12 @@
                               },
                               "value": {
                                 "type": "FunctionExpression",
-                                "start": 326,
+                                "start": 321,
                                 "end": 347,
                                 "generator": false,
                                 "async": false,
                                 "arrow": false,
+                                "expression": true,
                                 "params": [],
                                 "body": {
                                   "type": "BlockStatement",
@@ -588,13 +600,14 @@
                                           "start": 338,
                                           "end": 342
                                         },
+                                        "computed": false,
                                         "property": {
                                           "type": "Identifier",
                                           "start": 343,
                                           "end": 345,
                                           "name": "#y"
                                         },
-                                        "computed": false
+                                        "optional": false
                                       }
                                     }
                                   ]
@@ -606,7 +619,7 @@
                             },
                             {
                               "type": "MethodDefinition",
-                              "start": 358,
+                              "start": 354,
                               "end": 387,
                               "key": {
                                 "type": "Identifier",
@@ -616,11 +629,12 @@
                               },
                               "value": {
                                 "type": "FunctionExpression",
-                                "start": 359,
+                                "start": 354,
                                 "end": 387,
                                 "generator": false,
                                 "async": false,
                                 "arrow": false,
+                                "expression": true,
                                 "params": [
                                   {
                                     "type": "Identifier",
@@ -652,13 +666,14 @@
                                             "start": 369,
                                             "end": 373
                                           },
+                                          "computed": false,
                                           "property": {
                                             "type": "Identifier",
                                             "start": 374,
                                             "end": 376,
                                             "name": "#y"
                                           },
-                                          "computed": false
+                                          "optional": false
                                         },
                                         "right": {
                                           "type": "UnaryExpression",
@@ -694,11 +709,12 @@
                               },
                               "value": {
                                 "type": "FunctionExpression",
-                                "start": 401,
+                                "start": 395,
                                 "end": 452,
                                 "generator": false,
                                 "async": false,
                                 "arrow": false,
+                                "expression": true,
                                 "params": [
                                   {
                                     "type": "Identifier",
@@ -735,13 +751,14 @@
                                               "start": 414,
                                               "end": 418
                                             },
+                                            "computed": false,
                                             "property": {
                                               "type": "Identifier",
                                               "start": 419,
                                               "end": 421,
                                               "name": "#x"
                                             },
-                                            "computed": false
+                                            "optional": false
                                           },
                                           "right": {
                                             "type": "MemberExpression",
@@ -753,13 +770,14 @@
                                               "end": 427,
                                               "name": "p"
                                             },
+                                            "computed": false,
                                             "property": {
                                               "type": "Identifier",
                                               "start": 428,
                                               "end": 430,
                                               "name": "#x"
                                             },
-                                            "computed": false
+                                            "optional": false
                                           }
                                         },
                                         "right": {
@@ -776,13 +794,14 @@
                                               "start": 434,
                                               "end": 438
                                             },
+                                            "computed": false,
                                             "property": {
                                               "type": "Identifier",
                                               "start": 439,
                                               "end": 441,
                                               "name": "#y"
                                             },
-                                            "computed": false
+                                            "optional": false
                                           },
                                           "right": {
                                             "type": "MemberExpression",
@@ -794,13 +813,14 @@
                                               "end": 447,
                                               "name": "p"
                                             },
+                                            "computed": false,
                                             "property": {
                                               "type": "Identifier",
                                               "start": 448,
                                               "end": 450,
                                               "name": "#y"
                                             },
-                                            "computed": false
+                                            "optional": false
                                           }
                                         }
                                       }
@@ -823,11 +843,12 @@
                               },
                               "value": {
                                 "type": "FunctionExpression",
-                                "start": 468,
+                                "start": 460,
                                 "end": 516,
                                 "generator": false,
                                 "async": false,
                                 "arrow": false,
+                                "expression": true,
                                 "params": [],
                                 "body": {
                                   "type": "BlockStatement",
@@ -875,13 +896,14 @@
                                               "start": 490,
                                               "end": 494
                                             },
+                                            "computed": false,
                                             "property": {
                                               "type": "Identifier",
                                               "start": 495,
                                               "end": 497,
                                               "name": "#x"
                                             },
-                                            "computed": false
+                                            "optional": false
                                           },
                                           {
                                             "type": "MemberExpression",
@@ -892,13 +914,14 @@
                                               "start": 503,
                                               "end": 507
                                             },
+                                            "computed": false,
                                             "property": {
                                               "type": "Identifier",
                                               "start": 508,
                                               "end": 510,
                                               "name": "#y"
                                             },
-                                            "computed": false
+                                            "optional": false
                                           }
                                         ]
                                       }
@@ -923,7 +946,7 @@
           },
           {
             "type": "MethodDefinition",
-            "start": 535,
+            "start": 531,
             "end": 557,
             "key": {
               "type": "Identifier",
@@ -933,11 +956,12 @@
             },
             "value": {
               "type": "FunctionExpression",
-              "start": 536,
+              "start": 531,
               "end": 557,
               "generator": false,
               "async": false,
               "arrow": false,
+              "expression": true,
               "params": [],
               "body": {
                 "type": "BlockStatement",
@@ -957,13 +981,14 @@
                         "start": 548,
                         "end": 552
                       },
+                      "computed": false,
                       "property": {
                         "type": "Identifier",
                         "start": 553,
                         "end": 555,
                         "name": "#x"
                       },
-                      "computed": false
+                      "optional": false
                     }
                   }
                 ]
@@ -975,7 +1000,7 @@
           },
           {
             "type": "MethodDefinition",
-            "start": 564,
+            "start": 560,
             "end": 593,
             "key": {
               "type": "Identifier",
@@ -985,11 +1010,12 @@
             },
             "value": {
               "type": "FunctionExpression",
-              "start": 565,
+              "start": 560,
               "end": 593,
               "generator": false,
               "async": false,
               "arrow": false,
+              "expression": true,
               "params": [
                 {
                   "type": "Identifier",
@@ -1021,13 +1047,14 @@
                           "start": 575,
                           "end": 579
                         },
+                        "computed": false,
                         "property": {
                           "type": "Identifier",
                           "start": 580,
                           "end": 582,
                           "name": "#x"
                         },
-                        "computed": false
+                        "optional": false
                       },
                       "right": {
                         "type": "UnaryExpression",
@@ -1053,7 +1080,7 @@
           },
           {
             "type": "MethodDefinition",
-            "start": 601,
+            "start": 597,
             "end": 623,
             "key": {
               "type": "Identifier",
@@ -1063,11 +1090,12 @@
             },
             "value": {
               "type": "FunctionExpression",
-              "start": 602,
+              "start": 597,
               "end": 623,
               "generator": false,
               "async": false,
               "arrow": false,
+              "expression": true,
               "params": [],
               "body": {
                 "type": "BlockStatement",
@@ -1087,13 +1115,14 @@
                         "start": 614,
                         "end": 618
                       },
+                      "computed": false,
                       "property": {
                         "type": "Identifier",
                         "start": 619,
                         "end": 621,
                         "name": "#y"
                       },
-                      "computed": false
+                      "optional": false
                     }
                   }
                 ]
@@ -1105,7 +1134,7 @@
           },
           {
             "type": "MethodDefinition",
-            "start": 630,
+            "start": 626,
             "end": 659,
             "key": {
               "type": "Identifier",
@@ -1115,11 +1144,12 @@
             },
             "value": {
               "type": "FunctionExpression",
-              "start": 631,
+              "start": 626,
               "end": 659,
               "generator": false,
               "async": false,
               "arrow": false,
+              "expression": true,
               "params": [
                 {
                   "type": "Identifier",
@@ -1151,13 +1181,14 @@
                           "start": 641,
                           "end": 645
                         },
+                        "computed": false,
                         "property": {
                           "type": "Identifier",
                           "start": 646,
                           "end": 648,
                           "name": "#y"
                         },
-                        "computed": false
+                        "optional": false
                       },
                       "right": {
                         "type": "UnaryExpression",
@@ -1193,11 +1224,12 @@
             },
             "value": {
               "type": "FunctionExpression",
-              "start": 669,
+              "start": 663,
               "end": 720,
               "generator": false,
               "async": false,
               "arrow": false,
+              "expression": true,
               "params": [
                 {
                   "type": "Identifier",
@@ -1234,13 +1266,14 @@
                             "start": 682,
                             "end": 686
                           },
+                          "computed": false,
                           "property": {
                             "type": "Identifier",
                             "start": 687,
                             "end": 689,
                             "name": "#x"
                           },
-                          "computed": false
+                          "optional": false
                         },
                         "right": {
                           "type": "MemberExpression",
@@ -1252,13 +1285,14 @@
                             "end": 695,
                             "name": "p"
                           },
+                          "computed": false,
                           "property": {
                             "type": "Identifier",
                             "start": 696,
                             "end": 698,
                             "name": "#x"
                           },
-                          "computed": false
+                          "optional": false
                         }
                       },
                       "right": {
@@ -1275,13 +1309,14 @@
                             "start": 702,
                             "end": 706
                           },
+                          "computed": false,
                           "property": {
                             "type": "Identifier",
                             "start": 707,
                             "end": 709,
                             "name": "#y"
                           },
-                          "computed": false
+                          "optional": false
                         },
                         "right": {
                           "type": "MemberExpression",
@@ -1293,13 +1328,14 @@
                             "end": 715,
                             "name": "p"
                           },
+                          "computed": false,
                           "property": {
                             "type": "Identifier",
                             "start": 716,
                             "end": 718,
                             "name": "#y"
                           },
-                          "computed": false
+                          "optional": false
                         }
                       }
                     }
@@ -1322,11 +1358,12 @@
             },
             "value": {
               "type": "FunctionExpression",
-              "start": 732,
+              "start": 724,
               "end": 780,
               "generator": false,
               "async": false,
               "arrow": false,
+              "expression": true,
               "params": [],
               "body": {
                 "type": "BlockStatement",
@@ -1374,13 +1411,14 @@
                             "start": 754,
                             "end": 758
                           },
+                          "computed": false,
                           "property": {
                             "type": "Identifier",
                             "start": 759,
                             "end": 761,
                             "name": "#x"
                           },
-                          "computed": false
+                          "optional": false
                         },
                         {
                           "type": "MemberExpression",
@@ -1391,13 +1429,14 @@
                             "start": 767,
                             "end": 771
                           },
+                          "computed": false,
                           "property": {
                             "type": "Identifier",
                             "start": 772,
                             "end": 774,
                             "name": "#y"
                           },
-                          "computed": false
+                          "optional": false
                         }
                       ]
                     }

@@ -26,7 +26,7 @@
               "name": "__proto__"
             },
             "computed": false,
-            "kind": "init",
+            "shorthand": false,
             "value": {
               "type": "Literal",
               "start": 14,
@@ -34,7 +34,7 @@
               "value": null,
               "raw": "null"
             },
-            "shorthand": false
+            "kind": "init"
           },
           {
             "type": "Property",
@@ -48,7 +48,7 @@
               "name": "__proto__"
             },
             "computed": false,
-            "kind": "set",
+            "shorthand": false,
             "value": {
               "type": "FunctionExpression",
               "start": 33,
@@ -56,6 +56,7 @@
               "generator": false,
               "async": false,
               "arrow": false,
+              "expression": true,
               "params": [
                 {
                   "type": "Identifier",
@@ -71,7 +72,7 @@
                 "body": []
               }
             },
-            "shorthand": false
+            "kind": "set"
           }
         ]
       }

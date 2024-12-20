@@ -32,14 +32,6 @@
           "start": 12,
           "end": 19
         }
-      ],
-      "leadingComments": [
-        {
-          "type": "CommentBlock",
-          "value": " 1 ",
-          "start": 0,
-          "end": 7
-        }
       ]
     }
   ]

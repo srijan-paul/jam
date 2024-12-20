@@ -23,37 +23,7 @@
                 "type": "Identifier",
                 "start": 22,
                 "end": 23,
-                "name": "x",
-                "trailingComments": [
-                  {
-                    "type": "CommentBlock",
-                    "value": " Two ",
-                    "start": 26,
-                    "end": 35
-                  },
-                  {
-                    "type": "CommentBlock",
-                    "value": " Three ",
-                    "start": 39,
-                    "end": 50
-                  }
-                ],
-                "leadingComments": [
-                  {
-                    "type": "CommentBlock",
-                    "value": " One ",
-                    "start": 10,
-                    "end": 19
-                  }
-                ]
-              }
-            ],
-            "trailingComments": [
-              {
-                "type": "CommentBlock",
-                "value": " Four ",
-                "start": 53,
-                "end": 63
+                "name": "x"
               }
             ]
           },

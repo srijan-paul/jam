@@ -36,15 +36,7 @@
               },
               "arguments": [],
               "optional": false
-            },
-            "leadingComments": [
-              {
-                "type": "CommentLine",
-                "value": " Some comment",
-                "start": 9,
-                "end": 24
-              }
-            ]
+            }
           }
         ]
       },

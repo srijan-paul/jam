@@ -42,7 +42,8 @@
                 "name": "c"
               }
             }
-          ]
+          ],
+          "optional": false
         },
         "property": {
           "type": "Literal",

@@ -9,12 +9,6 @@
       "type": "LabeledStatement",
       "start": 0,
       "end": 27,
-      "label": {
-        "type": "Identifier",
-        "start": 0,
-        "end": 5,
-        "name": "start"
-      },
       "body": {
         "type": "ForStatement",
         "start": 7,
@@ -30,6 +24,12 @@
             "name": "start"
           }
         }
+      },
+      "label": {
+        "type": "Identifier",
+        "start": 0,
+        "end": 5,
+        "name": "start"
       }
     }
   ]

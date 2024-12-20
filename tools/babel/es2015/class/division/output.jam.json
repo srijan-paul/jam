@@ -132,7 +132,8 @@
                     }
                   }
                 }
-              ]
+              ],
+              "optional": false
             },
             "arguments": [
               {
@@ -180,7 +181,8 @@
                   }
                 }
               }
-            ]
+            ],
+            "optional": false
           }
         }
       }

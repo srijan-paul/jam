@@ -26,7 +26,8 @@
             "end": 7,
             "name": "bar"
           }
-        ]
+        ],
+        "optional": false
       }
     }
   ]

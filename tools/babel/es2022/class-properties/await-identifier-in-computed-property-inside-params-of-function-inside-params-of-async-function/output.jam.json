@@ -16,6 +16,7 @@
         "generator": false,
         "async": true,
         "arrow": true,
+        "expression": true,
         "params": [
           {
             "type": "AssignmentPattern",
@@ -40,6 +41,7 @@
               "generator": false,
               "async": false,
               "arrow": false,
+              "expression": true,
               "params": [
                 {
                   "type": "AssignmentPattern",
@@ -60,7 +62,7 @@
                       "body": [
                         {
                           "type": "ClassProperty",
-                          "start": 35,
+                          "start": 34,
                           "end": 40,
                           "key": {
                             "type": "Identifier",

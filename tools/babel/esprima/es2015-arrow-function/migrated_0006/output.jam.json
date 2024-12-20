@@ -16,6 +16,7 @@
         "generator": false,
         "async": false,
         "arrow": true,
+        "expression": true,
         "params": [
           {
             "type": "Identifier",
@@ -33,12 +34,6 @@
               "type": "LabeledStatement",
               "start": 7,
               "end": 16,
-              "label": {
-                "type": "Identifier",
-                "start": 7,
-                "end": 12,
-                "name": "label"
-              },
               "body": {
                 "type": "ExpressionStatement",
                 "start": 14,
@@ -50,6 +45,12 @@
                   "value": 42,
                   "raw": "42"
                 }
+              },
+              "label": {
+                "type": "Identifier",
+                "start": 7,
+                "end": 12,
+                "name": "label"
               }
             }
           ]

@@ -41,8 +41,7 @@
               "end": 28,
               "value": "use strict",
               "raw": "'use strict'"
-            },
-            "directive": "use strict"
+            }
           }
         ]
       }

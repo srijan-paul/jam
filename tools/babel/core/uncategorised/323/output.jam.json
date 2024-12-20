@@ -9,12 +9,6 @@
       "type": "LabeledStatement",
       "start": 0,
       "end": 8,
-      "label": {
-        "type": "Identifier",
-        "start": 0,
-        "end": 3,
-        "name": "foo"
-      },
       "body": {
         "type": "ExpressionStatement",
         "start": 5,
@@ -26,18 +20,18 @@
           "value": 10,
           "raw": "10"
         }
+      },
+      "label": {
+        "type": "Identifier",
+        "start": 0,
+        "end": 3,
+        "name": "foo"
       }
     },
     {
       "type": "LabeledStatement",
       "start": 9,
       "end": 17,
-      "label": {
-        "type": "Identifier",
-        "start": 9,
-        "end": 12,
-        "name": "foo"
-      },
       "body": {
         "type": "ExpressionStatement",
         "start": 14,
@@ -49,6 +43,12 @@
           "value": 20,
           "raw": "20"
         }
+      },
+      "label": {
+        "type": "Identifier",
+        "start": 9,
+        "end": 12,
+        "name": "foo"
       }
     }
   ]

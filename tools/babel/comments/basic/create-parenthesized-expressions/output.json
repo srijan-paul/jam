@@ -19,23 +19,7 @@
           "end": 9,
           "value": 1
         }
-      },
-      "trailingComments": [
-        {
-          "type": "CommentBlock",
-          "value": " Two ",
-          "start": 13,
-          "end": 22
-        }
-      ],
-      "leadingComments": [
-        {
-          "type": "CommentLine",
-          "value": " One",
-          "start": 0,
-          "end": 6
-        }
-      ]
+      }
     },
     {
       "type": "ExpressionStatement",
@@ -51,15 +35,7 @@
           "end": 25,
           "value": 2
         }
-      },
-      "leadingComments": [
-        {
-          "type": "CommentBlock",
-          "value": " Two ",
-          "start": 13,
-          "end": 22
-        }
-      ]
+      }
     },
     {
       "type": "ExpressionStatement",
@@ -73,15 +49,7 @@
           "type": "NumericLiteral",
           "start": 44,
           "end": 45,
-          "value": 3,
-          "leadingComments": [
-            {
-              "type": "CommentLine",
-              "value": " Three",
-              "start": 33,
-              "end": 41
-            }
-          ]
+          "value": 3
         }
       }
     },
@@ -97,15 +65,7 @@
           "type": "NumericLiteral",
           "start": 62,
           "end": 63,
-          "value": 4,
-          "leadingComments": [
-            {
-              "type": "CommentBlock",
-              "value": " Four ",
-              "start": 51,
-              "end": 61
-            }
-          ]
+          "value": 4
         }
       }
     }

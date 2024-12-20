@@ -13,12 +13,6 @@
         "type": "NewExpression",
         "start": 0,
         "end": 5,
-        "callee": {
-          "type": "Identifier",
-          "start": 4,
-          "end": 5,
-          "name": "f"
-        },
         "arguments": [
           {
             "type": "SpreadElement",
@@ -53,7 +47,13 @@
               "name": "z"
             }
           }
-        ]
+        ],
+        "callee": {
+          "type": "Identifier",
+          "start": 4,
+          "end": 5,
+          "name": "f"
+        }
       }
     }
   ]

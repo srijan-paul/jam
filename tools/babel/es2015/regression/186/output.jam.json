@@ -37,14 +37,14 @@
                   "name": "async"
                 },
                 "computed": false,
-                "kind": "init",
+                "shorthand": true,
                 "value": {
                   "type": "Identifier",
                   "start": 11,
                   "end": 16,
                   "name": "async"
                 },
-                "shorthand": true
+                "kind": "init"
               },
               {
                 "type": "Property",
@@ -58,14 +58,14 @@
                   "name": "bar"
                 },
                 "computed": false,
-                "kind": "init",
+                "shorthand": true,
                 "value": {
                   "type": "Identifier",
                   "start": 18,
                   "end": 21,
                   "name": "bar"
                 },
-                "shorthand": true
+                "kind": "init"
               }
             ]
           }

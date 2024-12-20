@@ -19,15 +19,7 @@
             "start": 8,
             "end": 13,
             "name": "error"
-          },
-          "trailingComments": [
-            {
-              "type": "CommentBlock",
-              "value": " Multiline\nComment ",
-              "start": 13,
-              "end": 36
-            }
-          ]
+          }
         },
         {
           "type": "ExpressionStatement",
@@ -38,15 +30,7 @@
             "start": 36,
             "end": 41,
             "name": "error"
-          },
-          "leadingComments": [
-            {
-              "type": "CommentBlock",
-              "value": " Multiline\nComment ",
-              "start": 13,
-              "end": 36
-            }
-          ]
+          }
         }
       ]
     }

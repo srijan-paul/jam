@@ -16,6 +16,9 @@ function removeAstTrivia(ast) {
 		delete ast['loc'];
 		delete ast['extra']
 		delete ast['directives']
+		delete ast['directive']
+		delete ast['trailingComments']
+		delete ast['leadingComments']
 		const values = Object.values(ast).filter(v => Array.isArray(v) || typeof v === 'object');
 		removeAstTrivia(values);
 	}

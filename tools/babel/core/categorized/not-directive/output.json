@@ -237,15 +237,7 @@
           }
         ],
         "optional": false
-      },
-      "trailingComments": [
-        {
-          "type": "CommentLine",
-          "value": " Should not be a syntax error because should not be parsed in strict mode.",
-          "start": 180,
-          "end": 256
-        }
-      ]
+      }
     },
     {
       "type": "ExpressionStatement",
@@ -257,15 +249,7 @@
         "end": 261,
         "value": "\u0005",
         "raw": "\"\\5\""
-      },
-      "leadingComments": [
-        {
-          "type": "CommentLine",
-          "value": " Should not be a syntax error because should not be parsed in strict mode.",
-          "start": 180,
-          "end": 256
-        }
-      ]
+      }
     },
     {
       "type": "FunctionDeclaration",

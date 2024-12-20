@@ -37,7 +37,7 @@
                 "name": "a"
               },
               "computed": false,
-              "kind": "init",
+              "shorthand": false,
               "value": {
                 "type": "Literal",
                 "start": 11,
@@ -45,7 +45,7 @@
                 "value": 42,
                 "raw": "42"
               },
-              "shorthand": false
+              "kind": "init"
             }
           ]
         }

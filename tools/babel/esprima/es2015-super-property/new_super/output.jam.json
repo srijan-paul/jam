@@ -36,11 +36,12 @@
             },
             "value": {
               "type": "FunctionExpression",
-              "start": 27,
+              "start": 24,
               "end": 61,
               "generator": false,
               "async": false,
               "arrow": false,
+              "expression": true,
               "params": [],
               "body": {
                 "type": "BlockStatement",
@@ -55,6 +56,7 @@
                       "type": "NewExpression",
                       "start": 40,
                       "end": 53,
+                      "arguments": [],
                       "callee": {
                         "type": "MemberExpression",
                         "start": 44,
@@ -64,15 +66,15 @@
                           "start": 44,
                           "end": 49
                         },
+                        "computed": false,
                         "property": {
                           "type": "Identifier",
                           "start": 50,
                           "end": 53,
                           "name": "bar"
                         },
-                        "computed": false
-                      },
-                      "arguments": []
+                        "optional": false
+                      }
                     }
                   }
                 ]

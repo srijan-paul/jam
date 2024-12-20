@@ -15,8 +15,7 @@
         "end": 12,
         "value": "use strict",
         "raw": "\"use strict\""
-      },
-      "directive": "use strict"
+      }
     },
     {
       "type": "VariableDeclaration",

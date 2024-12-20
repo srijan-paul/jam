@@ -49,7 +49,7 @@
                 "name": "b"
               },
               "computed": false,
-              "kind": "init",
+              "shorthand": false,
               "value": {
                 "type": "MemberExpression",
                 "start": 13,
@@ -60,15 +60,16 @@
                   "end": 15,
                   "properties": []
                 },
+                "computed": false,
                 "property": {
                   "type": "Identifier",
                   "start": 16,
                   "end": 17,
                   "name": "d"
                 },
-                "computed": false
+                "optional": false
               },
-              "shorthand": false
+              "kind": "init"
             }
           ]
         },

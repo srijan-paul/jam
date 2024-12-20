@@ -37,14 +37,14 @@
                   "name": "get"
                 },
                 "computed": false,
-                "kind": "init",
+                "shorthand": true,
                 "value": {
                   "type": "Identifier",
                   "start": 11,
                   "end": 14,
                   "name": "get"
                 },
-                "shorthand": true
+                "kind": "init"
               },
               {
                 "type": "Property",
@@ -58,14 +58,14 @@
                   "name": "eval"
                 },
                 "computed": false,
-                "kind": "init",
+                "shorthand": true,
                 "value": {
                   "type": "Identifier",
                   "start": 16,
                   "end": 20,
                   "name": "eval"
                 },
-                "shorthand": true
+                "kind": "init"
               },
               {
                 "type": "Property",
@@ -79,14 +79,14 @@
                   "name": "arguments"
                 },
                 "computed": false,
-                "kind": "init",
+                "shorthand": true,
                 "value": {
                   "type": "Identifier",
                   "start": 22,
                   "end": 31,
                   "name": "arguments"
                 },
-                "shorthand": true
+                "kind": "init"
               }
             ]
           }

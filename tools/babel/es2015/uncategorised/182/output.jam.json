@@ -16,6 +16,7 @@
         "generator": false,
         "async": false,
         "arrow": true,
+        "expression": true,
         "params": [
           {
             "type": "ObjectPattern",
@@ -34,7 +35,7 @@
                   "name": "a"
                 },
                 "computed": false,
-                "kind": "init",
+                "shorthand": false,
                 "value": {
                   "type": "ArrayPattern",
                   "start": 6,
@@ -54,7 +55,7 @@
                     }
                   ]
                 },
-                "shorthand": false
+                "kind": "init"
               }
             ]
           },

@@ -56,7 +56,8 @@
               "elements": []
             }
           }
-        ]
+        ],
+        "optional": false
       }
     }
   ]

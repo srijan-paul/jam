@@ -30,7 +30,7 @@
                 "name": "f"
               },
               "computed": false,
-              "kind": "init",
+              "shorthand": false,
               "value": {
                 "type": "Property",
                 "start": 35,
@@ -43,7 +43,7 @@
                   "name": "f"
                 },
                 "computed": false,
-                "kind": "init",
+                "shorthand": false,
                 "value": {
                   "type": "FunctionExpression",
                   "start": 45,
@@ -51,6 +51,7 @@
                   "generator": true,
                   "async": true,
                   "arrow": false,
+                  "expression": true,
                   "params": [
                     {
                       "type": "Identifier",
@@ -66,9 +67,9 @@
                     "body": []
                   }
                 },
-                "shorthand": false
+                "kind": "init"
               },
-              "shorthand": false
+              "kind": "init"
             }
           ]
         },
@@ -90,7 +91,7 @@
                   "name": "f"
                 },
                 "computed": false,
-                "kind": "init",
+                "shorthand": false,
                 "value": {
                   "type": "Property",
                   "start": 106,
@@ -103,7 +104,7 @@
                     "name": "f"
                   },
                   "computed": false,
-                  "kind": "init",
+                  "shorthand": false,
                   "value": {
                     "type": "FunctionExpression",
                     "start": 108,
@@ -111,6 +112,7 @@
                     "generator": true,
                     "async": true,
                     "arrow": false,
+                    "expression": true,
                     "params": [],
                     "body": {
                       "type": "BlockStatement",
@@ -119,13 +121,14 @@
                       "body": []
                     }
                   },
-                  "shorthand": false
+                  "kind": "init"
                 },
-                "shorthand": false
+                "kind": "init"
               }
             ]
           }
-        ]
+        ],
+        "optional": false
       }
     }
   ]

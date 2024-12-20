@@ -45,13 +45,14 @@
                       "end": 9,
                       "name": "a"
                     },
+                    "computed": false,
                     "property": {
                       "type": "Identifier",
                       "start": 10,
                       "end": 11,
                       "name": "b"
                     },
-                    "computed": false
+                    "optional": false
                   }
                 }
               ]

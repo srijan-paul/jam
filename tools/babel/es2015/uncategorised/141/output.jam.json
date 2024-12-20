@@ -26,7 +26,7 @@
               "name": "x"
             },
             "computed": true,
-            "kind": "init",
+            "shorthand": false,
             "value": {
               "type": "Literal",
               "start": 7,
@@ -34,7 +34,7 @@
               "value": 10,
               "raw": "10"
             },
-            "shorthand": false
+            "kind": "init"
           }
         ]
       }

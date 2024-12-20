@@ -33,6 +33,7 @@
             "generator": false,
             "async": false,
             "arrow": false,
+            "expression": true,
             "params": [],
             "body": {
               "type": "BlockStatement",
@@ -53,7 +54,8 @@
                       "end": 33,
                       "name": "sayHi"
                     },
-                    "arguments": []
+                    "arguments": [],
+                    "optional": false
                   }
                 }
               ]

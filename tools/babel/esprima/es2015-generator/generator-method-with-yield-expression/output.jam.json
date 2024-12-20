@@ -26,7 +26,7 @@
               "name": "foo"
             },
             "computed": false,
-            "kind": "init",
+            "shorthand": false,
             "value": {
               "type": "FunctionExpression",
               "start": 7,
@@ -34,6 +34,7 @@
               "generator": true,
               "async": false,
               "arrow": false,
+              "expression": true,
               "params": [],
               "body": {
                 "type": "BlockStatement",
@@ -61,7 +62,7 @@
                 ]
               }
             },
-            "shorthand": false
+            "kind": "init"
           }
         ]
       }

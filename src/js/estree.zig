@@ -7,11 +7,15 @@ const Parser = @import("parser.zig");
 const ast = @import("ast.zig");
 const util = @import("util");
 
+const meta = std.meta;
+
 const Node = ast.Node;
 const Tree = ast.Tree;
 
 const JValue = std.json.Value;
 const JNull = JValue{ .null = {} };
+const JTrue = JValue{ .bool = true };
+const JFalse = JValue{ .bool = false };
 
 // TODO: add `loc` with source locations as well.
 pub const EstreeJsonOpts = struct {
@@ -19,6 +23,9 @@ pub const EstreeJsonOpts = struct {
     source_type: bool = false,
     /// Always set to `null`. Only used for babel compatibility
     interpreter: bool = false,
+    /// emits an "optional": false field to Call/Member expressions
+    /// that are not optional (i.e no .? or .?()).
+    optional_chain_flag: bool = false,
 };
 
 /// Options to use for ESTree conversion when the output has to be
@@ -26,6 +33,7 @@ pub const EstreeJsonOpts = struct {
 pub const BabelEstreeOptions = EstreeJsonOpts{
     .interpreter = true,
     .source_type = true,
+    .optional_chain_flag = true,
 };
 
 fn subRangeToJsonArray(
@@ -312,12 +320,28 @@ fn nodeToEsTree(
             try o.put("specifiers", specifiers);
         },
 
-        .call_expr, .new_expr => |payload| {
+        .call_expr => |payload| {
             const callee = try nodeToEsTree(t, al, payload.callee, opts);
             const arguments = t.getNode(payload.arguments).data.arguments;
             const args = try subRangeToJsonArray(al, t, arguments, opts);
             try o.put("callee", callee);
             try o.put("arguments", args);
+
+            if (meta.activeTag(node.data) == .call_expr and opts.optional_chain_flag)
+                try o.put("optional", JValue{ .bool = false });
+        },
+
+        .new_expr => |payload| {
+            const callee = try nodeToEsTree(t, al, payload.callee, opts);
+            if (payload.arguments) |args| {
+                const args_range = t.getNode(args).data.arguments;
+                const args_val = try subRangeToJsonArray(al, t, args_range, opts);
+                try o.put("arguments", args_val);
+            } else {
+                try o.put("arguments", JValue{ .array = std.json.Array.init(al) });
+            }
+
+            try o.put("callee", callee);
         },
 
         .super_call_expr => |maybe_args| {
@@ -388,9 +412,9 @@ fn nodeToEsTree(
             try o.put("method", JValue{ .bool = method });
             try o.put("key", key);
             try o.put("computed", JValue{ .bool = computed });
-            try o.put("kind", JValue{ .string = kind });
-            try o.put("value", value);
             try o.put("shorthand", JValue{ .bool = shorthand });
+            try o.put("value", value);
+            try o.put("kind", JValue{ .string = kind });
         },
 
         .try_statement => |payload| {
@@ -501,8 +525,11 @@ fn nodeToEsTree(
             const property = try nodeToEsTree(t, al, payload.property, opts);
 
             try o.put("object", object);
-            try o.put("property", property);
             try o.put("computed", JValue{ .bool = false });
+            try o.put("property", property);
+
+            if (opts.optional_chain_flag)
+                try o.put("optional", JValue{ .bool = false });
         },
 
         .computed_member_expr => |payload| {
@@ -515,23 +542,36 @@ fn nodeToEsTree(
         },
 
         .function_expr, .function_declaration => |payload| {
-            const params_range = t.getNode(payload.parameters).data.parameters;
+            std.debug.print("data:\n", .{});
+            for (0..t.nodes.len) |i|
+                std.debug.print("{d}: {any}\n", .{ i, t.nodes.get(i).data });
+
+            std.debug.print("access using: {d}\n", .{@as(usize, @intFromEnum(payload.parameters))});
+
+            const params_range = t.nodes.get(@intFromEnum(payload.parameters)).data.parameters;
             const params = try subRangeToJsonArray(al, t, params_range, opts);
             const body = try nodeToEsTree(t, al, payload.body, opts);
 
-            const extra = t.getExtraData(payload.info).function;
-            if (extra.name) |name| {
-                const id = try nodeToEsTree(t, al, name, opts);
-                try o.put("id", id);
+            const extra: ast.ExtraData = t.getExtraData(payload.info);
+            const fn_info = extra.function;
+            if (fn_info.name) |name| {
+                if (name != Node.Index.empty) {
+                    const id = try nodeToEsTree(t, al, name, opts);
+                    try o.put("id", id);
+                }
             }
 
-            try o.put("generator", JValue{ .bool = extra.flags.is_generator });
-            try o.put("async", JValue{ .bool = extra.flags.is_async });
+            try o.put("generator", JValue{ .bool = fn_info.flags.is_generator });
+            try o.put("async", JValue{ .bool = fn_info.flags.is_async });
 
             // function_declaration can never be `arrow`, so only have the "arrow"
             // field for function_exprs.
-            if (std.meta.activeTag(node.data) != .function_declaration)
-                try o.put("arrow", JValue{ .bool = extra.flags.is_arrow });
+            if (std.meta.activeTag(node.data) == .function_expr) {
+                try o.put("arrow", JValue{ .bool = fn_info.flags.is_arrow });
+                try o.put("expression", JTrue);
+            } else {
+                try o.put("expression", JFalse);
+            }
 
             try o.put("params", params);
             try o.put("body", body);
@@ -572,8 +612,8 @@ fn nodeToEsTree(
             const label = try nodeToEsTree(t, al, payload.label, opts);
             const body = try nodeToEsTree(t, al, payload.body, opts);
 
-            try o.put("label", label);
             try o.put("body", body);
+            try o.put("label", label);
         },
 
         .class_expression, .class_declaration => |payload| {
@@ -694,10 +734,10 @@ fn nodeToEsTree(
         },
 
         .meta_property => |payload| {
-            const meta = try nodeToEsTree(t, al, payload.meta, opts);
+            const obj = try nodeToEsTree(t, al, payload.meta, opts);
             const property = try nodeToEsTree(t, al, payload.property, opts);
 
-            try o.put("meta", meta);
+            try o.put("meta", obj);
             try o.put("property", property);
         },
 

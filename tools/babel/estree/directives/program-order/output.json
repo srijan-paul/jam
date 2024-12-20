@@ -15,8 +15,7 @@
         "end": 12,
         "value": "use strict",
         "raw": "\"use strict\""
-      },
-      "directive": "use strict"
+      }
     },
     {
       "type": "ExpressionStatement",
@@ -28,8 +27,7 @@
         "end": 25,
         "value": "use loose",
         "raw": "\"use loose\""
-      },
-      "directive": "use loose"
+      }
     },
     {
       "type": "VariableDeclaration",

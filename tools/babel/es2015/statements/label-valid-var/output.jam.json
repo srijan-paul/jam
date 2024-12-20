@@ -9,12 +9,6 @@
       "type": "LabeledStatement",
       "start": 0,
       "end": 13,
-      "label": {
-        "type": "Identifier",
-        "start": 0,
-        "end": 3,
-        "name": "foo"
-      },
       "body": {
         "type": "VariableDeclaration",
         "start": 5,
@@ -34,6 +28,12 @@
           }
         ],
         "kind": "var"
+      },
+      "label": {
+        "type": "Identifier",
+        "start": 0,
+        "end": 3,
+        "name": "foo"
       }
     }
   ]

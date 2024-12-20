@@ -27,6 +27,7 @@
             "generator": false,
             "async": false,
             "arrow": false,
+            "expression": true,
             "params": [
               {
                 "type": "RestElement",
@@ -59,7 +60,8 @@
                       "end": 32,
                       "name": "sayHi"
                     },
-                    "arguments": []
+                    "arguments": [],
+                    "optional": false
                   }
                 }
               ]

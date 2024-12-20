@@ -58,26 +58,10 @@
                       }
                     }
                   ],
-                  "kind": "var",
-                  "trailingComments": [
-                    {
-                      "type": "CommentLine",
-                      "value": " one",
-                      "start": 33,
-                      "end": 39
-                    }
-                  ]
+                  "kind": "var"
                 }
               ]
-            },
-            "trailingComments": [
-              {
-                "type": "CommentLine",
-                "value": " two",
-                "start": 42,
-                "end": 48
-              }
-            ]
+            }
           }
         ],
         "optional": false

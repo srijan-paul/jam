@@ -35,14 +35,14 @@
                     "name": "a"
                   },
                   "computed": false,
-                  "kind": "init",
+                  "shorthand": true,
                   "value": {
                     "type": "Identifier",
                     "start": 12,
                     "end": 13,
                     "name": "a"
                   },
-                  "shorthand": true
+                  "kind": "init"
                 }
               ]
             },

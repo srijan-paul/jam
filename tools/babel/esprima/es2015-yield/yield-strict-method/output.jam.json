@@ -38,7 +38,7 @@
               "name": "yield"
             },
             "computed": false,
-            "kind": "init",
+            "shorthand": false,
             "value": {
               "type": "FunctionExpression",
               "start": 22,
@@ -46,6 +46,7 @@
               "generator": false,
               "async": false,
               "arrow": false,
+              "expression": true,
               "params": [],
               "body": {
                 "type": "BlockStatement",
@@ -54,7 +55,7 @@
                 "body": []
               }
             },
-            "shorthand": false
+            "kind": "init"
           }
         ]
       }

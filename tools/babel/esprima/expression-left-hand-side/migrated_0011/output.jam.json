@@ -23,21 +23,23 @@
             "end": 8,
             "name": "universe"
           },
+          "computed": false,
           "property": {
             "type": "Identifier",
             "start": 9,
             "end": 17,
             "name": "milkyway"
           },
-          "computed": false
+          "optional": false
         },
+        "computed": false,
         "property": {
           "type": "Identifier",
           "start": 18,
           "end": 29,
           "name": "solarsystem"
         },
-        "computed": false
+        "optional": false
       }
     }
   ]

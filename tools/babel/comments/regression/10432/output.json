@@ -42,15 +42,7 @@
           }
         }
       ],
-      "kind": "const",
-      "trailingComments": [
-        {
-          "type": "CommentBlock",
-          "value": " istanbul ignore next ",
-          "start": 37,
-          "end": 63
-        }
-      ]
+      "kind": "const"
     },
     {
       "type": "ExpressionStatement",
@@ -144,15 +136,7 @@
           }
         ],
         "optional": false
-      },
-      "leadingComments": [
-        {
-          "type": "CommentBlock",
-          "value": " istanbul ignore next ",
-          "start": 37,
-          "end": 63
-        }
-      ]
+      }
     }
   ]
 }

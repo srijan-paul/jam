@@ -19,13 +19,14 @@
           "end": 10,
           "name": "async"
         },
+        "computed": false,
         "property": {
           "type": "Identifier",
           "start": 11,
           "end": 12,
           "name": "x"
         },
-        "computed": false
+        "optional": false
       },
       "right": {
         "type": "Identifier",

@@ -31,22 +31,24 @@
                 "end": 3,
                 "name": "foo"
               },
+              "computed": false,
               "property": {
                 "type": "Identifier",
                 "start": 5,
                 "end": 10,
                 "name": "class"
               },
-              "computed": false
+              "optional": false
             }
           },
+          "computed": false,
           "property": {
             "type": "Identifier",
             "start": 11,
             "end": 14,
             "name": "bar"
           },
-          "computed": false
+          "optional": false
         }
       }
     },
@@ -76,22 +78,24 @@
                 "end": 18,
                 "name": "foo"
               },
+              "computed": false,
               "property": {
                 "type": "Identifier",
                 "start": 20,
                 "end": 28,
                 "name": "function"
               },
-              "computed": false
+              "optional": false
             }
           },
+          "computed": false,
           "property": {
             "type": "Identifier",
             "start": 29,
             "end": 32,
             "name": "bar"
           },
-          "computed": false
+          "optional": false
         }
       }
     },
@@ -129,31 +133,34 @@
                     "end": 36,
                     "name": "foo"
                   },
+                  "computed": false,
                   "property": {
                     "type": "Identifier",
                     "start": 38,
                     "end": 41,
                     "name": "bar"
                   },
-                  "computed": false
+                  "optional": false
                 }
               },
+              "computed": false,
               "property": {
                 "type": "Identifier",
                 "start": 43,
                 "end": 48,
                 "name": "class"
               },
-              "computed": false
+              "optional": false
             }
           },
+          "computed": false,
           "property": {
             "type": "Identifier",
             "start": 49,
             "end": 52,
             "name": "bar"
           },
-          "computed": false
+          "optional": false
         }
       }
     },
@@ -183,22 +190,24 @@
                 "end": 56,
                 "name": "foo"
               },
+              "computed": false,
               "property": {
                 "type": "Identifier",
                 "start": 58,
                 "end": 66,
                 "name": "function"
               },
-              "computed": false
+              "optional": false
             }
           },
+          "computed": false,
           "property": {
             "type": "Identifier",
             "start": 68,
             "end": 71,
             "name": "bar"
           },
-          "computed": false
+          "optional": false
         }
       }
     }

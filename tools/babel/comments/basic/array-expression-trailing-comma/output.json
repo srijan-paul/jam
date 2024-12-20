@@ -37,35 +37,7 @@
                 "start": 50,
                 "end": 55,
                 "value": "Two",
-                "raw": "\"Two\"",
-                "trailingComments": [
-                  {
-                    "type": "CommentLine",
-                    "value": " Three",
-                    "start": 56,
-                    "end": 64
-                  },
-                  {
-                    "type": "CommentLine",
-                    "value": " Four",
-                    "start": 67,
-                    "end": 74
-                  }
-                ],
-                "leadingComments": [
-                  {
-                    "type": "CommentLine",
-                    "value": " One",
-                    "start": 31,
-                    "end": 37
-                  },
-                  {
-                    "type": "CommentLine",
-                    "value": " Two",
-                    "start": 41,
-                    "end": 47
-                  }
-                ]
+                "raw": "\"Two\""
               }
             ]
           }
@@ -105,35 +77,7 @@
                 "start": 135,
                 "end": 140,
                 "value": "Two",
-                "raw": "\"Two\"",
-                "trailingComments": [
-                  {
-                    "type": "CommentLine",
-                    "value": " Three",
-                    "start": 142,
-                    "end": 150
-                  },
-                  {
-                    "type": "CommentLine",
-                    "value": " Four",
-                    "start": 153,
-                    "end": 160
-                  }
-                ],
-                "leadingComments": [
-                  {
-                    "type": "CommentLine",
-                    "value": " One",
-                    "start": 116,
-                    "end": 122
-                  },
-                  {
-                    "type": "CommentLine",
-                    "value": " Two",
-                    "start": 126,
-                    "end": 132
-                  }
-                ]
+                "raw": "\"Two\""
               }
             ]
           }
@@ -166,35 +110,13 @@
                 "start": 195,
                 "end": 200,
                 "value": "One",
-                "raw": "\"One\"",
-                "trailingComments": [
-                  {
-                    "type": "CommentLine",
-                    "value": " One",
-                    "start": 202,
-                    "end": 208
-                  },
-                  {
-                    "type": "CommentLine",
-                    "value": " Two",
-                    "start": 212,
-                    "end": 218
-                  }
-                ]
+                "raw": "\"One\""
               }
             ]
           }
         }
       ],
-      "kind": "const",
-      "trailingComments": [
-        {
-          "type": "CommentLine",
-          "value": " Three",
-          "start": 221,
-          "end": 229
-        }
-      ]
+      "kind": "const"
     }
   ]
 }

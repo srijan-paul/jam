@@ -37,7 +37,7 @@
                   "name": "async"
                 },
                 "computed": false,
-                "kind": "init",
+                "shorthand": false,
                 "value": {
                   "type": "Literal",
                   "start": 19,
@@ -45,7 +45,7 @@
                   "value": "test",
                   "raw": "\"test\""
                 },
-                "shorthand": false
+                "kind": "init"
               }
             ]
           }

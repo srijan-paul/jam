@@ -45,27 +45,11 @@
                 "value": 42,
                 "raw": "42"
               },
-              "kind": "init",
-              "trailingComments": [
-                {
-                  "type": "CommentLine",
-                  "value": " One",
-                  "start": 17,
-                  "end": 23
-                }
-              ]
+              "kind": "init"
             }
           ]
         }
-      },
-      "trailingComments": [
-        {
-          "type": "CommentLine",
-          "value": " Two",
-          "start": 27,
-          "end": 33
-        }
-      ]
+      }
     },
     {
       "type": "ExpressionStatement",
@@ -76,15 +60,7 @@
         "start": 34,
         "end": 35,
         "name": "B"
-      },
-      "leadingComments": [
-        {
-          "type": "CommentLine",
-          "value": " Two",
-          "start": 27,
-          "end": 33
-        }
-      ]
+      }
     }
   ]
 }

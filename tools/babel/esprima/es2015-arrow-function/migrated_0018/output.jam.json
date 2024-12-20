@@ -27,6 +27,7 @@
             "generator": false,
             "async": false,
             "arrow": true,
+            "expression": true,
             "params": [],
             "body": {
               "type": "BlockStatement",
@@ -35,7 +36,8 @@
               "body": []
             }
           }
-        ]
+        ],
+        "optional": false
       }
     }
   ]

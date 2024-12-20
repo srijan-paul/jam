@@ -14,12 +14,6 @@
           "type": "LabeledStatement",
           "start": 4,
           "end": 23,
-          "label": {
-            "type": "Identifier",
-            "start": 4,
-            "end": 5,
-            "name": "a"
-          },
           "body": {
             "type": "SwitchStatement",
             "start": 7,
@@ -31,6 +25,12 @@
               "name": "i"
             },
             "cases": []
+          },
+          "label": {
+            "type": "Identifier",
+            "start": 4,
+            "end": 5,
+            "name": "a"
           }
         }
       ]

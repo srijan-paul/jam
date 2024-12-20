@@ -30,11 +30,12 @@
             },
             "value": {
               "type": "FunctionExpression",
-              "start": 18,
+              "start": 12,
               "end": 23,
               "generator": false,
               "async": false,
               "arrow": false,
+              "expression": true,
               "params": [],
               "body": {
                 "type": "BlockStatement",
@@ -58,11 +59,12 @@
             },
             "value": {
               "type": "FunctionExpression",
-              "start": 33,
+              "start": 27,
               "end": 38,
               "generator": false,
               "async": false,
               "arrow": false,
+              "expression": true,
               "params": [],
               "body": {
                 "type": "BlockStatement",
@@ -86,11 +88,12 @@
             },
             "value": {
               "type": "FunctionExpression",
-              "start": 51,
+              "start": 42,
               "end": 56,
               "generator": false,
               "async": false,
               "arrow": false,
+              "expression": true,
               "params": [],
               "body": {
                 "type": "BlockStatement",
@@ -114,11 +117,12 @@
             },
             "value": {
               "type": "FunctionExpression",
-              "start": 68,
+              "start": 60,
               "end": 73,
               "generator": false,
               "async": false,
               "arrow": false,
+              "expression": true,
               "params": [],
               "body": {
                 "type": "BlockStatement",
@@ -143,11 +147,12 @@
             },
             "value": {
               "type": "FunctionExpression",
-              "start": 86,
+              "start": 78,
               "end": 91,
               "generator": false,
               "async": false,
               "arrow": false,
+              "expression": true,
               "params": [],
               "body": {
                 "type": "BlockStatement",
@@ -172,11 +177,12 @@
             },
             "value": {
               "type": "FunctionExpression",
-              "start": 103,
+              "start": 95,
               "end": 108,
               "generator": false,
               "async": false,
               "arrow": false,
+              "expression": true,
               "params": [],
               "body": {
                 "type": "BlockStatement",
@@ -201,11 +207,12 @@
             },
             "value": {
               "type": "FunctionExpression",
-              "start": 122,
+              "start": 112,
               "end": 127,
               "generator": false,
               "async": false,
               "arrow": false,
+              "expression": true,
               "params": [],
               "body": {
                 "type": "BlockStatement",
@@ -248,11 +255,12 @@
             },
             "value": {
               "type": "FunctionExpression",
-              "start": 147,
+              "start": 141,
               "end": 152,
               "generator": false,
               "async": false,
               "arrow": false,
+              "expression": true,
               "params": [],
               "body": {
                 "type": "BlockStatement",
@@ -295,11 +303,12 @@
             },
             "value": {
               "type": "FunctionExpression",
-              "start": 171,
+              "start": 165,
               "end": 176,
               "generator": false,
               "async": false,
               "arrow": false,
+              "expression": true,
               "params": [],
               "body": {
                 "type": "BlockStatement",
@@ -342,11 +351,12 @@
             },
             "value": {
               "type": "FunctionExpression",
-              "start": 198,
+              "start": 189,
               "end": 203,
               "generator": false,
               "async": false,
               "arrow": false,
+              "expression": true,
               "params": [],
               "body": {
                 "type": "BlockStatement",
@@ -389,11 +399,12 @@
             },
             "value": {
               "type": "FunctionExpression",
-              "start": 224,
+              "start": 216,
               "end": 229,
               "generator": false,
               "async": false,
               "arrow": false,
+              "expression": true,
               "params": [],
               "body": {
                 "type": "BlockStatement",
@@ -436,11 +447,12 @@
             },
             "value": {
               "type": "FunctionExpression",
-              "start": 246,
+              "start": 242,
               "end": 251,
               "generator": false,
               "async": false,
               "arrow": false,
+              "expression": true,
               "params": [],
               "body": {
                 "type": "BlockStatement",
@@ -454,7 +466,7 @@
           },
           {
             "type": "MethodDefinition",
-            "start": 262,
+            "start": 256,
             "end": 275,
             "key": {
               "type": "Identifier",
@@ -464,11 +476,12 @@
             },
             "value": {
               "type": "FunctionExpression",
-              "start": 270,
+              "start": 256,
               "end": 275,
               "generator": false,
               "async": false,
               "arrow": false,
+              "expression": true,
               "params": [],
               "body": {
                 "type": "BlockStatement",
@@ -502,7 +515,7 @@
           },
           {
             "type": "MethodDefinition",
-            "start": 295,
+            "start": 289,
             "end": 309,
             "key": {
               "type": "Identifier",
@@ -512,11 +525,12 @@
             },
             "value": {
               "type": "FunctionExpression",
-              "start": 304,
+              "start": 289,
               "end": 309,
               "generator": false,
               "async": false,
               "arrow": false,
+              "expression": true,
               "params": [],
               "body": {
                 "type": "BlockStatement",

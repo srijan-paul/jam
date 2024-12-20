@@ -36,11 +36,12 @@
             },
             "value": {
               "type": "FunctionExpression",
-              "start": 35,
+              "start": 24,
               "end": 64,
               "generator": false,
               "async": false,
               "arrow": false,
+              "expression": true,
               "params": [],
               "body": {
                 "type": "BlockStatement",
@@ -65,13 +66,14 @@
                           "end": 54,
                           "arguments": []
                         },
+                        "computed": false,
                         "property": {
                           "type": "Identifier",
                           "start": 56,
                           "end": 57,
                           "name": "b"
                         },
-                        "computed": false
+                        "optional": false
                       }
                     }
                   }

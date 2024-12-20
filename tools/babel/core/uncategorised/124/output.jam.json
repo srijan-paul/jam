@@ -32,13 +32,14 @@
           },
           "computed": true
         },
+        "computed": false,
         "property": {
           "type": "Identifier",
           "start": 13,
           "end": 21,
           "name": "galaxies"
         },
-        "computed": false
+        "optional": false
       }
     }
   ]

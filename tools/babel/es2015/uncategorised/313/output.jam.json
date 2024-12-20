@@ -36,14 +36,14 @@
                 "name": "message"
               },
               "computed": false,
-              "kind": "init",
+              "shorthand": true,
               "value": {
                 "type": "Identifier",
                 "start": 15,
                 "end": 22,
                 "name": "message"
               },
-              "shorthand": true
+              "kind": "init"
             }
           ]
         },

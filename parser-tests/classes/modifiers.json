@@ -17,13 +17,13 @@
           "end": 17,
           "name": "B"
         },
+        "computed": false,
         "property": {
           "type": "Identifier",
           "start": 18,
           "end": 19,
           "name": "C"
-        },
-        "computed": false
+        }
       },
       "id": {
         "type": "Identifier",
@@ -36,7 +36,7 @@
         "body": [
           {
             "type": "MethodDefinition",
-            "start": 29,
+            "start": 23,
             "end": 56,
             "key": {
               "type": "Identifier",
@@ -46,11 +46,12 @@
             },
             "value": {
               "type": "FunctionExpression",
-              "start": 35,
+              "start": 23,
               "end": 56,
               "generator": false,
               "async": true,
               "arrow": false,
+              "expression": true,
               "params": [],
               "body": {
                 "type": "BlockStatement",
@@ -82,7 +83,7 @@
           },
           {
             "type": "ClassProperty",
-            "start": 66,
+            "start": 59,
             "end": 72,
             "key": {
               "type": "Identifier",
@@ -101,7 +102,7 @@
           },
           {
             "type": "ClassProperty",
-            "start": 81,
+            "start": 74,
             "end": 91,
             "key": {
               "type": "Identifier",
@@ -121,7 +122,7 @@
           },
           {
             "type": "MethodDefinition",
-            "start": 107,
+            "start": 93,
             "end": 122,
             "key": {
               "type": "BinaryExpression",
@@ -145,11 +146,12 @@
             },
             "value": {
               "type": "FunctionExpression",
-              "start": 118,
+              "start": 93,
               "end": 122,
               "generator": false,
               "async": true,
               "arrow": false,
+              "expression": true,
               "params": [],
               "body": {
                 "type": "BlockStatement",
@@ -163,7 +165,7 @@
           },
           {
             "type": "MethodDefinition",
-            "start": 137,
+            "start": 124,
             "end": 142,
             "key": {
               "type": "Identifier",
@@ -173,11 +175,12 @@
             },
             "value": {
               "type": "FunctionExpression",
-              "start": 138,
+              "start": 124,
               "end": 142,
               "generator": false,
               "async": true,
               "arrow": false,
+              "expression": true,
               "params": [],
               "body": {
                 "type": "BlockStatement",
@@ -191,7 +194,7 @@
           },
           {
             "type": "MethodDefinition",
-            "start": 159,
+            "start": 144,
             "end": 167,
             "key": {
               "type": "Literal",
@@ -202,11 +205,12 @@
             },
             "value": {
               "type": "FunctionExpression",
-              "start": 163,
+              "start": 144,
               "end": 167,
               "generator": true,
               "async": true,
               "arrow": false,
+              "expression": true,
               "params": [],
               "body": {
                 "type": "BlockStatement",
@@ -220,7 +224,7 @@
           },
           {
             "type": "MethodDefinition",
-            "start": 170,
+            "start": 169,
             "end": 176,
             "key": {
               "type": "Identifier",
@@ -230,11 +234,12 @@
             },
             "value": {
               "type": "FunctionExpression",
-              "start": 172,
+              "start": 169,
               "end": 176,
               "generator": true,
               "async": false,
               "arrow": false,
+              "expression": true,
               "params": [],
               "body": {
                 "type": "BlockStatement",
@@ -248,7 +253,7 @@
           },
           {
             "type": "MethodDefinition",
-            "start": 191,
+            "start": 178,
             "end": 196,
             "key": {
               "type": "Identifier",
@@ -258,11 +263,12 @@
             },
             "value": {
               "type": "FunctionExpression",
-              "start": 192,
+              "start": 178,
               "end": 196,
               "generator": false,
               "async": true,
               "arrow": false,
+              "expression": true,
               "params": [],
               "body": {
                 "type": "BlockStatement",
@@ -286,11 +292,12 @@
             },
             "value": {
               "type": "FunctionExpression",
-              "start": 198,
+              "start": 197,
               "end": 203,
               "generator": false,
               "async": false,
               "arrow": false,
+              "expression": true,
               "params": [],
               "body": {
                 "type": "BlockStatement",
@@ -315,11 +322,12 @@
             },
             "value": {
               "type": "FunctionExpression",
-              "start": 208,
+              "start": 205,
               "end": 212,
               "generator": false,
               "async": false,
               "arrow": false,
+              "expression": true,
               "params": [],
               "body": {
                 "type": "BlockStatement",

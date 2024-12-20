@@ -53,23 +53,7 @@
                   "end": 67,
                   "value": 1,
                   "raw": "1"
-                },
-                "trailingComments": [
-                  {
-                    "type": "CommentLine",
-                    "value": " falls through",
-                    "start": 81,
-                    "end": 97
-                  }
-                ],
-                "leadingComments": [
-                  {
-                    "type": "CommentLine",
-                    "value": " foo",
-                    "start": 46,
-                    "end": 52
-                  }
-                ]
+                }
               },
               {
                 "type": "SwitchCase",
@@ -101,15 +85,7 @@
                   "end": 112,
                   "value": 2,
                   "raw": "2"
-                },
-                "leadingComments": [
-                  {
-                    "type": "CommentLine",
-                    "value": " falls through",
-                    "start": 81,
-                    "end": 97
-                  }
-                ]
+                }
               }
             ]
           }

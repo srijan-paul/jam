@@ -31,10 +31,12 @@
                 "end": 3,
                 "name": "foo"
               },
-              "arguments": []
+              "arguments": [],
+              "optional": false
             }
           },
-          "arguments": []
+          "arguments": [],
+          "optional": false
         }
       }
     }

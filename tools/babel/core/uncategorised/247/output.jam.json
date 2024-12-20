@@ -56,7 +56,8 @@
               "end": 29,
               "name": "x"
             }
-          ]
+          ],
+          "optional": false
         }
       }
     }

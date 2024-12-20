@@ -34,15 +34,7 @@
         "end": 25,
         "value": "bar"
       },
-      "attributes": [],
-      "trailingComments": [
-        {
-          "type": "CommentBlock",
-          "value": "*\n * lost comment\n ",
-          "start": 27,
-          "end": 50
-        }
-      ]
+      "attributes": []
     },
     {
       "type": "ExportDefaultDeclaration",
@@ -53,15 +45,7 @@
         "start": 66,
         "end": 69,
         "properties": []
-      },
-      "leadingComments": [
-        {
-          "type": "CommentBlock",
-          "value": "*\n * lost comment\n ",
-          "start": 27,
-          "end": 50
-        }
-      ]
+      }
     }
   ]
 }

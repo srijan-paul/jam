@@ -9,22 +9,10 @@
       "type": "LabeledStatement",
       "start": 0,
       "end": 52,
-      "label": {
-        "type": "Identifier",
-        "start": 0,
-        "end": 7,
-        "name": "target1"
-      },
       "body": {
         "type": "LabeledStatement",
         "start": 9,
         "end": 52,
-        "label": {
-          "type": "Identifier",
-          "start": 9,
-          "end": 16,
-          "name": "target2"
-        },
         "body": {
           "type": "WhileStatement",
           "start": 18,
@@ -54,7 +42,19 @@
               }
             ]
           }
+        },
+        "label": {
+          "type": "Identifier",
+          "start": 9,
+          "end": 16,
+          "name": "target2"
         }
+      },
+      "label": {
+        "type": "Identifier",
+        "start": 0,
+        "end": 7,
+        "name": "target1"
       }
     }
   ]

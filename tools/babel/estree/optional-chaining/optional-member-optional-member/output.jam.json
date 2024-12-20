@@ -31,22 +31,24 @@
                 "end": 3,
                 "name": "foo"
               },
+              "computed": false,
               "property": {
                 "type": "Identifier",
                 "start": 5,
                 "end": 8,
                 "name": "bar"
               },
-              "computed": false
+              "optional": false
             }
           },
+          "computed": false,
           "property": {
             "type": "Identifier",
             "start": 10,
             "end": 13,
             "name": "qux"
           },
-          "computed": false
+          "optional": false
         }
       }
     }

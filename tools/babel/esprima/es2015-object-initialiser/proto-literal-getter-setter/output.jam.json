@@ -27,7 +27,7 @@
               "raw": "\"__proto__\""
             },
             "computed": false,
-            "kind": "init",
+            "shorthand": false,
             "value": {
               "type": "Literal",
               "start": 16,
@@ -35,7 +35,7 @@
               "value": null,
               "raw": "null"
             },
-            "shorthand": false
+            "kind": "init"
           },
           {
             "type": "Property",
@@ -49,7 +49,7 @@
               "name": "__proto__"
             },
             "computed": false,
-            "kind": "get",
+            "shorthand": false,
             "value": {
               "type": "FunctionExpression",
               "start": 35,
@@ -57,6 +57,7 @@
               "generator": false,
               "async": false,
               "arrow": false,
+              "expression": true,
               "params": [],
               "body": {
                 "type": "BlockStatement",
@@ -65,7 +66,7 @@
                 "body": []
               }
             },
-            "shorthand": false
+            "kind": "get"
           },
           {
             "type": "Property",
@@ -79,7 +80,7 @@
               "name": "__proto__"
             },
             "computed": false,
-            "kind": "set",
+            "shorthand": false,
             "value": {
               "type": "FunctionExpression",
               "start": 54,
@@ -87,6 +88,7 @@
               "generator": false,
               "async": false,
               "arrow": false,
+              "expression": true,
               "params": [
                 {
                   "type": "Identifier",
@@ -102,7 +104,7 @@
                 "body": []
               }
             },
-            "shorthand": false
+            "kind": "set"
           }
         ]
       }

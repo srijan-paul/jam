@@ -20,7 +20,7 @@
         "body": [
           {
             "type": "MethodDefinition",
-            "start": 17,
+            "start": 16,
             "end": 53,
             "key": {
               "type": "Identifier",
@@ -30,11 +30,12 @@
             },
             "value": {
               "type": "FunctionExpression",
-              "start": 22,
+              "start": 16,
               "end": 53,
               "generator": true,
               "async": false,
               "arrow": false,
+              "expression": true,
               "params": [],
               "body": {
                 "type": "BlockStatement",
@@ -59,7 +60,8 @@
                           "end": 46,
                           "name": "notReally"
                         },
-                        "arguments": []
+                        "arguments": [],
+                        "optional": false
                       },
                       "delegate": false
                     }

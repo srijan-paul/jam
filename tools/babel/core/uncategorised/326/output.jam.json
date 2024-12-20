@@ -24,13 +24,14 @@
             "end": 1,
             "name": "a"
           },
+          "computed": false,
           "property": {
             "type": "Identifier",
             "start": 2,
             "end": 4,
             "name": "in"
           },
-          "computed": false
+          "optional": false
         },
         "right": {
           "type": "Identifier",

@@ -20,7 +20,7 @@
         "body": [
           {
             "type": "ClassProperty",
-            "start": 19,
+            "start": 12,
             "end": 34,
             "key": {
               "type": "Identifier",
@@ -50,7 +50,7 @@
           },
           {
             "type": "ClassProperty",
-            "start": 44,
+            "start": 37,
             "end": 76,
             "key": {
               "type": "Identifier",
@@ -109,7 +109,8 @@
                         "name": "target"
                       }
                     }
-                  ]
+                  ],
+                  "optional": false
                 }
               }
             },
@@ -118,7 +119,7 @@
           },
           {
             "type": "ClassProperty",
-            "start": 86,
+            "start": 79,
             "end": 107,
             "key": {
               "type": "Identifier",
@@ -133,6 +134,7 @@
               "generator": false,
               "async": false,
               "arrow": true,
+              "expression": true,
               "params": [],
               "body": {
                 "type": "MetaProperty",
@@ -157,7 +159,7 @@
           },
           {
             "type": "ClassProperty",
-            "start": 117,
+            "start": 110,
             "end": 146,
             "key": {
               "type": "Identifier",
@@ -172,6 +174,7 @@
               "generator": false,
               "async": false,
               "arrow": true,
+              "expression": true,
               "params": [
                 {
                   "type": "AssignmentPattern",
@@ -303,7 +306,8 @@
                         "name": "target"
                       }
                     }
-                  ]
+                  ],
+                  "optional": false
                 }
               }
             },
@@ -327,6 +331,7 @@
               "generator": false,
               "async": false,
               "arrow": true,
+              "expression": true,
               "params": [],
               "body": {
                 "type": "MetaProperty",
@@ -366,6 +371,7 @@
               "generator": false,
               "async": false,
               "arrow": true,
+              "expression": true,
               "params": [
                 {
                   "type": "AssignmentPattern",

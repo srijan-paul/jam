@@ -31,14 +31,14 @@
                   "name": "x"
                 },
                 "computed": false,
-                "kind": "init",
+                "shorthand": false,
                 "value": {
                   "type": "Identifier",
                   "start": 10,
                   "end": 11,
                   "name": "y"
                 },
-                "shorthand": false
+                "kind": "init"
               }
             ]
           },
@@ -59,14 +59,14 @@
                   "name": "y"
                 },
                 "computed": false,
-                "kind": "init",
+                "shorthand": true,
                 "value": {
                   "type": "Identifier",
                   "start": 16,
                   "end": 17,
                   "name": "y"
                 },
-                "shorthand": true
+                "kind": "init"
               }
             ]
           }

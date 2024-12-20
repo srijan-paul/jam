@@ -27,15 +27,7 @@
               "type": "ReturnStatement",
               "start": 13,
               "end": 19,
-              "argument": null,
-              "trailingComments": [
-                {
-                  "type": "CommentLine",
-                  "value": " Comment",
-                  "start": 20,
-                  "end": 30
-                }
-              ]
+              "argument": null
             },
             {
               "type": "ExpressionStatement",
@@ -46,15 +38,7 @@
                 "start": 31,
                 "end": 32,
                 "name": "x"
-              },
-              "leadingComments": [
-                {
-                  "type": "CommentLine",
-                  "value": " Comment",
-                  "start": 20,
-                  "end": 30
-                }
-              ]
+              }
             }
           ]
         }

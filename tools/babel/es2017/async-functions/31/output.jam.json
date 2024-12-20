@@ -27,6 +27,7 @@
             "generator": false,
             "async": true,
             "arrow": true,
+            "expression": true,
             "params": [
               {
                 "type": "ObjectPattern",
@@ -45,14 +46,14 @@
                       "name": "async"
                     },
                     "computed": false,
-                    "kind": "init",
+                    "shorthand": false,
                     "value": {
                       "type": "Identifier",
                       "start": 28,
                       "end": 31,
                       "name": "bar"
                     },
-                    "shorthand": false
+                    "kind": "init"
                   }
                 ]
               }

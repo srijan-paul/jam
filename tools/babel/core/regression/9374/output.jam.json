@@ -17,6 +17,7 @@
       },
       "generator": true,
       "async": false,
+      "expression": false,
       "params": [],
       "body": {
         "type": "BlockStatement",
@@ -35,13 +36,13 @@
                 "type": "NewExpression",
                 "start": 27,
                 "end": 34,
+                "arguments": [],
                 "callee": {
                   "type": "Identifier",
                   "start": 31,
                   "end": 34,
                   "name": "Foo"
-                },
-                "arguments": []
+                }
               },
               "delegate": false
             }

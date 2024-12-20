@@ -37,7 +37,7 @@
                 "name": "method"
               },
               "computed": false,
-              "kind": "init",
+              "shorthand": false,
               "value": {
                 "type": "FunctionExpression",
                 "start": 12,
@@ -45,6 +45,7 @@
                 "generator": false,
                 "async": false,
                 "arrow": false,
+                "expression": true,
                 "params": [
                   {
                     "type": "Identifier",
@@ -60,7 +61,7 @@
                   "body": []
                 }
               },
-              "shorthand": false
+              "kind": "init"
             }
           ]
         }

@@ -26,7 +26,7 @@
               "name": "x"
             },
             "computed": false,
-            "kind": "init",
+            "shorthand": false,
             "value": {
               "type": "FunctionExpression",
               "start": 4,
@@ -34,6 +34,7 @@
               "generator": false,
               "async": false,
               "arrow": false,
+              "expression": true,
               "params": [
                 {
                   "type": "ObjectPattern",
@@ -52,7 +53,7 @@
                         "name": "a"
                       },
                       "computed": false,
-                      "kind": "init",
+                      "shorthand": false,
                       "value": {
                         "type": "ObjectExpression",
                         "start": 10,
@@ -70,14 +71,14 @@
                               "name": "w"
                             },
                             "computed": false,
-                            "kind": "init",
+                            "shorthand": true,
                             "value": {
                               "type": "Identifier",
                               "start": 12,
                               "end": 13,
                               "name": "w"
                             },
-                            "shorthand": true
+                            "kind": "init"
                           },
                           {
                             "type": "Property",
@@ -91,18 +92,18 @@
                               "name": "x"
                             },
                             "computed": false,
-                            "kind": "init",
+                            "shorthand": true,
                             "value": {
                               "type": "Identifier",
                               "start": 15,
                               "end": 16,
                               "name": "x"
                             },
-                            "shorthand": true
+                            "kind": "init"
                           }
                         ]
                       },
-                      "shorthand": false
+                      "kind": "init"
                     },
                     {
                       "type": "Property",
@@ -116,7 +117,7 @@
                         "name": "b"
                       },
                       "computed": false,
-                      "kind": "init",
+                      "shorthand": false,
                       "value": {
                         "type": "ArrayExpression",
                         "start": 23,
@@ -136,7 +137,7 @@
                           }
                         ]
                       },
-                      "shorthand": false
+                      "kind": "init"
                     }
                   ]
                 },
@@ -178,7 +179,7 @@
                 "body": []
               }
             },
-            "shorthand": false
+            "kind": "init"
           }
         ]
       }

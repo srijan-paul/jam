@@ -31,7 +31,8 @@
               "name": "a"
             }
           }
-        ]
+        ],
+        "optional": false
       }
     }
   ]

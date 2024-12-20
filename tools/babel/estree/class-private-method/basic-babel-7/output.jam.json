@@ -30,11 +30,12 @@
             },
             "value": {
               "type": "FunctionExpression",
-              "start": 16,
+              "start": 12,
               "end": 35,
               "generator": false,
               "async": false,
               "arrow": false,
+              "expression": true,
               "params": [
                 {
                   "type": "Identifier",
@@ -66,7 +67,7 @@
           },
           {
             "type": "MethodDefinition",
-            "start": 45,
+            "start": 38,
             "end": 68,
             "key": {
               "type": "Identifier",
@@ -76,11 +77,12 @@
             },
             "value": {
               "type": "FunctionExpression",
-              "start": 49,
+              "start": 38,
               "end": 68,
               "generator": false,
               "async": false,
               "arrow": false,
+              "expression": true,
               "params": [
                 {
                   "type": "Identifier",

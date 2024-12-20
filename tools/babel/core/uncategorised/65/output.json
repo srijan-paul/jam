@@ -37,15 +37,7 @@
                 },
                 "arguments": [],
                 "optional": false
-              },
-              "leadingComments": [
-                {
-                  "type": "CommentBlock",
-                  "value": " perfect ",
-                  "start": 27,
-                  "end": 40
-                }
-              ]
+              }
             }
           ],
           "test": {

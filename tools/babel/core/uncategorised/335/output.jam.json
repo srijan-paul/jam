@@ -36,7 +36,7 @@
                   "name": "a"
                 },
                 "computed": false,
-                "kind": "init",
+                "shorthand": false,
                 "value": {
                   "type": "ArrayExpression",
                   "start": 5,
@@ -51,7 +51,7 @@
                     }
                   ]
                 },
-                "shorthand": false
+                "kind": "init"
               }
             ]
           },

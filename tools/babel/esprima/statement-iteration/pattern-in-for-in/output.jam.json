@@ -55,14 +55,14 @@
                   "name": "c"
                 },
                 "computed": false,
-                "kind": "init",
+                "shorthand": true,
                 "value": {
                   "type": "Identifier",
                   "start": 13,
                   "end": 14,
                   "name": "c"
                 },
-                "shorthand": true
+                "kind": "init"
               },
               {
                 "type": "AssignmentPattern",
@@ -93,7 +93,7 @@
                   "name": "f"
                 },
                 "computed": true,
-                "kind": "init",
+                "shorthand": false,
                 "value": {
                   "type": "ArrayPattern",
                   "start": 23,
@@ -119,15 +119,17 @@
                           "end": 27,
                           "name": "h"
                         },
-                        "arguments": []
+                        "arguments": [],
+                        "optional": false
                       },
+                      "computed": false,
                       "property": {
                         "type": "Identifier",
                         "start": 30,
                         "end": 31,
                         "name": "a"
                       },
-                      "computed": false
+                      "optional": false
                     },
                     {
                       "type": "MemberExpression",
@@ -140,13 +142,14 @@
                         "value": 0,
                         "raw": "0"
                       },
+                      "computed": false,
                       "property": {
                         "type": "Identifier",
                         "start": 36,
                         "end": 37,
                         "name": "k"
                       },
-                      "computed": false
+                      "optional": false
                     },
                     {
                       "type": "RestElement",
@@ -174,7 +177,7 @@
                     }
                   ]
                 },
-                "shorthand": false
+                "kind": "init"
               }
             ]
           }

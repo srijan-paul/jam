@@ -31,16 +31,18 @@
                 "end": 3,
                 "name": "foo"
               },
-              "arguments": []
+              "arguments": [],
+              "optional": false
             }
           },
+          "computed": false,
           "property": {
             "type": "Identifier",
             "start": 9,
             "end": 12,
             "name": "bar"
           },
-          "computed": false
+          "optional": false
         }
       }
     }

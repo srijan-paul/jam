@@ -49,7 +49,7 @@
                 "name": "y"
               },
               "computed": false,
-              "kind": "init",
+              "shorthand": false,
               "value": {
                 "type": "Literal",
                 "start": 18,
@@ -57,7 +57,7 @@
                 "value": 1,
                 "raw": "1"
               },
-              "shorthand": false
+              "kind": "init"
             },
             {
               "type": "Property",
@@ -71,7 +71,7 @@
                 "name": "y"
               },
               "computed": false,
-              "kind": "init",
+              "shorthand": false,
               "value": {
                 "type": "Literal",
                 "start": 22,
@@ -79,7 +79,7 @@
                 "value": 1,
                 "raw": "1"
               },
-              "shorthand": false
+              "kind": "init"
             }
           ]
         }

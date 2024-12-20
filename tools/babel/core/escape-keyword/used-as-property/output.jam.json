@@ -37,7 +37,7 @@
                   "name": "break"
                 },
                 "computed": false,
-                "kind": "init",
+                "shorthand": false,
                 "value": {
                   "type": "Literal",
                   "start": 24,
@@ -45,7 +45,7 @@
                   "value": 2,
                   "raw": "2"
                 },
-                "shorthand": false
+                "kind": "init"
               }
             ]
           }

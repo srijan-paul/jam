@@ -120,6 +120,11 @@ pub const CallExpr = struct {
     arguments: Node.Index,
 };
 
+pub const NewExpr = struct {
+    callee: Node.Index,
+    arguments: ?Node.Index,
+};
+
 pub const JumpLabel = struct {
     label: ?Node.Index,
 };
@@ -411,7 +416,7 @@ pub const NodeData = union(enum(u8)) {
     tagged_template_expr: TaggedTemplateExpression,
     meta_property: MetaProperty,
     arguments: ?SubRange,
-    new_expr: CallExpr,
+    new_expr: NewExpr,
     call_expr: CallExpr,
     super_call_expr: ?SubRange,
     super: Token.Index,
@@ -550,7 +555,7 @@ pub const ClassInfo = struct {
 /// Extra metadata about a node.
 /// The specific type of meta-data is determined by the node's
 /// tag (i.e the active field of NodeData).
-pub const ExtraData = union {
+pub const ExtraData = union(enum) {
     pub const Index = enum(u32) { none = 0, _ };
     function: struct {
         /// Name of the function, if present (always an identifier node).

@@ -42,7 +42,8 @@
                   "end": 46,
                   "name": "bingo"
                 },
-                "arguments": []
+                "arguments": [],
+                "optional": false
               }
             }
           ]

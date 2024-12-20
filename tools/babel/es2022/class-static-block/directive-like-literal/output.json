@@ -66,15 +66,7 @@
                   "end": 55,
                   "value": "use strict",
                   "raw": "\"use strict\""
-                },
-                "trailingComments": [
-                  {
-                    "type": "CommentLine",
-                    "value": " will not be parsed as directives",
-                    "start": 57,
-                    "end": 92
-                  }
-                ]
+                }
               },
               {
                 "type": "ExpressionStatement",
@@ -121,15 +113,7 @@
                     },
                     "optional": false
                   }
-                },
-                "leadingComments": [
-                  {
-                    "type": "CommentLine",
-                    "value": " will not be parsed as directives",
-                    "start": 57,
-                    "end": 92
-                  }
-                ]
+                }
               }
             ]
           }

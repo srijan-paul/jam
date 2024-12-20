@@ -31,14 +31,14 @@
                   "name": "a"
                 },
                 "computed": false,
-                "kind": "init",
+                "shorthand": false,
                 "value": {
                   "type": "ObjectExpression",
                   "start": 7,
                   "end": 9,
                   "properties": []
                 },
-                "shorthand": false
+                "kind": "init"
               }
             ]
           },

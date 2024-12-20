@@ -34,8 +34,7 @@
               "end": 30,
               "value": "use smth",
               "raw": "\"use smth\""
-            },
-            "directive": "use smth"
+            }
           },
           {
             "type": "ExpressionStatement",

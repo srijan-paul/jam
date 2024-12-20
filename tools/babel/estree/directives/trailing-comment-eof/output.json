@@ -15,16 +15,7 @@
         "end": 12,
         "value": "use strict",
         "raw": "\"use strict\""
-      },
-      "directive": "use strict",
-      "trailingComments": [
-        {
-          "type": "CommentBlock",
-          "value": "* @external foo ",
-          "start": 15,
-          "end": 35
-        }
-      ]
+      }
     }
   ]
 }

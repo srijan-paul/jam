@@ -37,7 +37,7 @@
                   "name": "a"
                 },
                 "computed": false,
-                "kind": "init",
+                "shorthand": false,
                 "value": {
                   "type": "Literal",
                   "start": 17,
@@ -45,7 +45,7 @@
                   "value": "1",
                   "raw": "'1'"
                 },
-                "shorthand": false
+                "kind": "init"
               },
               {
                 "type": "Property",
@@ -59,7 +59,7 @@
                   "name": "b"
                 },
                 "computed": false,
-                "kind": "init",
+                "shorthand": false,
                 "value": {
                   "type": "Literal",
                   "start": 40,
@@ -67,7 +67,7 @@
                   "value": "2",
                   "raw": "'2'"
                 },
-                "shorthand": false
+                "kind": "init"
               },
               {
                 "type": "Property",
@@ -81,7 +81,7 @@
                   "name": "c"
                 },
                 "computed": false,
-                "kind": "init",
+                "shorthand": false,
                 "value": {
                   "type": "Literal",
                   "start": 63,
@@ -89,7 +89,7 @@
                   "value": "3",
                   "raw": "'3'"
                 },
-                "shorthand": false
+                "kind": "init"
               }
             ]
           }

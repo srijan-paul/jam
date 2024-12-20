@@ -28,11 +28,12 @@
               },
               "value": {
                 "type": "FunctionExpression",
-                "start": 43,
+                "start": 33,
                 "end": 91,
                 "generator": false,
                 "async": false,
                 "arrow": false,
+                "expression": true,
                 "params": [
                   {
                     "type": "Identifier",
@@ -78,11 +79,12 @@
               },
               "value": {
                 "type": "FunctionExpression",
-                "start": 150,
+                "start": 139,
                 "end": 198,
                 "generator": false,
                 "async": false,
                 "arrow": false,
+                "expression": true,
                 "params": [
                   {
                     "type": "Identifier",

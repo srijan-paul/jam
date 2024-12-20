@@ -44,23 +44,7 @@
             "end": 39
           }
         ]
-      },
-      "trailingComments": [
-        {
-          "type": "CommentBlock",
-          "value": " 1 ",
-          "start": 45,
-          "end": 52
-        }
-      ],
-      "leadingComments": [
-        {
-          "type": "CommentBlock",
-          "value": " 1 ",
-          "start": 0,
-          "end": 7
-        }
-      ]
+      }
     },
     {
       "type": "ExpressionStatement",
@@ -79,38 +63,14 @@
             "type": "Identifier",
             "start": 75,
             "end": 76,
-            "name": "x",
-            "trailingComments": [
-              {
-                "type": "CommentBlock",
-                "value": " 4 ",
-                "start": 76,
-                "end": 83
-              }
-            ],
-            "leadingComments": [
-              {
-                "type": "CommentBlock",
-                "value": " 3 ",
-                "start": 68,
-                "end": 75
-              }
-            ]
+            "name": "x"
           }
         ],
         "body": {
           "type": "BlockStatement",
           "start": 104,
           "end": 106,
-          "body": [],
-          "leadingComments": [
-            {
-              "type": "CommentBlock",
-              "value": " 6 ",
-              "start": 96,
-              "end": 103
-            }
-          ]
+          "body": []
         },
         "innerComments": [
           {
@@ -126,15 +86,7 @@
             "end": 92
           }
         ]
-      },
-      "leadingComments": [
-        {
-          "type": "CommentBlock",
-          "value": " 1 ",
-          "start": 45,
-          "end": 52
-        }
-      ]
+      }
     }
   ]
 }

@@ -17,15 +17,7 @@
           "type": "Identifier",
           "start": 0,
           "end": 5,
-          "name": "async",
-          "trailingComments": [
-            {
-              "type": "CommentBlock",
-              "value": " 1 ",
-              "start": 6,
-              "end": 13
-            }
-          ]
+          "name": "async"
         },
         "arguments": [],
         "innerComments": [
@@ -37,15 +29,7 @@
           }
         ],
         "optional": false
-      },
-      "trailingComments": [
-        {
-          "type": "CommentBlock",
-          "value": " 3 ",
-          "start": 24,
-          "end": 31
-        }
-      ]
+      }
     }
   ]
 }

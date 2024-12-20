@@ -26,7 +26,7 @@
               "name": "x"
             },
             "computed": false,
-            "kind": "get",
+            "shorthand": false,
             "value": {
               "type": "FunctionExpression",
               "start": 9,
@@ -34,6 +34,7 @@
               "generator": false,
               "async": false,
               "arrow": false,
+              "expression": true,
               "params": [],
               "body": {
                 "type": "BlockStatement",
@@ -42,7 +43,7 @@
                 "body": []
               }
             },
-            "shorthand": false
+            "kind": "get"
           },
           {
             "type": "Property",
@@ -56,7 +57,7 @@
               "name": "x"
             },
             "computed": false,
-            "kind": "set",
+            "shorthand": false,
             "value": {
               "type": "FunctionExpression",
               "start": 23,
@@ -64,6 +65,7 @@
               "generator": false,
               "async": false,
               "arrow": false,
+              "expression": true,
               "params": [
                 {
                   "type": "Identifier",
@@ -79,7 +81,7 @@
                 "body": []
               }
             },
-            "shorthand": false
+            "kind": "set"
           }
         ]
       }

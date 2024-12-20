@@ -19,13 +19,14 @@
           "end": 8,
           "name": "universe"
         },
+        "computed": false,
         "property": {
           "type": "Identifier",
           "start": 9,
           "end": 13,
           "name": "true"
         },
-        "computed": false
+        "optional": false
       }
     }
   ]

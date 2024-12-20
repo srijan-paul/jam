@@ -23,15 +23,7 @@
           "init": null
         }
       ],
-      "kind": "var",
-      "trailingComments": [
-        {
-          "type": "CommentLine",
-          "value": " await in body is allowed",
-          "start": 7,
-          "end": 34
-        }
-      ]
+      "kind": "var"
     },
     {
       "type": "ExpressionStatement",
@@ -90,15 +82,7 @@
             ]
           }
         }
-      },
-      "leadingComments": [
-        {
-          "type": "CommentLine",
-          "value": " await in body is allowed",
-          "start": 7,
-          "end": 34
-        }
-      ]
+      }
     }
   ]
 }

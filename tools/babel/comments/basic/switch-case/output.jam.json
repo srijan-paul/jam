@@ -9,12 +9,6 @@
       "type": "LabeledStatement",
       "start": 7,
       "end": 233,
-      "label": {
-        "type": "Identifier",
-        "start": 7,
-        "end": 10,
-        "name": "foo"
-      },
       "body": {
         "type": "SwitchStatement",
         "start": 25,
@@ -79,6 +73,12 @@
             ]
           }
         ]
+      },
+      "label": {
+        "type": "Identifier",
+        "start": 7,
+        "end": 10,
+        "name": "foo"
       }
     }
   ]

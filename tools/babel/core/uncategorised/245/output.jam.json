@@ -81,7 +81,8 @@
               "end": 33,
               "name": "x"
             }
-          ]
+          ],
+          "optional": false
         }
       }
     }

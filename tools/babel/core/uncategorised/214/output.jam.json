@@ -24,7 +24,8 @@
               "end": 8,
               "name": "doThis"
             },
-            "arguments": []
+            "arguments": [],
+            "optional": false
           }
         },
         {
@@ -41,7 +42,8 @@
               "end": 18,
               "name": "doThat"
             },
-            "arguments": []
+            "arguments": [],
+            "optional": false
           }
         }
       ]

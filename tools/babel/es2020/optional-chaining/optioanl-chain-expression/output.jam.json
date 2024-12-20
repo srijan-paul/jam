@@ -35,24 +35,27 @@
                   "end": 1,
                   "name": "a"
                 },
+                "computed": false,
                 "property": {
                   "type": "Identifier",
                   "start": 2,
                   "end": 3,
                   "name": "b"
                 },
-                "computed": false
+                "optional": false
               },
+              "computed": false,
               "property": {
                 "type": "Identifier",
                 "start": 5,
                 "end": 6,
                 "name": "c"
               },
-              "computed": false
+              "optional": false
             }
           },
-          "arguments": []
+          "arguments": [],
+          "optional": false
         }
       }
     }

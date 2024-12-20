@@ -17,6 +17,7 @@
       },
       "generator": false,
       "async": false,
+      "expression": false,
       "params": [
         {
           "type": "ObjectPattern",
@@ -35,7 +36,7 @@
                 "name": "a"
               },
               "computed": false,
-              "kind": "init",
+              "shorthand": false,
               "value": {
                 "type": "ObjectExpression",
                 "start": 16,
@@ -53,14 +54,14 @@
                       "name": "w"
                     },
                     "computed": false,
-                    "kind": "init",
+                    "shorthand": true,
                     "value": {
                       "type": "Identifier",
                       "start": 18,
                       "end": 19,
                       "name": "w"
                     },
-                    "shorthand": true
+                    "kind": "init"
                   },
                   {
                     "type": "Property",
@@ -74,18 +75,18 @@
                       "name": "x"
                     },
                     "computed": false,
-                    "kind": "init",
+                    "shorthand": true,
                     "value": {
                       "type": "Identifier",
                       "start": 21,
                       "end": 22,
                       "name": "x"
                     },
-                    "shorthand": true
+                    "kind": "init"
                   }
                 ]
               },
-              "shorthand": false
+              "kind": "init"
             },
             {
               "type": "Property",
@@ -99,7 +100,7 @@
                 "name": "b"
               },
               "computed": false,
-              "kind": "init",
+              "shorthand": false,
               "value": {
                 "type": "ArrayExpression",
                 "start": 29,
@@ -119,7 +120,7 @@
                   }
                 ]
               },
-              "shorthand": false
+              "kind": "init"
             }
           ]
         },

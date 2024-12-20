@@ -41,6 +41,7 @@
               "generator": false,
               "async": false,
               "arrow": true,
+              "expression": true,
               "params": [],
               "body": {
                 "type": "CallExpression",
@@ -55,15 +56,17 @@
                     "start": 34,
                     "end": 39
                   },
+                  "computed": false,
                   "property": {
                     "type": "Identifier",
                     "start": 40,
                     "end": 41,
                     "name": "x"
                   },
-                  "computed": false
+                  "optional": false
                 },
-                "arguments": []
+                "arguments": [],
+                "optional": false
               }
             },
             "computed": false,

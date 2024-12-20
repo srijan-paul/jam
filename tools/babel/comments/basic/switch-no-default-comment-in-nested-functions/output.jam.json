@@ -24,13 +24,14 @@
             "end": 6,
             "name": "module"
           },
+          "computed": false,
           "property": {
             "type": "Identifier",
             "start": 7,
             "end": 14,
             "name": "exports"
           },
-          "computed": false
+          "optional": false
         },
         "right": {
           "type": "FunctionExpression",
@@ -39,6 +40,7 @@
           "generator": false,
           "async": false,
           "arrow": false,
+          "expression": true,
           "params": [
             {
               "type": "Identifier",
@@ -64,6 +66,7 @@
                 },
                 "generator": false,
                 "async": false,
+                "expression": false,
                 "params": [
                   {
                     "type": "Identifier",
@@ -91,13 +94,14 @@
                           "end": 90,
                           "name": "node"
                         },
+                        "computed": false,
                         "property": {
                           "type": "Identifier",
                           "start": 91,
                           "end": 95,
                           "name": "type"
                         },
-                        "computed": false
+                        "optional": false
                       },
                       "cases": [
                         {
@@ -141,13 +145,14 @@
                                         "end": 176,
                                         "name": "node"
                                       },
+                                      "computed": false,
                                       "property": {
                                         "type": "Identifier",
                                         "start": 177,
                                         "end": 188,
                                         "name": "expressions"
                                       },
-                                      "computed": false
+                                      "optional": false
                                     },
                                     "property": {
                                       "type": "BinaryExpression",
@@ -168,21 +173,23 @@
                                             "end": 193,
                                             "name": "node"
                                           },
+                                          "computed": false,
                                           "property": {
                                             "type": "Identifier",
                                             "start": 194,
                                             "end": 205,
                                             "name": "expressions"
                                           },
-                                          "computed": false
+                                          "optional": false
                                         },
+                                        "computed": false,
                                         "property": {
                                           "type": "Identifier",
                                           "start": 206,
                                           "end": 212,
                                           "name": "length"
                                         },
-                                        "computed": false
+                                        "optional": false
                                       },
                                       "right": {
                                         "type": "Literal",
@@ -194,7 +201,8 @@
                                     },
                                     "computed": true
                                   }
-                                ]
+                                ],
+                                "optional": false
                               }
                             }
                           ]

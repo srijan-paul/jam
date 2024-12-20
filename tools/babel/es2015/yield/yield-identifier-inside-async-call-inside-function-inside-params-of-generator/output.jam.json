@@ -17,6 +17,7 @@
       },
       "generator": true,
       "async": false,
+      "expression": false,
       "params": [
         {
           "type": "AssignmentPattern",
@@ -35,6 +36,7 @@
             "generator": false,
             "async": false,
             "arrow": false,
+            "expression": true,
             "params": [],
             "body": {
               "type": "BlockStatement",
@@ -62,7 +64,8 @@
                         "end": 41,
                         "name": "yield"
                       }
-                    ]
+                    ],
+                    "optional": false
                   }
                 }
               ]

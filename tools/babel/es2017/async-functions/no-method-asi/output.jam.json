@@ -49,11 +49,12 @@
             },
             "value": {
               "type": "FunctionExpression",
-              "start": 21,
+              "start": 20,
               "end": 25,
               "generator": false,
               "async": false,
               "arrow": false,
+              "expression": true,
               "params": [],
               "body": {
                 "type": "BlockStatement",
