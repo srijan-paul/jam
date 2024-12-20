@@ -1,0 +1,60 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 54,
+  "sourceType": "module",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ImportDeclaration",
+      "start": 0,
+      "end": 23,
+      "source": {
+        "type": "Literal",
+        "start": 20,
+        "end": 22,
+        "value": "",
+        "raw": "\"\""
+      },
+      "specifiers": [
+        {
+          "type": "ImportDefaultSpecifier",
+          "start": 7,
+          "end": 14,
+          "local": {
+            "type": "Identifier",
+            "start": 7,
+            "end": 14,
+            "name": "encrypt"
+          }
+        }
+      ]
+    },
+    {
+      "type": "ExportNamedDeclaration",
+      "start": 24,
+      "end": 53,
+      "specifiers": [
+        {
+          "type": "ExportSpecifier",
+          "start": 33,
+          "end": 51,
+          "local": {
+            "type": "Identifier",
+            "start": 33,
+            "end": 40,
+            "name": "encrypt"
+          },
+          "exported": {
+            "type": "Identifier",
+            "start": 44,
+            "end": 51,
+            "name": "default"
+          }
+        }
+      ],
+      "source": null,
+      "declaration": null
+    }
+  ]
+}

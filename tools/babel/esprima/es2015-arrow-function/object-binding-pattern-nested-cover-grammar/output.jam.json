@@ -16,7 +16,6 @@
         "generator": false,
         "async": false,
         "arrow": true,
-        "expression": true,
         "params": [
           {
             "type": "ArrayPattern",
@@ -124,21 +123,36 @@
                                                                                             "end": 26,
                                                                                             "properties": [
                                                                                               {
-                                                                                                "type": "AssignmentPattern",
+                                                                                                "type": "Property",
                                                                                                 "start": 22,
                                                                                                 "end": 25,
-                                                                                                "left": {
+                                                                                                "method": false,
+                                                                                                "key": {
                                                                                                   "type": "Identifier",
                                                                                                   "start": 22,
                                                                                                   "end": 23,
                                                                                                   "name": "a"
                                                                                                 },
-                                                                                                "right": {
-                                                                                                  "type": "Identifier",
-                                                                                                  "start": 24,
+                                                                                                "computed": false,
+                                                                                                "shorthand": true,
+                                                                                                "value": {
+                                                                                                  "type": "AssignmentPattern",
+                                                                                                  "start": 22,
                                                                                                   "end": 25,
-                                                                                                  "name": "b"
-                                                                                                }
+                                                                                                  "left": {
+                                                                                                    "type": "Identifier",
+                                                                                                    "start": 22,
+                                                                                                    "end": 23,
+                                                                                                    "name": "a"
+                                                                                                  },
+                                                                                                  "right": {
+                                                                                                    "type": "Identifier",
+                                                                                                    "start": 24,
+                                                                                                    "end": 25,
+                                                                                                    "name": "b"
+                                                                                                  }
+                                                                                                },
+                                                                                                "kind": "init"
                                                                                               }
                                                                                             ]
                                                                                           }

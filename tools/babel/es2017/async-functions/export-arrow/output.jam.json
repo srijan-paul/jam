@@ -1,0 +1,41 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 39,
+  "sourceType": "module",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExportNamedDeclaration",
+      "start": 0,
+      "end": 38,
+      "declaration": {
+        "type": "FunctionExpression",
+        "start": 21,
+        "end": 38,
+        "generator": false,
+        "async": true,
+        "arrow": true,
+        "params": [],
+        "body": {
+          "type": "AwaitExpression",
+          "start": 27,
+          "end": 38,
+          "argument": {
+            "type": "CallExpression",
+            "start": 33,
+            "end": 38,
+            "callee": {
+              "type": "Identifier",
+              "start": 33,
+              "end": 36,
+              "name": "foo"
+            },
+            "arguments": [],
+            "optional": false
+          }
+        }
+      }
+    }
+  ]
+}

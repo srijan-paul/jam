@@ -14,7 +14,7 @@
         "declarations": [
           {
             "type": "VariableDeclarator",
-            "start": 5,
+            "start": 9,
             "end": 14,
             "id": {
               "type": "Identifier",
@@ -76,6 +76,9 @@
       "type": "ForStatement",
       "start": 33,
       "end": 43,
+      "init": null,
+      "test": null,
+      "update": null,
       "body": {
         "type": "EmptyStatement",
         "start": 42,
@@ -93,7 +96,7 @@
         "declarations": [
           {
             "type": "VariableDeclarator",
-            "start": 49,
+            "start": 53,
             "end": 58,
             "id": {
               "type": "Identifier",
@@ -112,6 +115,8 @@
         ],
         "kind": "var"
       },
+      "test": null,
+      "update": null,
       "body": {
         "type": "EmptyStatement",
         "start": 62,
@@ -122,6 +127,7 @@
       "type": "ForStatement",
       "start": 64,
       "end": 77,
+      "init": null,
       "test": {
         "type": "UpdateExpression",
         "start": 71,
@@ -135,6 +141,7 @@
           "name": "x"
         }
       },
+      "update": null,
       "body": {
         "type": "EmptyStatement",
         "start": 76,
@@ -145,6 +152,7 @@
       "type": "ForStatement",
       "start": 78,
       "end": 96,
+      "init": null,
       "test": {
         "type": "Identifier",
         "start": 85,
@@ -180,6 +188,8 @@
       "type": "ForStatement",
       "start": 97,
       "end": 114,
+      "init": null,
+      "test": null,
       "update": {
         "type": "AssignmentExpression",
         "start": 106,
@@ -209,6 +219,7 @@
       "type": "ForStatement",
       "start": 115,
       "end": 132,
+      "init": null,
       "test": {
         "type": "AssignmentExpression",
         "start": 122,
@@ -228,6 +239,7 @@
           "raw": "1"
         }
       },
+      "update": null,
       "body": {
         "type": "EmptyStatement",
         "start": 131,
@@ -245,6 +257,8 @@
         "value": 1,
         "raw": "1"
       },
+      "test": null,
+      "update": null,
       "body": {
         "type": "EmptyStatement",
         "start": 143,
@@ -262,7 +276,7 @@
         "declarations": [
           {
             "type": "VariableDeclarator",
-            "start": 150,
+            "start": 154,
             "end": 157,
             "id": {
               "type": "Identifier",

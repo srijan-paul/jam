@@ -9,6 +9,9 @@
       "type": "ForStatement",
       "start": 0,
       "end": 8,
+      "init": null,
+      "test": null,
+      "update": null,
       "body": {
         "type": "EmptyStatement",
         "start": 7,

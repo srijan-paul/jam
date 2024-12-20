@@ -146,7 +146,7 @@ pub fn build(b: *std.Build) !void {
         test262.root_module.addImport("js", jam_js_module);
         const tests_262_cmd = b.addRunArtifact(test262);
 
-        const test_runner_step = b.step("test-262", "Run the @babel/parser test suite");
+        const test_runner_step = b.step("test-262", "Run the tc39/test-262-parser-tests test suite");
         test_runner_step.dependOn(&tests_262_cmd.step);
 
         // forward all CLI arguments from build.zig to the test runner.
@@ -155,7 +155,7 @@ pub fn build(b: *std.Build) !void {
         }
     }
 
-    // Command to run the babel test suite
+    // Command to run the @babel/parser test suite
     {
         const test_babel = b.addExecutable(.{
             .name = "test-babel",
@@ -167,7 +167,7 @@ pub fn build(b: *std.Build) !void {
         test_babel.root_module.addImport("js", jam_js_module);
         const test_babel_cmd = b.addRunArtifact(test_babel);
 
-        const test_runner_step = b.step("test-babel", "Run the EC262 parser tests");
+        const test_runner_step = b.step("test-babel", "Run the @babel/parser test suite");
         test_runner_step.dependOn(&test_babel_cmd.step);
 
         // forward all CLI arguments from build.zig to the test runner.

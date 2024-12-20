@@ -47,6 +47,7 @@
           "raw": "42"
         }
       },
+      "update": null,
       "body": {
         "type": "EmptyStatement",
         "start": 19,

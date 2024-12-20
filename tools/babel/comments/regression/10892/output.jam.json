@@ -1,0 +1,51 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 70,
+  "sourceType": "module",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ImportDeclaration",
+      "start": 0,
+      "end": 25,
+      "source": {
+        "type": "Literal",
+        "start": 20,
+        "end": 25,
+        "value": "bar",
+        "raw": "\"bar\""
+      },
+      "specifiers": [
+        {
+          "type": "ImportSpecifier",
+          "start": 9,
+          "end": 12,
+          "imported": {
+            "type": "Identifier",
+            "start": 9,
+            "end": 12,
+            "name": "foo"
+          },
+          "local": {
+            "type": "Identifier",
+            "start": 9,
+            "end": 12,
+            "name": "foo"
+          }
+        }
+      ]
+    },
+    {
+      "type": "ExportNamedDeclaration",
+      "start": 51,
+      "end": 69,
+      "declaration": {
+        "type": "ObjectExpression",
+        "start": 66,
+        "end": 69,
+        "properties": []
+      }
+    }
+  ]
+}

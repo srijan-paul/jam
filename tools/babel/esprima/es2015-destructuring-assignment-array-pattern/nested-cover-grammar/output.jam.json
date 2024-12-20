@@ -25,21 +25,36 @@
               "end": 6,
               "properties": [
                 {
-                  "type": "AssignmentPattern",
+                  "type": "Property",
                   "start": 2,
                   "end": 5,
-                  "left": {
+                  "method": false,
+                  "key": {
                     "type": "Identifier",
                     "start": 2,
                     "end": 3,
                     "name": "a"
                   },
-                  "right": {
-                    "type": "Identifier",
-                    "start": 4,
+                  "computed": false,
+                  "shorthand": true,
+                  "value": {
+                    "type": "AssignmentPattern",
+                    "start": 2,
                     "end": 5,
-                    "name": "b"
-                  }
+                    "left": {
+                      "type": "Identifier",
+                      "start": 2,
+                      "end": 3,
+                      "name": "a"
+                    },
+                    "right": {
+                      "type": "Identifier",
+                      "start": 4,
+                      "end": 5,
+                      "name": "b"
+                    }
+                  },
+                  "kind": "init"
                 }
               ]
             },

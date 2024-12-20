@@ -16,7 +16,6 @@
         "generator": false,
         "async": false,
         "arrow": true,
-        "expression": true,
         "params": [
           {
             "type": "ObjectPattern",
@@ -45,21 +44,36 @@
                 "kind": "init"
               },
               {
-                "type": "AssignmentPattern",
+                "type": "Property",
                 "start": 4,
                 "end": 7,
-                "left": {
+                "method": false,
+                "key": {
                   "type": "Identifier",
                   "start": 4,
                   "end": 5,
                   "name": "b"
                 },
-                "right": {
-                  "type": "Identifier",
-                  "start": 6,
+                "computed": false,
+                "shorthand": true,
+                "value": {
+                  "type": "AssignmentPattern",
+                  "start": 4,
                   "end": 7,
-                  "name": "b"
-                }
+                  "left": {
+                    "type": "Identifier",
+                    "start": 4,
+                    "end": 5,
+                    "name": "b"
+                  },
+                  "right": {
+                    "type": "Identifier",
+                    "start": 6,
+                    "end": 7,
+                    "name": "b"
+                  }
+                },
+                "kind": "init"
               },
               {
                 "type": "Property",

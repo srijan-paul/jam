@@ -120,34 +120,49 @@
                                                                                           "end": 28,
                                                                                           "properties": [
                                                                                             {
-                                                                                              "type": "AssignmentPattern",
+                                                                                              "type": "Property",
                                                                                               "start": 21,
                                                                                               "end": 26,
-                                                                                              "left": {
+                                                                                              "method": false,
+                                                                                              "key": {
                                                                                                 "type": "Identifier",
                                                                                                 "start": 21,
                                                                                                 "end": 22,
                                                                                                 "name": "a"
                                                                                               },
-                                                                                              "right": {
-                                                                                                "type": "MemberExpression",
-                                                                                                "start": 23,
+                                                                                              "computed": false,
+                                                                                              "shorthand": true,
+                                                                                              "value": {
+                                                                                                "type": "AssignmentPattern",
+                                                                                                "start": 21,
                                                                                                 "end": 26,
-                                                                                                "object": {
+                                                                                                "left": {
                                                                                                   "type": "Identifier",
+                                                                                                  "start": 21,
+                                                                                                  "end": 22,
+                                                                                                  "name": "a"
+                                                                                                },
+                                                                                                "right": {
+                                                                                                  "type": "MemberExpression",
                                                                                                   "start": 23,
-                                                                                                  "end": 24,
-                                                                                                  "name": "b"
-                                                                                                },
-                                                                                                "property": {
-                                                                                                  "type": "Literal",
-                                                                                                  "start": 25,
                                                                                                   "end": 26,
-                                                                                                  "value": 0,
-                                                                                                  "raw": "0"
-                                                                                                },
-                                                                                                "computed": true
-                                                                                              }
+                                                                                                  "object": {
+                                                                                                    "type": "Identifier",
+                                                                                                    "start": 23,
+                                                                                                    "end": 24,
+                                                                                                    "name": "b"
+                                                                                                  },
+                                                                                                  "property": {
+                                                                                                    "type": "Literal",
+                                                                                                    "start": 25,
+                                                                                                    "end": 26,
+                                                                                                    "value": 0,
+                                                                                                    "raw": "0"
+                                                                                                  },
+                                                                                                  "computed": true
+                                                                                                }
+                                                                                              },
+                                                                                              "kind": "init"
                                                                                             }
                                                                                           ]
                                                                                         }

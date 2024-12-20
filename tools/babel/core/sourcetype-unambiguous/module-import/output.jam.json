@@ -1,0 +1,22 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 14,
+  "sourceType": "module",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ImportDeclaration",
+      "start": 0,
+      "end": 13,
+      "source": {
+        "type": "Literal",
+        "start": 7,
+        "end": 12,
+        "value": "foo",
+        "raw": "\"foo\""
+      },
+      "specifiers": []
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 39,
+  "sourceType": "module",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExportNamedDeclaration",
+      "start": 0,
+      "end": 20,
+      "declaration": {
+        "type": "Identifier",
+        "start": 15,
+        "end": 20,
+        "name": "async"
+      }
+    },
+    {
+      "type": "FunctionDeclaration",
+      "start": 21,
+      "end": 38,
+      "id": {
+        "type": "Identifier",
+        "start": 30,
+        "end": 33,
+        "name": "bar"
+      },
+      "generator": false,
+      "async": false,
+      "params": [],
+      "body": {
+        "type": "BlockStatement",
+        "start": 36,
+        "end": 38,
+        "body": []
+      }
+    }
+  ]
+}

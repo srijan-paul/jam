@@ -1,0 +1,52 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 122,
+  "sourceType": "module",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExportNamedDeclaration",
+      "start": 36,
+      "end": 121,
+      "declaration": {
+        "type": "ClassExpression",
+        "start": 51,
+        "end": 121,
+        "body": {
+          "type": "ClassBody",
+          "body": [
+            {
+              "type": "MethodDefinition",
+              "start": 103,
+              "end": 119,
+              "key": {
+                "type": "Identifier",
+                "start": 103,
+                "end": 110,
+                "name": "method1"
+              },
+              "value": {
+                "type": "FunctionExpression",
+                "start": 103,
+                "end": 119,
+                "generator": false,
+                "async": false,
+                "arrow": false,
+                "params": [],
+                "body": {
+                  "type": "BlockStatement",
+                  "start": 112,
+                  "end": 119,
+                  "body": []
+                }
+              },
+              "computed": false,
+              "static": false
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

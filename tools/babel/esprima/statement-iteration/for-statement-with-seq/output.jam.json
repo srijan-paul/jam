@@ -34,6 +34,8 @@
           }
         ]
       },
+      "test": null,
+      "update": null,
       "body": {
         "type": "EmptyStatement",
         "start": 12,

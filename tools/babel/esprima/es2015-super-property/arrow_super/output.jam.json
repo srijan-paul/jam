@@ -41,7 +41,6 @@
               "generator": false,
               "async": false,
               "arrow": false,
-              "expression": true,
               "params": [],
               "body": {
                 "type": "BlockStatement",
@@ -59,7 +58,6 @@
                       "generator": false,
                       "async": false,
                       "arrow": true,
-                      "expression": true,
                       "params": [],
                       "body": {
                         "type": "CallExpression",

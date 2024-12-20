@@ -51,7 +51,6 @@
                   "generator": true,
                   "async": true,
                   "arrow": false,
-                  "expression": true,
                   "params": [
                     {
                       "type": "Identifier",
@@ -112,7 +111,6 @@
                     "generator": true,
                     "async": true,
                     "arrow": false,
-                    "expression": true,
                     "params": [],
                     "body": {
                       "type": "BlockStatement",

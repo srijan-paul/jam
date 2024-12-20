@@ -17,7 +17,6 @@
       },
       "generator": false,
       "async": false,
-      "expression": false,
       "params": [
         {
           "type": "Identifier",
@@ -50,7 +49,6 @@
         "generator": false,
         "async": false,
         "arrow": false,
-        "expression": true,
         "params": [
           {
             "type": "Identifier",

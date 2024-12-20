@@ -1,0 +1,34 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 22,
+  "sourceType": "module",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ImportDeclaration",
+      "start": 0,
+      "end": 22,
+      "source": {
+        "type": "Literal",
+        "start": 14,
+        "end": 22,
+        "value": "jquery",
+        "raw": "\"jquery\""
+      },
+      "specifiers": [
+        {
+          "type": "ImportDefaultSpecifier",
+          "start": 7,
+          "end": 8,
+          "local": {
+            "type": "Identifier",
+            "start": 7,
+            "end": 8,
+            "name": "$"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -8,7 +8,7 @@
     {
       "type": "VariableDeclaration",
       "start": 0,
-      "end": 15,
+      "end": 31,
       "declarations": [
         {
           "type": "VariableDeclarator",

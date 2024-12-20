@@ -15,22 +15,37 @@
         "end": 12,
         "properties": [
           {
-            "type": "AssignmentPattern",
+            "type": "Property",
             "start": 6,
             "end": 11,
-            "left": {
+            "method": false,
+            "key": {
               "type": "Identifier",
               "start": 6,
               "end": 7,
               "name": "x"
             },
-            "right": {
-              "type": "Literal",
-              "start": 10,
+            "computed": false,
+            "shorthand": true,
+            "value": {
+              "type": "AssignmentPattern",
+              "start": 6,
               "end": 11,
-              "value": 0,
-              "raw": "0"
-            }
+              "left": {
+                "type": "Identifier",
+                "start": 6,
+                "end": 7,
+                "name": "x"
+              },
+              "right": {
+                "type": "Literal",
+                "start": 10,
+                "end": 11,
+                "value": 0,
+                "raw": "0"
+              }
+            },
+            "kind": "init"
           }
         ]
       },

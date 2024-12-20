@@ -16,7 +16,6 @@
         "generator": true,
         "async": false,
         "arrow": false,
-        "expression": true,
         "params": [],
         "body": {
           "type": "BlockStatement",
@@ -35,7 +34,6 @@
               },
               "generator": false,
               "async": false,
-              "expression": false,
               "params": [
                 {
                   "type": "AssignmentPattern",
@@ -54,7 +52,6 @@
                     "generator": false,
                     "async": false,
                     "arrow": true,
-                    "expression": true,
                     "params": [],
                     "body": {
                       "type": "Literal",

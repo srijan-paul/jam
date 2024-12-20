@@ -27,7 +27,6 @@
             "generator": false,
             "async": false,
             "arrow": true,
-            "expression": true,
             "params": [],
             "body": {
               "type": "ObjectExpression",
@@ -54,7 +53,6 @@
                     "generator": false,
                     "async": false,
                     "arrow": true,
-                    "expression": true,
                     "params": [
                       {
                         "type": "Identifier",

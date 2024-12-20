@@ -16,7 +16,7 @@
         "declarations": [
           {
             "type": "VariableDeclarator",
-            "start": 4,
+            "start": 8,
             "end": 13,
             "id": {
               "type": "Identifier",
@@ -35,6 +35,8 @@
         ],
         "kind": "var"
       },
+      "test": null,
+      "update": null,
       "body": {
         "type": "EmptyStatement",
         "start": 16,

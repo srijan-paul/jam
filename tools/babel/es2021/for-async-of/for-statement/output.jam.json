@@ -16,7 +16,6 @@
         "generator": false,
         "async": true,
         "arrow": true,
-        "expression": true,
         "params": [
           {
             "type": "Identifier",
@@ -32,6 +31,8 @@
           "body": []
         }
       },
+      "test": null,
+      "update": null,
       "body": {
         "type": "EmptyStatement",
         "start": 22,

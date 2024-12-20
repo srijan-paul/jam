@@ -25,7 +25,6 @@
             "generator": false,
             "async": false,
             "arrow": true,
-            "expression": true,
             "params": [],
             "body": {
               "type": "Literal",
@@ -61,7 +60,6 @@
             "generator": false,
             "async": false,
             "arrow": true,
-            "expression": true,
             "params": [],
             "body": {
               "type": "BlockStatement",
@@ -90,7 +88,6 @@
                         "generator": false,
                         "async": false,
                         "arrow": true,
-                        "expression": true,
                         "params": [],
                         "body": {
                           "type": "BlockStatement",

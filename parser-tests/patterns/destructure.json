@@ -134,40 +134,70 @@
               "end": 37,
               "properties": [
                 {
-                  "type": "AssignmentPattern",
+                  "type": "Property",
                   "start": 28,
                   "end": 31,
-                  "left": {
+                  "method": false,
+                  "key": {
                     "type": "Identifier",
                     "start": 28,
                     "end": 29,
                     "name": "a"
                   },
-                  "right": {
-                    "type": "Literal",
-                    "start": 30,
+                  "computed": false,
+                  "shorthand": true,
+                  "value": {
+                    "type": "AssignmentPattern",
+                    "start": 28,
                     "end": 31,
-                    "value": 1,
-                    "raw": "1"
-                  }
+                    "left": {
+                      "type": "Identifier",
+                      "start": 28,
+                      "end": 29,
+                      "name": "a"
+                    },
+                    "right": {
+                      "type": "Literal",
+                      "start": 30,
+                      "end": 31,
+                      "value": 1,
+                      "raw": "1"
+                    }
+                  },
+                  "kind": "init"
                 },
                 {
-                  "type": "AssignmentPattern",
+                  "type": "Property",
                   "start": 33,
                   "end": 36,
-                  "left": {
+                  "method": false,
+                  "key": {
                     "type": "Identifier",
                     "start": 33,
                     "end": 34,
                     "name": "b"
                   },
-                  "right": {
-                    "type": "Literal",
-                    "start": 35,
+                  "computed": false,
+                  "shorthand": true,
+                  "value": {
+                    "type": "AssignmentPattern",
+                    "start": 33,
                     "end": 36,
-                    "value": 1,
-                    "raw": "1"
-                  }
+                    "left": {
+                      "type": "Identifier",
+                      "start": 33,
+                      "end": 34,
+                      "name": "b"
+                    },
+                    "right": {
+                      "type": "Literal",
+                      "start": 35,
+                      "end": 36,
+                      "value": 1,
+                      "raw": "1"
+                    }
+                  },
+                  "kind": "init"
                 }
               ]
             }

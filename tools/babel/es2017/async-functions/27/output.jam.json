@@ -27,7 +27,6 @@
             "generator": false,
             "async": false,
             "arrow": true,
-            "expression": true,
             "params": [
               {
                 "type": "ObjectPattern",
@@ -35,22 +34,37 @@
                 "end": 29,
                 "properties": [
                   {
-                    "type": "AssignmentPattern",
+                    "type": "Property",
                     "start": 15,
                     "end": 27,
-                    "left": {
+                    "method": false,
+                    "key": {
                       "type": "Identifier",
                       "start": 15,
                       "end": 20,
                       "name": "async"
                     },
-                    "right": {
-                      "type": "Literal",
-                      "start": 23,
+                    "computed": false,
+                    "shorthand": true,
+                    "value": {
+                      "type": "AssignmentPattern",
+                      "start": 15,
                       "end": 27,
-                      "value": true,
-                      "raw": "true"
-                    }
+                      "left": {
+                        "type": "Identifier",
+                        "start": 15,
+                        "end": 20,
+                        "name": "async"
+                      },
+                      "right": {
+                        "type": "Literal",
+                        "start": 23,
+                        "end": 27,
+                        "value": true,
+                        "raw": "true"
+                      }
+                    },
+                    "kind": "init"
                   }
                 ]
               }

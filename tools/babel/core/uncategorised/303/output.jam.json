@@ -13,7 +13,7 @@
         {
           "type": "VariableDeclaration",
           "start": 2,
-          "end": 12,
+          "end": 19,
           "declarations": [
             {
               "type": "VariableDeclarator",

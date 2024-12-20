@@ -318,11 +318,14 @@ fn nodeToEsTree(
         .export_list_declaration => |payload| {
             const specifiers = try subRangeToJsonArray(al, t, payload.specifiers, opts);
             try o.put("specifiers", specifiers);
+            // to be compatible with babel...
+            try o.put("source", JNull);
+            try o.put("declaration", JNull);
         },
 
         .call_expr => |payload| {
             const callee = try nodeToEsTree(t, al, payload.callee, opts);
-            const arguments = t.getNode(payload.arguments).data.arguments;
+            const arguments = t.nodeData(payload.arguments).arguments;
             const args = try subRangeToJsonArray(al, t, arguments, opts);
             try o.put("callee", callee);
             try o.put("arguments", args);
@@ -542,12 +545,6 @@ fn nodeToEsTree(
         },
 
         .function_expr, .function_declaration => |payload| {
-            std.debug.print("data:\n", .{});
-            for (0..t.nodes.len) |i|
-                std.debug.print("{d}: {any}\n", .{ i, t.nodes.get(i).data });
-
-            std.debug.print("access using: {d}\n", .{@as(usize, @intFromEnum(payload.parameters))});
-
             const params_range = t.nodes.get(@intFromEnum(payload.parameters)).data.parameters;
             const params = try subRangeToJsonArray(al, t, params_range, opts);
             const body = try nodeToEsTree(t, al, payload.body, opts);
@@ -566,12 +563,8 @@ fn nodeToEsTree(
 
             // function_declaration can never be `arrow`, so only have the "arrow"
             // field for function_exprs.
-            if (std.meta.activeTag(node.data) == .function_expr) {
+            if (meta.activeTag(node.data) == .function_expr)
                 try o.put("arrow", JValue{ .bool = fn_info.flags.is_arrow });
-                try o.put("expression", JTrue);
-            } else {
-                try o.put("expression", JFalse);
-            }
 
             try o.put("params", params);
             try o.put("body", body);
@@ -692,12 +685,9 @@ fn nodeToEsTree(
 
         .for_statement => |payload| {
             const iter = t.getExtraData(payload.iterator).for_iterator;
-            if (iter.init != .empty)
-                try o.put("init", try nodeToEsTree(t, al, iter.init, opts));
-            if (iter.condition != .empty)
-                try o.put("test", try nodeToEsTree(t, al, iter.condition, opts));
-            if (iter.update != .empty)
-                try o.put("update", try nodeToEsTree(t, al, iter.update, opts));
+            try o.put("init", try nodeToEsTree(t, al, iter.init, opts));
+            try o.put("test", try nodeToEsTree(t, al, iter.condition, opts));
+            try o.put("update", try nodeToEsTree(t, al, iter.update, opts));
 
             const body = try nodeToEsTree(t, al, payload.body, opts);
             try o.put("body", body);
@@ -762,13 +752,44 @@ fn nodeToEsTree(
     return JValue{ .object = o };
 }
 
-pub fn toJsonString(allocator: std.mem.Allocator, t: *const Tree, options: EstreeJsonOpts) ![]u8 {
-    var arena = std.heap.ArenaAllocator.init(allocator);
-    const al = arena.allocator();
-    defer arena.deinit();
+const EstreeJson = struct {
+    arena: *std.heap.ArenaAllocator,
+    allocator: std.mem.Allocator,
+    tree: std.json.Value,
 
-    const pretty_node = try nodeToEsTree(t, al, t.root, options);
-    return try std.json.stringifyAlloc(allocator, pretty_node, .{
+    pub fn deinit(self: EstreeJson) void {
+        self.arena.deinit();
+        self.allocator.destroy(self.arena);
+    }
+};
+
+pub fn toJsonObject(
+    allocator: std.mem.Allocator,
+    t: *const Tree,
+    options: EstreeJsonOpts,
+) !EstreeJson {
+    var arena = try allocator.create(std.heap.ArenaAllocator);
+
+    arena.* = std.heap.ArenaAllocator.init(allocator);
+    const al = arena.allocator();
+
+    const estree = try nodeToEsTree(t, al, t.root, options);
+    return EstreeJson{
+        .arena = arena,
+        .allocator = allocator,
+        .tree = estree,
+    };
+}
+
+pub fn toJsonString(
+    allocator: std.mem.Allocator,
+    t: *const Tree,
+    options: EstreeJsonOpts,
+) ![]u8 {
+    const estree_json = try toJsonObject(allocator, t, options);
+    defer estree_json.deinit();
+
+    return try std.json.stringifyAlloc(allocator, estree_json.tree, .{
         .whitespace = .indent_2,
         .emit_null_optional_fields = false,
     });

@@ -49,22 +49,37 @@
                     "end": 15,
                     "properties": [
                       {
-                        "type": "AssignmentPattern",
+                        "type": "Property",
                         "start": 9,
                         "end": 14,
-                        "left": {
+                        "method": false,
+                        "key": {
                           "type": "Identifier",
                           "start": 9,
                           "end": 10,
                           "name": "c"
                         },
-                        "right": {
-                          "type": "Literal",
-                          "start": 13,
+                        "computed": false,
+                        "shorthand": true,
+                        "value": {
+                          "type": "AssignmentPattern",
+                          "start": 9,
                           "end": 14,
-                          "value": 1,
-                          "raw": "1"
-                        }
+                          "left": {
+                            "type": "Identifier",
+                            "start": 9,
+                            "end": 10,
+                            "name": "c"
+                          },
+                          "right": {
+                            "type": "Literal",
+                            "start": 13,
+                            "end": 14,
+                            "value": 1,
+                            "raw": "1"
+                          }
+                        },
+                        "kind": "init"
                       }
                     ]
                   },

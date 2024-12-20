@@ -17,8 +17,16 @@ function removeAstTrivia(ast) {
 		delete ast['extra']
 		delete ast['directives']
 		delete ast['directive']
+		delete ast['range']
 		delete ast['trailingComments']
 		delete ast['leadingComments']
+
+		if (ast.type === "FunctionDeclaration") {
+			// "expression": false is redundant when
+			// the type already says its a declaration.
+			delete ast['expression']
+		}
+
 		const values = Object.values(ast).filter(v => Array.isArray(v) || typeof v === 'object');
 		removeAstTrivia(values);
 	}

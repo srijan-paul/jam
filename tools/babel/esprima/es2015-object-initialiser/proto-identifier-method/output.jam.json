@@ -56,7 +56,6 @@
               "generator": false,
               "async": false,
               "arrow": false,
-              "expression": true,
               "params": [],
               "body": {
                 "type": "BlockStatement",

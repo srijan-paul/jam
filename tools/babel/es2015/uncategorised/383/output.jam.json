@@ -1,0 +1,29 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 20,
+  "sourceType": "module",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExportNamedDeclaration",
+      "start": 0,
+      "end": 19,
+      "declaration": {
+        "type": "ClassDeclaration",
+        "start": 7,
+        "end": 19,
+        "id": {
+          "type": "Identifier",
+          "start": 13,
+          "end": 16,
+          "name": "Foo"
+        },
+        "body": {
+          "type": "ClassBody",
+          "body": []
+        }
+      }
+    }
+  ]
+}

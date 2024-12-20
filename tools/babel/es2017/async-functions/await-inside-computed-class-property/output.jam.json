@@ -16,7 +16,6 @@
         "generator": false,
         "async": true,
         "arrow": true,
-        "expression": true,
         "params": [],
         "body": {
           "type": "ClassExpression",
@@ -48,7 +47,6 @@
                   "generator": false,
                   "async": false,
                   "arrow": false,
-                  "expression": true,
                   "params": [],
                   "body": {
                     "type": "BlockStatement",

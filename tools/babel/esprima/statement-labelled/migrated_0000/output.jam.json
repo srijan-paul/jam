@@ -13,6 +13,9 @@
         "type": "ForStatement",
         "start": 7,
         "end": 27,
+        "init": null,
+        "test": null,
+        "update": null,
         "body": {
           "type": "BreakStatement",
           "start": 16,

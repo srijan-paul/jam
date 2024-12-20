@@ -52,7 +52,7 @@
         "declarations": [
           {
             "type": "VariableDeclarator",
-            "start": 29,
+            "start": 33,
             "end": 46,
             "id": {
               "type": "Identifier",
@@ -94,6 +94,8 @@
         ],
         "kind": "var"
       },
+      "test": null,
+      "update": null,
       "body": {
         "type": "EmptyStatement",
         "start": 49,

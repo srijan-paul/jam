@@ -1,0 +1,40 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 20,
+  "sourceType": "module",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExportNamedDeclaration",
+      "start": 0,
+      "end": 19,
+      "declaration": {
+        "type": "VariableDeclaration",
+        "start": 7,
+        "end": 19,
+        "declarations": [
+          {
+            "type": "VariableDeclarator",
+            "start": 11,
+            "end": 18,
+            "id": {
+              "type": "Identifier",
+              "start": 11,
+              "end": 14,
+              "name": "foo"
+            },
+            "init": {
+              "type": "Literal",
+              "start": 17,
+              "end": 18,
+              "value": 1,
+              "raw": "1"
+            }
+          }
+        ],
+        "kind": "let"
+      }
+    }
+  ]
+}

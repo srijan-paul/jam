@@ -30,8 +30,8 @@ pub const Tree = struct {
     string_pool: util.StringPool,
 
     /// Obtain all the data for a single AST Node.
-    pub fn getNode(self: *const Tree, index: Node.Index) *const Node {
-        return &self.nodes.get(@intFromEnum(index));
+    pub fn getNode(self: *const Tree, index: Node.Index) Node {
+        return self.nodes.get(@intFromEnum(index));
     }
 
     pub fn nodeData(self: *const Tree, index: Node.Index) *const NodeData {
@@ -450,6 +450,7 @@ pub const NodeData = union(enum(u8)) {
     /// `const [a, ...rest] = [1, 2, 3];`
     rest_element: Node.Index,
     object_literal: ?SubRange,
+    /// key-value pair or method in an object-literal.
     object_property: PropertyDefinition,
     class_expression: Class,
     class_field: ClassFieldDefinition,

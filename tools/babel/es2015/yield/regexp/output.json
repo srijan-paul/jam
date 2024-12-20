@@ -17,7 +17,6 @@
       },
       "generator": true,
       "async": false,
-      "expression": false,
       "params": [],
       "body": {
         "type": "BlockStatement",
@@ -89,7 +88,6 @@
       },
       "generator": true,
       "async": false,
-      "expression": false,
       "params": [],
       "body": {
         "type": "BlockStatement",

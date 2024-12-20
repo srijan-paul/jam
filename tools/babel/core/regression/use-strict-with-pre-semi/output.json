@@ -17,7 +17,6 @@
       },
       "generator": false,
       "async": false,
-      "expression": false,
       "params": [
         {
           "type": "AssignmentPattern",

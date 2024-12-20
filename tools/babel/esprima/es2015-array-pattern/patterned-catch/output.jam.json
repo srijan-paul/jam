@@ -131,21 +131,36 @@
                   "kind": "init"
                 },
                 {
-                  "type": "AssignmentPattern",
+                  "type": "Property",
                   "start": 40,
                   "end": 43,
-                  "left": {
+                  "method": false,
+                  "key": {
                     "type": "Identifier",
                     "start": 40,
                     "end": 41,
                     "name": "h"
                   },
-                  "right": {
-                    "type": "Identifier",
-                    "start": 42,
+                  "computed": false,
+                  "shorthand": true,
+                  "value": {
+                    "type": "AssignmentPattern",
+                    "start": 40,
                     "end": 43,
-                    "name": "i"
-                  }
+                    "left": {
+                      "type": "Identifier",
+                      "start": 40,
+                      "end": 41,
+                      "name": "h"
+                    },
+                    "right": {
+                      "type": "Identifier",
+                      "start": 42,
+                      "end": 43,
+                      "name": "i"
+                    }
+                  },
+                  "kind": "init"
                 }
               ]
             }

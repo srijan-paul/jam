@@ -1724,6 +1724,7 @@ fn completeVarDeclLoopIterator(
             });
         },
         else => {
+            // TODO: can some of this code be shared with `variableDeclarator`?
             var end_pos = lhs_span.end;
             var rhs: ?Node.Index = null;
             if (self.isAtToken(.@"=")) {
@@ -1747,7 +1748,7 @@ fn completeVarDeclLoopIterator(
 
             const first_decl = try self.addNode(
                 .{ .variable_declarator = .{ .lhs = lhs, .init = rhs } },
-                decl_kw.id,
+                self.nodes.items(.start)[@intFromEnum(lhs)],
                 end_pos,
             );
 
@@ -1899,7 +1900,8 @@ fn variableStatement(self: *Self, kw: TokenWithId) Error!Node.Index {
 
     const kind = varDeclKind(kw_token.tag);
     const decls = try self.variableDeclaratorList(kind);
-    const last_decl = self.subRangeToSlice(decls)[0];
+    const decl_slice = self.subRangeToSlice(decls);
+    const last_decl = decl_slice[decl_slice.len - 1];
 
     var end_pos: Token.Index = self.nodes.items(.end)[@intFromEnum(last_decl)];
     end_pos = try self.semiColon(end_pos);
@@ -5160,9 +5162,16 @@ fn identifierProperty(self: *Self) Error!Node.Index {
                 },
             };
 
+            const property = ast.PropertyDefinition{
+                .value = try self.addNode(assignment_pattern, start_pos, end_pos),
+                .key = key,
+                .flags = .{ .kind = .init, .is_shorthand = true },
+            };
+
             // 'Identifier = AssignmentExpression' is allowed in object patterns but not in object literals
+            // TODO: use a helper method here instead of overriding the current destructure kind.
             self.current_destructure_kind = DestructureKind.MustDestruct;
-            return self.addNode(assignment_pattern, start_pos, end_pos);
+            return self.addNode(.{ .object_property = property }, start_pos, end_pos);
         },
 
         else => {

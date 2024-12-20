@@ -16,7 +16,7 @@
         "declarations": [
           {
             "type": "VariableDeclarator",
-            "start": 5,
+            "start": 9,
             "end": 14,
             "id": {
               "type": "Identifier",
@@ -35,6 +35,8 @@
         ],
         "kind": "let"
       },
+      "test": null,
+      "update": null,
       "body": {
         "type": "BlockStatement",
         "start": 18,

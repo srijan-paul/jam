@@ -31,22 +31,37 @@
               "end": 44,
               "properties": [
                 {
-                  "type": "AssignmentPattern",
+                  "type": "Property",
                   "start": 16,
                   "end": 25,
-                  "left": {
+                  "method": false,
+                  "key": {
                     "type": "Identifier",
                     "start": 16,
                     "end": 19,
                     "name": "foo"
                   },
-                  "right": {
-                    "type": "Literal",
-                    "start": 22,
+                  "computed": false,
+                  "shorthand": true,
+                  "value": {
+                    "type": "AssignmentPattern",
+                    "start": 16,
                     "end": 25,
-                    "value": 123,
-                    "raw": "123"
-                  }
+                    "left": {
+                      "type": "Identifier",
+                      "start": 16,
+                      "end": 19,
+                      "name": "foo"
+                    },
+                    "right": {
+                      "type": "Literal",
+                      "start": 22,
+                      "end": 25,
+                      "value": 123,
+                      "raw": "123"
+                    }
+                  },
+                  "kind": "init"
                 },
                 {
                   "type": "Property",
