@@ -19,7 +19,8 @@
         "type": "Literal",
         "start": 3,
         "end": 8,
-        "raw": "/foo/"
+        "raw": "/foo/",
+        "value": {}
       }
     }
   ]

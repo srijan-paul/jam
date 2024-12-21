@@ -25,11 +25,7 @@
             "start": 8,
             "end": 16,
             "value": {},
-            "raw": "/[x-z]/i",
-            "regex": {
-              "pattern": "[x-z]",
-              "flags": "i"
-            }
+            "raw": "/[x-z]/i"
           }
         }
       ],

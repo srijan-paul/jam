@@ -139,7 +139,7 @@
             {
               "type": "Property",
               "start": 47,
-              "end": 62,
+              "end": 63,
               "method": false,
               "key": {
                 "type": "Identifier",
@@ -152,7 +152,7 @@
               "value": {
                 "type": "MemberExpression",
                 "start": 49,
-                "end": 62,
+                "end": 63,
                 "object": {
                   "type": "CallExpression",
                   "start": 49,
@@ -172,7 +172,8 @@
                   "end": 62,
                   "name": "a"
                 },
-                "computed": true
+                "computed": true,
+                "optional": false
               },
               "kind": "init"
             },

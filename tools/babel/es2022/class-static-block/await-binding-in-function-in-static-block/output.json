@@ -370,14 +370,14 @@
                       },
                       "generator": false,
                       "async": false,
-                      "expression": false,
                       "params": [],
                       "body": {
                         "type": "BlockStatement",
                         "start": 296,
                         "end": 298,
                         "body": []
-                      }
+                      },
+                      "arrow": false
                     }
                   }
                 ]

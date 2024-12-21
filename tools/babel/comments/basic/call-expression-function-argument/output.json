@@ -24,10 +24,8 @@
             "type": "FunctionExpression",
             "start": 5,
             "end": 41,
-            "id": null,
             "generator": false,
             "async": false,
-            "expression": false,
             "params": [],
             "body": {
               "type": "BlockStatement",
@@ -61,7 +59,8 @@
                   "kind": "var"
                 }
               ]
-            }
+            },
+            "arrow": false
           }
         ],
         "optional": false

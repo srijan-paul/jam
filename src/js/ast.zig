@@ -358,6 +358,8 @@ pub const ImportDefaultSpecifier = struct { name: Node.Index };
 pub const ImportNamespaceSpecifier = struct { name: Node.Index };
 
 /// An import specifier with an optional alias.
+/// `import x from "module"` -> `x` is the specifier
+/// `import { a as b } from "module"` -> `a as b` is the specifier
 pub const ImportSpecifier = struct {
     /// The name used when referencing the item in the module its imported from
     /// If `null`, then its the same as `local`.
@@ -368,7 +370,7 @@ pub const ImportSpecifier = struct {
 };
 
 /// An exported identifier.
-/// `export { *foo as bar* }`
+/// `export { foo as bar }` -> `foo as bar` is the specifier
 pub const ExportSpecifier = struct {
     /// Name of the top-level declaration that is being exported
     local: Node.Index,
@@ -507,7 +509,9 @@ pub const NodeData = union(enum(u8)) {
 
     export_declaration: ExportedDeclaration,
     export_specifier: ExportSpecifier,
+    /// Represents a node like `export { x, y, z }`
     export_list_declaration: struct { specifiers: SubRange },
+    /// `export { <specifiers> } from "module"`
     export_from_declaration: struct {
         source: Node.Index,
         specifiers: SubRange,

@@ -13,7 +13,6 @@
         "type": "FunctionExpression",
         "start": 1,
         "end": 25,
-        "id": null,
         "generator": true,
         "async": false,
         "params": [],
@@ -46,7 +45,8 @@
               }
             }
           ]
-        }
+        },
+        "arrow": false
       }
     }
   ]

@@ -83,10 +83,8 @@
             "type": "FunctionExpression",
             "start": 85,
             "end": 135,
-            "id": null,
             "generator": false,
             "async": false,
-            "expression": false,
             "params": [],
             "body": {
               "type": "BlockStatement",
@@ -132,7 +130,8 @@
                   }
                 }
               ]
-            }
+            },
+            "arrow": false
           }
         ],
         "optional": false

@@ -33,7 +33,8 @@
         "type": "Literal",
         "start": 23,
         "end": 29,
-        "raw": "/foo/g"
+        "raw": "/foo/g",
+        "value": {}
       }
     }
   ]

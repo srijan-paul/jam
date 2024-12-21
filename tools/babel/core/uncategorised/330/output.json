@@ -20,11 +20,7 @@
         "start": 3,
         "end": 8,
         "value": {},
-        "raw": "/foo/",
-        "regex": {
-          "pattern": "foo",
-          "flags": ""
-        }
+        "raw": "/foo/"
       }
     }
   ]

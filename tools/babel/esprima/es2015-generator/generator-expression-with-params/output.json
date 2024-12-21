@@ -13,10 +13,8 @@
         "type": "FunctionExpression",
         "start": 1,
         "end": 22,
-        "id": null,
         "generator": true,
         "async": false,
-        "expression": false,
         "params": [
           {
             "type": "Identifier",
@@ -42,7 +40,8 @@
           "start": 20,
           "end": 22,
           "body": []
-        }
+        },
+        "arrow": false
       }
     }
   ]

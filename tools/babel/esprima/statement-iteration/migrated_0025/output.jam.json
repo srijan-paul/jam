@@ -12,7 +12,7 @@
       "left": {
         "type": "MemberExpression",
         "start": 5,
-        "end": 16,
+        "end": 17,
         "object": {
           "type": "CallExpression",
           "start": 5,
@@ -52,7 +52,8 @@
           "value": 0,
           "raw": "0"
         },
-        "computed": true
+        "computed": true,
+        "optional": false
       },
       "right": {
         "type": "Identifier",

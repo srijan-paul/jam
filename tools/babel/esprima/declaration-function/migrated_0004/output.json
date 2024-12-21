@@ -21,7 +21,6 @@
         },
         "generator": false,
         "async": false,
-        "expression": false,
         "params": [
           {
             "type": "Identifier",
@@ -41,7 +40,8 @@
           "start": 21,
           "end": 24,
           "body": []
-        }
+        },
+        "arrow": false
       }
     }
   ]

@@ -35,7 +35,7 @@ fn jsFileToJsonAst(
     };
     defer result.deinit();
 
-    return try js.estree.toJsonString(allocator, result.tree, .{});
+    return try js.estree.toJsonString(allocator, result.tree, .{ .start_end_locs = true });
 }
 
 /// Parse a javascript file and return a stringified JSON representation of the AST.

@@ -31,7 +31,7 @@
             "value": {
               "type": "FunctionExpression",
               "start": 22,
-              "end": 35,
+              "end": 38,
               "generator": false,
               "async": true,
               "arrow": true,
@@ -39,11 +39,11 @@
               "body": {
                 "type": "AwaitExpression",
                 "start": 28,
-                "end": 35,
+                "end": 38,
                 "argument": {
                   "type": "UnaryExpression",
-                  "start": 36,
-                  "end": 35,
+                  "start": 34,
+                  "end": 38,
                   "operator": "+",
                   "prefix": true,
                   "argument": {

@@ -24,10 +24,8 @@
           "type": "FunctionExpression",
           "start": 4,
           "end": 22,
-          "id": null,
           "generator": false,
           "async": false,
-          "expression": false,
           "params": [
             {
               "type": "AssignmentPattern",
@@ -53,7 +51,8 @@
             "start": 20,
             "end": 22,
             "body": []
-          }
+          },
+          "arrow": false
         }
       }
     }

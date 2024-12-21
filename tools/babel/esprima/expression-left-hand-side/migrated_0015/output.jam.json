@@ -16,7 +16,7 @@
         "object": {
           "type": "MemberExpression",
           "start": 0,
-          "end": 11,
+          "end": 12,
           "object": {
             "type": "Identifier",
             "start": 0,
@@ -30,7 +30,8 @@
             "value": 42,
             "raw": "42"
           },
-          "computed": true
+          "computed": true,
+          "optional": false
         },
         "computed": false,
         "property": {

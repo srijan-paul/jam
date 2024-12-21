@@ -21,7 +21,6 @@
         },
         "generator": false,
         "async": false,
-        "expression": false,
         "params": [
           {
             "type": "ObjectPattern",
@@ -164,7 +163,8 @@
           "start": 53,
           "end": 55,
           "body": []
-        }
+        },
+        "arrow": false
       }
     }
   ]

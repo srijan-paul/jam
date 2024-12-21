@@ -14,11 +14,7 @@
         "start": 0,
         "end": 8,
         "value": {},
-        "raw": "/foobar/",
-        "regex": {
-          "pattern": "foobar",
-          "flags": ""
-        }
+        "raw": "/foobar/"
       }
     }
   ]

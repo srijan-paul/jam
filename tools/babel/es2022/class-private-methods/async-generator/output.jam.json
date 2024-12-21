@@ -107,8 +107,8 @@
                           "end": 158,
                           "test": {
                             "type": "UnaryExpression",
-                            "start": 102,
-                            "end": 102,
+                            "start": 101,
+                            "end": 110,
                             "operator": "!",
                             "prefix": true,
                             "argument": {

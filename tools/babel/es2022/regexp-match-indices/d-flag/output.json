@@ -14,11 +14,7 @@
         "start": 0,
         "end": 4,
         "value": {},
-        "raw": "/./d",
-        "regex": {
-          "pattern": ".",
-          "flags": "d"
-        }
+        "raw": "/./d"
       }
     }
   ]

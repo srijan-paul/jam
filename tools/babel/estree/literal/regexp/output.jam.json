@@ -24,7 +24,8 @@
             "type": "Literal",
             "start": 8,
             "end": 13,
-            "raw": "/.*/i"
+            "raw": "/.*/i",
+            "value": {}
           }
         }
       ],

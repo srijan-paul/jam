@@ -132,7 +132,7 @@
                                   {
                                     "type": "MemberExpression",
                                     "start": 172,
-                                    "end": 216,
+                                    "end": 217,
                                     "object": {
                                       "type": "MemberExpression",
                                       "start": 172,
@@ -197,7 +197,8 @@
                                         "raw": "1"
                                       }
                                     },
-                                    "computed": true
+                                    "computed": true,
+                                    "optional": false
                                   }
                                 ],
                                 "optional": false

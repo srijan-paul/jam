@@ -8,11 +8,11 @@
     {
       "type": "ExpressionStatement",
       "start": 0,
-      "end": 19,
+      "end": 20,
       "expression": {
         "type": "MemberExpression",
         "start": 0,
-        "end": 19,
+        "end": 20,
         "object": {
           "type": "Identifier",
           "start": 0,
@@ -25,7 +25,8 @@
           "end": 19,
           "name": "galaxyName"
         },
-        "computed": true
+        "computed": true,
+        "optional": false
       }
     }
   ]

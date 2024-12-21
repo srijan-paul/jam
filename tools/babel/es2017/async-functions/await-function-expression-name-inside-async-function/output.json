@@ -39,14 +39,14 @@
               },
               "generator": false,
               "async": false,
-              "expression": false,
               "params": [],
               "body": {
                 "type": "BlockStatement",
                 "start": 42,
                 "end": 44,
                 "body": []
-              }
+              },
+              "arrow": false
             }
           }
         ]

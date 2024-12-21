@@ -33,7 +33,7 @@
           {
             "type": "MemberExpression",
             "start": 3,
-            "end": 19,
+            "end": 20,
             "object": {
               "type": "CallExpression",
               "start": 3,
@@ -46,7 +46,8 @@
                   "type": "Literal",
                   "start": 3,
                   "end": 7,
-                  "raw": "/\\d/"
+                  "raw": "/\\d/",
+                  "value": {}
                 },
                 "computed": false,
                 "property": {
@@ -75,7 +76,8 @@
               "value": 0,
               "raw": "0"
             },
-            "computed": true
+            "computed": true,
+            "optional": false
           }
         ]
       }

@@ -31,10 +31,8 @@
               "type": "FunctionExpression",
               "start": 4,
               "end": 19,
-              "id": null,
               "generator": false,
               "async": false,
-              "expression": false,
               "params": [
                 {
                   "type": "RestElement",
@@ -66,7 +64,8 @@
                 "start": 17,
                 "end": 19,
                 "body": []
-              }
+              },
+              "arrow": false
             },
             "shorthand": false
           }

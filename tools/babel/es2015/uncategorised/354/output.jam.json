@@ -6,14 +6,15 @@
   "interpreter": null,
   "body": [
     {
-      "type": "ExportNamedDeclaration",
+      "type": "ExportDefaultDeclaration",
       "start": 0,
       "end": 20,
       "declaration": {
         "type": "Literal",
         "start": 15,
         "end": 20,
-        "raw": "/foo/"
+        "raw": "/foo/",
+        "value": {}
       }
     }
   ]

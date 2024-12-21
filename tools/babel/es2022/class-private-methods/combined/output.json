@@ -62,10 +62,8 @@
               "type": "FunctionExpression",
               "start": 27,
               "end": 52,
-              "id": null,
               "generator": true,
               "async": false,
-              "expression": false,
               "params": [],
               "body": {
                 "type": "BlockStatement",
@@ -97,7 +95,8 @@
                     }
                   }
                 ]
-              }
+              },
+              "arrow": false
             },
             "computed": false
           },
@@ -142,10 +141,8 @@
               "type": "FunctionExpression",
               "start": 72,
               "end": 91,
-              "id": null,
               "generator": false,
               "async": false,
-              "expression": false,
               "params": [],
               "body": {
                 "type": "BlockStatement",
@@ -165,7 +162,8 @@
                     }
                   }
                 ]
-              }
+              },
+              "arrow": false
             }
           },
           {
@@ -190,10 +188,8 @@
               "type": "FunctionExpression",
               "start": 100,
               "end": 117,
-              "id": null,
               "generator": false,
               "async": false,
-              "expression": false,
               "params": [
                 {
                   "type": "Identifier",
@@ -219,7 +215,8 @@
                     }
                   }
                 ]
-              }
+              },
+              "arrow": false
             }
           },
           {
@@ -243,10 +240,8 @@
               "type": "FunctionExpression",
               "start": 123,
               "end": 157,
-              "id": null,
               "generator": false,
               "async": false,
-              "expression": false,
               "params": [],
               "body": {
                 "type": "BlockStatement",
@@ -285,7 +280,8 @@
                     }
                   }
                 ]
-              }
+              },
+              "arrow": false
             },
             "computed": false
           }

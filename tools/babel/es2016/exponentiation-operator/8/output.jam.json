@@ -17,7 +17,7 @@
         "left": {
           "type": "BinaryExpression",
           "start": 0,
-          "end": 6,
+          "end": 7,
           "operator": "**",
           "left": {
             "type": "Literal",
@@ -28,8 +28,8 @@
           },
           "right": {
             "type": "UnaryExpression",
-            "start": 6,
-            "end": 6,
+            "start": 5,
+            "end": 7,
             "operator": "-",
             "prefix": true,
             "argument": {

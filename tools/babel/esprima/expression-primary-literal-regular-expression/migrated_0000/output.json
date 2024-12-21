@@ -14,11 +14,7 @@
         "start": 0,
         "end": 3,
         "value": {},
-        "raw": "/p/",
-        "regex": {
-          "pattern": "p",
-          "flags": ""
-        }
+        "raw": "/p/"
       }
     }
   ]

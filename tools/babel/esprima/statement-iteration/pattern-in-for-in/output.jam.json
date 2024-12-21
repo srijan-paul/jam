@@ -23,7 +23,7 @@
           {
             "type": "MemberExpression",
             "start": 7,
-            "end": 10,
+            "end": 11,
             "object": {
               "type": "Identifier",
               "start": 7,
@@ -36,7 +36,8 @@
               "end": 10,
               "name": "a"
             },
-            "computed": true
+            "computed": true,
+            "optional": false
           },
           {
             "type": "ObjectPattern",
@@ -169,11 +170,11 @@
                     {
                       "type": "RestElement",
                       "start": 38,
-                      "end": 44,
+                      "end": 45,
                       "argument": {
                         "type": "MemberExpression",
                         "start": 41,
-                        "end": 44,
+                        "end": 45,
                         "object": {
                           "type": "Identifier",
                           "start": 41,
@@ -187,7 +188,8 @@
                           "value": 0,
                           "raw": "0"
                         },
-                        "computed": true
+                        "computed": true,
+                        "optional": false
                       }
                     }
                   ]

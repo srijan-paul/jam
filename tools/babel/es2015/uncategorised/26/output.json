@@ -74,10 +74,8 @@
                 "type": "FunctionExpression",
                 "start": 35,
                 "end": 56,
-                "id": null,
                 "generator": false,
                 "async": false,
-                "expression": false,
                 "params": [],
                 "body": {
                   "type": "BlockStatement",
@@ -97,7 +95,8 @@
                       }
                     }
                   ]
-                }
+                },
+                "arrow": false
               }
             ],
             "quasis": [

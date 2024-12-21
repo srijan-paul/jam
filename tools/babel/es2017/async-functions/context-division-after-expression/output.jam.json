@@ -7,22 +7,22 @@
   "body": [
     {
       "type": "ExpressionStatement",
-      "start": 5,
+      "start": 0,
       "end": 34,
       "expression": {
         "type": "BinaryExpression",
-        "start": 5,
+        "start": 0,
         "end": 34,
         "operator": "/",
         "left": {
           "type": "BinaryExpression",
-          "start": 5,
+          "start": 0,
           "end": 32,
           "operator": "/",
           "left": {
             "type": "UnaryExpression",
-            "start": 5,
-            "end": 4,
+            "start": 0,
+            "end": 27,
             "operator": "void",
             "prefix": true,
             "argument": {

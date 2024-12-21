@@ -24,10 +24,8 @@
             "type": "FunctionExpression",
             "start": 12,
             "end": 39,
-            "id": null,
             "generator": false,
             "async": false,
-            "expression": false,
             "params": [
               {
                 "type": "ObjectPattern",
@@ -63,7 +61,8 @@
               "start": 37,
               "end": 39,
               "body": []
-            }
+            },
+            "arrow": false
           }
         }
       ],

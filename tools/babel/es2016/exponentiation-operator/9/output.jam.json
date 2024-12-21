@@ -16,8 +16,8 @@
         "operator": "**",
         "left": {
           "type": "UnaryExpression",
-          "start": 2,
-          "end": 2,
+          "start": 1,
+          "end": 3,
           "operator": "-",
           "prefix": true,
           "argument": {

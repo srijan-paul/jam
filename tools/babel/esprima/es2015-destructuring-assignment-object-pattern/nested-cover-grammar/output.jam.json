@@ -122,7 +122,7 @@
                                                                                             {
                                                                                               "type": "Property",
                                                                                               "start": 21,
-                                                                                              "end": 26,
+                                                                                              "end": 27,
                                                                                               "method": false,
                                                                                               "key": {
                                                                                                 "type": "Identifier",
@@ -135,7 +135,7 @@
                                                                                               "value": {
                                                                                                 "type": "AssignmentPattern",
                                                                                                 "start": 21,
-                                                                                                "end": 26,
+                                                                                                "end": 27,
                                                                                                 "left": {
                                                                                                   "type": "Identifier",
                                                                                                   "start": 21,
@@ -145,7 +145,7 @@
                                                                                                 "right": {
                                                                                                   "type": "MemberExpression",
                                                                                                   "start": 23,
-                                                                                                  "end": 26,
+                                                                                                  "end": 27,
                                                                                                   "object": {
                                                                                                     "type": "Identifier",
                                                                                                     "start": 23,
@@ -159,7 +159,8 @@
                                                                                                     "value": 0,
                                                                                                     "raw": "0"
                                                                                                   },
-                                                                                                  "computed": true
+                                                                                                  "computed": true,
+                                                                                                  "optional": false
                                                                                                 }
                                                                                               },
                                                                                               "kind": "init"

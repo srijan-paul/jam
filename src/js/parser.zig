@@ -2594,18 +2594,12 @@ fn isIdentifier(self: *const Self, tag: Token.Tag) bool {
 
 /// Check if `expr` is an invalid assignment target when wrapped in parentheses.
 /// Assumes that `expr` on its own is a valid assignment target *without* '()'.
-fn isBadParenthesizedPattern(self: *const Self, expr: Node.Index) bool {
+fn isValidAssignTargetInParens(self: *const Self, expr: Node.Index) bool {
     const node = self.nodeTag(expr);
     return switch (node) {
         .assignment_expr, .object_literal, .array_literal => true,
         else => false,
     };
-}
-
-/// Reserve a slot for node, then return the index of the reserved slot.
-fn reserveSlot(self: *Self) Node.Index {
-    try self.nodes.append(self.allocator, undefined);
-    return @enumFromInt(self.nodes.len - 1);
 }
 
 fn addSubRange(self: *Self, nodes: []const Node.Index) error{OutOfMemory}!ast.SubRange {
@@ -3329,12 +3323,28 @@ fn destructuredPropertyDefinition(self: *Self) Error!Node.Index {
         .legacy_octal_literal,
         => {
             const key_token = try self.next();
+
+            const prev_destructure_kind = self.current_destructure_kind;
             const key = try self.parseLiteral(key_token);
+            self.current_destructure_kind = prev_destructure_kind;
+
             return self.completePropertyPatternDef(key);
         },
         .@"[" => {
             _ = try self.nextToken(); // eat '['
-            const key = try self.assignmentExpression();
+
+            // The destructuring kind of the expression inside "[]" doesn't
+            // matter. Only "value" (after ':') determines whether
+            // this pattern is a valid object pattern for destructuring/assignment.
+            // For example:
+            // `{ [x]: null }` is an invalid LHS to '=', but
+            // `{ [null]: x }` is valid.
+            // But since calling `assignExpressionNoPattern` will update the
+            // parser's 'current_destructure_kind', we need to save it and restore it later.
+            const prev_destruct_kind = self.current_destructure_kind;
+            const key = try self.assignExpressionNoPattern();
+            self.current_destructure_kind = prev_destruct_kind;
+
             _ = try self.expectToken(.@"]");
             return self.completePropertyPatternDef(key);
         },
@@ -3520,14 +3530,14 @@ fn unaryExpression(self: *Self) Error!Node.Index {
                 return Error.IllegalDeleteInStrictMode;
             }
 
-            const expr_start = slice.items(.start)[@intFromEnum(expr)];
+            const expr_end = slice.items(.end)[@intFromEnum(expr)];
             self.current_destructure_kind.setNoAssignOrDestruct();
             return try self.addNode(.{
                 .unary_expr = ast.UnaryPayload{
                     .operand = expr,
                     .operator = op.id,
                 },
-            }, expr_start, op.id);
+            }, op.id, expr_end);
         },
         else => {
             if (self.isAtToken(.kw_await) and self.context.is_await_reserved) {
@@ -4049,11 +4059,11 @@ fn completeComputedMemberExpression(self: *Self, object: Node.Index) Error!Node.
     self.context.in = true;
     defer self.context = old_ctx;
 
-    const tok = try self.nextToken(); // eat "["
-    std.debug.assert(tok.tag == .@"[");
+    const lbrace = try self.nextToken(); // eat "["
+    std.debug.assert(lbrace.tag == .@"[");
 
     const property = try self.expression();
-    _ = try self.expectToken(.@"]");
+    const rbrace = try self.expect(.@"]");
 
     const property_access = ast.ComputedPropertyAccess{
         .object = object,
@@ -4065,8 +4075,7 @@ fn completeComputedMemberExpression(self: *Self, object: Node.Index) Error!Node.
     self.current_destructure_kind.is_simple_expression = true;
 
     const start_pos = self.nodes.items(.start)[@intFromEnum(object)];
-    const end_pos = self.nodes.items(.end)[@intFromEnum(property)];
-    return self.addNode(.{ .computed_member_expr = property_access }, start_pos, end_pos);
+    return self.addNode(.{ .computed_member_expr = property_access }, start_pos, rbrace.id);
 }
 
 fn primaryExpression(self: *Self) Error!Node.Index {
@@ -4075,6 +4084,7 @@ fn primaryExpression(self: *Self) Error!Node.Index {
     // We'll rewind the tokenizer and try to parse a regex literal instead.
     const cur = &self.current.token;
     if (cur.tag == .@"/" or cur.tag == .@"/=") {
+        // TODO: separate this re-lexing out into a separate function.
         // Go back to the beginning of '/'
         self.tokenizer.rewind(cur.start, cur.line);
         self.tokenizer.assume_bslash_starts_regex = true;
@@ -4337,6 +4347,7 @@ fn templateLiteral(self: *Self) Error!Node.Index {
         self.tokenizer.rewind(self.current.token.start, self.current.token.line);
         self.tokenizer.assume_rbrace_is_template_part = true;
 
+        // TODO: separate this re-lexing out into its own function.
         self.current.token = try self.tokenizer.next();
         try self.saveToken(self.current.token);
         self.current.id = @enumFromInt(self.tokens.items.len - 1);
@@ -4756,7 +4767,7 @@ fn completeArrowFunction(self: *Self, params: Node.Index) Error!Node.Index {
 
     const nodes = self.nodes.slice();
     const start = nodes.items(.start)[@intFromEnum(params)];
-    const end = self.nodes.items(.end)[@intFromEnum(body)];
+    const end = nodes.items(.end)[@intFromEnum(body)];
 
     // cannot be destructured or assigned to.
     self.current_destructure_kind.reset();
@@ -4910,7 +4921,7 @@ fn completeArrowParamsOrGroupingExpr(
     // (Pattern, Pattern) cannot be assigned to or destructured,
     // However, (Identifier) can be assigned to (but not destructured)
     // So, `(a) = 1` is valid, `(a = 1) = 2` is not and neither are `((a)) => 1` and `var (a) = 1`
-    if (nodes.items.len > 1 or self.isBadParenthesizedPattern(nodes.items[0])) {
+    if (nodes.items.len > 1 or self.isValidAssignTargetInParens(nodes.items[0])) {
         self.current_destructure_kind.setNoAssignOrDestruct();
     } else {
         self.current_destructure_kind.can_destruct = false;
@@ -4925,14 +4936,26 @@ fn completeArrowParamsOrGroupingExpr(
         return Error.UnexpectedToken;
     }
 
+    // A single expression inside parentheses.
+    // E.g: (5 * a)
     if (nodes.items.len == 1) {
         const expr = nodes.items[0];
         if (!self.config.preserve_parens) return expr;
         return self.addNode(.{ .parenthesized_expr = expr }, lparen_id, rparen.id);
     }
 
-    const sequence_expr = try self.addSubRange(nodes.items);
-    return self.addNode(.{ .sequence_expr = sequence_expr }, lparen_id, rparen.id);
+    // We are parsing a list of comma separated items inside parenthese.
+    // E.g: (a, b, c + 1)
+    // range of a sequence_expr = [start_pos(first_expr), end_pos(last_expr)]
+    const slice = self.nodes.slice();
+    const last_expr = nodes.items[nodes.items.len - 1];
+    const start_pos = slice.items(.start)[@intFromEnum(first_expr)];
+    const end_pos = slice.items(.end)[@intFromEnum(last_expr)];
+
+    const sub_exprs = try self.addSubRange(nodes.items);
+    const sequence_expr = try self.addNode(.{ .sequence_expr = sub_exprs }, start_pos, end_pos);
+    if (!self.config.preserve_parens) return sequence_expr;
+    return self.addNode(.{ .parenthesized_expr = sequence_expr }, lparen_id, rparen.id);
 }
 
 /// Parses either an arrow function or a parenthesized expression.
@@ -4995,7 +5018,13 @@ fn propertyDefinitionList(self: *Self) Error!?ast.SubRange {
 
             .@"[" => {
                 _ = try self.nextToken();
+                // The destructuring kind of the expression inside "[]" doesn't
+                // matter. Only "value" (after ':') determines whether
+                // this pattern is a valid object pattern for destructuring/assignment.
+                const prev_destruct_kind = self.current_destructure_kind;
                 const key = try self.assignExpressionNoPattern();
+                self.current_destructure_kind = prev_destruct_kind;
+
                 _ = try self.expectToken(.@"]");
 
                 const property = try self.completePropertyDef(
@@ -5014,6 +5043,15 @@ fn propertyDefinitionList(self: *Self) Error!?ast.SubRange {
             .string_literal,
             => {
                 const key_token = try self.next();
+
+                // Even though a literal like 5 or "foo" is not a valid destructuring
+                // target (e.g: 5=1 is invalid), they can still be used as keys in
+                // object patterns (e.g: `({5: x} = 1)` is valid).
+                // The call to `parseLiteral()` for parsing the key will update
+                // the parser's "current destructure kind" to `.assign = false`
+                // and `can_destruct = false`.
+                // But we undo that effect by restoring the previous destructure kind
+                // after parsing the key.
                 const key = try self.parseLiteral(key_token);
 
                 const property_expr = try self.completePropertyDef(key, .{});

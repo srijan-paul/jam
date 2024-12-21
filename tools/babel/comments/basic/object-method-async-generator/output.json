@@ -35,10 +35,8 @@
                 "type": "FunctionExpression",
                 "start": 45,
                 "end": 84,
-                "id": null,
                 "generator": true,
                 "async": true,
-                "expression": false,
                 "params": [
                   {
                     "type": "Identifier",
@@ -52,7 +50,8 @@
                   "start": 82,
                   "end": 84,
                   "body": []
-                }
+                },
+                "arrow": false
               },
               "innerComments": [
                 {
@@ -89,17 +88,16 @@
                   "type": "FunctionExpression",
                   "start": 108,
                   "end": 113,
-                  "id": null,
                   "generator": true,
                   "async": true,
-                  "expression": false,
                   "params": [],
                   "body": {
                     "type": "BlockStatement",
                     "start": 111,
                     "end": 113,
                     "body": []
-                  }
+                  },
+                  "arrow": false
                 },
                 "innerComments": [
                   {

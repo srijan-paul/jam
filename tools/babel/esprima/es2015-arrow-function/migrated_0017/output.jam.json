@@ -47,8 +47,8 @@
           ],
           "body": {
             "type": "SequenceExpression",
-            "start": 18,
-            "end": 27,
+            "start": 19,
+            "end": 26,
             "expressions": [
               {
                 "type": "Identifier",

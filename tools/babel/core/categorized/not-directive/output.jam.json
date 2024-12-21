@@ -49,7 +49,7 @@
       "expression": {
         "type": "MemberExpression",
         "start": 35,
-        "end": 51,
+        "end": 52,
         "object": {
           "type": "Literal",
           "start": 35,
@@ -63,7 +63,8 @@
           "end": 51,
           "name": "foo"
         },
-        "computed": true
+        "computed": true,
+        "optional": false
       }
     },
     {
@@ -156,7 +157,7 @@
       "expression": {
         "type": "MemberExpression",
         "start": 113,
-        "end": 132,
+        "end": 133,
         "object": {
           "type": "Literal",
           "start": 113,
@@ -170,7 +171,8 @@
           "end": 132,
           "name": "foo"
         },
-        "computed": true
+        "computed": true,
+        "optional": false
       }
     },
     {
@@ -326,7 +328,7 @@
             "expression": {
               "type": "MemberExpression",
               "start": 325,
-              "end": 341,
+              "end": 342,
               "object": {
                 "type": "Literal",
                 "start": 325,
@@ -340,7 +342,8 @@
                 "end": 341,
                 "name": "foo"
               },
-              "computed": true
+              "computed": true,
+              "optional": false
             }
           },
           {
@@ -565,7 +568,7 @@
             "expression": {
               "type": "MemberExpression",
               "start": 511,
-              "end": 530,
+              "end": 531,
               "object": {
                 "type": "Literal",
                 "start": 511,
@@ -579,7 +582,8 @@
                 "end": 530,
                 "name": "foo"
               },
-              "computed": true
+              "computed": true,
+              "optional": false
             }
           },
           {
@@ -840,7 +844,7 @@
             "expression": {
               "type": "MemberExpression",
               "start": 721,
-              "end": 737,
+              "end": 738,
               "object": {
                 "type": "Literal",
                 "start": 721,
@@ -854,7 +858,8 @@
                 "end": 737,
                 "name": "bar"
               },
-              "computed": true
+              "computed": true,
+              "optional": false
             }
           },
           {
@@ -1151,7 +1156,7 @@
             "expression": {
               "type": "MemberExpression",
               "start": 943,
-              "end": 962,
+              "end": 963,
               "object": {
                 "type": "Literal",
                 "start": 943,
@@ -1165,7 +1170,8 @@
                 "end": 962,
                 "name": "bar"
               },
-              "computed": true
+              "computed": true,
+              "optional": false
             }
           },
           {

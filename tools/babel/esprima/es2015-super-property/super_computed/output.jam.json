@@ -50,11 +50,11 @@
                   {
                     "type": "ReturnStatement",
                     "start": 38,
-                    "end": 52,
+                    "end": 53,
                     "argument": {
                       "type": "MemberExpression",
                       "start": 45,
-                      "end": 52,
+                      "end": 53,
                       "object": {
                         "type": "Super",
                         "start": 45,
@@ -67,7 +67,8 @@
                         "value": 1,
                         "raw": "1"
                       },
-                      "computed": true
+                      "computed": true,
+                      "optional": false
                     }
                   }
                 ]

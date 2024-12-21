@@ -34,11 +34,7 @@
         "start": 23,
         "end": 29,
         "value": {},
-        "raw": "/foo/g",
-        "regex": {
-          "pattern": "foo",
-          "flags": "g"
-        }
+        "raw": "/foo/g"
       }
     }
   ]

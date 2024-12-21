@@ -6,7 +6,7 @@
   "interpreter": null,
   "body": [
     {
-      "type": "ExportNamedDeclaration",
+      "type": "ExportDefaultDeclaration",
       "start": 0,
       "end": 32,
       "declaration": {

@@ -52,11 +52,7 @@
         "start": 26,
         "end": 31,
         "value": {},
-        "raw": "/42/i",
-        "regex": {
-          "pattern": "42",
-          "flags": "i"
-        }
+        "raw": "/42/i"
       }
     }
   ]

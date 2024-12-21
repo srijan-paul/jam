@@ -284,13 +284,20 @@ fn nodeToEsTree(
             const token = t.getToken(token_id);
             const raw = token.toByteSlice(t.source);
             try o.put("raw", JValue{ .string = raw });
+            // In babel's ESTree output, a regex literal's value is an empty object
+            // when JSON serialized
+            try o.put("value", JValue{ .object = std.json.ObjectMap.init(al) });
         },
 
         .export_from_declaration => |payload| {
             const source = try nodeToEsTree(t, al, payload.source, opts);
+            std.debug.assert(meta.activeTag(source) == .object);
+
             try o.put("source", source);
-            const specifiers = try subRangeToJsonArray(al, t, payload.specifiers, opts);
-            try o.put("specifiers", specifiers);
+            if (payload.specifiers.asSlice(t).len > 0) {
+                const specifiers = try subRangeToJsonArray(al, t, payload.specifiers, opts);
+                try o.put("specifiers", specifiers);
+            }
         },
 
         .export_specifier => |payload| {
@@ -311,6 +318,9 @@ fn nodeToEsTree(
         },
 
         .export_declaration => |payload| {
+            if (payload.default)
+                try o.put("type", JValue{ .string = "ExportDefaultDeclaration" });
+
             const declaration = try nodeToEsTree(t, al, payload.declaration, opts);
             try o.put("declaration", declaration);
         },
@@ -542,6 +552,9 @@ fn nodeToEsTree(
             try o.put("object", object);
             try o.put("property", property);
             try o.put("computed", JValue{ .bool = true });
+
+            if (opts.optional_chain_flag)
+                try o.put("optional", JValue{ .bool = false });
         },
 
         .function_expr, .function_declaration => |payload| {

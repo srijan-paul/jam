@@ -57,11 +57,7 @@
         "start": 16,
         "end": 19,
         "value": {},
-        "raw": "/b/",
-        "regex": {
-          "pattern": "b",
-          "flags": ""
-        }
+        "raw": "/b/"
       },
       "body": {
         "type": "BlockStatement",

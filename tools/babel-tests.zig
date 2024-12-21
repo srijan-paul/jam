@@ -177,9 +177,12 @@ fn runTest(al: Allocator, d: std.fs.Dir, key: []const u8, filename: []const u8, 
 }
 
 fn runTests(al: Allocator, babel_tests_dir: []const u8) !json.ObjectMap {
-    var out = json.ObjectMap.init(al);
+    var result_map = json.ObjectMap.init(al);
     var tests_dir = try std.fs.cwd().openDir(babel_tests_dir, .{});
     defer tests_dir.close();
+
+    var num_passed: f64 = 0;
+    var num_tests: f64 = 0;
 
     for (tests_to_run) |subdir_path| {
         var d = try tests_dir.openDir(subdir_path, .{ .iterate = true });
@@ -194,10 +197,18 @@ fn runTests(al: Allocator, babel_tests_dir: []const u8) !json.ObjectMap {
             // For every .js file, parse and compare ASTs with babel
             const parent_dir_path = std.fs.path.dirname(entry.path) orelse continue;
             const key = try std.fs.path.join(al, &.{ subdir_path, parent_dir_path });
-            _ = try runTest(al, entry.dir, key, entry.basename, &out);
+            const result = try runTest(al, entry.dir, key, entry.basename, &result_map);
+            num_tests += 1.0;
+            if (result == .pass) num_passed += 1.0;
         }
     }
 
+    const coverage = (num_passed / num_tests) * 100.0;
+    const coverage_str = try std.fmt.allocPrint(al, "{d:.5}%", .{coverage});
+
+    var out = json.ObjectMap.init(al);
+    try out.put("coverage", json.Value{ .string = coverage_str });
+    try out.put("cases", json.Value{ .object = result_map });
     return out;
 }
 

@@ -7,12 +7,12 @@
   "body": [
     {
       "type": "ExpressionStatement",
-      "start": 1,
-      "end": 1,
+      "start": 0,
+      "end": 2,
       "expression": {
         "type": "UnaryExpression",
-        "start": 1,
-        "end": 1,
+        "start": 0,
+        "end": 2,
         "operator": "!",
         "prefix": true,
         "argument": {

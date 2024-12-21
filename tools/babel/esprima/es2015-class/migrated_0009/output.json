@@ -38,17 +38,16 @@
               "type": "FunctionExpression",
               "start": 15,
               "end": 19,
-              "id": null,
               "generator": false,
               "async": false,
-              "expression": false,
               "params": [],
               "body": {
                 "type": "BlockStatement",
                 "start": 17,
                 "end": 19,
                 "body": []
-              }
+              },
+              "arrow": false
             }
           }
         ]

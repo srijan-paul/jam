@@ -48,11 +48,11 @@
                     "value": {
                       "type": "AwaitExpression",
                       "start": 79,
-                      "end": 86,
+                      "end": 89,
                       "argument": {
                         "type": "UnaryExpression",
-                        "start": 87,
-                        "end": 86,
+                        "start": 85,
+                        "end": 89,
                         "operator": "+",
                         "prefix": true,
                         "argument": {

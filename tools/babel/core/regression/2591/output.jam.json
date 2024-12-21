@@ -51,7 +51,8 @@
               "type": "Literal",
               "start": 25,
               "end": 30,
-              "raw": "/wow/"
+              "raw": "/wow/",
+              "value": {}
             }
           }
         ]

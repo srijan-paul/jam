@@ -8,11 +8,11 @@
     {
       "type": "ExpressionStatement",
       "start": 0,
-      "end": 37,
+      "end": 38,
       "expression": {
         "type": "MemberExpression",
         "start": 0,
-        "end": 37,
+        "end": 38,
         "object": {
           "type": "Identifier",
           "start": 0,
@@ -38,7 +38,8 @@
             }
           ]
         },
-        "computed": true
+        "computed": true,
+        "optional": false
       }
     }
   ]

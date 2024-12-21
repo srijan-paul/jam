@@ -21,10 +21,25 @@ function removeAstTrivia(ast) {
 		delete ast['trailingComments']
 		delete ast['leadingComments']
 
-		if (ast.type === "FunctionDeclaration") {
-			// "expression": false is redundant when
-			// the type already says its a declaration.
+		// Jam does not parse regular expressions in source,
+		// and doesn't plan to. They're only validated as per the
+		// ECMAScript lexical grammar for `RegularExpression`.
+		if (ast.type === "Literal")
+			delete ast['regex']
+
+		// "expression": false is redundant when
+		// the type already says whether its a declaration or expression.
+		if (ast.type === "FunctionDeclaration")
 			delete ast['expression']
+
+		if (ast.type === "FunctionExpression") {
+			delete ast['expression']
+			if (ast.id == null)
+				delete ast['id']
+
+			if (!Object.hasOwnProperty.call(ast, 'arrow')) {
+				ast['arrow'] = false
+			}
 		}
 
 		const values = Object.values(ast).filter(v => Array.isArray(v) || typeof v === 'object');

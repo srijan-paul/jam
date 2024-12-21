@@ -96,7 +96,7 @@
         "left": {
           "type": "MemberExpression",
           "start": 30,
-          "end": 35,
+          "end": 36,
           "object": {
             "type": "Identifier",
             "start": 30,
@@ -110,7 +110,8 @@
             "value": "c",
             "raw": "'c'"
           },
-          "computed": true
+          "computed": true,
+          "optional": false
         },
         "right": {
           "type": "ObjectExpression",

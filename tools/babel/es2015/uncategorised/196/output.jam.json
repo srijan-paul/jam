@@ -13,7 +13,8 @@
         "type": "Literal",
         "start": 0,
         "end": 33,
-        "raw": "/[\\uD834\\uDF06-\\uD834\\uDF08a-z]/u"
+        "raw": "/[\\uD834\\uDF06-\\uD834\\uDF08a-z]/u",
+        "value": {}
       }
     }
   ]

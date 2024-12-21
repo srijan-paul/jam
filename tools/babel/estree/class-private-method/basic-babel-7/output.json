@@ -37,10 +37,8 @@
               "type": "FunctionExpression",
               "start": 16,
               "end": 35,
-              "id": null,
               "generator": false,
               "async": false,
-              "expression": false,
               "params": [
                 {
                   "type": "Identifier",
@@ -65,7 +63,8 @@
                 "start": 33,
                 "end": 35,
                 "body": []
-              }
+              },
+              "arrow": false
             },
             "computed": false
           },
@@ -85,10 +84,8 @@
               "type": "FunctionExpression",
               "start": 49,
               "end": 68,
-              "id": null,
               "generator": false,
               "async": false,
-              "expression": false,
               "params": [
                 {
                   "type": "Identifier",
@@ -113,7 +110,8 @@
                 "start": 66,
                 "end": 68,
                 "body": []
-              }
+              },
+              "arrow": false
             },
             "computed": false
           }

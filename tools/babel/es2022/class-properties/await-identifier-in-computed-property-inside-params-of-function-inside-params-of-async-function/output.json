@@ -40,7 +40,6 @@
               },
               "generator": false,
               "async": false,
-              "expression": false,
               "params": [
                 {
                   "type": "AssignmentPattern",
@@ -87,7 +86,8 @@
                 "start": 44,
                 "end": 46,
                 "body": []
-              }
+              },
+              "arrow": false
             }
           }
         ],

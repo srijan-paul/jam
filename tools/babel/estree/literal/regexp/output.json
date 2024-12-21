@@ -25,11 +25,7 @@
             "start": 8,
             "end": 13,
             "value": {},
-            "raw": "/.*/i",
-            "regex": {
-              "pattern": ".*",
-              "flags": "i"
-            }
+            "raw": "/.*/i"
           }
         }
       ],

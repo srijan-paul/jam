@@ -86,10 +86,8 @@
               "type": "FunctionExpression",
               "start": 48,
               "end": 104,
-              "id": null,
               "generator": false,
               "async": false,
-              "expression": false,
               "params": [
                 {
                   "type": "AssignmentPattern",
@@ -228,7 +226,8 @@
                     }
                   }
                 ]
-              }
+              },
+              "arrow": false
             }
           },
           {
@@ -248,10 +247,8 @@
               "type": "FunctionExpression",
               "start": 113,
               "end": 134,
-              "id": null,
               "generator": false,
               "async": false,
-              "expression": false,
               "params": [],
               "body": {
                 "type": "BlockStatement",
@@ -287,7 +284,8 @@
                     }
                   }
                 ]
-              }
+              },
+              "arrow": false
             }
           },
           {
@@ -307,10 +305,8 @@
               "type": "FunctionExpression",
               "start": 142,
               "end": 170,
-              "id": null,
               "generator": false,
               "async": false,
-              "expression": false,
               "params": [
                 {
                   "type": "Identifier",
@@ -372,7 +368,8 @@
                     }
                   }
                 ]
-              }
+              },
+              "arrow": false
             }
           },
           {
@@ -392,10 +389,8 @@
               "type": "FunctionExpression",
               "start": 179,
               "end": 200,
-              "id": null,
               "generator": false,
               "async": false,
-              "expression": false,
               "params": [],
               "body": {
                 "type": "BlockStatement",
@@ -431,7 +426,8 @@
                     }
                   }
                 ]
-              }
+              },
+              "arrow": false
             }
           },
           {
@@ -451,10 +447,8 @@
               "type": "FunctionExpression",
               "start": 208,
               "end": 236,
-              "id": null,
               "generator": false,
               "async": false,
-              "expression": false,
               "params": [
                 {
                   "type": "Identifier",
@@ -516,7 +510,8 @@
                     }
                   }
                 ]
-              }
+              },
+              "arrow": false
             }
           },
           {
@@ -536,10 +531,8 @@
               "type": "FunctionExpression",
               "start": 246,
               "end": 297,
-              "id": null,
               "generator": false,
               "async": false,
-              "expression": false,
               "params": [
                 {
                   "type": "Identifier",
@@ -671,7 +664,8 @@
                     }
                   }
                 ]
-              }
+              },
+              "arrow": false
             }
           },
           {
@@ -691,10 +685,8 @@
               "type": "FunctionExpression",
               "start": 309,
               "end": 357,
-              "id": null,
               "generator": false,
               "async": false,
-              "expression": false,
               "params": [],
               "body": {
                 "type": "BlockStatement",
@@ -792,7 +784,8 @@
                     }
                   }
                 ]
-              }
+              },
+              "arrow": false
             }
           }
         ]

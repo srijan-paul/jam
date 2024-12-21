@@ -35,11 +35,7 @@
         "start": 14,
         "end": 20,
         "value": {},
-        "raw": "/foo/g",
-        "regex": {
-          "pattern": "foo",
-          "flags": "g"
-        }
+        "raw": "/foo/g"
       },
       "body": {
         "type": "EmptyStatement",

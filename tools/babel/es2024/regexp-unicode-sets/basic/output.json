@@ -14,11 +14,7 @@
         "start": 0,
         "end": 4,
         "value": {},
-        "raw": "/a/v",
-        "regex": {
-          "pattern": "a",
-          "flags": "v"
-        }
+        "raw": "/a/v"
       }
     }
   ]

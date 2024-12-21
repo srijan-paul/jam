@@ -55,11 +55,7 @@
         "start": 13,
         "end": 16,
         "value": {},
-        "raw": "/2/",
-        "regex": {
-          "pattern": "2",
-          "flags": ""
-        }
+        "raw": "/2/"
       }
     }
   ]

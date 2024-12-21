@@ -129,8 +129,8 @@
       "end": 54,
       "expression": {
         "type": "SequenceExpression",
-        "start": 47,
-        "end": 53,
+        "start": 48,
+        "end": 52,
         "expressions": [
           {
             "type": "Identifier",

@@ -37,11 +37,7 @@
                 "start": 23,
                 "end": 26,
                 "value": {},
-                "raw": "/z/",
-                "regex": {
-                  "pattern": "z",
-                  "flags": ""
-                }
+                "raw": "/z/"
               }
             }
           }

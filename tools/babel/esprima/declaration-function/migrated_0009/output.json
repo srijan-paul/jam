@@ -32,14 +32,14 @@
             },
             "generator": false,
             "async": false,
-            "expression": false,
             "params": [],
             "body": {
               "type": "BlockStatement",
               "start": 25,
               "end": 28,
               "body": []
-            }
+            },
+            "arrow": false
           }
         }
       ],

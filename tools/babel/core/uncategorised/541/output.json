@@ -34,11 +34,7 @@
         "start": 16,
         "end": 21,
         "value": {},
-        "raw": "/ 1 /",
-        "regex": {
-          "pattern": " 1 ",
-          "flags": ""
-        }
+        "raw": "/ 1 /"
       }
     }
   ]

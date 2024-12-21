@@ -37,7 +37,7 @@
       ]
     },
     {
-      "type": "ExportNamedDeclaration",
+      "type": "ExportDefaultDeclaration",
       "start": 51,
       "end": 69,
       "declaration": {

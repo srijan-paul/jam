@@ -52,11 +52,7 @@
               "start": 25,
               "end": 30,
               "value": {},
-              "raw": "/wow/",
-              "regex": {
-                "pattern": "wow",
-                "flags": ""
-              }
+              "raw": "/wow/"
             }
           }
         ]

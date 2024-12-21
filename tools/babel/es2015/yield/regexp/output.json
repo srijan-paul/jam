@@ -37,11 +37,7 @@
                 "start": 25,
                 "end": 31,
                 "value": {},
-                "raw": "/ 1 /g",
-                "regex": {
-                  "pattern": " 1 ",
-                  "flags": "g"
-                }
+                "raw": "/ 1 /g"
               }
             }
           },
@@ -66,11 +62,7 @@
               "start": 42,
               "end": 48,
               "value": {},
-              "raw": "/ 1 /g",
-              "regex": {
-                "pattern": " 1 ",
-                "flags": "g"
-              }
+              "raw": "/ 1 /g"
             }
           }
         ]
@@ -108,11 +100,7 @@
                 "start": 76,
                 "end": 82,
                 "value": {},
-                "raw": "/=2 /i",
-                "regex": {
-                  "pattern": "=2 ",
-                  "flags": "i"
-                }
+                "raw": "/=2 /i"
               }
             }
           },
@@ -137,11 +125,7 @@
               "start": 93,
               "end": 99,
               "value": {},
-              "raw": "/=2 /i",
-              "regex": {
-                "pattern": "=2 ",
-                "flags": "i"
-              }
+              "raw": "/=2 /i"
             }
           }
         ]

@@ -38,17 +38,16 @@
               "type": "FunctionExpression",
               "start": 24,
               "end": 29,
-              "id": null,
               "generator": false,
               "async": false,
-              "expression": false,
               "params": [],
               "body": {
                 "type": "BlockStatement",
                 "start": 27,
                 "end": 29,
                 "body": []
-              }
+              },
+              "arrow": false
             }
           },
           {
@@ -68,10 +67,8 @@
               "type": "FunctionExpression",
               "start": 44,
               "end": 50,
-              "id": null,
               "generator": false,
               "async": false,
-              "expression": false,
               "params": [
                 {
                   "type": "Identifier",
@@ -85,7 +82,8 @@
                 "start": 48,
                 "end": 50,
                 "body": []
-              }
+              },
+              "arrow": false
             }
           },
           {
@@ -105,17 +103,16 @@
               "type": "FunctionExpression",
               "start": 58,
               "end": 63,
-              "id": null,
               "generator": false,
               "async": false,
-              "expression": false,
               "params": [],
               "body": {
                 "type": "BlockStatement",
                 "start": 61,
                 "end": 63,
                 "body": []
-              }
+              },
+              "arrow": false
             }
           },
           {
@@ -135,10 +132,8 @@
               "type": "FunctionExpression",
               "start": 71,
               "end": 77,
-              "id": null,
               "generator": false,
               "async": false,
-              "expression": false,
               "params": [
                 {
                   "type": "Identifier",
@@ -152,7 +147,8 @@
                 "start": 75,
                 "end": 77,
                 "body": []
-              }
+              },
+              "arrow": false
             }
           }
         ]

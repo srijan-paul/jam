@@ -11,8 +11,8 @@
       "end": 76,
       "expression": {
         "type": "SequenceExpression",
-        "start": 17,
-        "end": 57,
+        "start": 27,
+        "end": 47,
         "expressions": [
           {
             "type": "Identifier",

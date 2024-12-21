@@ -31,17 +31,16 @@
               "type": "FunctionExpression",
               "start": 9,
               "end": 14,
-              "id": null,
               "generator": false,
               "async": false,
-              "expression": false,
               "params": [],
               "body": {
                 "type": "BlockStatement",
                 "start": 12,
                 "end": 14,
                 "body": []
-              }
+              },
+              "arrow": false
             },
             "shorthand": false
           },
@@ -62,10 +61,8 @@
               "type": "FunctionExpression",
               "start": 23,
               "end": 29,
-              "id": null,
               "generator": false,
               "async": false,
-              "expression": false,
               "params": [
                 {
                   "type": "Identifier",
@@ -79,7 +76,8 @@
                 "start": 27,
                 "end": 29,
                 "body": []
-              }
+              },
+              "arrow": false
             },
             "shorthand": false
           }

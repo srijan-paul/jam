@@ -50,11 +50,7 @@
               "start": 24,
               "end": 28,
               "value": {},
-              "raw": "/1/g",
-              "regex": {
-                "pattern": "1",
-                "flags": "g"
-              }
+              "raw": "/1/g"
             }
           }
         ]

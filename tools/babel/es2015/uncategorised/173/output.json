@@ -31,10 +31,8 @@
               "type": "FunctionExpression",
               "start": 4,
               "end": 16,
-              "id": null,
               "generator": false,
               "async": false,
-              "expression": false,
               "params": [
                 {
                   "type": "ArrayPattern",
@@ -61,7 +59,8 @@
                 "start": 14,
                 "end": 16,
                 "body": []
-              }
+              },
+              "arrow": false
             },
             "shorthand": false
           }

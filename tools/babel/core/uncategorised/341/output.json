@@ -20,11 +20,7 @@
         "start": 2,
         "end": 5,
         "value": {},
-        "raw": "/=/",
-        "regex": {
-          "pattern": "=",
-          "flags": ""
-        }
+        "raw": "/=/"
       }
     }
   ]

@@ -24,7 +24,8 @@
             "type": "Literal",
             "start": 4,
             "end": 9,
-            "raw": "/foo/"
+            "raw": "/foo/",
+            "value": {}
           }
         }
       ]

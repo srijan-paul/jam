@@ -21,7 +21,6 @@
         },
         "generator": false,
         "async": false,
-        "expression": false,
         "params": [
           {
             "type": "RestElement",
@@ -53,7 +52,8 @@
           "start": 24,
           "end": 26,
           "body": []
-        }
+        },
+        "arrow": false
       }
     }
   ]

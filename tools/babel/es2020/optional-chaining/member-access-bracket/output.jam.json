@@ -8,15 +8,15 @@
     {
       "type": "ExpressionStatement",
       "start": 0,
-      "end": 10,
+      "end": 11,
       "expression": {
         "type": "OptionalExpression",
         "start": 0,
-        "end": 10,
+        "end": 11,
         "argument": {
           "type": "MemberExpression",
           "start": 0,
-          "end": 10,
+          "end": 11,
           "object": {
             "type": "Identifier",
             "start": 0,
@@ -29,30 +29,31 @@
             "end": 10,
             "name": "expr"
           },
-          "computed": true
+          "computed": true,
+          "optional": false
         }
       }
     },
     {
       "type": "ExpressionStatement",
       "start": 13,
-      "end": 32,
+      "end": 33,
       "expression": {
         "type": "OptionalExpression",
         "start": 13,
-        "end": 32,
+        "end": 33,
         "argument": {
           "type": "MemberExpression",
           "start": 13,
-          "end": 32,
+          "end": 33,
           "object": {
             "type": "OptionalExpression",
             "start": 13,
-            "end": 23,
+            "end": 24,
             "argument": {
               "type": "MemberExpression",
               "start": 13,
-              "end": 23,
+              "end": 24,
               "object": {
                 "type": "Identifier",
                 "start": 13,
@@ -65,7 +66,8 @@
                 "end": 23,
                 "name": "expr"
               },
-              "computed": true
+              "computed": true,
+              "optional": false
             }
           },
           "property": {
@@ -74,22 +76,23 @@
             "end": 32,
             "name": "other"
           },
-          "computed": true
+          "computed": true,
+          "optional": false
         }
       }
     },
     {
       "type": "ExpressionStatement",
       "start": 35,
-      "end": 45,
+      "end": 46,
       "expression": {
         "type": "OptionalExpression",
         "start": 35,
-        "end": 45,
+        "end": 46,
         "argument": {
           "type": "MemberExpression",
           "start": 35,
-          "end": 45,
+          "end": 46,
           "object": {
             "type": "Identifier",
             "start": 35,
@@ -103,30 +106,31 @@
             "value": true,
             "raw": "true"
           },
-          "computed": true
+          "computed": true,
+          "optional": false
         }
       }
     },
     {
       "type": "ExpressionStatement",
       "start": 48,
-      "end": 66,
+      "end": 67,
       "expression": {
         "type": "OptionalExpression",
         "start": 48,
-        "end": 66,
+        "end": 67,
         "argument": {
           "type": "MemberExpression",
           "start": 48,
-          "end": 66,
+          "end": 67,
           "object": {
             "type": "OptionalExpression",
             "start": 48,
-            "end": 58,
+            "end": 59,
             "argument": {
               "type": "MemberExpression",
               "start": 48,
-              "end": 58,
+              "end": 59,
               "object": {
                 "type": "Identifier",
                 "start": 48,
@@ -140,7 +144,8 @@
                 "value": true,
                 "raw": "true"
               },
-              "computed": true
+              "computed": true,
+              "optional": false
             }
           },
           "property": {
@@ -150,22 +155,23 @@
             "value": true,
             "raw": "true"
           },
-          "computed": true
+          "computed": true,
+          "optional": false
         }
       }
     },
     {
       "type": "ExpressionStatement",
       "start": 69,
-      "end": 81,
+      "end": 82,
       "expression": {
         "type": "OptionalExpression",
         "start": 69,
-        "end": 81,
+        "end": 82,
         "argument": {
           "type": "MemberExpression",
           "start": 69,
-          "end": 81,
+          "end": 82,
           "object": {
             "type": "MemberExpression",
             "start": 69,
@@ -191,22 +197,23 @@
             "end": 81,
             "name": "expr"
           },
-          "computed": true
+          "computed": true,
+          "optional": false
         }
       }
     },
     {
       "type": "ExpressionStatement",
       "start": 84,
-      "end": 96,
+      "end": 97,
       "expression": {
         "type": "OptionalExpression",
         "start": 84,
-        "end": 96,
+        "end": 97,
         "argument": {
           "type": "MemberExpression",
           "start": 84,
-          "end": 96,
+          "end": 97,
           "object": {
             "type": "MemberExpression",
             "start": 84,
@@ -233,7 +240,8 @@
             "value": true,
             "raw": "true"
           },
-          "computed": true
+          "computed": true,
+          "optional": false
         }
       }
     }

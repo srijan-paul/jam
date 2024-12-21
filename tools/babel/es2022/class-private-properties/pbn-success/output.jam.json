@@ -125,7 +125,7 @@
                     "expression": {
                       "type": "AssignmentExpression",
                       "start": 69,
-                      "end": 80,
+                      "end": 81,
                       "operator": "=",
                       "left": {
                         "type": "MemberExpression",
@@ -147,8 +147,8 @@
                       },
                       "right": {
                         "type": "UnaryExpression",
-                        "start": 80,
-                        "end": 80,
+                        "start": 79,
+                        "end": 81,
                         "operator": "+",
                         "prefix": true,
                         "argument": {
@@ -167,7 +167,7 @@
                     "expression": {
                       "type": "AssignmentExpression",
                       "start": 87,
-                      "end": 98,
+                      "end": 99,
                       "operator": "=",
                       "left": {
                         "type": "MemberExpression",
@@ -189,8 +189,8 @@
                       },
                       "right": {
                         "type": "UnaryExpression",
-                        "start": 98,
-                        "end": 98,
+                        "start": 97,
+                        "end": 99,
                         "operator": "+",
                         "prefix": true,
                         "argument": {
@@ -295,11 +295,11 @@
                   {
                     "type": "ExpressionStatement",
                     "start": 152,
-                    "end": 163,
+                    "end": 168,
                     "expression": {
                       "type": "AssignmentExpression",
                       "start": 152,
-                      "end": 163,
+                      "end": 168,
                       "operator": "=",
                       "left": {
                         "type": "MemberExpression",
@@ -321,8 +321,8 @@
                       },
                       "right": {
                         "type": "UnaryExpression",
-                        "start": 163,
-                        "end": 163,
+                        "start": 162,
+                        "end": 168,
                         "operator": "+",
                         "prefix": true,
                         "argument": {
@@ -427,11 +427,11 @@
                   {
                     "type": "ExpressionStatement",
                     "start": 218,
-                    "end": 229,
+                    "end": 234,
                     "expression": {
                       "type": "AssignmentExpression",
                       "start": 218,
-                      "end": 229,
+                      "end": 234,
                       "operator": "=",
                       "left": {
                         "type": "MemberExpression",
@@ -453,8 +453,8 @@
                       },
                       "right": {
                         "type": "UnaryExpression",
-                        "start": 229,
-                        "end": 229,
+                        "start": 228,
+                        "end": 234,
                         "operator": "+",
                         "prefix": true,
                         "argument": {

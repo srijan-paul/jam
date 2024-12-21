@@ -61,11 +61,11 @@
                   {
                     "type": "RestElement",
                     "start": 10,
-                    "end": 16,
+                    "end": 17,
                     "argument": {
                       "type": "MemberExpression",
                       "start": 13,
-                      "end": 16,
+                      "end": 17,
                       "object": {
                         "type": "Identifier",
                         "start": 13,
@@ -79,7 +79,8 @@
                         "value": 0,
                         "raw": "0"
                       },
-                      "computed": true
+                      "computed": true,
+                      "optional": false
                     }
                   }
                 ]

@@ -105,11 +105,11 @@
     {
       "type": "ExpressionStatement",
       "start": 41,
-      "end": 50,
+      "end": 52,
       "expression": {
         "type": "MemberExpression",
         "start": 41,
-        "end": 50,
+        "end": 52,
         "object": {
           "type": "Identifier",
           "start": 41,
@@ -123,7 +123,8 @@
           "value": 0,
           "raw": "0"
         },
-        "computed": true
+        "computed": true,
+        "optional": false
       }
     },
     {
