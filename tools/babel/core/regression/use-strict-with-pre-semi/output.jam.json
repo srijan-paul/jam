@@ -21,7 +21,7 @@
         {
           "type": "AssignmentPattern",
           "start": 12,
-          "end": 19,
+          "end": 20,
           "left": {
             "type": "ArrayPattern",
             "start": 12,

@@ -126,7 +126,7 @@
                 "computed": false,
                 "shorthand": false,
                 "value": {
-                  "type": "ArrayExpression",
+                  "type": "ArrayPattern",
                   "start": 25,
                   "end": 28,
                   "elements": [

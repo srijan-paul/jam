@@ -235,10 +235,7 @@ diagnostics: std.ArrayList(Diagnostic),
 scratch: std.ArrayList(Node.Index),
 /// The token that we're currently at.
 /// Calling `next()` or `peek()` will return this token.
-current: struct {
-    token: Token,
-    id: Token.Index,
-},
+current: TokenWithId,
 /// Line number of the token that was consumed previously.
 /// When being accessed, this property can be thought of as the starting line
 /// of the first token in the expression/statement that was last parsed.
@@ -1687,7 +1684,7 @@ fn completeVarDeclLoopIterator(
     else
         .lexical;
 
-    const lhs = try self.assignmentLhsExpr();
+    const lhs = try self.bindingIdentifierOrPattern();
     self.context = ctx;
 
     const lhs_span = self.nodeSpan(lhs);
@@ -1738,7 +1735,7 @@ fn completeVarDeclLoopIterator(
 
                 end_pos = self.nodeSpan(init_expr).end;
                 rhs = init_expr;
-            } else if (self.nodeTag(lhs) != .identifier) {
+            } else if (self.nodeTag(lhs) != .binding_identifier) {
                 try self.emitDiagnosticOnNode(lhs, "Complex binding patterns require an initializer");
                 return Error.MissingInitializer;
             } else if (decl_kw.token.tag == .kw_const) {
@@ -1994,16 +1991,7 @@ fn tryStatement(self: *Self) Error!Node.Index {
 
 fn catchClause(self: *Self) Error!Node.Index {
     const catch_kw = try self.expect(.kw_catch);
-    const param = blk: {
-        if (self.isAtToken(.@"(")) {
-            _ = try self.nextToken();
-            const binding = try self.assignmentLhsExpr();
-            _ = try self.expectToken(.@")");
-            break :blk binding;
-        }
-
-        break :blk null;
-    };
+    const param = try self.catchParameter();
 
     const body = try self.blockStatement();
     return self.addNode(.{
@@ -2012,6 +2000,15 @@ fn catchClause(self: *Self) Error!Node.Index {
             .body = body,
         },
     }, catch_kw.id, self.nodeSpan(body).end);
+}
+
+fn catchParameter(self: *Self) Error!?Node.Index {
+    if (!self.isAtToken(.@"(")) return null;
+    _ = try self.nextToken();
+
+    const param = try self.bindingIdentifierOrPattern();
+    _ = try self.expect(.@")");
+    return param;
 }
 
 fn finallyBlock(self: *Self) Error!Node.Index {
@@ -2084,7 +2081,6 @@ fn caseBlock(self: *Self) Error!ast.SubRange {
     }
 
     const cases = try self.addSubRange(self.scratch.items[scratch_prev_len..]);
-
     return cases;
 }
 
@@ -2261,16 +2257,9 @@ fn startLetBinding(self: *Self) Error!?TokenWithId {
 ///  BindingElement Initializer?
 fn variableDeclarator(self: *Self, kind: ast.VarDeclKind) Error!Node.Index {
     const ctx = self.context;
-    self.context.parsing_declarator =
-        if (kind == .@"var") .@"var" else .lexical;
-    const lhs = try self.assignmentLhsExpr();
+    self.context.parsing_declarator = if (kind == .@"var") .@"var" else .lexical;
+    const lhs = try self.bindingIdentifierOrPattern();
     self.context = ctx;
-
-    if (!self.current_destructure_kind.can_destruct) {
-        // TODO: improve error message
-        try self.emitDiagnosticOnNode(lhs, "Invalid left-hand-side for variable declaration.");
-        return Error.UnexpectedPattern;
-    }
 
     const lhs_span = self.nodeSpan(lhs);
     const start_pos = lhs_span.start;
@@ -2282,7 +2271,7 @@ fn variableDeclarator(self: *Self, kind: ast.VarDeclKind) Error!Node.Index {
             const init_expr = try self.assignExpressionNoPattern();
             end_pos = self.nodeSpan(init_expr).end;
             break :blk init_expr;
-        } else if (self.nodeTag(lhs) != .identifier) {
+        } else if (self.nodeTag(lhs) != .binding_identifier) {
             // Assignment patterns must have an initializer.
             try self.emitDiagnosticOnNode(lhs, "A destructuring declaration must have an initializer");
             return Error.MissingInitializer;
@@ -2384,7 +2373,7 @@ fn functionName(self: *Self) Error!Node.Index {
 
     const token = try self.next();
     if (self.isIdentifier(token.token.tag)) {
-        return self.variableName(token);
+        return self.bindingIdentifier(token);
     }
 
     try self.emitBadTokenDiagnostic("function name", &token.token);
@@ -2889,33 +2878,21 @@ fn completeSequenceExpr(self: *Self, first_expr: Node.Index) Error!Node.Index {
     return try self.addNode(.{ .sequence_expr = expr_list }, start_pos, end_pos);
 }
 
-fn assignmentLhsExpr(self: *Self) Error!Node.Index {
-    self.current_destructure_kind = .{
-        .can_destruct = true,
-        .can_be_assigned_to = true,
-        .must_destruct = false,
-    };
-
+/// A `BindingPattern` or `BindingIdentifier`.
+/// Used on the left-hand-side of a variable declarator.
+fn bindingIdentifierOrPattern(self: *Self) Error!Node.Index {
     const token: *const Token = &self.current.token;
     switch (token.tag) {
-        .@"{" => return self.objectAssignmentPattern(),
-        .@"[" => return self.arrayAssignmentPattern(),
+        .@"{" => return self.objectBindingPattern(),
+        .@"[" => return self.arrayBindingPattern(),
         else => {
-            if (token.tag.isIdentifier() or self.isKeywordIdentifier(token.tag)) {
-                return self.variableName(try self.next());
-            }
+            if (self.isIdentifier(token.tag))
+                return self.bindingIdentifier(try self.next());
 
-            try self.emitBadTokenDiagnostic("assignment target", token);
+            try self.emitBadTokenDiagnostic("a variable name or binding target", token);
             return Error.InvalidAssignmentTarget;
         },
     }
-}
-
-fn isSimpleAssignmentTarget(self: *const Self, node: Node.Index) bool {
-    return switch (self.getNode(node).data) {
-        .non_ascii_identifier, .identifier, .member_expr, .computed_member_expr => true,
-        else => false,
-    };
 }
 
 /// Mutate existing nodes to convert a PrimaryExpression to an
@@ -3206,40 +3183,22 @@ fn conditionalExpression(self: *Self) Error!Node.Index {
     );
 }
 
-// TODO: check static semantics according to the spec.
-fn assignmentPattern(self: *Self) Error!Node.Index {
-    const lhs = try self.lhsExpression();
-    if (!self.isAtToken(.@"=")) return lhs;
-
-    const op_token = try self.next(); // eat '='
-
-    const context = self.context;
-    self.context.in = true;
-    const rhs = try self.assignmentExpression();
-    self.context = context;
-
-    const nodes = self.nodes.slice();
-    const lhs_start = nodes.items(.start)[@intFromEnum(lhs)];
-    const rhs_end = nodes.items(.end)[@intFromEnum(rhs)];
-
-    self.current_destructure_kind.must_destruct = true;
-    self.current_destructure_kind.can_destruct = true;
-    self.current_destructure_kind.can_be_assigned_to = true;
-    return self.addNode(
-        .{
-            .assignment_pattern = .{
-                .lhs = lhs,
-                .rhs = rhs,
-                .operator = op_token.id,
-            },
+/// BindingPattern:
+///     ArrayBindingPattern
+///     ObjectBindingPattern
+fn bindingPattern(self: *Self) Error!Node.Index {
+    return switch (self.current.token.tag) {
+        .@"{" => self.objectBindingPattern(),
+        .@"[" => self.arrayBindingPattern(),
+        else => {
+            try self.emitBadTokenDiagnostic("binding pattern", &self.current.token);
+            return Error.InvalidAssignmentTarget;
         },
-        lhs_start,
-        rhs_end,
-    );
+    };
 }
 
-/// https://tc39.es/ecma262/#prod-ArrayAssignmentPattern
-fn arrayAssignmentPattern(self: *Self) Error!Node.Index {
+/// https://tc39.es/ecma262/#prod-ArrayBindingPattern
+fn arrayBindingPattern(self: *Self) Error!Node.Index {
     const lbrac = try self.next(); // eat '['
     std.debug.assert(lbrac.token.tag == .@"[");
 
@@ -3260,12 +3219,12 @@ fn arrayAssignmentPattern(self: *Self) Error!Node.Index {
             },
 
             .@"..." => {
-                try self.scratch.append(try self.restElement());
+                try self.scratch.append(try self.bindingRestElement());
                 if (self.isAtToken(.@",")) {
                     const comma_tok = try self.nextToken();
                     try self.emitDiagnostic(
                         comma_tok.startCoord(self.source),
-                        "Comma not permitted after spread element in array pattern",
+                        "a ',' is not allowed after a rest element",
                         .{},
                     );
                     return Error.InvalidAssignmentTarget;
@@ -3277,7 +3236,7 @@ fn arrayAssignmentPattern(self: *Self) Error!Node.Index {
             .@"]" => break,
 
             else => {
-                try self.scratch.append(try self.assignmentPattern());
+                try self.scratch.append(try self.bindingElement());
             },
         }
 
@@ -3291,7 +3250,7 @@ fn arrayAssignmentPattern(self: *Self) Error!Node.Index {
     const rbrac = try self.expect(.@"]"); // eat ']'
     const items = self.scratch.items[prev_scratch_len..];
     const array_items = try self.addSubRange(items);
-    return try self.addNode(
+    return self.addNode(
         .{ .array_pattern = array_items },
         lbrac.id,
         rbrac.id,
@@ -3301,7 +3260,7 @@ fn arrayAssignmentPattern(self: *Self) Error!Node.Index {
 fn completePropertyPatternDef(self: *Self, key: Node.Index) Error!Node.Index {
     _ = try self.expectToken(.@":");
 
-    const value = try self.assignmentPattern();
+    const value = try self.bindingElement();
     const nodes = self.nodes.slice();
     const start_pos = nodes.items(.start)[@intFromEnum(key)];
     const end_pos = nodes.items(.end)[@intFromEnum(value)];
@@ -3355,7 +3314,7 @@ fn destructuredPropertyDefinition(self: *Self) Error!Node.Index {
                 return self.destructuredIdentifierProperty();
             }
 
-            return try self.assignmentPattern();
+            return try self.bindingElement();
         },
     }
 }
@@ -3364,9 +3323,14 @@ fn destructuredPropertyDefinition(self: *Self) Error!Node.Index {
 /// Assumes that self.current.token is the .identifier.
 fn destructuredIdentifierProperty(self: *Self) Error!Node.Index {
     const key_token = try self.next();
-    const key = try self.identifier(key_token);
 
     const cur_token = self.peek();
+
+    const key = try if (cur_token.tag == .@"=")
+        self.bindingIdentifier(key_token)
+    else
+        self.identifier(key_token);
+
     if (cur_token.tag == .@"=") {
         const eq_token = try self.next(); // eat '='
         const rhs = try self.assignmentExpression();
@@ -3393,7 +3357,7 @@ fn destructuredIdentifierProperty(self: *Self) Error!Node.Index {
         return self.completePropertyPatternDef(key);
     }
 
-    // Disallow stuff like "`{ if }`" (`{ if: x }` is valid)
+    // Disallow stuff like "`{ if }`" (but `{ if: x }` is valid, handled above)
     if (!(key_token.token.tag.isIdentifier() or
         self.isKeywordIdentifier(key_token.token.tag)))
     {
@@ -3420,7 +3384,7 @@ fn destructuredIdentifierProperty(self: *Self) Error!Node.Index {
 }
 
 /// https://tc39.es/ecma262/#prod-ObjectAssignmentPattern
-fn objectAssignmentPattern(self: *Self) Error!Node.Index {
+fn objectBindingPattern(self: *Self) Error!Node.Index {
     const lbrace = try self.next(); // eat '{'
     std.debug.assert(lbrace.token.tag == .@"{");
 
@@ -3438,7 +3402,7 @@ fn objectAssignmentPattern(self: *Self) Error!Node.Index {
                 try self.scratch.append(try self.restElement());
                 destruct_kind.update(self.current_destructure_kind);
 
-                // TODO: we should continue parsing after the rest element,
+                // TODO: we can continue parsing after the rest element,
                 // and report this error later.
                 const rb = try self.expect(.@"}");
                 end_pos = rb.id;
@@ -3494,6 +3458,65 @@ fn objectAssignmentPattern(self: *Self) Error!Node.Index {
     return self.addNode(
         .{ .object_pattern = destructured_props },
         lbrace.id,
+        end_pos,
+    );
+}
+
+/// BindingElement:
+///     SingleNameBinding
+///     BindingPattern (= AssignmentExpression)?
+/// https://tc39.es/ecma262/#prod-BindingElement
+fn bindingElement(self: *Self) Error!Node.Index {
+    if (self.isIdentifier(self.current.token.tag)) {
+        return self.singleNameBinding();
+    }
+
+    const pattern = try self.bindingPattern();
+    if (!self.isAtToken(.@"=")) return pattern;
+
+    const operator = try self.next(); // eat '='
+    const rhs = try self.assignExpressionNoPattern();
+
+    const nodes = self.nodes.slice();
+
+    return self.addNode(
+        .{
+            .assignment_pattern = .{
+                .lhs = pattern,
+                .rhs = rhs,
+                .operator = operator.id,
+            },
+        },
+        nodes.items(.start)[@intFromEnum(pattern)],
+        nodes.items(.end)[@intFromEnum(rhs)],
+    );
+}
+
+/// SingleNameBinding:
+///     BindingIdentifier ('=' AssignmentExpression)?
+/// Ref: https://tc39.es/ecma262/#prod-SingleNameBinding
+fn singleNameBinding(self: *Self) Error!Node.Index {
+    const id_token = try self.next();
+    std.debug.assert(self.isIdentifier(id_token.token.tag));
+
+    const id = try self.bindingIdentifier(id_token);
+    if (!self.isAtToken(.@"=")) return id;
+
+    const op_token = try self.next(); // eat '='
+    const rhs = try self.assignExpressionNoPattern();
+
+    const start_pos = id_token.id;
+    const end_pos = self.nodes.items(.end)[@intFromEnum(rhs)];
+
+    return self.addNode(
+        .{
+            .assignment_pattern = .{
+                .lhs = id,
+                .rhs = rhs,
+                .operator = op_token.id,
+            },
+        },
+        start_pos,
         end_pos,
     );
 }
@@ -4564,31 +4587,14 @@ fn callArgsOrAsyncArrowParams(self: *Self, _: ast.FunctionFlags) Error!Node.Inde
     return self.addNode(.{ .arguments = call_args }, lparen.id, rparen.id);
 }
 
-fn bindingIdentifier(self: *Self) Error!Node.Index {
-    const token = try self.next();
-    if (!token.tag.isIdentifier() and !self.isKeywordIdentifier(token.tag)) {
-        try self.emitDiagnostic(
-            token.startCoord(self.source),
-            "Expected an identifier, got '{s}'",
-            .{token.toByteSlice(self.source)},
-        );
-        return Error.InvalidBindingIdentifier;
-    }
-
-    return self.identifier(token);
-}
-
 /// Save `token` as an identifier node.
 fn identifier(self: *Self, token: TokenWithId) Error!Node.Index {
-    if (self.context.parsing_declarator != .none) {
-        return self.variableName(token);
-    }
-
     const token_string = try self.strings.stringValue(&token.token);
     return self.addNode(.{ .identifier = token_string }, token.id, token.id);
 }
 
-fn variableName(self: *Self, token_with_id: TokenWithId) Error!Node.Index {
+/// Save `token` as an binding identifier on the LHS of a variable declaration
+fn bindingIdentifier(self: *Self, token_with_id: TokenWithId) Error!Node.Index {
     const name_string = try self.strings.stringValue(&token_with_id.token);
 
     switch (self.context.parsing_declarator) {
@@ -4655,7 +4661,7 @@ fn variableName(self: *Self, token_with_id: TokenWithId) Error!Node.Index {
     }
 
     const id = try self.addNode(
-        .{ .identifier = name_string },
+        .{ .binding_identifier = name_string },
         token_with_id.id,
         token_with_id.id,
     );
@@ -4807,7 +4813,37 @@ fn spreadElement(self: *Self) Error!Node.Index {
 fn restElement(self: *Self) Error!Node.Index {
     const dotdotdot = try self.next();
     std.debug.assert(dotdotdot.token.tag == .@"...");
-    const rest_arg = try self.assignmentLhsExpr();
+    const rest_arg = try self.lhsExpression();
+
+    if (!self.current_destructure_kind.can_be_assigned_to) {
+        try self.emitDiagnosticOnNode(
+            rest_arg,
+            "A '...' here must be followed by an expression that is a valid left-hand-side for assignments",
+        );
+        return Error.UnexpectedPattern;
+    }
+
+    const end_pos = self.nodes.items(.end)[@intFromEnum(rest_arg)];
+    return self.addNode(.{ .rest_element = rest_arg }, dotdotdot.id, end_pos);
+}
+
+/// Parse a 'BindingRestElement', assuming we're at "...".
+/// A "BindingRestElement" is a rest element in a destructuring pattern,
+/// like the LHS of a declaration or the parameter of a function or catch block.
+///
+/// BindingRestElement:
+///     ... BindingIdentifier
+///     ... BindingPattern
+///
+/// https://tc39.es/ecma262/#prod-BindingRestElement
+fn bindingRestElement(self: *Self) Error!Node.Index {
+    const dotdotdot = try self.next();
+    std.debug.assert(dotdotdot.token.tag == .@"...");
+    const rest_arg = blk: {
+        if (self.isIdentifier(self.current.token.tag))
+            break :blk try self.bindingIdentifier(try self.next());
+        break :blk try self.bindingPattern();
+    };
     const end_pos = self.nodes.items(.end)[@intFromEnum(rest_arg)];
     return self.addNode(.{ .rest_element = rest_arg }, dotdotdot.id, end_pos);
 }
@@ -4847,20 +4883,18 @@ fn completeArrowParamsOrGroupingExpr(
         // A '...' at this point is either a rest parameter or a syntax error.
         if (self.isAtToken(.@"...")) {
             if (destructure_kind.can_destruct) {
-                const rest_elem = try self.restElement();
+                const rest_elem = try self.bindingRestElement();
                 try nodes.append(rest_elem);
 
-                if (!self.isAtToken(.@")")) {
+                if (!self.isAtToken(.@")"))
                     try self.restParamNotLastError(&self.current.token);
-                }
 
                 destructure_kind.must_destruct = true;
                 break;
             }
 
-            // A "..." inside a grouping expression is a syntax error.
-            // The call to `assignmentExpression()` below will error out.
-            // TODO: should I emit a better error message here anyway?
+            try self.emitBadTokenDiagnostic("expression", &self.current.token);
+            return Error.UnexpectedToken;
         }
 
         const rhs = try self.assignmentExpression();
@@ -4975,7 +5009,7 @@ fn groupingExprOrArrowParameters(
     }
 
     if (self.isAtToken(.@"...")) {
-        const rest_elem = try self.restElement();
+        const rest_elem = try self.bindingRestElement();
         const rparen = try self.expect(.@")");
         const params = try self.addSubRange(&[_]Node.Index{rest_elem});
         try self.ensureFatArrow(&lparen.token, &rparen.token);
@@ -5664,30 +5698,12 @@ fn checkDirective(self: *const Self, stmt: Node.Index) DirectiveKind {
 }
 
 fn parseParameter(self: *Self) Error!Node.Index {
-    const param = try self.assignmentLhsExpr();
-    if (!self.current_destructure_kind.can_destruct) {
-        try self.emitDiagnosticOnNode(
-            param,
-            "function parameter must be name, assignment pattern, or rest element",
-        );
-
-        return Error.InvalidFunctionParameter;
-    }
-
+    const param = try self.bindingElement();
     if (!self.isAtToken(.@"=")) return param;
 
     const eq_token = try self.next(); // eat '='
 
-    const defaultValue = try self.assignmentExpression();
-    if (self.current_destructure_kind.must_destruct) {
-        try self.emitDiagnosticOnNode(
-            defaultValue,
-            "Default parameter value cannot be a destructuring pattern",
-        );
-
-        return Error.InvalidFunctionParameter;
-    }
-
+    const defaultValue = try self.assignExpressionNoPattern();
     const node_starts: []Token.Index = self.nodes.items(.start);
 
     const assignment_pattern: ast.BinaryPayload = .{
@@ -5720,12 +5736,11 @@ fn parseFormalParameters(self: *Self) Error!Node.Index {
 
         while (true) {
             if (self.isAtToken(.@"...")) {
-                const rest_elem = try self.restElement();
+                const rest_elem = try self.bindingRestElement();
                 try self.scratch.append(rest_elem);
 
-                if (!self.isAtToken(.@")")) {
+                if (!self.isAtToken(.@")"))
                     try self.restParamNotLastError(&self.current.token);
-                }
 
                 break :blk (try self.next()).id;
             }

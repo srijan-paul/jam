@@ -114,7 +114,8 @@ pub fn jamToEstreeTag(node: ast.NodeData) []const u8 {
         .await_expr => "AwaitExpression",
         .yield_expr => "YieldExpression",
         .update_expr => "UpdateExpression",
-        .identifier => "Identifier",
+
+        .binding_identifier, .identifier => "Identifier",
 
         .string_literal,
         .number_literal,
@@ -220,7 +221,7 @@ fn nodeToEsTree(
             try o.put("right", rhs);
         },
 
-        .identifier => |s| {
+        .binding_identifier, .identifier => |s| {
             const name = t.string_pool.toByteSlice(s);
             try o.put("name", JValue{ .string = name });
         },

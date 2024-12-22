@@ -433,6 +433,7 @@ pub const NodeData = union(enum(u8)) {
     update_expr: UnaryPayload,
 
     identifier: String,
+    binding_identifier: String,
 
     string_literal: Token.Index,
     number_literal: Number,

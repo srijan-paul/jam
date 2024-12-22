@@ -21,7 +21,7 @@
         {
           "type": "AssignmentPattern",
           "start": 13,
-          "end": 25,
+          "end": 44,
           "left": {
             "type": "Identifier",
             "start": 13,

@@ -21,7 +21,7 @@
         {
           "type": "AssignmentPattern",
           "start": 11,
-          "end": 18,
+          "end": 24,
           "left": {
             "type": "ObjectPattern",
             "start": 11,

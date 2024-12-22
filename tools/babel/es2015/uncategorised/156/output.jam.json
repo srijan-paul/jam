@@ -38,7 +38,7 @@
                 {
                   "type": "AssignmentPattern",
                   "start": 4,
-                  "end": 11,
+                  "end": 17,
                   "left": {
                     "type": "ObjectPattern",
                     "start": 4,

@@ -20,7 +20,7 @@
             "end": 8,
             "elements": [
               {
-                "type": "ArrayExpression",
+                "type": "ArrayPattern",
                 "start": 5,
                 "end": 7,
                 "elements": []

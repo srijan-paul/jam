@@ -37,7 +37,7 @@
               "name": "b"
             },
             {
-              "type": "ObjectExpression",
+              "type": "ObjectPattern",
               "start": 20,
               "end": 44,
               "properties": [
@@ -76,10 +76,9 @@
                   "computed": false,
                   "shorthand": false,
                   "value": {
-                    "type": "AssignmentExpression",
+                    "type": "AssignmentPattern",
                     "start": 26,
                     "end": 29,
-                    "operator": "=",
                     "left": {
                       "type": "Identifier",
                       "start": 26,
@@ -107,13 +106,12 @@
                     "end": 33,
                     "name": "f"
                   },
-                  "computed": true,
+                  "computed": false,
                   "shorthand": false,
                   "value": {
-                    "type": "AssignmentExpression",
+                    "type": "AssignmentPattern",
                     "start": 35,
                     "end": 38,
-                    "operator": "=",
                     "left": {
                       "type": "Identifier",
                       "start": 35,
@@ -131,36 +129,21 @@
                   "kind": "init"
                 },
                 {
-                  "type": "Property",
+                  "type": "AssignmentPattern",
                   "start": 40,
                   "end": 43,
-                  "method": false,
-                  "key": {
+                  "left": {
                     "type": "Identifier",
                     "start": 40,
                     "end": 41,
                     "name": "h"
                   },
-                  "computed": false,
-                  "shorthand": true,
-                  "value": {
-                    "type": "AssignmentPattern",
-                    "start": 40,
+                  "right": {
+                    "type": "Identifier",
+                    "start": 42,
                     "end": 43,
-                    "left": {
-                      "type": "Identifier",
-                      "start": 40,
-                      "end": 41,
-                      "name": "h"
-                    },
-                    "right": {
-                      "type": "Identifier",
-                      "start": 42,
-                      "end": 43,
-                      "name": "i"
-                    }
-                  },
-                  "kind": "init"
+                    "name": "i"
+                  }
                 }
               ]
             }

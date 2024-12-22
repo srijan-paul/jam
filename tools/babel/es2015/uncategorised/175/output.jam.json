@@ -54,7 +54,7 @@
                       "computed": false,
                       "shorthand": false,
                       "value": {
-                        "type": "ObjectExpression",
+                        "type": "ObjectPattern",
                         "start": 10,
                         "end": 18,
                         "properties": [
@@ -118,7 +118,7 @@
                       "computed": false,
                       "shorthand": false,
                       "value": {
-                        "type": "ArrayExpression",
+                        "type": "ArrayPattern",
                         "start": 23,
                         "end": 29,
                         "elements": [

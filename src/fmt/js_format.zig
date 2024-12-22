@@ -149,6 +149,11 @@ pub fn updateExpr(_: *Self, _: *const ast.NodeData) Doc.Id {
 pub fn identifier(_: *Self, _: *const ast.NodeData) Doc.Id {
     unreachable;
 }
+
+pub fn bindingIdentifier(_: *Self, _: *const ast.NodeData) Doc.Id {
+    unreachable;
+}
+
 pub fn numberLiteral(_: *Self, _: *const ast.NodeData) Doc.Id {
     unreachable;
 }

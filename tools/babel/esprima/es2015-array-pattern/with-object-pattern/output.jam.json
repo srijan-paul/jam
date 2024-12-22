@@ -20,7 +20,7 @@
             "end": 9,
             "elements": [
               {
-                "type": "ObjectExpression",
+                "type": "ObjectPattern",
                 "start": 5,
                 "end": 8,
                 "properties": [

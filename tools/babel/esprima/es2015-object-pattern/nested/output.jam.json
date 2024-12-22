@@ -33,7 +33,7 @@
                 "computed": false,
                 "shorthand": false,
                 "value": {
-                  "type": "ObjectExpression",
+                  "type": "ObjectPattern",
                   "start": 7,
                   "end": 9,
                   "properties": []
