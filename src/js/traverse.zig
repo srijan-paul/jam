@@ -171,6 +171,7 @@ pub fn Traverser(TControl: type) type {
                 .null_literal,
                 .regex_literal,
                 .identifier,
+                .binding_identifier,
                 .template_element,
                 .empty_statement,
                 .debugger_statement,

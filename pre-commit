@@ -1,6 +1,11 @@
 #!/bin/sh
 
-set -euo pipefail
+# -o pipefail on bash only
+if [ -n "$BASH" ]; then
+		set -o pipefail
+fi
+
+set -eu
 
 # Run unit tests for each module
 echo "Running unit tests"

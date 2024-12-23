@@ -6,7 +6,6 @@ const Self = @This();
 const Tokenizer = @import("./tokenize.zig");
 const Token = @import("./token.zig").Token;
 const ast = @import("./ast.zig");
-const StringHelper = @import("./strings.zig");
 const ScopeManager = @import("./scope.zig");
 
 const util = @import("util");
@@ -241,8 +240,6 @@ current: TokenWithId,
 /// of the first token in the expression/statement that was last parsed.
 /// Useful for Automatic Semicolon Insertion.
 prev_token_line: u32 = 0,
-/// Helper struct to manage, escape, and compare strings in source code.
-strings: StringHelper,
 /// The current grammatical context of the parser. See struct `ParseContext`.
 context: ParseContext = .{},
 /// The kind of destructuring that is allowed for the expression
@@ -256,7 +253,6 @@ jsx: bool = false,
 typescript: bool = false,
 /// The parse result
 tree: ?*Tree,
-scope: ScopeManager,
 /// Used in `asyncExpression`.
 /// Reset to `false` after an async arrow function is parsed.
 is_current_arrow_func_async: bool = false,
@@ -401,8 +397,6 @@ pub fn init(
 
         .diagnostics = try std.ArrayList(Diagnostic).initCapacity(allocator, 2),
         .scratch = try std.ArrayList(Node.Index).initCapacity(allocator, 32),
-        .strings = try StringHelper.init(allocator, source, &parse_tree.string_pool),
-        .scope = try ScopeManager.init(allocator, if (config.source_type == .module) .module else .script),
     };
 
     errdefer self.deinit();
@@ -442,8 +436,6 @@ pub fn deinit(self: *Self) void {
         self.allocator.free(d.message);
     }
     self.diagnostics.deinit();
-    self.strings.deinit();
-    self.scope.deinit();
 }
 
 pub const Result = struct {
@@ -601,7 +593,7 @@ fn starImportSpecifier(self: *Self) Error!Node.Index {
     _ = try self.expectToken(.kw_as);
 
     const name_token = try self.expectIdentifier();
-    const name = try self.identifier(name_token);
+    const name = try self.identifier(name_token.id);
 
     const specifier = try self.addNode(
         .{
@@ -640,7 +632,7 @@ fn completeImportDeclaration(
 /// Parse the next identifier token as a default import specifier.
 fn defaultImportSpecifier(self: *Self) Error!Node.Index {
     const name_token = try self.next();
-    const name = try self.identifier(name_token);
+    const name = try self.identifier(name_token.id);
     return self.addNode(
         .{
             .import_default_specifier = .{ .name = name },
@@ -659,13 +651,13 @@ fn importSpecifier(self: *Self) Error!Node.Index {
         }
 
         name_token = try self.expectIdOrKeyword();
-        break :blk try self.identifier(name_token);
+        break :blk try self.identifier(name_token.id);
     };
 
     if (self.isAtToken(.kw_as) or !self.isIdentifier(name_token.token.tag)) {
         _ = try self.expectToken(.kw_as); // eat 'as'
         const alias_token = try self.expectIdentifier();
-        const alias = try self.identifier(alias_token);
+        const alias = try self.identifier(alias_token.id);
 
         return self.addNode(
             .{
@@ -699,7 +691,7 @@ fn moduleExportName(self: *Self) Error!Node.Index {
         return Error.UnexpectedToken;
     }
 
-    return self.identifier(name_token);
+    return self.identifier(name_token.id);
 }
 
 /// Parse an 'export' declaration:
@@ -795,7 +787,7 @@ fn starExportDeclaration(self: *Self, export_kw: TokenWithId) Error!Node.Index {
                 return Error.UnexpectedToken;
             }
 
-            break :blk try self.identifier(name_token);
+            break :blk try self.identifier(name_token.id);
         }
 
         break :blk null;
@@ -992,7 +984,7 @@ fn labeledStatement(self: *Self) Error!Node.Index {
         .{
             .labeled_statement = .{
                 .body = body,
-                .label = try self.identifier(label),
+                .label = try self.identifier(label.id),
             },
         },
         label.id,
@@ -1063,7 +1055,7 @@ fn classDeclaration(self: *Self) Error!Node.Index {
         return Error.UnexpectedToken;
     }
 
-    const name = try self.identifier(name_token);
+    const name = try self.identifier(name_token.id);
 
     const super_class = if (self.current.token.tag == .kw_extends)
         try self.classHeritage()
@@ -1097,7 +1089,7 @@ fn classExpression(self: *Self, class_kw_id: Token.Index) Error!Node.Index {
         const cur = self.current.token.tag;
         if (cur.isIdentifier() or self.isKeywordIdentifier(cur)) {
             const name_token = try self.next();
-            break :blk try self.identifier(name_token);
+            break :blk try self.identifier(name_token.id);
         }
 
         break :blk null;
@@ -1174,7 +1166,7 @@ fn classElement(self: *Self, saw_constructor_inout: *bool) Error!Node.Index {
         .kw_constructor => {
             saw_constructor_inout.* = true;
             const ctor = try self.next();
-            const ctor_key = try self.identifier(ctor);
+            const ctor_key = try self.identifier(ctor.id);
 
             if (!self.isAtToken(.@"(")) {
                 try self.emitDiagnosticOnNode(ctor_key, "Classes cannot have a field named 'constructor'");
@@ -1236,7 +1228,7 @@ fn asyncClassProperty(self: *Self, modifiers: ClassFieldModifiers) Error!Node.In
     } else {
         // A regular field named 'async', like `class A { async = 5; }`
         // or `class A { async() { return 1; } }`
-        const key = try self.identifier(async_kw);
+        const key = try self.identifier(async_kw.id);
         return self.completeClassProperty(key, modifiers);
     }
 }
@@ -1279,7 +1271,7 @@ fn staticClassProperty(self: *Self, modifiers: ClassFieldModifiers) Error!Node.I
         new_modifiers.field_flags.is_static = true;
         return self.classPropertyWithModifier(new_modifiers);
     } else {
-        const key = try self.identifier(static_kw);
+        const key = try self.identifier(static_kw.id);
         return self.completeClassProperty(key, modifiers);
     }
 }
@@ -1330,7 +1322,7 @@ fn classProperty(self: *Self, modifiers: ClassFieldModifiers) Error!Node.Index {
 
         // Probably a regular field named 'get' or 'set',
         // like `class A { get() { return 1 }; set = 2;  } `
-        const key = try self.identifier(get_or_set);
+        const key = try self.identifier(get_or_set.id);
         return self.completeClassProperty(key, modifiers);
     }
 
@@ -1504,9 +1496,6 @@ const ForLoopKind = enum {
 fn forStatement(self: *Self) Error!Node.Index {
     const for_kw = try self.next();
     std.debug.assert(for_kw.token.tag == .kw_for);
-
-    try self.scope.enterScope(.block, self.context.strict);
-    defer self.scope.exitScope();
 
     const loop_kind, const iterator = try self.forLoopIterator();
 
@@ -2327,9 +2316,6 @@ fn blockStatement(self: *Self) Error!Node.Index {
     const prev_scratch_len = self.scratch.items.len;
     defer self.scratch.items.len = prev_scratch_len;
 
-    try self.scope.enterScope(.block, self.context.strict);
-    defer self.scope.exitScope();
-
     while (self.current.token.tag != .@"}") {
         const stmt = try self.statementOrDeclaration();
         try self.scratch.append(stmt);
@@ -2372,9 +2358,8 @@ fn functionName(self: *Self) Error!Node.Index {
     self.context.parsing_declarator = .@"var"; // functions are hoisted
 
     const token = try self.next();
-    if (self.isIdentifier(token.token.tag)) {
-        return self.bindingIdentifier(token);
-    }
+    if (self.isIdentifier(token.token.tag))
+        return self.bindingIdentifier(token.id);
 
     try self.emitBadTokenDiagnostic("function name", &token.token);
     return Error.UnexpectedToken;
@@ -2436,7 +2421,7 @@ fn breakStatement(self: *Self) Error!Node.Index {
         {
             // TODO: check if this label exists.
             const token = try self.next();
-            const id = try self.identifier(token);
+            const id = try self.identifier(token.id);
             end_pos = token.id;
             break :blk id;
         }
@@ -2476,7 +2461,7 @@ fn continueStatement(self: *Self) Error!Node.Index {
         {
             // TODO: check if this label exists.
             const token = try self.next();
-            const id = try self.identifier(token);
+            const id = try self.identifier(token.id);
             end_pos = token.id;
             break :blk id;
         }
@@ -2887,7 +2872,7 @@ fn bindingIdentifierOrPattern(self: *Self) Error!Node.Index {
         .@"[" => return self.arrayBindingPattern(),
         else => {
             if (self.isIdentifier(token.tag))
-                return self.bindingIdentifier(try self.next());
+                return self.bindingIdentifier((try self.next()).id);
 
             try self.emitBadTokenDiagnostic("a variable name or binding target", token);
             return Error.InvalidAssignmentTarget;
@@ -3327,9 +3312,9 @@ fn destructuredIdentifierProperty(self: *Self) Error!Node.Index {
     const cur_token = self.peek();
 
     const key = try if (cur_token.tag == .@"=")
-        self.bindingIdentifier(key_token)
+        self.bindingIdentifier(key_token.id)
     else
-        self.identifier(key_token);
+        self.identifier(key_token.id);
 
     if (cur_token.tag == .@"=") {
         const eq_token = try self.next(); // eat '='
@@ -3499,7 +3484,7 @@ fn singleNameBinding(self: *Self) Error!Node.Index {
     const id_token = try self.next();
     std.debug.assert(self.isIdentifier(id_token.token.tag));
 
-    const id = try self.bindingIdentifier(id_token);
+    const id = try self.bindingIdentifier(id_token.id);
     if (!self.isAtToken(.@"=")) return id;
 
     const op_token = try self.next(); // eat '='
@@ -3880,7 +3865,7 @@ fn optionalChain(self: *Self, object: Node.Index) Error!Node.Index {
 
                 const expr = try self.addNode(.{ .member_expr = .{
                     .object = object,
-                    .property = try self.identifier(prop_name_token),
+                    .property = try self.identifier(prop_name_token.id),
                 } }, start_pos, end_pos);
                 return self.addNode(.{ .optional_expr = expr }, start_pos, end_pos);
             }
@@ -4009,8 +3994,8 @@ fn parseMetaProperty(
         return Error.InvalidMetaProperty;
     }
 
-    const meta = try self.identifier(.{ .token = meta_token, .id = meta_token_id });
-    const property = try self.identifier(property_token);
+    const meta = try self.identifier(meta_token_id);
+    const property = try self.identifier(property_token.id);
 
     const end_pos = property_token.id;
     return self.addNode(
@@ -4050,7 +4035,7 @@ fn completeMemberExpression(self: *Self, object: Node.Index) Error!Node.Index {
         const tok_with_id = try self.next();
         // Yes, keywords are valid property names...
         if (tok_with_id.token.tag.isIdentifier() or tok_with_id.token.tag.isKeyword()) {
-            break :blk try self.identifier(tok_with_id);
+            break :blk try self.identifier(tok_with_id.id);
         }
 
         try self.emitDiagnostic(
@@ -4136,7 +4121,7 @@ fn primaryExpression(self: *Self) Error!Node.Index {
                 // 'x => 1'.
                 return self.identifierArrowParameter(&token.token, token.id);
             }
-            return self.identifier(token);
+            return self.identifier(token.id);
         },
         .decimal_literal,
         .octal_literal,
@@ -4162,7 +4147,7 @@ fn primaryExpression(self: *Self) Error!Node.Index {
             // arrow function starting with keyword identifier: 'yield => 1'
             return self.identifierArrowParameter(&token.token, token.id);
         }
-        return self.identifier(token);
+        return self.identifier(token.id);
     }
 
     try self.emitDiagnostic(
@@ -4328,7 +4313,7 @@ fn identifierArrowParameter(
     token: *const Token,
     token_id: Token.Index,
 ) Error!Node.Index {
-    const id = try self.identifier(.{ .token = token.*, .id = token_id });
+    const id = try self.identifier(token_id);
     const params_range = try self.addSubRange(&[_]Node.Index{id});
     // TODO: should functions with single parameters just not store a SubRange and store the
     // parameter directly?
@@ -4433,7 +4418,7 @@ fn asyncExpression(self: *Self, async_kw: *const TokenWithId) Error!Node.Index {
         switch (parsed.*) {
             .parameters => return argsOrArrowParams,
             .arguments => {
-                const async_identifier = try self.identifier(async_kw.*);
+                const async_identifier = try self.identifier(async_kw.id);
                 return self.addNode(
                     .{ .call_expr = .{ .callee = async_identifier, .arguments = argsOrArrowParams } },
                     async_kw.id,
@@ -4449,7 +4434,7 @@ fn asyncExpression(self: *Self, async_kw: *const TokenWithId) Error!Node.Index {
     {
         // async x => ...
         const id_token = try self.next();
-        const param = try self.identifier(id_token);
+        const param = try self.identifier(id_token.id);
         const params_range = try self.addSubRange(&[_]Node.Index{param});
         const params = try self.addNode(
             .{ .parameters = params_range },
@@ -4462,7 +4447,7 @@ fn asyncExpression(self: *Self, async_kw: *const TokenWithId) Error!Node.Index {
         return params;
     }
 
-    return self.identifier(async_kw.*);
+    return self.identifier(async_kw.id);
 }
 
 fn callArgsOrAsyncArrowParams(self: *Self, _: ast.FunctionFlags) Error!Node.Index {
@@ -4588,92 +4573,13 @@ fn callArgsOrAsyncArrowParams(self: *Self, _: ast.FunctionFlags) Error!Node.Inde
 }
 
 /// Save `token` as an identifier node.
-fn identifier(self: *Self, token: TokenWithId) Error!Node.Index {
-    const token_string = try self.strings.stringValue(&token.token);
-    return self.addNode(.{ .identifier = token_string }, token.id, token.id);
+fn identifier(self: *Self, name: Token.Index) Error!Node.Index {
+    return self.addNode(.{ .identifier = name }, name, name);
 }
 
 /// Save `token` as an binding identifier on the LHS of a variable declaration
-fn bindingIdentifier(self: *Self, token_with_id: TokenWithId) Error!Node.Index {
-    const name_string = try self.strings.stringValue(&token_with_id.token);
-
-    switch (self.context.parsing_declarator) {
-        .lexical => {
-            // If we're in a let declaration, like `let x = ... ` or `let [{ x }] = ...`,
-            // Ensure there are no variables with the same name in the current scope.
-            // ```js
-            // var x;
-            // let x; // clashes with `var x` above
-            // ```
-            if (self.scope.findInCurrentScope((name_string))) |_| {
-                try self.emitDiagnostic(
-                    token_with_id.token.startCoord(self.source),
-                    "Variable '{s}' has already been declared",
-                    .{token_with_id.token.toByteSlice(self.source)},
-                );
-                return Error.DuplicateBinding;
-            }
-
-            if (token_with_id.token.tag == .kw_let) {
-                try self.emitDiagnostic(
-                    token_with_id.token.startCoord(self.source),
-                    "'let' is not allowed as a lexically bound name",
-                    .{},
-                );
-                return Error.LexicallyBoundLet;
-            }
-        },
-        .@"var" => {
-            // Look for let-bindings with the same name within,
-            // or outside the current scope:
-            // ```js
-            // let x;
-            // {
-            //    var x; // clashes with the `x` above because of hoisting
-            // }
-            // ```
-            // Keep going up until we find a function scope,
-            // and for each scope along that path, check if there is an existing
-            // variable with the same name.
-            var scope: *const ScopeManager.Scope = self.scope.current_scope;
-            while (true) {
-                if (self.scope.findInScope(scope, name_string)) |existing_var| {
-                    if (existing_var.kind == .lexical_binding) {
-                        try self.emitDiagnostic(
-                            token_with_id.token.startCoord(self.source),
-                            "Variable '{s}' has already been declared",
-                            .{token_with_id.token.toByteSlice(self.source)},
-                        );
-                        return Error.DuplicateBinding;
-                    }
-                }
-
-                // We've scanned the scope where the current variable
-                // will be inserted into via hoisting.
-                // TODO: now that we have the scope, we can immediately
-                // add the variable right here, instead of doing it below.
-                if (scope.kind != .block) break;
-                const parent_scope_id = scope.upper orelse break;
-                scope = self.scope.getScope(parent_scope_id);
-            }
-        },
-        .none => {},
-    }
-
-    const id = try self.addNode(
-        .{ .binding_identifier = name_string },
-        token_with_id.id,
-        token_with_id.id,
-    );
-
-    const decl_kind: ScopeManager.Variable.Kind =
-        if (self.context.parsing_declarator == .lexical)
-        .lexical_binding
-    else
-        .variable_binding;
-
-    try self.scope.addVariable(name_string, id, decl_kind);
-    return id;
+fn bindingIdentifier(self: *Self, name: Token.Index) Error!Node.Index {
+    return try self.addNode(.{ .binding_identifier = name }, name, name);
 }
 
 fn makeSuper(
@@ -4753,8 +4659,6 @@ fn completeArrowFunction(self: *Self, params: Node.Index) Error!Node.Index {
         // we will attempt to parse it as a block statement, and not an object literal.
         if (body_start_token.tag == .@"{") {
             self.context.@"return" = true;
-            try self.scope.enterScope(.function, self.context.strict);
-            defer self.scope.exitScope();
             break :blk try self.functionBody();
         }
 
@@ -4841,7 +4745,7 @@ fn bindingRestElement(self: *Self) Error!Node.Index {
     std.debug.assert(dotdotdot.token.tag == .@"...");
     const rest_arg = blk: {
         if (self.isIdentifier(self.current.token.tag))
-            break :blk try self.bindingIdentifier(try self.next());
+            break :blk try self.bindingIdentifier((try self.next()).id);
         break :blk try self.bindingPattern();
     };
     const end_pos = self.nodes.items(.end)[@intFromEnum(rest_arg)];
@@ -5170,7 +5074,7 @@ fn identifierProperty(self: *Self) Error!Node.Index {
             if (is_generator) _ = try self.nextToken(); // eat '*'
 
             const property_key_token = try self.expectIdOrKeyword();
-            const property_key = try self.identifier(property_key_token);
+            const property_key = try self.identifier(property_key_token.id);
             const property_val = try self.parseMethodBody(
                 property_key,
                 .{ .is_method = true },
@@ -5204,7 +5108,7 @@ fn identifierProperty(self: *Self) Error!Node.Index {
         return Error.UnexpectedToken;
     }
 
-    const key = try self.identifier(key_token);
+    const key = try self.identifier(key_token.id);
 
     const cur_token_tag = self.current.token.tag;
     switch (cur_token_tag) {
@@ -5321,7 +5225,7 @@ fn classElementName(self: *Self) Error!Node.Index {
         .non_ascii_identifier,
         .identifier,
         .private_identifier,
-        => return self.identifier(token),
+        => return self.identifier(token.id),
         .@"[" => {
             const expr = try self.assignmentExpression();
             _ = try self.expectToken(.@"]");
@@ -5336,7 +5240,7 @@ fn classElementName(self: *Self) Error!Node.Index {
         => return try self.parseLiteral(token),
         else => {
             if (token.token.tag.isKeyword())
-                return self.identifier(token);
+                return self.identifier(token.id);
 
             try self.emitDiagnostic(
                 token.token.startCoord(self.source),
@@ -5574,9 +5478,6 @@ fn parseFunctionBody(
     // disallow: while (1) { function f() { break; } }
     self.context.@"break" = false;
     self.context.@"continue" = false;
-
-    try self.scope.enterScope(.function, self.context.strict);
-    defer self.scope.exitScope();
 
     const parameters = try self.parseFormalParameters();
 
@@ -5992,7 +5893,7 @@ fn runTestOnFile(tests_dir: std.fs.Dir, file_path: []const u8) !void {
         json_file_path,
         std.math.maxInt(u32),
     ) catch |err| {
-        std.debug.print("failed to read file: {s}\n", .{json_file_path});
+        std.debug.print("could not read file: {s}\n", .{json_file_path});
         return err;
     };
     defer t.allocator.free(expected_ast_json);

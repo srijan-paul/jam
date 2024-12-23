@@ -221,8 +221,8 @@ fn nodeToEsTree(
             try o.put("right", rhs);
         },
 
-        .binding_identifier, .identifier => |s| {
-            const name = t.string_pool.toByteSlice(s);
+        .binding_identifier, .identifier => |tok_id| {
+            const name = t.getToken(tok_id).toByteSlice(t.source);
             try o.put("name", JValue{ .string = name });
         },
 

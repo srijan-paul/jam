@@ -150,7 +150,7 @@ pub const Function = struct {
         const name_id = tree.getExtraData(self.info).function.name orelse
             return null;
         const name = tree.nodes.items(.data)[@intFromEnum(name_id)];
-        return tree.string_pool.toByteSlice(name.identifier);
+        return tree.getToken(name.binding_identifier).toByteSlice(tree.source);
     }
 
     /// Returns a slice containing all the parameter nodes in the function.
@@ -432,8 +432,8 @@ pub const NodeData = union(enum(u8)) {
     yield_expr: YieldPayload,
     update_expr: UnaryPayload,
 
-    identifier: String,
-    binding_identifier: String,
+    identifier: Token.Index,
+    binding_identifier: Token.Index,
 
     string_literal: Token.Index,
     number_literal: Number,
