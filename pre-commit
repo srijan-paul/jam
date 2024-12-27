@@ -1,10 +1,8 @@
 #!/bin/sh
 
-# -o pipefail on bash only
 if [ -n "$BASH" ]; then
 		set -o pipefail
 fi
-
 set -eu
 
 # Run unit tests for each module

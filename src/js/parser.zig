@@ -1,20 +1,21 @@
 // A recursive decent parser for JavaScript.
 
+const util = @import("util");
 const std = @import("std");
 
-const Self = @This();
 const Tokenizer = @import("./tokenize.zig");
-const Token = @import("./token.zig").Token;
 const ast = @import("./ast.zig");
 const ScopeManager = @import("./scope.zig");
 
-const util = @import("util");
-const types = util.types;
+const Token = @import("./token.zig").Token;
+const TokenMask = @import("./token.zig").Mask;
 
+const types = util.types;
 const Node = ast.Node;
 const NodeData = ast.NodeData;
-
 pub const Tree = ast.Tree;
+
+const Self = @This();
 
 const TokenWithId = struct {
     token: Token,
@@ -39,6 +40,8 @@ pub const Error = error{
     IllegalFatArrow,
     /// Found a newline where there shouldn't be one
     IllegalNewline,
+    // Using '??' with '||' or '&&' without parentheses
+    InvalidCoalesceExpression,
     // Incorrect use of a meta property like 'new.target'
     InvalidMetaProperty,
     /// 5 = ...
@@ -138,74 +141,6 @@ pub const Config = struct {
     /// Parses `(a)` as `parenthesized_expression {  identifier }` instead of  { identifier }
     preserve_parens: bool = true,
 };
-
-// arranged in highest to lowest binding order
-
-// TODO: Officially, exponentiation operator is defined as:
-// ExponentiationExpression :
-//  UnaryExpression
-//  | UpdateExpression ** ExponentiationExpression
-// So this isn't exactly correct.
-// The parselet for this will have to be hand-written.
-const exponentExpr = makeRightAssoc(.@"**", Self.unaryExpression);
-
-const multiplicativeExpr = makeLeftAssoc(.multiplicative_start, .multiplicative_end, exponentExpr);
-const additiveExpr = makeLeftAssoc(.additive_start, .additive_end, multiplicativeExpr);
-const shiftExpr = makeLeftAssoc(.shift_op_start, .shift_op_end, additiveExpr);
-
-// this one has to be hand-written to disallow 'in' inside for-loop iterators.
-// see: forStatement
-fn relationalExpr(self: *Self) Error!Node.Index {
-    var node = try shiftExpr(self);
-
-    const rel_op_start: u32 = @intFromEnum(Token.Tag.relational_start);
-    const rel_op_end: u32 = @intFromEnum(Token.Tag.relational_end);
-
-    var token = self.peek();
-    while (true) : (token = self.peek()) {
-        const itag: u32 = @intFromEnum(token.tag);
-        if ((itag > rel_op_start and itag < rel_op_end) or
-            token.tag == .kw_in or token.tag == .kw_instanceof)
-        {
-
-            // `in` expressions are not allowed when parsing the LHS
-            // for `for-loop` iterators.
-            if (token.tag == .kw_in and !self.context.in) {
-                break;
-            }
-
-            self.current_destructure_kind.setNoAssignOrDestruct();
-
-            const op_token = try self.next();
-            const rhs = try shiftExpr(self);
-
-            const nodes = self.nodes.slice();
-            const start_pos = nodes.items(.start)[@intFromEnum(node)];
-            const end_pos = nodes.items(.end)[@intFromEnum(rhs)];
-
-            const binary_pl: ast.BinaryPayload = .{
-                .lhs = node,
-                .rhs = rhs,
-                .operator = op_token.id,
-            };
-
-            node = try self.addNode(.{ .binary_expr = binary_pl }, start_pos, end_pos);
-        } else {
-            break;
-        }
-    }
-
-    return node;
-}
-
-const eqExpr = makeLeftAssoc(.eq_op_start, .eq_op_end, relationalExpr);
-
-const bAndExpr = makeLeftAssoc(.@"&", .@"&", eqExpr);
-const bXorExpr = makeLeftAssoc(.@"^", .@"^", bAndExpr);
-const bOrExpr = makeLeftAssoc(.@"|", .@"|", bXorExpr);
-
-const lAndExpr = makeLeftAssoc(.@"&&", .@"&&", bOrExpr);
-const lOrExpr = makeLeftAssoc(.@"||", .@"||", lAndExpr);
 
 allocator: std.mem.Allocator,
 
@@ -2562,7 +2497,7 @@ fn isKeywordIdentifier(self: *const Self, tag: Token.Tag) bool {
     }
 }
 
-fn isIdentifier(self: *const Self, tag: Token.Tag) bool {
+inline fn isIdentifier(self: *const Self, tag: Token.Tag) bool {
     return tag.isIdentifier() or self.isKeywordIdentifier(tag);
 }
 
@@ -3030,52 +2965,39 @@ fn assignExpressionNoPattern(self: *Self) Error!Node.Index {
     return expr;
 }
 
-fn coalesceExpression(self: *Self, start_expr: Node.Index) Error!Node.Index {
-    const nodes = self.nodes.slice();
-    const start: Token.Index = nodes.items(.start)[@intFromEnum(start_expr)];
-    var end: Token.Index = nodes.items(.end)[@intFromEnum(start_expr)];
+/// Parse a binary expression with the given precedence, where the left-hand side
+/// is [lhs], which may or may not be followed by a binary operator.
+fn binaryExpression(self: *Self, lhs: Node.Index, current_prec: u8) Error!Node.Index {
+    var expr = lhs;
+    const start = self.nodes.items(.start)[@intFromEnum(lhs)];
+    while (self.current.token.tag.is(TokenMask.IsBinaryOp)) {
+        const cur = &self.current;
+        const prec = cur.token.tag.precedence();
 
-    var expr: Node.Index = start_expr;
-    while (self.isAtToken(.@"??")) {
-        const op = try self.next(); // eat '??'
-        const rhs = try bOrExpr(self);
-        end = self.nodes.items(.end)[@intFromEnum(rhs)];
+        if (prec <= current_prec) return expr;
 
-        self.current_destructure_kind.setNoAssignOrDestruct();
+        // `in` expressions are not allowed when parsing the LHS
+        // for `for-loop` iterators.
+        if (!self.context.in and cur.token.tag == .kw_in) break;
 
-        expr = try self.addNode(
-            .{
-                .binary_expr = .{
-                    .lhs = expr,
-                    .rhs = rhs,
-                    .operator = op.id,
-                },
-            },
-            start,
-            end,
-        );
+        const op = try self.next(); // eat the operator.
+        const rhs_start_expr = try self.unaryExpression();
+        // Parse the right-hand side of the binary expression.
+        // 2 + 3 * 4 + 5
+        //   ^---------  At this point, we parse `3` as `rhs_start`,
+        //               then the next call to `binaryExpression` parses
+        //               `3 * 4` as `rhs` (that's as far as we can go with the current precedence),
+        //                and then we return to this loop to parse `5` as the remainder.
+        const rhs = try self.binaryExpression(rhs_start_expr, @intCast(prec));
+
+        const nodes = self.nodes.slice();
+        const end = nodes.items(.end)[@intFromEnum(rhs)];
+
+        const binary_pl = ast.BinaryPayload{ .lhs = expr, .rhs = rhs, .operator = op.id };
+        expr = try self.addNode(.{ .binary_expr = binary_pl }, start, end);
     }
 
     return expr;
-}
-
-/// ShortCircuitExpression:
-///    LogicalOrExpression
-///    CoalesceExpression
-fn shortCircuitExpresion(self: *Self) Error!Node.Index {
-    const expr = try lOrExpr(self);
-    switch (self.nodes.items(.data)[@intFromEnum(expr)]) {
-        .binary_expr => |pl| {
-            const op_tag = self.tokens.items[@intFromEnum(pl.operator)].tag;
-            if (op_tag == .@"||" or op_tag == .@"&&") {
-                return expr;
-            }
-            return self.coalesceExpression(expr);
-        },
-        else => {
-            return self.coalesceExpression(expr);
-        },
-    }
 }
 
 fn yieldOrConditionalExpression(self: *Self) Error!Node.Index {
@@ -3136,8 +3058,12 @@ fn yieldExpression(self: *Self) Error!Node.Index {
 ///     ShortCircuitExpression
 ///     ShortCircuitExpression '?' AssignmentExpression ':' AssignmentExpression
 fn conditionalExpression(self: *Self) Error!Node.Index {
-    const cond_expr = try self.shortCircuitExpresion();
-    if (!self.isAtToken(.@"?")) return cond_expr;
+    const test_expr = blk: {
+        const lhs = try self.unaryExpression();
+        break :blk try self.binaryExpression(lhs, 0);
+    };
+
+    if (!self.isAtToken(.@"?")) return test_expr;
 
     self.current_destructure_kind.setNoAssignOrDestruct();
 
@@ -3152,13 +3078,13 @@ fn conditionalExpression(self: *Self) Error!Node.Index {
     self.context = context;
 
     const nodes = self.nodes.slice();
-    const start_pos = nodes.items(.start)[@intFromEnum(cond_expr)];
+    const start_pos = nodes.items(.start)[@intFromEnum(test_expr)];
     const end_pos = nodes.items(.end)[@intFromEnum(false_expr)];
 
     return try self.addNode(
         .{
             .conditional_expr = .{
-                .condition = cond_expr,
+                .condition = test_expr,
                 .consequent = true_expr,
                 .alternate = false_expr,
             },
