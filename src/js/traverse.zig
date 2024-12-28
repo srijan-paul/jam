@@ -102,7 +102,15 @@ pub fn Traverser(TControl: type) type {
                 .unary_expr,
                 .update_expr,
                 .await_expr,
+                .post_unary_expr,
                 => |u| try self.visit(u.operand),
+
+                .sequence_expr => |seq| try self.subRange(seq),
+                .parenthesized_expr => |expr| try self.visit(expr),
+                .class_field, .class_method => |field| {
+                    try self.visit(field.key);
+                    try self.visit(field.value);
+                },
 
                 .yield_expr => |y| {
                     if (y.value) |val|
@@ -164,6 +172,92 @@ pub fn Traverser(TControl: type) type {
                     try self.visit(for_pl.body);
                 },
 
+                .call_expr => |call_pl| {
+                    try self.visit(call_pl.callee);
+                    try self.visit(call_pl.arguments);
+                },
+
+                .new_expr => |call_pl| {
+                    try self.visit(call_pl.callee);
+                    if (call_pl.arguments) |args|
+                        try self.visit(args);
+                },
+
+                .super_call_expr => |super_pl| try self.subRange(super_pl),
+                .arguments => |args| try self.subRange(args),
+
+                .meta_property => |meta_pl| {
+                    try self.visit(meta_pl.meta);
+                    try self.visit(meta_pl.property);
+                },
+
+                .tagged_template_expr => |tagged_pl| {
+                    try self.visit(tagged_pl.tag);
+                    try self.visit(tagged_pl.template);
+                },
+
+                .member_expr => |member_pl| {
+                    try self.visit(member_pl.object);
+                    try self.visit(member_pl.property);
+                },
+
+                .computed_member_expr => |member_pl| {
+                    try self.visit(member_pl.object);
+                    try self.visit(member_pl.property);
+                },
+
+                .with_statement => |with_pl| {
+                    try self.visit(with_pl.object);
+                    try self.visit(with_pl.body);
+                },
+
+                .switch_statement => |switch_pl| {
+                    try self.visit(switch_pl.discriminant);
+                    try self.subRange(switch_pl.cases);
+                },
+
+                .switch_case => |case_pl| {
+                    try self.visit(case_pl.expression);
+                    try self.subRange(case_pl.consequent);
+                },
+
+                .default_case => |case_pl| try self.subRange(case_pl.consequent),
+
+                .import_declaration => |import_pl| {
+                    try self.visit(import_pl.source);
+                    try self.subRange(import_pl.specifiers);
+                },
+
+                .import_default_specifier => |ns| try self.visit(ns.name),
+                .import_namespace_specifier => |ns| try self.visit(ns.name),
+                .import_specifier => |ns| {
+                    if (ns.imported) |imported|
+                        try self.visit(imported);
+                    try self.visit(ns.local);
+                },
+
+                .export_declaration => |export_pl| try self.visit(export_pl.declaration),
+                .export_all_declaration => |export_pl| {
+                    try self.visit(export_pl.source);
+                    if (export_pl.name) |name| try self.visit(name);
+                },
+
+                .export_list_declaration => |export_pl| try self.subRange(export_pl.specifiers),
+                .export_from_declaration => |export_pl| {
+                    try self.visit(export_pl.source);
+                    try self.subRange(export_pl.specifiers);
+                },
+
+                .export_specifier => |export_pl| {
+                    if (export_pl.exported) |exported|
+                        try self.visit(exported);
+                    try self.visit(export_pl.local);
+                },
+
+                .break_statement,
+                .continue_statement,
+                => |b| if (b.label) |label| try self.visit(label),
+
                 // leaf nodes cannot be explored further
                 .number_literal,
                 .string_literal,
@@ -175,10 +269,11 @@ pub fn Traverser(TControl: type) type {
                 .template_element,
                 .empty_statement,
                 .debugger_statement,
+                .empty_array_item,
                 .none,
                 .this,
+                .super,
                 => {},
-                else => std.debug.panic("not implemented: {s}!\n", .{@tagName(std.meta.activeTag(data))}),
             }
 
             if (@hasDecl(TControl, "onExit"))

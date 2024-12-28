@@ -375,7 +375,8 @@ pub const ExportSpecifier = struct {
     /// Name of the top-level declaration that is being exported
     local: Node.Index,
     /// Alias used when importing the exported item.
-    /// If no alias is present (i.e no "as"), this is null.
+    /// If no alias is present (i.e `import {foo}` instead of import `{ foo as bar }`),
+    /// this is null.
     exported: ?Node.Index,
 };
 
