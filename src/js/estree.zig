@@ -223,7 +223,8 @@ fn nodeToEsTree(
 
         .binding_identifier, .identifier => |tok_id| {
             const name = t.getToken(tok_id).toByteSlice(t.source);
-            try o.put("name", JValue{ .string = name });
+            const escapedName = try processEscapes(al, name);
+            try o.put("name", JValue{ .string = escapedName });
         },
 
         .program => |maybe_statements| {

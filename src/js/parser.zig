@@ -4201,6 +4201,7 @@ fn parseNumericToken(self: *Self, token: *const TokenWithId) Error!ast.Number {
         .legacy_octal_literal,
         .octal_literal,
         => parseOctal(str),
+        // TODO: non-floating point numbers can be parsed with `parseInt`, actually.
         .decimal_literal => parseDecimal(str),
         .binary_literal => parseBinary(str),
         .hex_literal => parseHex(str),
