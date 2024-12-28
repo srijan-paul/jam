@@ -2965,9 +2965,23 @@ fn assignExpressionNoPattern(self: *Self) Error!Node.Index {
     return expr;
 }
 
+fn binaryExpression(self: *Self) Error!Node.Index {
+    const lhs = try self.exponentExpression();
+    const cur_token = self.current.token;
+    if (cur_token.tag.is(TokenMask.IsBinaryOp))
+        return self.completeBinaryExpression(lhs, cur_token.tag, 0);
+
+    return lhs;
+}
+
 /// Parse a binary expression with the given precedence, where the left-hand side
 /// is [lhs], which may or may not be followed by a binary operator.
-fn binaryExpression(self: *Self, lhs: Node.Index, current_prec: u8) Error!Node.Index {
+fn completeBinaryExpression(
+    self: *Self,
+    lhs: Node.Index,
+    op_token: Token.Tag,
+    current_prec: u8,
+) Error!Node.Index {
     var expr = lhs;
     const start = self.nodes.items(.start)[@intFromEnum(lhs)];
     while (self.current.token.tag.is(TokenMask.IsBinaryOp)) {
@@ -2980,20 +2994,35 @@ fn binaryExpression(self: *Self, lhs: Node.Index, current_prec: u8) Error!Node.I
         // for `for-loop` iterators.
         if (!self.context.in and cur.token.tag == .kw_in) break;
 
-        const op = try self.next(); // eat the operator.
-        const rhs_start_expr = try self.unaryExpression();
+        const current_op = try self.next(); // eat the operator.
+        if ((current_op.token.tag.isLogicalOperator() and op_token == .@"??") or
+            (op_token.isLogicalOperator() and current_op.token.tag == .@"??"))
+        {
+            try self.emitDiagnosticOnToken(
+                current_op.token,
+                "Logical operators cannot be mixed with the nullish coalescing operator. Use parentheses to disambiguate.",
+                .{},
+            );
+            return Error.InvalidCoalesceExpression;
+        }
+
+        const rhs_start_expr = try self.exponentExpression();
         // Parse the right-hand side of the binary expression.
         // 2 + 3 * 4 + 5
         //   ^---------  At this point, we parse `3` as `rhs_start`,
         //               then the next call to `binaryExpression` parses
         //               `3 * 4` as `rhs` (that's as far as we can go with the current precedence),
         //                and then we return to this loop to parse `5` as the remainder.
-        const rhs = try self.binaryExpression(rhs_start_expr, @intCast(prec));
+        const rhs = try self.completeBinaryExpression(
+            rhs_start_expr,
+            current_op.token.tag,
+            @intCast(prec),
+        );
 
         const nodes = self.nodes.slice();
         const end = nodes.items(.end)[@intFromEnum(rhs)];
 
-        const binary_pl = ast.BinaryPayload{ .lhs = expr, .rhs = rhs, .operator = op.id };
+        const binary_pl = ast.BinaryPayload{ .lhs = expr, .rhs = rhs, .operator = current_op.id };
         expr = try self.addNode(.{ .binary_expr = binary_pl }, start, end);
     }
 
@@ -3058,10 +3087,7 @@ fn yieldExpression(self: *Self) Error!Node.Index {
 ///     ShortCircuitExpression
 ///     ShortCircuitExpression '?' AssignmentExpression ':' AssignmentExpression
 fn conditionalExpression(self: *Self) Error!Node.Index {
-    const test_expr = blk: {
-        const lhs = try self.unaryExpression();
-        break :blk try self.binaryExpression(lhs, 0);
-    };
+    const test_expr = try self.binaryExpression();
 
     if (!self.isAtToken(.@"?")) return test_expr;
 
@@ -3430,6 +3456,34 @@ fn singleNameBinding(self: *Self) Error!Node.Index {
         start_pos,
         end_pos,
     );
+}
+
+// TODO: this isn't 100% spec compliant right now, but that's an easy
+// fix really.
+fn exponentExpression(self: *Self) Error!Node.Index {
+    const lhs = try self.unaryExpression();
+    if (self.current.token.tag == .@"**") {
+        const op_token = try self.next();
+        const rhs = try self.exponentExpression();
+
+        const nodes = self.nodes.slice();
+        const start_pos = nodes.items(.start)[@intFromEnum(lhs)];
+        const end_pos = nodes.items(.end)[@intFromEnum(rhs)];
+
+        return self.addNode(
+            .{
+                .binary_expr = ast.BinaryPayload{
+                    .lhs = lhs,
+                    .rhs = rhs,
+                    .operator = op_token.id,
+                },
+            },
+            start_pos,
+            end_pos,
+        );
+    }
+
+    return lhs;
 }
 
 fn unaryExpression(self: *Self) Error!Node.Index {
@@ -4099,34 +4153,29 @@ fn isValidStrictModeNumber(self: *const Self, token: *const Token) bool {
 }
 
 fn parseLiteral(self: *Self, token: TokenWithId) Error!Node.Index {
-    if (self.context.strict) {
-        // Disallow 01, 08, etc. in strict mode.
-        switch (token.token.tag) {
-            .legacy_octal_literal => {
-                try self.emitDiagnostic(
-                    token.token.startCoord(self.source),
-                    "Legacy octal numbers are not allowed in strict mode",
-                    .{},
-                );
-                return Error.UnexpectedToken;
-            },
-
-            .decimal_literal,
-            .octal_literal,
-            .hex_literal,
-            .binary_literal,
-            => {
-                if (!self.isValidStrictModeNumber(&token.token)) {
-                    try self.emitDiagnostic(
-                        token.token.startCoord(self.source),
-                        "Numbers with leading '0' are not allowed in strict mode",
-                        .{},
-                    );
-                    return Error.UnexpectedToken;
-                }
-            },
-            else => {},
+    const token_tag = token.token.tag;
+    if (self.context.strict and token_tag.isNumericLiteral()) {
+        if (token_tag == .legacy_octal_literal) {
+            try self.emitDiagnostic(
+                token.token.startCoord(self.source),
+                "Legacy octal numbers are not allowed in strict mode",
+                .{},
+            );
+            return Error.UnexpectedToken;
         }
+
+        if (!self.isValidStrictModeNumber(&token.token)) {
+            try self.emitDiagnostic(
+                token.token.startCoord(self.source),
+                "Numbers with leading '0' are not allowed in strict mode",
+                .{},
+            );
+            return Error.UnexpectedToken;
+        }
+
+        self.current_destructure_kind.setNoAssignOrDestruct();
+        const numeric_literal = ast.NodeData{ .number_literal = try self.parseNumericToken(&token) };
+        return self.addNode(numeric_literal, token.id, token.id);
     }
 
     self.current_destructure_kind.setNoAssignOrDestruct();

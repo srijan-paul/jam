@@ -13,13 +13,13 @@ pub const Mask = struct {
 
     pub const IsAssignOp: u32 = 1 << 15;
     pub const IsBinaryOp: u32 = 1 << 16;
-    pub const IsExpressionStart: u32 = 1 << 20;
-    pub const IsUnaryOp: u32 = 1 << 17 | IsExpressionStart;
+    pub const IsExpressionStart: u32 = 1 << 17;
+    pub const IsUnaryOp: u32 = 1 << 18 | IsExpressionStart;
 
-    pub const IsNumericLiteral: u32 = 1 << 18;
-    pub const IsIdentifier: u32 = 1 << 19;
-    pub const IsLogicalOp: u32 = 1 << 20; // || and &&
-    pub const IsCoalesceOp: u32 = 1 << 21; // ??
+    pub const IsNumericLiteral: u32 = 1 << 19;
+    pub const IsIdentifier: u32 = 1 << 20;
+    pub const IsLogicalOp: u32 = 1 << 21; // || and &&
+    pub const IsCoalesceOp: u32 = 1 << 22; // ??
 
     /// For binary operators (token.tag & Mask.IsBinaryOp != 0),
     /// bits 8-11 store the precedence of the token.
@@ -78,14 +78,11 @@ pub const JsTokenTag = enum(u32) {
     @";" = 29,
     @"," = 30,
 
-    // *, /, and % are the highest binding binary operators.
-
-    @"**" = 52,
-
     @"++" = 53,
     @"--" = 54,
 
     // Binary operators arranged in order of precedence (least binding to highest binding).
+    @"**" = 52,
     @"??" = 67 | Mask.IsBinaryOp | (1 << Mask.PrecShift),
     @"||" = 66 | Mask.IsBinaryOp | Mask.IsLogicalOp | (2 << Mask.PrecShift),
     @"&&" = 65 | Mask.IsBinaryOp | Mask.IsLogicalOp | (3 << Mask.PrecShift),
@@ -219,7 +216,7 @@ pub const JsTokenTag = enum(u32) {
         return tag_u32 & Mask.ContextualKeyword == Mask.ContextualKeyword;
     }
 
-    pub fn isNumericLiteral(self: JsTokenTag) bool {
+    pub inline fn isNumericLiteral(self: JsTokenTag) bool {
         const tag_u32: u32 = @intFromEnum(self);
         return tag_u32 & Mask.IsNumericLiteral != 0;
     }
@@ -247,6 +244,11 @@ pub const JsTokenTag = enum(u32) {
     pub inline fn isAssignmentOperator(self: JsTokenTag) bool {
         const tag_u32: u32 = @intFromEnum(self);
         return tag_u32 & Mask.IsAssignOp != 0;
+    }
+
+    pub inline fn isLogicalOperator(self: JsTokenTag) bool {
+        const tag_u32: u32 = @intFromEnum(self);
+        return tag_u32 & Mask.IsLogicalOp != 0;
     }
 
     comptime {
