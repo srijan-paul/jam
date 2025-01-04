@@ -22,11 +22,13 @@ const TokenWithId = struct {
     id: Token.Index,
 };
 
-pub const Error = error{
+const ParseError = error{
     UnexpectedToken,
+    /// `async` keyword used on a property that isn't a method
+    AsyncProperty,
+    /// `async` keyword used on a getter or setter
+    AsyncGetterOrSetter,
     /// Invalid modifier like 'async'
-    IllegalModifier,
-    /// Return statement outside functions
     IllegalReturn,
     /// Break statement outside loops
     IllegalBreak,
@@ -48,7 +50,9 @@ pub const Error = error{
     InvalidAssignmentTarget,
     ///  (1) => ...
     InvalidArrowParameters,
-    InvalidArrowFunction,
+    MalformedArrowFnBody,
+    /// Saw a '()' without a '=>'
+    UnexpectedEmptyArrowParams,
     /// Setter must have exactly one parameter
     InvalidSetter,
     /// Getter must have no parameters
@@ -67,10 +71,16 @@ pub const Error = error{
     UnexpectedPattern,
     /// let x = 5 let 6 = 5 <- no ';' between statements
     ExpectedSemicolon,
+    /// `export` keyword without a following declaration
+    ExpectedExport,
+    /// `import` keyword without a following specifier
+    ExpectedImportSpecifier,
     /// let [a, ...as, b] = [1, 2, 3] <- 'as' must be the last
     RestElementNotLast,
     /// let { x, y } <- destructuring pattern must have an initializer
-    MissingInitializer,
+    MissingInitializerInBinding,
+    /// const x <- const declaration must have an initializer
+    MissingInitializerInConst,
     /// Multiple default clauses in a switch statement.
     /// switch (x) { default: 1 default: 2 }
     MultipleDefaults,
@@ -78,19 +88,20 @@ pub const Error = error{
     MultipleConstructors,
     /// "with" statement used in strict mode.
     WithInStrictMode,
-    /// A variable is declared twice.
-    DuplicateBinding,
     /// Attempt to delete a local variable in strict mode.
     IllegalDeleteInStrictMode,
-    /// std.mem.Allocator.Error
-    OutOfMemory,
-    Overflow,
     // TODO: remove these two errors
     JsxNotImplemented,
     TypeScriptNotImplemented,
     // The parser instance has already been used
     AlreadyParsed,
-} || Tokenizer.Error;
+};
+
+pub const Error =
+    ParseError ||
+    Tokenizer.Error ||
+    error{ OutOfMemory, Overflow };
+
 const ParseFn = fn (self: *Self) Error!Node.Index;
 
 /// An error or warning raised by the Parser.
@@ -508,12 +519,7 @@ pub fn importDeclaration(self: *Self) Error!Node.Index {
     }
 
     if (!has_imports) {
-        try self.emitDiagnosticOnToken(
-            self.current.token,
-            "Expected an import specifier, '*', or a default import",
-            .{},
-        );
-        return Error.UnexpectedToken;
+        return self.errorOnToken(import_kw.token, ParseError.ExpectedImportSpecifier);
     }
 
     const specifiers = self.scratch.items[prev_scratch_len..];
@@ -697,13 +703,7 @@ fn exportDeclaration(self: *Self) Error!Node.Index {
         return self.starExportDeclaration(export_kw);
     }
 
-    try self.emitDiagnosticOnToken(
-        self.current.token,
-        "Expected an export declaration",
-        .{},
-    );
-
-    return Error.UnexpectedToken;
+    return self.errorOnToken(self.current.token, ParseError.ExpectedExport);
 }
 
 /// Parse an export all statement, assuming the `export` token has been consumed already
@@ -1282,7 +1282,7 @@ fn completeClassProperty(
             key,
             "'async' modifier cannot be used on fields that are not methods",
         );
-        return Error.IllegalModifier;
+        return Error.AsyncProperty;
     }
 
     const start_pos = modifiers.start_position;
@@ -1344,7 +1344,7 @@ fn parseClassMethodBody(
                 "'async' modifier cannot be used on getters or setters",
             );
 
-            return Error.IllegalModifier;
+            return Error.AsyncGetterOrSetter;
         }
 
         // verify the number of parameters for getters and setters.
@@ -1661,10 +1661,10 @@ fn completeVarDeclLoopIterator(
                 rhs = init_expr;
             } else if (self.nodeTag(lhs) != .binding_identifier) {
                 try self.emitDiagnosticOnNode(lhs, "Complex binding patterns require an initializer");
-                return Error.MissingInitializer;
+                return Error.MissingInitializerInBinding;
             } else if (decl_kw.token.tag == .kw_const) {
                 try self.emitDiagnosticOnNode(lhs, "Missing initializer in const declaration");
-                return Error.MissingInitializer;
+                return Error.MissingInitializerInConst;
             }
 
             const first_decl = try self.addNode(
@@ -2198,11 +2198,11 @@ fn variableDeclarator(self: *Self, kind: ast.VarDeclKind) Error!Node.Index {
         } else if (self.nodeTag(lhs) != .binding_identifier) {
             // Assignment patterns must have an initializer.
             try self.emitDiagnosticOnNode(lhs, "A destructuring declaration must have an initializer");
-            return Error.MissingInitializer;
+            return Error.MissingInitializerInBinding;
         } else if (kind == .@"const") {
             // Constants must have an initializer.
             try self.emitDiagnosticOnNode(lhs, "Missing initializer in const declaration");
-            return Error.MissingInitializer;
+            return Error.MissingInitializerInConst;
         }
 
         break :blk null;
@@ -2415,6 +2415,68 @@ fn continueStatement(self: *Self) Error!Node.Index {
 // ------------------------
 // Common helper functions
 // ------------------------
+
+fn errorMessage(err: ParseError) []const u8 {
+    return switch (err) {
+        ParseError.AsyncProperty => "The async modifier is only allowed on methods",
+        ParseError.AsyncGetterOrSetter => "The async modifier cannot be used on getters and setters",
+        ParseError.IllegalReturn => "Return statement is not allowed outside of a function",
+        ParseError.IllegalBreak => "'break' is not allowed outside loops and switch statements",
+        ParseError.IllegalContinue => "'continue' is not allowed outside switch statements",
+        ParseError.IllegalAwait => "'await' expressions are not allowed outside async functions",
+        ParseError.InvalidSetter => "Setter functions must have exactly one parameter",
+        ParseError.InvalidGetter => "Getter functions must have no parameters",
+        ParseError.InvalidLoopLhs => "left hand side of for-loop must be a name or assignment pattern",
+        ParseError.MissingInitializerInConst => "Missing initializer in const declaration",
+        ParseError.MissingInitializerInBinding => "Binding patterns must have an initializer",
+        ParseError.MultipleDefaults => "Multiple 'default' clauses are not allowed in a switch statement",
+        ParseError.UnexpectedToken => "Unexpected token",
+        ParseError.WithInStrictMode => "With statements are not allowed in strict mode",
+        ParseError.ExpectedSemicolon => "Expected a ';' or a newline",
+        ParseError.ExpectedExport => "`export` keyword must be followed by an export declaration",
+        ParseError.UnexpectedPattern => "Expected expression, found binding pattern",
+        ParseError.RestElementNotLast => "Rest element must be the last element in a destructuring pattern",
+        ParseError.IllegalDeleteInStrictMode => "Cannot delete a variable in strict mode",
+        ParseError.IllegalFatArrow => "'=>' must appear immediately after arrow function parameters",
+        ParseError.IllegalNewline => "Unexpected newline",
+        ParseError.InvalidCoalesceExpression => "Invalid left-hand side in coalesce expression",
+        ParseError.InvalidAssignmentTarget => "Invalid assignment target",
+        ParseError.LexicallyBoundLet => "'let' cannot be used as a lexically bound variable name",
+        ParseError.MultipleConstructors => "Classes cannot multiple constructors",
+        ParseError.InvalidObject => "Expression is neither an object literal, nor a destructuring pattern",
+        ParseError.InvalidMetaProperty => "Invalid meta property",
+        ParseError.JsxNotImplemented => "JSX support is not implemented",
+        ParseError.TypeScriptNotImplemented => "TypeScript support is not implemented",
+        ParseError.InvalidArrowParameters => "Invalid arrow function parameters",
+        ParseError.UnexpectedEmptyArrowParams => "'()' is not a valid expression. Did you mean to write an arrow function '() => ...'?",
+        ParseError.MalformedArrowFnBody => "Malformed arrow function body",
+        ParseError.LetInStrictMode => "'let' is not allowed in strict mode",
+        ParseError.InvalidFunctionParameter => "Function parameter must be a name or binding pattern",
+        ParseError.IllegalLabeledStatement => "Labelled statements are not allowed here",
+        ParseError.AlreadyParsed => "The parser has already been used",
+        ParseError.ExpectedImportSpecifier => "Expected an import specifier, '*', or file path",
+    };
+}
+
+fn emitError(self: *Self, coord: types.Coordinate, err: ParseError) Error {
+    const msg = errorMessage(err);
+    try self.emitDiagnostic(coord, "{s}", .{msg});
+    return err;
+}
+
+fn errorOnToken(self: *Self, token: Token, err: ParseError) Error {
+    const coord = token.startCoord(self.source);
+    return self.emitError(coord, err);
+}
+
+fn errorOnNode(self: *Self, node: Node.Index, err: ParseError) Error {
+    const token_id = self.nodes.items(.start)[@intFromEnum(node)];
+    const start_coord = util.offsets.byteIndexToCoordinate(
+        self.source,
+        self.getToken(token_id).start,
+    );
+    return self.emitError(start_coord, err);
+}
 
 /// Enter strict mode by modifying the current context.
 /// Returns the previous context that must be passed to `contextExitStrictMode`.
@@ -4585,15 +4647,15 @@ fn ensureFatArrow(
                 "'()' is not a valid expression. Arrow functions start with '() => '",
                 .{},
             );
+            return Error.UnexpectedEmptyArrowParams;
         } else {
             try self.emitDiagnostic(
                 params_start_token.startCoord(self.source),
                 "Expected '=>' after arrow function parameters",
                 .{},
             );
+            return Error.UnexpectedToken;
         }
-
-        return Error.InvalidArrowFunction;
     }
 
     const fat_arrow = self.current.token;
@@ -4640,12 +4702,7 @@ fn completeArrowFunction(self: *Self, params: Node.Index) Error!Node.Index {
 
         const assignment = try self.assignmentExpression();
         if (self.current_destructure_kind.must_destruct) {
-            try self.emitDiagnostic(
-                body_start_token.startCoord(self.source),
-                "Unexpected destructuring pattern in arrow function body",
-                .{},
-            );
-            return Error.InvalidArrowFunction;
+            return self.errorOnToken(body_start_token, ParseError.MalformedArrowFnBody);
         }
 
         break :blk assignment;
@@ -5734,84 +5791,6 @@ fn parseArgs(self: *Self) Error!struct { ast.SubRange, Token.Index, Token.Index 
     const end_pos = (try self.expect(.@")")).id; // eat closing ')'
     const arg_list = self.scratch.items[scratch_start..];
     return .{ try self.addSubRange(arg_list), start_pos, end_pos };
-}
-
-/// make a right associative parse function for an infix operator represented
-/// by tokens of tag `toktag`
-fn makeRightAssoc(
-    comptime toktag: Token.Tag,
-    comptime l: *const ParseFn,
-) *const ParseFn {
-    const Parselet = struct {
-        fn parseFn(self: *Self) Error!Node.Index {
-            var node = try l(self);
-
-            var token = self.peek();
-            while (true) : (token = self.peek()) {
-                if (token.tag != toktag) break;
-                const op_token = try self.next();
-
-                const rhs = try parseFn(self);
-                const nodes = self.nodes.slice();
-                const start_pos = nodes.items(.start)[@intFromEnum(node)];
-                const end_pos = nodes.items(.end)[@intFromEnum(rhs)];
-                node = try self.addNode(.{
-                    .binary_expr = .{
-                        .lhs = node,
-                        .rhs = rhs,
-                        .operator = op_token.id,
-                    },
-                }, start_pos, end_pos);
-            }
-
-            return node;
-        }
-    };
-
-    return &Parselet.parseFn;
-}
-
-/// make a left associative parse function for an infix operator represented
-/// by tokens of tag `toktag`
-fn makeLeftAssoc(
-    comptime tag_min: Token.Tag,
-    comptime tag_max: Token.Tag,
-    comptime nextFn: *const ParseFn,
-) *const ParseFn {
-    const min: u32 = @intFromEnum(tag_min);
-    const max: u32 = @intFromEnum(tag_max);
-
-    const S = struct {
-        fn parseFn(self: *Self) Error!Node.Index {
-            var node = try nextFn(self);
-
-            var token = self.peek();
-            while (true) : (token = self.peek()) {
-                const itag: u32 = @intFromEnum(token.tag);
-                if (itag >= min and itag <= max) {
-                    self.current_destructure_kind.setNoAssignOrDestruct();
-
-                    const op_token = try self.next();
-                    const rhs = try nextFn(self);
-                    const start_pos = self.nodes.items(.start)[@intFromEnum(node)];
-                    const end_pos = self.nodes.items(.end)[@intFromEnum(rhs)];
-                    node = try self.addNode(.{
-                        .binary_expr = .{
-                            .lhs = node,
-                            .rhs = rhs,
-                            .operator = op_token.id,
-                        },
-                    }, start_pos, end_pos);
-                } else {
-                    break;
-                }
-            }
-
-            return node;
-        }
-    };
-
-    return &S.parseFn;
 }
 
 // -----

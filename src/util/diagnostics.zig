@@ -20,6 +20,10 @@ pub fn init(allocator: std.mem.Allocator) Self {
     };
 }
 
+pub fn deinit(self: *Self) void {
+    self.diagnostics.deinit();
+}
+
 /// Get the list of diagnostics.
 pub fn items(self: *const Self) []Diagnostic {
     return self.diagnostics.items;
@@ -37,8 +41,4 @@ pub fn emit(
         .coord = coord,
         .message = message,
     });
-}
-
-pub fn deinit(self: *Self) void {
-    self.diagnostics.deinit();
 }

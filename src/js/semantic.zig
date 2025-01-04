@@ -50,25 +50,26 @@ pub const Scope = struct {
 
     /// Points to the surrounding scope.
     /// Is `null` for the global scope of the program.
-    parent: ?*const Scope,
+    parent: ?*Scope,
     /// Map of variable name -> variable object
     variables: Map(String, Variable),
     /// List of all variable references in this scope.
-    references: List(ast.Node.Index, ?*const Variable),
+    references: List(Reference),
     /// Nested scopes within this scope.
-    children: List(*const Scope),
+    children: List(*Scope),
     kind: Kind,
     is_strict: bool,
 
     pub fn init(
         allocator: Allocator,
         kind: Kind,
-        parent: ?Scope.Id,
+        parent: ?*Scope,
         is_strict: bool,
     ) Allocator.Error!Scope {
         return Scope{
             .variables = Map(String, Variable){},
             .references = try List(Reference).initCapacity(allocator, 8),
+            .children = try List(*Scope).initCapacity(allocator, 4),
             .parent = parent,
             .kind = kind,
             .is_strict = is_strict,
@@ -80,8 +81,8 @@ pub const Scope = struct {
         self.references.deinit(allocator);
         for (self.children.items) |child| {
             child.deinit(allocator);
-            allocator.destroy(self.children);
         }
+        self.children.deinit(allocator);
     }
 };
 
@@ -102,10 +103,11 @@ current_scope: *Scope,
 /// Top-level scope of the entire program.
 /// Global declarations are stored here.
 root_scope: *Scope,
-
+/// Whether we're in lexical or variable binding context.
+/// When outside of a declaration, this is `null`.
 current_binding: ?BindingKind = null,
 
-pub fn init(allocator: Allocator, tree: *const ast.Tree) Self {
+pub fn init(allocator: Allocator, tree: *const ast.Tree) Allocator.Error!Self {
     const root_scope = try allocator.create(Scope);
     root_scope.* = try Scope.init(
         allocator,
@@ -141,12 +143,12 @@ pub fn onExit(self: *Self, _: ast.Node.Index, node: ast.NodeData) Allocator.Erro
         .block_statement,
         .function_expr,
         .function_declaration,
-        => try self.exitScope(),
+        => self.exitScope(),
         else => {},
     }
 }
 
-/// Enter a new scope
+/// Create and enter a new scope
 fn createScope(self: *Self, scope_kind: Scope.Kind) Allocator.Error!void {
     const parent = self.current_scope;
     const new_scope = try self.allocator.create(Scope);
@@ -157,7 +159,7 @@ fn createScope(self: *Self, scope_kind: Scope.Kind) Allocator.Error!void {
         parent.is_strict,
     );
 
-    try parent.children.append(new_scope);
+    try parent.children.append(self.allocator, new_scope);
     self.current_scope = new_scope;
 }
 
