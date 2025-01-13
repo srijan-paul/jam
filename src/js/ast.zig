@@ -1,5 +1,5 @@
 const std = @import("std");
-const Token = @import("token.zig").Token;
+pub const Token = @import("token.zig").Token;
 const Parser = @import("parser.zig");
 const util = @import("util");
 
@@ -40,6 +40,7 @@ pub const Tree = struct {
 
     /// Get a token by its index (Token.Index)
     pub fn getToken(self: *const Tree, index: Token.Index) Token {
+        // TODO: return a const ptr
         return self.tokens.items[@intFromEnum(index)];
     }
 
@@ -151,6 +152,15 @@ pub const Function = struct {
             return null;
         const name = tree.nodes.items(.data)[@intFromEnum(name_id)];
         return tree.getToken(name.binding_identifier).toByteSlice(tree.source);
+    }
+
+    /// Get the token ID for the name of this function
+    pub fn getNameTokenId(self: *const Function, tree: *const Tree) ?Token.Index {
+        if (tree.getExtraData(self.info).function.name) |id_node| {
+            return tree.getNode(id_node).data.identifier;
+        }
+
+        return null;
     }
 
     /// Returns a slice containing all the parameter nodes in the function.

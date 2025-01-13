@@ -2,6 +2,7 @@ const std = @import("std");
 const util = @import("util");
 const traverse = @import("./traverse.zig");
 const ast = @import("ast.zig");
+const StrUtil = @import("strings.zig");
 
 const Allocator = std.mem.Allocator;
 const List = std.ArrayListUnmanaged;
@@ -10,12 +11,19 @@ const Traverser = traverse.Traverser;
 
 const StringPool = util.StringPool;
 const String = StringPool.String;
+const Token = ast.Token;
 
 /// Result of the semantic analysis pass.
 /// Contains resolved references, scopes, control flow graph, etc.
 pub const AnalyzedProgram = struct {
     /// The syntax tree that was analyzed.
     tree: *const ast.Tree,
+    /// Top-level scope of the program.
+    root_scope: *Scope,
+
+    pub fn deinit(self: *AnalyzedProgram) void {
+        self.root_scope.deinit(self.tree.allocator);
+    }
 };
 
 pub const Variable = struct {
@@ -45,6 +53,8 @@ pub const Reference = struct {
     node: ast.Node.Index,
 };
 
+/// Scope contains information about the variables contained within it,
+/// along with any references made to other variables within the same or an outer scope.
 pub const Scope = struct {
     pub const Kind = enum { function, block, module, script };
 
@@ -88,11 +98,21 @@ pub const Scope = struct {
 
 const Self = @This();
 
+/// Denotes the type of a variable binding (lexical or hoisted)
 const BindingKind = enum {
     /// A variable that is declared with `let` or `const`, or class declaration
     lexical,
     /// A variable that is declared with `var`, or a function declaration.
     variable,
+};
+
+/// Information about the current variable binding that we're processing
+const BindingContext = struct {
+    /// Kind of the binding (lexical or variable/hoisted).
+    kind: Variable.Kind,
+    /// Nearest surrounding node that all subsequent declarations should be associated with.
+    /// E.g, when registering `a` in `var a = 1`, `decl_node` is the `variable_declarator` node ('a = 1').
+    decl_node: ast.Node.Index,
 };
 
 allocator: Allocator,
@@ -103,11 +123,19 @@ current_scope: *Scope,
 /// Top-level scope of the entire program.
 /// Global declarations are stored here.
 root_scope: *Scope,
-/// Whether we're in lexical or variable binding context.
-/// When outside of a declaration, this is `null`.
-current_binding: ?BindingKind = null,
 
-pub fn init(allocator: Allocator, tree: *const ast.Tree) Allocator.Error!Self {
+/// Stack of nested variable binding contexts.
+/// Eg:
+/// ```js
+/// var { a /*var*/ =
+///             () => {  let x /*lexical*/ = 1 },
+///       b /*var*/ } = obj;
+/// ```
+stack: List(BindingContext),
+/// Helper for string manipulation and escape code processing in identifiers
+strings: StrUtil,
+
+pub fn init(allocator: Allocator, tree: *ast.Tree) Allocator.Error!Self {
     const root_scope = try allocator.create(Scope);
     root_scope.* = try Scope.init(
         allocator,
@@ -121,21 +149,47 @@ pub fn init(allocator: Allocator, tree: *const ast.Tree) Allocator.Error!Self {
         .tree = tree,
         .root_scope = root_scope,
         .current_scope = root_scope,
+        .stack = try List(BindingContext).initCapacity(allocator, 8),
+        .strings = try StrUtil.init(allocator, tree.source, &tree.string_pool),
     };
+}
+
+pub fn deinit(self: *Self) void {
+    self.stack.deinit(self.allocator);
+    self.strings.deinit();
 }
 
 pub fn analyze(_: *Self) void {}
 
-pub fn onEnter(self: *Self, _: ast.Node.Index, node: ast.NodeData) Allocator.Error!void {
+pub fn onEnter(self: *Self, _: ast.Node.Index, node: ast.NodeData) !void {
     switch (node) {
         .block_statement => try self.createScope(Scope.Kind.block),
         .function_expr => try self.createScope(Scope.Kind.function),
-        .function_declaration => |_| {
-            // TODO: add function name to the scope.
+        .function_declaration => |func| {
+            const name_token_id = func.getNameTokenId(self.tree) orelse
+                unreachable; // function *declaration*s always have a name
+            try self.registerDeclaration(name_token_id);
             try self.createScope(Scope.Kind.function);
         },
+        .binding_identifier => |name_id| try self.registerDeclaration(name_id),
         else => {},
     }
+}
+
+/// Create a new variable in the current scope with the given name.
+pub fn registerDeclaration(self: *Self, name: Token.Index) !void {
+    const curr_binding_ctx = self.stack.getLast();
+    const token = self.tree.getToken(name);
+    const name_str = try self.strings.stringValue(&token);
+
+    const variable = Variable{
+        .name = name_str,
+        .def_node = curr_binding_ctx.decl_node,
+        .scope = self.current_scope,
+        .kind = curr_binding_ctx.kind,
+    };
+
+    try self.current_scope.variables.put(self.allocator, name_str, variable);
 }
 
 pub fn onExit(self: *Self, _: ast.Node.Index, node: ast.NodeData) Allocator.Error!void {
