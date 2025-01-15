@@ -115,7 +115,10 @@ pub fn jamToEstreeTag(node: ast.NodeData) []const u8 {
         .yield_expr => "YieldExpression",
         .update_expr => "UpdateExpression",
 
-        .binding_identifier, .identifier => "Identifier",
+        .binding_identifier,
+        .identifier,
+        .identifier_reference,
+        => "Identifier",
 
         .string_literal,
         .number_literal,
@@ -221,7 +224,7 @@ fn nodeToEsTree(
             try o.put("right", rhs);
         },
 
-        .binding_identifier, .identifier => |tok_id| {
+        .binding_identifier, .identifier, .identifier_reference => |tok_id| {
             const name = t.getToken(tok_id).toByteSlice(t.source);
             const escapedName = try processEscapes(al, name);
             try o.put("name", JValue{ .string = escapedName });

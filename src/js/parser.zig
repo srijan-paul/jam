@@ -130,11 +130,8 @@ pub const ParseContext = packed struct(u16) {
     /// Are `in` expressions allowed?
     /// Used to parse for-in loops.
     in: bool = true,
-    /// Whether we are currently parsing the LHS of a variable
-    /// declarator, or a function parameter.
-    parsing_declarator: enum(u2) { @"var", lexical, none } = .none,
     // padding
-    _: u6 = 0,
+    _: u8 = 0,
 };
 
 pub const SourceType = enum { script, module };
@@ -534,7 +531,7 @@ fn starImportSpecifier(self: *Self) Error!Node.Index {
     _ = try self.expectToken(.kw_as);
 
     const name_token = try self.expectIdentifier();
-    const name = try self.identifier(name_token.id);
+    const name = try self.identifierReference(name_token.id);
 
     const specifier = try self.addNode(
         .{
@@ -573,7 +570,7 @@ fn completeImportDeclaration(
 /// Parse the next identifier token as a default import specifier.
 fn defaultImportSpecifier(self: *Self) Error!Node.Index {
     const name_token = try self.next();
-    const name = try self.identifier(name_token.id);
+    const name = try self.identifierReference(name_token.id);
     return self.addNode(
         .{
             .import_default_specifier = .{ .name = name },
@@ -592,13 +589,13 @@ fn importSpecifier(self: *Self) Error!Node.Index {
         }
 
         name_token = try self.expectIdOrKeyword();
-        break :blk try self.identifier(name_token.id);
+        break :blk try self.identifierReference(name_token.id);
     };
 
     if (self.isAtToken(.kw_as) or !self.isIdentifier(name_token.token.tag)) {
         _ = try self.expectToken(.kw_as); // eat 'as'
         const alias_token = try self.expectIdentifier();
-        const alias = try self.identifier(alias_token.id);
+        const alias = try self.identifierReference(alias_token.id);
 
         return self.addNode(
             .{
@@ -632,7 +629,7 @@ fn moduleExportName(self: *Self) Error!Node.Index {
         return Error.UnexpectedToken;
     }
 
-    return self.identifier(name_token.id);
+    return self.identifierReference(name_token.id);
 }
 
 /// Parse an 'export' declaration:
@@ -722,7 +719,7 @@ fn starExportDeclaration(self: *Self, export_kw: TokenWithId) Error!Node.Index {
                 return Error.UnexpectedToken;
             }
 
-            break :blk try self.identifier(name_token.id);
+            break :blk try self.identifierReference(name_token.id);
         }
 
         break :blk null;
@@ -990,7 +987,7 @@ fn classDeclaration(self: *Self) Error!Node.Index {
         return Error.UnexpectedToken;
     }
 
-    const name = try self.identifier(name_token.id);
+    const name = try self.identifierReference(name_token.id);
 
     const super_class = if (self.current.token.tag == .kw_extends)
         try self.classHeritage()
@@ -1024,7 +1021,7 @@ fn classExpression(self: *Self, class_kw_id: Token.Index) Error!Node.Index {
         const cur = self.current.token.tag;
         if (cur.isIdentifier() or self.isKeywordIdentifier(cur)) {
             const name_token = try self.next();
-            break :blk try self.identifier(name_token.id);
+            break :blk try self.identifierReference(name_token.id);
         }
 
         break :blk null;
@@ -1101,7 +1098,7 @@ fn classElement(self: *Self, saw_constructor_inout: *bool) Error!Node.Index {
         .kw_constructor => {
             saw_constructor_inout.* = true;
             const ctor = try self.next();
-            const ctor_key = try self.identifier(ctor.id);
+            const ctor_key = try self.identifierReference(ctor.id);
 
             if (!self.isAtToken(.@"(")) {
                 try self.emitDiagnosticOnNode(ctor_key, "Classes cannot have a field named 'constructor'");
@@ -1163,7 +1160,7 @@ fn asyncClassProperty(self: *Self, modifiers: ClassFieldModifiers) Error!Node.In
     } else {
         // A regular field named 'async', like `class A { async = 5; }`
         // or `class A { async() { return 1; } }`
-        const key = try self.identifier(async_kw.id);
+        const key = try self.identifierReference(async_kw.id);
         return self.completeClassProperty(key, modifiers);
     }
 }
@@ -1206,7 +1203,7 @@ fn staticClassProperty(self: *Self, modifiers: ClassFieldModifiers) Error!Node.I
         new_modifiers.field_flags.is_static = true;
         return self.classPropertyWithModifier(new_modifiers);
     } else {
-        const key = try self.identifier(static_kw.id);
+        const key = try self.identifierReference(static_kw.id);
         return self.completeClassProperty(key, modifiers);
     }
 }
@@ -1257,7 +1254,7 @@ fn classProperty(self: *Self, modifiers: ClassFieldModifiers) Error!Node.Index {
 
         // Probably a regular field named 'get' or 'set',
         // like `class A { get() { return 1 }; set = 2;  } `
-        const key = try self.identifier(get_or_set.id);
+        const key = try self.identifierReference(get_or_set.id);
         return self.completeClassProperty(key, modifiers);
     }
 
@@ -1602,14 +1599,7 @@ fn completeVarDeclLoopIterator(
         decl_kw.token.tag == .kw_var or
         decl_kw.token.tag == .kw_const);
 
-    const ctx = self.context;
-    self.context.parsing_declarator = if (decl_kw.token.tag == .kw_var)
-        .@"var"
-    else
-        .lexical;
-
     const lhs = try self.bindingIdentifierOrPattern();
-    self.context = ctx;
 
     const lhs_span = self.nodeSpan(lhs);
     switch (self.current.token.tag) {
@@ -2180,10 +2170,7 @@ fn startLetBinding(self: *Self) Error!?TokenWithId {
 ///  BindingPattern Initializer?
 ///  BindingElement Initializer?
 fn variableDeclarator(self: *Self, kind: ast.VarDeclKind) Error!Node.Index {
-    const ctx = self.context;
-    self.context.parsing_declarator = if (kind == .@"var") .@"var" else .lexical;
     const lhs = try self.bindingIdentifierOrPattern();
-    self.context = ctx;
 
     const lhs_span = self.nodeSpan(lhs);
     const start_pos = lhs_span.start;
@@ -2290,7 +2277,6 @@ fn functionDeclaration(
 fn functionName(self: *Self) Error!Node.Index {
     const context = self.context;
     defer self.context = context;
-    self.context.parsing_declarator = .@"var"; // functions are hoisted
 
     const token = try self.next();
     if (self.isIdentifier(token.token.tag))
@@ -2356,7 +2342,7 @@ fn breakStatement(self: *Self) Error!Node.Index {
         {
             // TODO: check if this label exists.
             const token = try self.next();
-            const id = try self.identifier(token.id);
+            const id = try self.identifierReference(token.id);
             end_pos = token.id;
             break :blk id;
         }
@@ -2396,7 +2382,7 @@ fn continueStatement(self: *Self) Error!Node.Index {
         {
             // TODO: check if this label exists.
             const token = try self.next();
-            const id = try self.identifier(token.id);
+            const id = try self.identifierReference(token.id);
             end_pos = token.id;
             break :blk id;
         }
@@ -2882,6 +2868,8 @@ fn bindingIdentifierOrPattern(self: *Self) Error!Node.Index {
 fn reinterpretAsPattern(self: *Self, node_id: Node.Index) void {
     const node: *ast.NodeData = &self.nodes.items(.data)[@intFromEnum(node_id)];
     switch (node.*) {
+        // TODO: handle conversion of identifier to 'identifier_reference' nodes
+        // in cases like `{ a } = b`
         .identifier,
         .member_expr,
         .assignment_pattern,
@@ -2889,6 +2877,7 @@ fn reinterpretAsPattern(self: *Self, node_id: Node.Index) void {
         .rest_element,
         .computed_member_expr,
         .call_expr,
+        .identifier_reference,
         => return,
         .meta_property => {
             // TODO: import.meta is not assignable. raise an error here
@@ -3328,7 +3317,7 @@ fn destructuredIdentifierProperty(self: *Self) Error!Node.Index {
     const key = try if (cur_token.tag == .@"=")
         self.bindingIdentifier(key_token.id)
     else
-        self.identifier(key_token.id);
+        self.identifierReference(key_token.id);
 
     if (cur_token.tag == .@"=") {
         const eq_token = try self.next(); // eat '='
@@ -3907,7 +3896,7 @@ fn optionalChain(self: *Self, object: Node.Index) Error!Node.Index {
 
                 const expr = try self.addNode(.{ .member_expr = .{
                     .object = object,
-                    .property = try self.identifier(prop_name_token.id),
+                    .property = try self.identifierReference(prop_name_token.id),
                 } }, start_pos, end_pos);
                 return self.addNode(.{ .optional_expr = expr }, start_pos, end_pos);
             }
@@ -4036,8 +4025,8 @@ fn parseMetaProperty(
         return Error.InvalidMetaProperty;
     }
 
-    const meta = try self.identifier(meta_token_id);
-    const property = try self.identifier(property_token.id);
+    const meta = try self.identifierReference(meta_token_id);
+    const property = try self.identifierReference(property_token.id);
 
     const end_pos = property_token.id;
     return self.addNode(
@@ -4163,7 +4152,7 @@ fn primaryExpression(self: *Self) Error!Node.Index {
                 // 'x => 1'.
                 return self.identifierArrowParameter(&token.token, token.id);
             }
-            return self.identifier(token.id);
+            return self.identifierReference(token.id);
         },
         .decimal_literal,
         .octal_literal,
@@ -4189,7 +4178,7 @@ fn primaryExpression(self: *Self) Error!Node.Index {
             // arrow function starting with keyword identifier: 'yield => 1'
             return self.identifierArrowParameter(&token.token, token.id);
         }
-        return self.identifier(token.id);
+        return self.identifierReference(token.id);
     }
 
     try self.emitDiagnostic(
@@ -4351,7 +4340,7 @@ fn identifierArrowParameter(
     token: *const Token,
     token_id: Token.Index,
 ) Error!Node.Index {
-    const id = try self.identifier(token_id);
+    const id = try self.identifierReference(token_id);
     const params_range = try self.addSubRange(&[_]Node.Index{id});
     // TODO: should functions with single parameters just not store a SubRange and store the
     // parameter directly?
@@ -4456,7 +4445,7 @@ fn asyncExpression(self: *Self, async_kw: *const TokenWithId) Error!Node.Index {
         switch (parsed.*) {
             .parameters => return argsOrArrowParams,
             .arguments => {
-                const async_identifier = try self.identifier(async_kw.id);
+                const async_identifier = try self.identifierReference(async_kw.id);
                 return self.addNode(
                     .{ .call_expr = .{ .callee = async_identifier, .arguments = argsOrArrowParams } },
                     async_kw.id,
@@ -4472,7 +4461,7 @@ fn asyncExpression(self: *Self, async_kw: *const TokenWithId) Error!Node.Index {
     {
         // async x => ...
         const id_token = try self.next();
-        const param = try self.identifier(id_token.id);
+        const param = try self.identifierReference(id_token.id);
         const params_range = try self.addSubRange(&[_]Node.Index{param});
         const params = try self.addNode(
             .{ .parameters = params_range },
@@ -4485,7 +4474,7 @@ fn asyncExpression(self: *Self, async_kw: *const TokenWithId) Error!Node.Index {
         return params;
     }
 
-    return self.identifier(async_kw.id);
+    return self.identifierReference(async_kw.id);
 }
 
 fn callArgsOrAsyncArrowParams(self: *Self, _: ast.FunctionFlags) Error!Node.Index {
@@ -4608,6 +4597,11 @@ fn callArgsOrAsyncArrowParams(self: *Self, _: ast.FunctionFlags) Error!Node.Inde
         null;
 
     return self.addNode(.{ .arguments = call_args }, lparen.id, rparen.id);
+}
+
+/// Save `token` as an identifier reference node.
+fn identifierReference(self: *Self, name: Token.Index) Error!Node.Index {
+    return self.addNode(.{ .identifier_reference = name }, name, name);
 }
 
 /// Save `token` as an identifier node.
@@ -5141,17 +5135,17 @@ fn identifierProperty(self: *Self) Error!Node.Index {
         return Error.UnexpectedToken;
     }
 
-    const key = try self.identifier(key_token.id);
-
     const cur_token_tag = self.current.token.tag;
     switch (cur_token_tag) {
         .@":", .@"(" => {
+            const key = try self.identifier(key_token.id);
             return self.completePropertyDef(key, .{
                 .is_method = cur_token_tag == .@"(",
             });
         },
 
         .@"=" => {
+            const key = try self.identifier(key_token.id);
             const op_token = try self.next(); // eat '='
             if (!key_token.token.tag.isValidPropertyName()) {
                 try self.emitBadTokenDiagnostic("property name", &key_token.token);
@@ -5193,6 +5187,8 @@ fn identifierProperty(self: *Self) Error!Node.Index {
                 return Error.UnexpectedToken;
             }
 
+            // { a } <- 'a' is a *reference* to some variable.
+            const key = try self.identifierReference(key_token.id);
             const kv_node = ast.PropertyDefinition{
                 .key = key,
                 .value = key,
@@ -5258,7 +5254,7 @@ fn classElementName(self: *Self) Error!Node.Index {
         .non_ascii_identifier,
         .identifier,
         .private_identifier,
-        => return self.identifier(token.id),
+        => return self.identifierReference(token.id),
         .@"[" => {
             const expr = try self.assignmentExpression();
             _ = try self.expectToken(.@"]");
@@ -5273,7 +5269,7 @@ fn classElementName(self: *Self) Error!Node.Index {
         => return try self.parseLiteral(token),
         else => {
             if (token.token.tag.isKeyword())
-                return self.identifier(token.id);
+                return self.identifierReference(token.id);
 
             try self.emitDiagnostic(
                 token.token.startCoord(self.source),
@@ -5657,7 +5653,6 @@ fn parseParameter(self: *Self) Error!Node.Index {
 fn parseFormalParameters(self: *Self) Error!Node.Index {
     const context = self.context;
     defer self.context = context;
-    self.context.parsing_declarator = .@"var";
 
     const start_pos = (try self.expect(.@"(")).id;
 

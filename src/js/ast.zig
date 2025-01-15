@@ -420,6 +420,7 @@ pub const Boolean = struct {
     token: Token.Index,
 };
 
+/// Data contained inside an AST node
 pub const NodeData = union(enum(u8)) {
     program: ?SubRange,
     assignment_expr: BinaryPayload,
@@ -443,7 +444,22 @@ pub const NodeData = union(enum(u8)) {
     yield_expr: YieldPayload,
     update_expr: UnaryPayload,
 
+    /// An identifier that is neither a reference, nor a binding.
+    /// E.g: property node in a member expression, a label in a labeled statement,
+    /// or a key in an object literal.
     identifier: Token.Index,
+    /// An identifier that references some value in the program.
+    /// ```js
+    /// let x = 1; // "x" is a `binding_identifier`
+    /// x = 2; // "x" is an `identifier_reference`
+    /// ```
+    identifier_reference: Token.Index,
+    /// An identifier occurring on the LHS of a declaration.
+    /// E.g: In a variable binding, destructuring, or function parameter.
+    /// ```js
+    /// let x = 1; // "x" is a `binding_identifier`
+    /// x = 2; // "x" is an `identifier_reference`
+    /// ```
     binding_identifier: Token.Index,
 
     string_literal: Token.Index,
