@@ -531,7 +531,7 @@ fn starImportSpecifier(self: *Self) Error!Node.Index {
     _ = try self.expectToken(.kw_as);
 
     const name_token = try self.expectIdentifier();
-    const name = try self.identifierReference(name_token.id);
+    const name = try self.bindingIdentifier(name_token.id);
 
     const specifier = try self.addNode(
         .{
@@ -570,7 +570,7 @@ fn completeImportDeclaration(
 /// Parse the next identifier token as a default import specifier.
 fn defaultImportSpecifier(self: *Self) Error!Node.Index {
     const name_token = try self.next();
-    const name = try self.identifierReference(name_token.id);
+    const name = try self.bindingIdentifier(name_token.id);
     return self.addNode(
         .{
             .import_default_specifier = .{ .name = name },
@@ -589,13 +589,19 @@ fn importSpecifier(self: *Self) Error!Node.Index {
         }
 
         name_token = try self.expectIdOrKeyword();
-        break :blk try self.identifierReference(name_token.id);
+
+        // `import {foo as bar }` // <- `foo` is an identifier node
+        // `import { foo }` // <- `foo` is a BINDING identifier node
+        break :blk try if (self.isAtToken(.kw_as))
+            self.identifier(name_token.id)
+        else
+            self.bindingIdentifier(name_token.id);
     };
 
     if (self.isAtToken(.kw_as) or !self.isIdentifier(name_token.token.tag)) {
         _ = try self.expectToken(.kw_as); // eat 'as'
         const alias_token = try self.expectIdentifier();
-        const alias = try self.identifierReference(alias_token.id);
+        const alias = try self.bindingIdentifier(alias_token.id);
 
         return self.addNode(
             .{
@@ -672,6 +678,8 @@ fn exportDeclaration(self: *Self) Error!Node.Index {
         // export { x, y } from "foo";
         // ```
         if (self.isAtToken(.kw_from)) {
+            self.rewriteRefsInExportList(specifiers);
+
             _ = try self.expect(.kw_from);
             end_pos = self.current.id;
             const source = try self.stringLiteral();
@@ -719,7 +727,7 @@ fn starExportDeclaration(self: *Self, export_kw: TokenWithId) Error!Node.Index {
                 return Error.UnexpectedToken;
             }
 
-            break :blk try self.identifierReference(name_token.id);
+            break :blk try self.identifier(name_token.id);
         }
 
         break :blk null;
@@ -801,7 +809,9 @@ fn defaultExport(self: *Self, export_kw: Token.Index) Error!Node.Index {
     );
 }
 
-pub fn namedExportList(self: *Self) Error!ast.SubRange {
+/// Parse a list of export specifiers:
+/// https://tc39.es/ecma262/#prod-ExportsList
+fn namedExportList(self: *Self) Error!ast.SubRange {
     const prev_scratch_len = self.scratch.items.len;
     defer self.scratch.items.len = prev_scratch_len;
 
@@ -814,6 +824,42 @@ pub fn namedExportList(self: *Self) Error!ast.SubRange {
 
     const specifiers = self.scratch.items[prev_scratch_len..];
     return try self.addSubRange(specifiers);
+}
+
+/// Go through all specifiers in an export declaration, and convert
+/// every `identifier_reference` to an `identifier`.
+/// This done to appropriately parse cases like:
+/// ```js
+/// export { foo, bar as y } from "baz"
+/// ```
+/// Before we've seen the `from` keyword, we don't know if `foo` and `bar`
+/// are identifiers (i.e references into the "baz" file), or whether they're
+/// `identifier_reference`s, referencing top-level variables declared within the same file.
+/// So, we parse them as `identifier_reference` nodes, and then rewrite them
+/// if we see a `from` keyword after the specifier list.
+fn rewriteRefsInExportList(self: *Self, specifiers: ast.SubRange) void {
+    const from: usize = @intFromEnum(specifiers.from);
+    const to: usize = @intFromEnum(specifiers.to);
+    const node_pls: []ast.NodeData = self.nodes.items(.data);
+    for (from..to) |i| {
+        const node_id = self.node_lists.items[i];
+        const node_pl = &node_pls[@intFromEnum(node_id)];
+        std.debug.assert(std.meta.activeTag(node_pl.*) == .export_specifier);
+
+        identifierRefToIdentifier(node_pls, node_pl.export_specifier.local);
+
+        if (node_pl.export_specifier.exported) |exported_id| {
+            identifierRefToIdentifier(node_pls, exported_id);
+        }
+    }
+}
+
+/// Convert an existing `identifier_reference` node to an `identifier` node.
+/// This just updates the tag of the node's `NodeData` union.
+fn identifierRefToIdentifier(node_pls: []NodeData, id: Node.Index) void {
+    const pl = &node_pls[@intFromEnum(id)];
+    std.debug.assert(std.meta.activeTag(pl.*) == .identifier_reference);
+    pl.* = .{ .identifier = pl.identifier_reference };
 }
 
 /// Parse an export specifier.
@@ -987,7 +1033,7 @@ fn classDeclaration(self: *Self) Error!Node.Index {
         return Error.UnexpectedToken;
     }
 
-    const name = try self.identifierReference(name_token.id);
+    const name = try self.bindingIdentifier(name_token.id);
 
     const super_class = if (self.current.token.tag == .kw_extends)
         try self.classHeritage()
@@ -1021,7 +1067,7 @@ fn classExpression(self: *Self, class_kw_id: Token.Index) Error!Node.Index {
         const cur = self.current.token.tag;
         if (cur.isIdentifier() or self.isKeywordIdentifier(cur)) {
             const name_token = try self.next();
-            break :blk try self.identifierReference(name_token.id);
+            break :blk try self.bindingIdentifier(name_token.id);
         }
 
         break :blk null;
@@ -1098,7 +1144,7 @@ fn classElement(self: *Self, saw_constructor_inout: *bool) Error!Node.Index {
         .kw_constructor => {
             saw_constructor_inout.* = true;
             const ctor = try self.next();
-            const ctor_key = try self.identifierReference(ctor.id);
+            const ctor_key = try self.identifier(ctor.id);
 
             if (!self.isAtToken(.@"(")) {
                 try self.emitDiagnosticOnNode(ctor_key, "Classes cannot have a field named 'constructor'");
@@ -2342,7 +2388,7 @@ fn breakStatement(self: *Self) Error!Node.Index {
         {
             // TODO: check if this label exists.
             const token = try self.next();
-            const id = try self.identifierReference(token.id);
+            const id = try self.identifier(token.id);
             end_pos = token.id;
             break :blk id;
         }
@@ -2382,7 +2428,7 @@ fn continueStatement(self: *Self) Error!Node.Index {
         {
             // TODO: check if this label exists.
             const token = try self.next();
-            const id = try self.identifierReference(token.id);
+            const id = try self.identifier(token.id);
             end_pos = token.id;
             break :blk id;
         }
@@ -2863,50 +2909,108 @@ fn bindingIdentifierOrPattern(self: *Self) Error!Node.Index {
     }
 }
 
-/// Mutate existing nodes to convert a PrimaryExpression to an
-/// AssignmentPattern (or Identifier) (e.g, .object_literal => .object_pattern)
-fn reinterpretAsPattern(self: *Self, node_id: Node.Index) void {
-    const node: *ast.NodeData = &self.nodes.items(.data)[@intFromEnum(node_id)];
+fn reinterpretPattern(
+    self: *Self,
+    node_pls: []NodeData,
+    node_id: Node.Index,
+    is_binding_pattern: bool,
+) void {
+    const node: *ast.NodeData = &node_pls[@intFromEnum(node_id)];
     switch (node.*) {
-        // TODO: handle conversion of identifier to 'identifier_reference' nodes
-        // in cases like `{ a } = b`
-        .identifier,
         .member_expr,
-        .assignment_pattern,
         .empty_array_item,
-        .rest_element,
         .computed_member_expr,
         .call_expr,
-        .identifier_reference,
         => return,
-        .meta_property => {
-            // TODO: import.meta is not assignable. raise an error here
-            return;
+
+        .assignment_pattern => |pattern| {
+            self.reinterpretPattern(node_pls, pattern.lhs, is_binding_pattern);
         },
+
+        .rest_element => |rest_pl| {
+            self.reinterpretPattern(node_pls, rest_pl, is_binding_pattern);
+        },
+
+        .identifier_reference => |id_token| {
+            if (is_binding_pattern) {
+                node.* = .{ .binding_identifier = id_token };
+            }
+        },
+
+        .identifier => |id_token| {
+            // ({ x:y } = 1) // <- convert y to an identifier REFERENCE
+            // ({ x:y }) => 1 // <- convert y to a BINDING identifier
+            node.* = if (is_binding_pattern)
+                .{ .binding_identifier = id_token }
+            else
+                .{ .identifier_reference = id_token };
+        },
+        // TODO: import.meta is not assignable. raise an error here
+        .meta_property => return,
         .object_literal => |object_pl| {
             node.* = .{ .object_pattern = object_pl };
             const elems = self.subRangeToSlice(object_pl orelse return);
             for (elems) |elem_id| {
-                self.reinterpretAsPattern(elem_id);
+                self.reinterpretPattern(node_pls, elem_id, is_binding_pattern);
             }
         },
         .array_literal => |array_pl| {
             node.* = .{ .array_pattern = array_pl };
             const elems = self.subRangeToSlice(array_pl orelse return);
             for (elems) |elem_id| {
-                self.reinterpretAsPattern(elem_id);
+                self.reinterpretPattern(node_pls, elem_id, is_binding_pattern);
             }
         },
-        .object_property => |property_definiton| self.reinterpretAsPattern(property_definiton.value),
+        .object_property => |property_definiton| {
+            const key_id = property_definiton.key;
+            const value_id = property_definiton.value;
+            if (key_id == value_id) {
+                // foo({x}) // <- `x` is an IDENTIFIER REFERENCE
+                // ({x} = 1) // <- `x` is a BINDING IDENTIFIER
+                const key = &node_pls[@intFromEnum(property_definiton.key)];
+                switch (key.*) {
+                    .identifier,
+                    .identifier_reference,
+                    => |key_token| {
+                        key.* = if (is_binding_pattern)
+                            ast.NodeData{ .binding_identifier = key_token }
+                        else
+                            ast.NodeData{ .identifier_reference = key_token };
+                    },
+                    // when the key and value are the same,the key must be an identifier
+                    else => unreachable,
+                }
+            } else {
+                self.reinterpretPattern(node_pls, value_id, is_binding_pattern);
+            }
+        },
         .assignment_expr => |assign_pl| {
+            // ({x:y}=1) // <- LHS goes from object expression to object pattern
+            self.reinterpretPattern(node_pls, assign_pl.lhs, is_binding_pattern);
             node.* = .{ .assignment_pattern = assign_pl };
         },
         .spread_element => |spread_pl| {
-            self.reinterpretAsPattern(spread_pl);
+            self.reinterpretPattern(node_pls, spread_pl, is_binding_pattern);
             node.* = .{ .rest_element = spread_pl };
         },
         else => {},
     }
+}
+
+/// Mutate existing nodes to convert a PrimaryExpression to an
+/// AssignmentPattern (or Identifier) (e.g, .object_literal => .object_pattern)
+/// This will also convert some `identifier` nodes to `binding` identifier nodes.
+/// E.g: `{ x }` <- `x` becomes a `binding_identifier` node.
+fn reinterpretAsBindingPattern(self: *Self, node_id: Node.Index) void {
+    const node_pls = self.nodes.items(.data);
+    self.reinterpretPattern(node_pls, node_id, true);
+}
+
+/// Mutate existing nodes to convert a PrimaryExpression to an
+/// AssignmentPattern (or Identifier) (e.g, .object_literal => .object_pattern)
+fn reinterpretAsPattern(self: *Self, node_id: Node.Index) void {
+    const node_pls = self.nodes.items(.data);
+    self.reinterpretPattern(node_pls, node_id, false);
 }
 
 /// Parse an assignment expression that may be an L or an R-value.
@@ -3314,11 +3418,7 @@ fn destructuredIdentifierProperty(self: *Self) Error!Node.Index {
 
     const cur_token = self.peek();
 
-    const key = try if (cur_token.tag == .@"=")
-        self.bindingIdentifier(key_token.id)
-    else
-        self.identifierReference(key_token.id);
-
+    const key = try self.identifierReference(key_token.id);
     if (cur_token.tag == .@"=") {
         const eq_token = try self.next(); // eat '='
         const rhs = try self.assignmentExpression();
@@ -3896,7 +3996,7 @@ fn optionalChain(self: *Self, object: Node.Index) Error!Node.Index {
 
                 const expr = try self.addNode(.{ .member_expr = .{
                     .object = object,
-                    .property = try self.identifierReference(prop_name_token.id),
+                    .property = try self.identifier(prop_name_token.id),
                 } }, start_pos, end_pos);
                 return self.addNode(.{ .optional_expr = expr }, start_pos, end_pos);
             }
@@ -4025,8 +4125,8 @@ fn parseMetaProperty(
         return Error.InvalidMetaProperty;
     }
 
-    const meta = try self.identifierReference(meta_token_id);
-    const property = try self.identifierReference(property_token.id);
+    const meta = try self.identifier(meta_token_id);
+    const property = try self.identifier(property_token.id);
 
     const end_pos = property_token.id;
     return self.addNode(
@@ -4252,7 +4352,7 @@ fn parseNumericToken(self: *Self, token: *const TokenWithId) Error!ast.Number {
         .legacy_octal_literal,
         .octal_literal,
         => parseOctal(str),
-        // TODO: non-floating point numbers can be parsed with `parseInt`, actually.
+        // TODO(perf): non-floating point numbers can be parsed with `parseInt`, actually.
         .decimal_literal => parseDecimal(str),
         .binary_literal => parseBinary(str),
         .hex_literal => parseHex(str),
@@ -4268,7 +4368,8 @@ fn parseNumericToken(self: *Self, token: *const TokenWithId) Error!ast.Number {
 }
 
 fn parseDecimal(str: []const u8) f64 {
-    return std.fmt.parseFloat(f64, str) catch unreachable;
+    return std.fmt.parseFloat(f64, str) catch
+        std.debug.panic("Invalid number: {s}\n", .{str});
 }
 
 fn parseOctal(str: []const u8) f64 {
@@ -4340,7 +4441,7 @@ fn identifierArrowParameter(
     token: *const Token,
     token_id: Token.Index,
 ) Error!Node.Index {
-    const id = try self.identifierReference(token_id);
+    const id = try self.bindingIdentifier(token_id);
     const params_range = try self.addSubRange(&[_]Node.Index{id});
     // TODO: should functions with single parameters just not store a SubRange and store the
     // parameter directly?
@@ -4445,7 +4546,7 @@ fn asyncExpression(self: *Self, async_kw: *const TokenWithId) Error!Node.Index {
         switch (parsed.*) {
             .parameters => return argsOrArrowParams,
             .arguments => {
-                const async_identifier = try self.identifierReference(async_kw.id);
+                const async_identifier = try self.bindingIdentifier(async_kw.id);
                 return self.addNode(
                     .{ .call_expr = .{ .callee = async_identifier, .arguments = argsOrArrowParams } },
                     async_kw.id,
@@ -4461,7 +4562,7 @@ fn asyncExpression(self: *Self, async_kw: *const TokenWithId) Error!Node.Index {
     {
         // async x => ...
         const id_token = try self.next();
-        const param = try self.identifierReference(id_token.id);
+        const param = try self.bindingIdentifier(id_token.id);
         const params_range = try self.addSubRange(&[_]Node.Index{param});
         const params = try self.addNode(
             .{ .parameters = params_range },
@@ -4474,6 +4575,7 @@ fn asyncExpression(self: *Self, async_kw: *const TokenWithId) Error!Node.Index {
         return params;
     }
 
+    // Just a reference to some variable/function called "async"
     return self.identifierReference(async_kw.id);
 }
 
@@ -4562,7 +4664,7 @@ fn callArgsOrAsyncArrowParams(self: *Self, _: ast.FunctionFlags) Error!Node.Inde
 
         // mutate the expressions so far to be interpreted as patterns.
         for (sub_exprs) |node| {
-            self.reinterpretAsPattern(node);
+            self.reinterpretAsBindingPattern(node);
         }
 
         const params_range = if (sub_exprs.len > 0)
@@ -4858,7 +4960,7 @@ fn completeArrowParamsOrGroupingExpr(
         }
 
         for (nodes.items) |node| {
-            self.reinterpretAsPattern(node);
+            self.reinterpretAsBindingPattern(node);
         }
 
         const params_range = try self.addSubRange(nodes.items);
@@ -5254,7 +5356,7 @@ fn classElementName(self: *Self) Error!Node.Index {
         .non_ascii_identifier,
         .identifier,
         .private_identifier,
-        => return self.identifierReference(token.id),
+        => return self.identifier(token.id),
         .@"[" => {
             const expr = try self.assignmentExpression();
             _ = try self.expectToken(.@"]");
@@ -5269,7 +5371,7 @@ fn classElementName(self: *Self) Error!Node.Index {
         => return try self.parseLiteral(token),
         else => {
             if (token.token.tag.isKeyword())
-                return self.identifierReference(token.id);
+                return self.identifier(token.id);
 
             try self.emitDiagnostic(
                 token.token.startCoord(self.source),
