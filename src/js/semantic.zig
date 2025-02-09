@@ -47,7 +47,7 @@ pub const Variable = struct {
 };
 
 pub const Reference = struct {
-    /// The variable that this reference refers to.
+    /// The variable that this reference points to.
     variable: *const Variable,
     /// The AST node that is the reference.
     node: ast.Node.Index,
@@ -167,7 +167,7 @@ pub fn onEnter(self: *Self, _: ast.Node.Index, node: ast.NodeData) !void {
         .function_expr => try self.createScope(Scope.Kind.function),
         .function_declaration => |func| {
             const name_token_id = func.getNameTokenId(self.tree) orelse
-                unreachable; // function *declaration*s always have a name
+                unreachable; // function declarations always have a name
             try self.registerDeclaration(name_token_id);
             try self.createScope(Scope.Kind.function);
         },

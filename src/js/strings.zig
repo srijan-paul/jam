@@ -44,7 +44,7 @@ pub fn stringValue(self: *Self, token: *const Token) error{ OutOfMemory, Overflo
     // we can just return the slice after interning it as is.
     // Non-ASCII identifiers are tagged with ".non_ascii_identifier"
     if (token.tag == .identifier) {
-        @branchHint(.cold);
+        @branchHint(.likely);
         return try self.string_pool.getOrInsertNoOwn(str);
     }
 

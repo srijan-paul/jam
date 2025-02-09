@@ -25,7 +25,11 @@ const TokenWithId = struct {
 const ParseError = error{
     UnexpectedToken,
     /// `async` keyword used on a property that isn't a method
-    AsyncProperty,
+    InvalidAsyncProperty,
+    /// Keywords cannot be used as shorthand property names
+    InvalidKeywordShorthandProperty,
+    /// 'static' modifier used twice on a class field or method
+    DuplicateStaticModifier,
     /// `async` keyword used on a getter or setter
     AsyncGetterOrSetter,
     /// Invalid modifier like 'async'
@@ -42,8 +46,12 @@ const ParseError = error{
     IllegalFatArrow,
     /// Found a newline where there shouldn't be one
     IllegalNewline,
-    // Using '??' with '||' or '&&' without parentheses
+    /// Using '??' with '||' or '&&' without parentheses
     InvalidCoalesceExpression,
+    /// Invalid operand for a rest expression (e.g: ...1)
+    InvalidRestOperand,
+    /// Invalid operand for an update expression (e.g: 1++)
+    InvalidUpdateOperand,
     // Incorrect use of a meta property like 'new.target'
     InvalidMetaProperty,
     /// 5 = ...
@@ -52,7 +60,7 @@ const ParseError = error{
     InvalidArrowParameters,
     MalformedArrowFnBody,
     /// Saw a '()' without a '=>'
-    UnexpectedEmptyArrowParams,
+    MissingArrow,
     /// Setter must have exactly one parameter
     InvalidSetter,
     /// Getter must have no parameters
@@ -77,6 +85,8 @@ const ParseError = error{
     ExpectedImportSpecifier,
     /// let [a, ...as, b] = [1, 2, 3] <- 'as' must be the last
     RestElementNotLast,
+    /// Rest element must be the last item in a function parameter list
+    RestElementNotLastInParams,
     /// let { x, y } <- destructuring pattern must have an initializer
     MissingInitializerInBinding,
     /// const x <- const declaration must have an initializer
@@ -86,10 +96,14 @@ const ParseError = error{
     MultipleDefaults,
     /// Class definition with multiple constructors
     MultipleConstructors,
+    /// Classes cannot have a field named ""
+    InvalidClassFieldNamedConstructor,
     /// "with" statement used in strict mode.
     WithInStrictMode,
     /// Attempt to delete a local variable in strict mode.
     IllegalDeleteInStrictMode,
+    /// Invalid expression or pattern inside '(...)'
+    InvalidExpressionInsideParens,
     // TODO: remove these two errors
     JsxNotImplemented,
     TypeScriptNotImplemented,
@@ -1124,11 +1138,7 @@ fn classBody(self: *Self) Error!ast.SubRange {
         if (saw_constructor) n_constructors += 1;
 
         if (n_constructors > 1) {
-            try self.emitDiagnosticOnNode(
-                element,
-                "A class cannot have multiple constructor implementations",
-            );
-            return Error.MultipleConstructors;
+            return self.errorOnNode(element, ParseError.MultipleConstructors);
         }
         try self.scratch.append(element);
     }
@@ -1147,8 +1157,7 @@ fn classElement(self: *Self, saw_constructor_inout: *bool) Error!Node.Index {
             const ctor_key = try self.identifier(ctor.id);
 
             if (!self.isAtToken(.@"(")) {
-                try self.emitDiagnosticOnNode(ctor_key, "Classes cannot have a field named 'constructor'");
-                return Error.UnexpectedToken;
+                return self.errorOnToken(self.current.token, ParseError.InvalidClassFieldNamedConstructor);
             }
 
             return self.parseClassMethodBody(
@@ -1228,12 +1237,7 @@ fn staticClassProperty(self: *Self, modifiers: ClassFieldModifiers) Error!Node.I
         self.current.token.line == static_kw.token.line)
     {
         if (modifiers.field_flags.is_static) {
-            try self.emitDiagnosticOnToken(
-                static_kw.token,
-                "Duplicate 'static' modifier",
-                .{},
-            );
-            return Error.UnexpectedToken;
+            return self.errorOnToken(static_kw.token, ParseError.DuplicateStaticModifier);
         }
 
         if (modifiers.method_flags.is_async) {
@@ -1321,11 +1325,7 @@ fn completeClassProperty(
 
     if (modifiers.method_flags.is_async) {
         // disallow fields like `async x = 5;`
-        try self.emitDiagnosticOnNode(
-            key,
-            "'async' modifier cannot be used on fields that are not methods",
-        );
-        return Error.AsyncProperty;
+        return self.errorOnNode(key, ParseError.InvalidAsyncProperty);
     }
 
     const start_pos = modifiers.start_position;
@@ -1382,12 +1382,7 @@ fn parseClassMethodBody(
 
     if (modifiers.field_flags.kind == .get or modifiers.field_flags.kind == .set) {
         if (modifiers.method_flags.is_async) {
-            try self.emitDiagnosticOnNode(
-                key,
-                "'async' modifier cannot be used on getters or setters",
-            );
-
-            return Error.AsyncGetterOrSetter;
+            return self.errorOnNode(key, ParseError.AsyncGetterOrSetter);
         }
 
         // verify the number of parameters for getters and setters.
@@ -1403,33 +1398,6 @@ fn parseClassMethodBody(
         modifiers.start_position,
         end_pos,
     );
-}
-
-/// Return any statement except a labeled statement.
-/// Used in contexts where a labeled statement is not allowed, like the body of
-/// a WhileStatement.
-fn stmtNotLabeledFunction(self: *Self) Error!Node.Index {
-    const lstmt = try self.statementOrDeclaration();
-    const data_slice: []ast.NodeData = self.nodes.items(.data);
-    const stmt_node = data_slice[@intFromEnum(lstmt)];
-
-    switch (stmt_node) {
-        .labeled_statement => |labeled_stmt| {
-            // TODO: this should change to a helper function.
-            const stmt = data_slice[@intFromEnum(labeled_stmt.body)];
-            if (std.meta.activeTag(stmt) == .function_declaration) {
-                try self.emitDiagnosticOnToken(
-                    self.getToken(labeled_stmt.label),
-                    "Function declarations cannot be labeled here",
-                    .{},
-                );
-                return Error.IllegalLabeledStatement;
-            }
-        },
-        else => {},
-    }
-
-    return lstmt;
 }
 
 fn ifStatement(self: *Self) Error!Node.Index {
@@ -1696,11 +1664,9 @@ fn completeVarDeclLoopIterator(
                 end_pos = self.nodeSpan(init_expr).end;
                 rhs = init_expr;
             } else if (self.nodeTag(lhs) != .binding_identifier) {
-                try self.emitDiagnosticOnNode(lhs, "Complex binding patterns require an initializer");
-                return Error.MissingInitializerInBinding;
+                return self.errorOnNode(lhs, ParseError.MissingInitializerInBinding);
             } else if (decl_kw.token.tag == .kw_const) {
-                try self.emitDiagnosticOnNode(lhs, "Missing initializer in const declaration");
-                return Error.MissingInitializerInConst;
+                return self.errorOnNode(lhs, ParseError.MissingInitializerInConst);
             }
 
             const first_decl = try self.addNode(
@@ -2140,8 +2106,7 @@ fn withStatement(self: *Self) Error!Node.Index {
 
     if (self.context.strict) {
         // TODO: emit this error but continue parsing.
-        try self.emitDiagnosticOnNode(stmt, "With statements are not allowed in strict mode");
-        return Error.WithInStrictMode;
+        return self.errorOnNode(stmt, ParseError.WithInStrictMode);
     }
 
     return stmt;
@@ -2230,12 +2195,10 @@ fn variableDeclarator(self: *Self, kind: ast.VarDeclKind) Error!Node.Index {
             break :blk init_expr;
         } else if (self.nodeTag(lhs) != .binding_identifier) {
             // Assignment patterns must have an initializer.
-            try self.emitDiagnosticOnNode(lhs, "A destructuring declaration must have an initializer");
-            return Error.MissingInitializerInBinding;
+            return self.errorOnNode(lhs, ParseError.MissingInitializerInBinding);
         } else if (kind == .@"const") {
             // Constants must have an initializer.
-            try self.emitDiagnosticOnNode(lhs, "Missing initializer in const declaration");
-            return Error.MissingInitializerInConst;
+            return self.errorOnNode(lhs, ParseError.MissingInitializerInConst);
         }
 
         break :blk null;
@@ -2450,7 +2413,9 @@ fn continueStatement(self: *Self) Error!Node.Index {
 
 fn errorMessage(err: ParseError) []const u8 {
     return switch (err) {
-        ParseError.AsyncProperty => "The async modifier is only allowed on methods",
+        ParseError.InvalidAsyncProperty => "The async modifier is only allowed on methods",
+        ParseError.DuplicateStaticModifier => "Duplicate 'static' modifier",
+        ParseError.InvalidKeywordShorthandProperty => "Keywords cannot be used as shorthand property names",
         ParseError.AsyncGetterOrSetter => "The async modifier cannot be used on getters and setters",
         ParseError.IllegalReturn => "Return statement is not allowed outside of a function",
         ParseError.IllegalBreak => "'break' is not allowed outside loops and switch statements",
@@ -2471,22 +2436,27 @@ fn errorMessage(err: ParseError) []const u8 {
         ParseError.IllegalDeleteInStrictMode => "Cannot delete a variable in strict mode",
         ParseError.IllegalFatArrow => "'=>' must appear immediately after arrow function parameters",
         ParseError.IllegalNewline => "Unexpected newline",
-        ParseError.InvalidCoalesceExpression => "Invalid left-hand side in coalesce expression",
+        ParseError.InvalidCoalesceExpression => "Logical operators cannot be mixed with the nullish coalescing operator",
+        ParseError.InvalidRestOperand => "A '...' here must be followed by a valid assignment target",
+        ParseError.InvalidUpdateOperand => "Invalid operand for update expression",
         ParseError.InvalidAssignmentTarget => "Invalid assignment target",
         ParseError.LexicallyBoundLet => "'let' cannot be used as a lexically bound variable name",
         ParseError.MultipleConstructors => "Classes cannot multiple constructors",
+        ParseError.InvalidClassFieldNamedConstructor => "Classes cannot have a field with the name 'constructor'",
         ParseError.InvalidObject => "Expression is neither an object literal, nor a destructuring pattern",
         ParseError.InvalidMetaProperty => "Invalid meta property",
         ParseError.JsxNotImplemented => "JSX support is not implemented",
         ParseError.TypeScriptNotImplemented => "TypeScript support is not implemented",
         ParseError.InvalidArrowParameters => "Invalid arrow function parameters",
-        ParseError.UnexpectedEmptyArrowParams => "'()' is not a valid expression. Did you mean to write an arrow function '() => ...'?",
+        ParseError.MissingArrow => "Missing '=>' after arrow function parameter list",
         ParseError.MalformedArrowFnBody => "Malformed arrow function body",
         ParseError.LetInStrictMode => "'let' is not allowed in strict mode",
         ParseError.InvalidFunctionParameter => "Function parameter must be a name or binding pattern",
         ParseError.IllegalLabeledStatement => "Labelled statements are not allowed here",
         ParseError.AlreadyParsed => "The parser has already been used",
         ParseError.ExpectedImportSpecifier => "Expected an import specifier, '*', or file path",
+        ParseError.InvalidExpressionInsideParens => "Invalid expression or pattern inside (...)",
+        ParseError.RestElementNotLastInParams => "Rest element must be the last item in a function parameter list",
     };
 }
 
@@ -2657,15 +2627,6 @@ fn emitBadDestructureDiagnostic(self: *Self, expr: Node.Index) error{OutOfMemory
     const start_token = self.nodes.items(.start)[@intFromEnum(expr)];
     const start_coord = self.getToken(start_token).startCoord(self.source);
     return self.emitDiagnostic(start_coord, "Unexpected destructuring pattern", .{});
-}
-
-fn emitDiagnosticOnNode(self: *Self, expr: Node.Index, comptime message: []const u8) error{OutOfMemory}!void {
-    const token_id = self.nodes.items(.start)[@intFromEnum(expr)];
-    const start_coord = util.offsets.byteIndexToCoordinate(
-        self.source,
-        self.getToken(token_id).start,
-    );
-    return self.emitDiagnostic(start_coord, message, .{});
 }
 
 /// Emit a diagnostic about an un-expected token.
@@ -3153,12 +3114,7 @@ fn completeBinaryExpression(
         if ((current_op.token.tag.isLogicalOperator() and op_token == .@"??") or
             (op_token.isLogicalOperator() and current_op.token.tag == .@"??"))
         {
-            try self.emitDiagnosticOnToken(
-                current_op.token,
-                "Logical operators cannot be mixed with the nullish coalescing operator. Use parentheses to disambiguate.",
-                .{},
-            );
-            return Error.InvalidCoalesceExpression;
+            return self.errorOnToken(current_op.token, ParseError.InvalidCoalesceExpression);
         }
 
         const rhs_start_expr = try self.exponentExpression();
@@ -3659,14 +3615,9 @@ fn unaryExpression(self: *Self) Error!Node.Index {
                 op.token.tag == .kw_delete and
                 expr_tag == .identifier)
             {
-                try self.emitDiagnosticOnNode(
-                    expr,
-                    "Cannot delete variable in strict mode",
-                );
-
                 // TODO: instead of returning en error here.
                 // we can continue parsing.
-                return Error.IllegalDeleteInStrictMode;
+                return self.errorOnNode(expr, ParseError.IllegalDeleteInStrictMode);
             }
 
             const expr_end = slice.items(.end)[@intFromEnum(expr)];
@@ -3730,12 +3681,7 @@ fn updateExpression(self: *Self) Error!Node.Index {
 
         const is_operand_simple = self.current_destructure_kind.is_simple_expression;
         if (!is_operand_simple) {
-            try self.emitDiagnosticOnToken(
-                op_token.token,
-                "Invalid operand for update expression",
-                .{},
-            );
-            return Error.UnexpectedToken;
+            return self.errorOnToken(op_token.token, ParseError.InvalidUpdateOperand);
         }
 
         const expr_end_pos = self.nodes.items(.end)[@intFromEnum(expr)];
@@ -4608,8 +4554,7 @@ fn callArgsOrAsyncArrowParams(self: *Self, _: ast.FunctionFlags) Error!Node.Inde
             if (self.isAtToken(.@")")) break;
             // spread element must be the last item in a parameter list.
             if (destructure_kind.must_destruct) {
-                try self.emitDiagnosticOnNode(spread_elem, "Expected ')' after rest element");
-                return Error.RestElementNotLast;
+                return self.errorOnNode(spread_elem, ParseError.RestElementNotLast);
             }
             // If 'must_destruct' is not set, but we parsed a spread element
             // without seeing a ')' right after, then we must be inside a call-expression's
@@ -4626,11 +4571,10 @@ fn callArgsOrAsyncArrowParams(self: *Self, _: ast.FunctionFlags) Error!Node.Inde
             // TODO: this error message can be improved based
             // on whether the most recently parsed node was a
             // pattern.
-            try self.emitDiagnosticOnNode(
+            return self.errorOnNode(
                 self.scratch.items[self.scratch.items.len - 1],
-                "Unexpected expression or pattern inside '( ... )'",
+                ParseError.InvalidExpressionInsideParens,
             );
-            return Error.UnexpectedToken;
         }
 
         if (self.isAtToken(.@","))
@@ -4645,11 +4589,10 @@ fn callArgsOrAsyncArrowParams(self: *Self, _: ast.FunctionFlags) Error!Node.Inde
     if (self.isAtToken(.@"=>")) {
         if (!destructure_kind.can_destruct) {
             if (spread_elem_in_middle) |node| {
-                try self.emitDiagnosticOnNode(
+                return self.errorOnNode(
                     node,
-                    "Rest element must be the last item in a parameter list",
+                    ParseError.RestElementNotLastInParams,
                 );
-                return Error.InvalidArrowParameters;
             }
 
             // TODO: improve the location of the diagnostic.
@@ -4737,31 +4680,12 @@ fn ensureFatArrow(
     params_end_token: *const Token,
 ) Error!void {
     if (!self.isAtToken(.@"=>")) {
-        if (params_start_token.tag == .@"(") {
-            try self.emitDiagnostic(
-                params_start_token.startCoord(self.source),
-                "'()' is not a valid expression. Arrow functions start with '() => '",
-                .{},
-            );
-            return Error.UnexpectedEmptyArrowParams;
-        } else {
-            try self.emitDiagnostic(
-                params_start_token.startCoord(self.source),
-                "Expected '=>' after arrow function parameters",
-                .{},
-            );
-            return Error.UnexpectedToken;
-        }
+        return self.errorOnToken(params_start_token.*, ParseError.MissingArrow);
     }
 
     const fat_arrow = self.current.token;
     if (params_end_token.line != fat_arrow.line) {
-        try self.emitDiagnostic(
-            fat_arrow.startCoord(self.source),
-            "'=>' must be on the same line as the arrow function parameters",
-            .{},
-        );
-        return Error.IllegalFatArrow;
+        return self.errorOnToken(fat_arrow, ParseError.IllegalFatArrow);
     }
 }
 
@@ -4849,11 +4773,7 @@ fn restElement(self: *Self) Error!Node.Index {
     const rest_arg = try self.lhsExpression();
 
     if (!self.current_destructure_kind.can_be_assigned_to) {
-        try self.emitDiagnosticOnNode(
-            rest_arg,
-            "A '...' here must be followed by an expression that is a valid left-hand-side for assignments",
-        );
-        return Error.UnexpectedPattern;
+        return self.errorOnNode(rest_arg, ParseError.InvalidRestOperand);
     }
 
     const end_pos = self.nodes.items(.end)[@intFromEnum(rest_arg)];
@@ -5281,12 +5201,7 @@ fn identifierProperty(self: *Self) Error!Node.Index {
 
         else => {
             if (!self.isIdentifier(key_token.token.tag)) {
-                try self.emitDiagnosticOnToken(
-                    key_token.token,
-                    "Keywords cannot be used as shorthand properties",
-                    .{},
-                );
-                return Error.UnexpectedToken;
+                return self.errorOnToken(key_token.token, ParseError.InvalidKeywordShorthandProperty);
             }
 
             // { a } <- 'a' is a *reference* to some variable.
