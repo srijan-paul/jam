@@ -5873,7 +5873,11 @@ fn runTestOnFile(tests_dir: std.fs.Dir, file_path: []const u8) !void {
 
 test parse {
     var root_dir = std.fs.cwd();
-    var tests_dir = try root_dir.openDir("parser-tests", .{ .iterate = true });
+
+    const tests_dir_path = try std.fs.path.join(t.allocator, &.{ "test-corpus", "parser" });
+    defer t.allocator.free(tests_dir_path);
+
+    var tests_dir = try root_dir.openDir(tests_dir_path, .{ .iterate = true });
     defer tests_dir.close();
 
     var iter = tests_dir.iterate();
