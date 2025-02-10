@@ -24,7 +24,7 @@ const Token = ast.Token;
 /// Contains resolved references, scopes, control flow graph, etc.
 pub const AnalyzedProgram = struct {
     /// The syntax tree that was analyzed.
-    tree: *const ast.Tree,
+    tree: *ast.Tree,
     /// Top-level scope of the program.
     root_scope: *Scope,
     /// Maps the ID of an AST node to the ID of its parent
@@ -35,7 +35,11 @@ pub const AnalyzedProgram = struct {
 
     pub fn deinit(self: *AnalyzedProgram) void {
         self.root_scope.deinit(self.tree.allocator);
+        self.tree.allocator.destroy(self.root_scope);
         self.tree.allocator.free(self.parent_of_node);
+
+        self.tree.deinit();
+        self.tree.allocator.destroy(self.tree);
     }
 };
 
@@ -99,6 +103,7 @@ pub const Scope = struct {
         };
     }
 
+    /// De-initialize this scope and all it's child scopes
     pub fn deinit(self: *Scope, allocator: Allocator) void {
         self.variables.deinit(allocator);
         self.references.deinit(allocator);
@@ -107,9 +112,24 @@ pub const Scope = struct {
         }
         self.children.deinit(allocator);
     }
+
+    /// Find a variable by name in this scope or any of its parent scopes.
+    pub fn findVariable(self: *Scope, variable_name: String) ?Variable {
+        if (self.variables.get(variable_name)) |v| {
+            return v;
+        }
+
+        if (self.parent) |parent_scope| {
+            return parent_scope.findVariable(variable_name);
+        }
+
+        return null;
+    }
 };
 
 const Self = @This();
+
+const AnalysisError = error{ DuplicateBinding, Overflow, OutOfMemory };
 
 /// Denotes the type of a variable binding (lexical or hoisted)
 const BindingKind = enum {
@@ -191,10 +211,14 @@ pub fn deinit(self: *Self) void {
     self.stack.deinit(self.allocator);
     self.strings.deinit();
 
+    // TODO: ensure that we're using the right allocators for the right
+    // things. OR that both self.tree.allocator and self.allocator are the same.
     if (self.owns_tree) {
         self.tree.deinit();
         self.tree.allocator.destroy(self.tree);
         self.root_scope.deinit(self.allocator);
+        self.allocator.free(self.parent_of_node);
+        self.allocator.destroy(self.root_scope);
     }
 }
 
@@ -215,7 +239,7 @@ pub fn analyze(self: *Self) !AnalyzedProgram {
     };
 }
 
-pub fn onEnter(self: *Self, _: ast.Node.Index, node: ast.NodeData, _: ?ast.Node.Index) !void {
+pub fn onEnter(self: *Self, node_id: ast.Node.Index, node: ast.NodeData, parent_id: ?ast.Node.Index) !void {
     switch (node) {
         .block_statement => try self.createScope(Scope.Kind.block),
         .function_expr => try self.createScope(Scope.Kind.function),
@@ -225,14 +249,28 @@ pub fn onEnter(self: *Self, _: ast.Node.Index, node: ast.NodeData, _: ?ast.Node.
             try self.registerDeclaration(name_token_id);
             try self.createScope(Scope.Kind.function);
         },
-        // .variable_declaration => |decl| {},
+        .variable_declarator => {
+            const parent = self.tree.nodeData(parent_id.?); // SAFETY: parent is sure to exist here
+            const binding_kind: Variable.Kind = switch (parent.variable_declaration.kind) {
+                .let, .@"const" => .lexical_binding,
+                .@"var" => .variable_binding,
+            };
+
+            try self.stack.append(
+                self.allocator,
+                BindingContext{
+                    .kind = binding_kind,
+                    .decl_node = node_id,
+                },
+            );
+        },
         .binding_identifier => |name_id| try self.registerDeclaration(name_id),
         else => {},
     }
 }
 
 /// Create a new variable in the current scope with the given name.
-pub fn registerDeclaration(self: *Self, name: Token.Index) !void {
+pub fn registerDeclaration(self: *Self, name: Token.Index) AnalysisError!void {
     const curr_binding_ctx = self.stack.getLast();
     const token = self.tree.getToken(name);
     const name_str = try self.strings.stringValue(&token);
@@ -244,6 +282,11 @@ pub fn registerDeclaration(self: *Self, name: Token.Index) !void {
         .kind = curr_binding_ctx.kind,
     };
 
+    if (self.current_scope.findVariable(name_str) != null) {
+        return AnalysisError.DuplicateBinding;
+    }
+
+    // TODO: check for clashing names
     try self.current_scope.variables.put(self.allocator, name_str, variable);
 }
 
@@ -279,10 +322,35 @@ fn exitScope(self: *Self) void {
 
 pub fn parseAndAnalyze(allocator: Allocator, source: []const u8, parser_config: Parser.Config) !AnalyzedProgram {
     var parser = try Parser.init(allocator, source, parser_config);
+    defer parser.deinit();
     const parse_result = try parser.parse();
-    var semantic_analyzer = try Self.init(allocator, parse_result);
 
-    return try semantic_analyzer.analyze();
+    var semantic_analyzer = try Self.init(allocator, parse_result);
+    defer semantic_analyzer.deinit();
+
+    return semantic_analyzer.analyze();
 }
 
-test {}
+// tests
+
+const t = std.testing;
+fn expectError(source: []const u8, expected_error: AnalysisError) !void {
+    var result = parseAndAnalyze(t.allocator, source, .{}) catch |actual_error| {
+        return t.expectEqual(expected_error, actual_error);
+    };
+
+    std.debug.print(
+        "Expected {} but source was parsed successfully:\n{s}\n",
+        .{ expected_error, source },
+    );
+    result.deinit();
+
+    return error.TestExpectEqual;
+}
+
+test {
+    try expectError(
+        \\ let x = 1;
+        \\ let x = 2;
+    , AnalysisError.DuplicateBinding);
+}
