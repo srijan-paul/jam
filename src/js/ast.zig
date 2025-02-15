@@ -61,6 +61,7 @@ pub const Tree = struct {
     }
 
     pub fn tag(self: *const Tree, node_id: Node.Index) std.meta.Tag(NodeData) {
+        // TODO: optimize using a cached self.nodes.slice().
         return std.meta.activeTag(
             self.nodes.items(.data)[@intFromEnum(node_id)],
         );

@@ -429,6 +429,8 @@ fn nodeToEsTree(
 
             try o.put("method", JValue{ .bool = method });
             try o.put("key", key);
+            // TODO: if the value is of type assignment_pattern,
+            // the flag shorthand is set in ESTree for some reason?
             try o.put("computed", JValue{ .bool = computed });
             try o.put("shorthand", JFalse);
             try o.put("value", value);

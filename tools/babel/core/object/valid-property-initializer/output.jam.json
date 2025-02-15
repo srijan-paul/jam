@@ -42,7 +42,7 @@
                     "name": "foo"
                   },
                   "computed": false,
-                  "shorthand": true,
+                  "shorthand": false,
                   "value": {
                     "type": "AssignmentPattern",
                     "start": 16,

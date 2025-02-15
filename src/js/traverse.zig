@@ -8,6 +8,7 @@ const ast = @import("./ast.zig");
 
 const NodeKind = std.meta.Tag(ast.NodeData);
 
+/// TODO: use a stack instead of recursion.
 /// Create a struct that traverses an AST, and calls `TControl.onEnter`
 /// every time it enters a node, and `TControl.onExit` every time it exits a node.
 /// This structure that determines what actions to perform is called a "Control".
@@ -151,6 +152,7 @@ pub fn Traverser(TControl: type) type {
                     if (self.t.getExtraData(func_pl.info).function.name) |func_name| {
                         try self.visit(func_name, node_id);
                     }
+                    try self.visit(func_pl.parameters, node_id);
                     try self.visit(func_pl.body, node_id);
                 },
 

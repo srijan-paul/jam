@@ -2954,6 +2954,14 @@ fn reinterpretPattern(
             self.reinterpretPattern(node_pls, spread_pl, is_binding_pattern);
             node.* = .{ .rest_element = spread_pl };
         },
+        .shorthand_property => |o| {
+            if (is_binding_pattern) {
+                const name_token_pl = node_pls[@intFromEnum(o.name)];
+                // TODO(@injuly): for non-binding shorthand properties, the name should be smth like a 'shorthand_id_ref' (RW)
+                std.debug.assert(std.meta.activeTag(name_token_pl) == .identifier_reference);
+                node_pls[@intFromEnum(o.name)] = .{ .binding_identifier = name_token_pl.identifier_reference };
+            }
+        },
         else => {},
     }
 }
@@ -3458,7 +3466,11 @@ fn objectBindingPattern(self: *Self) Error!Node.Index {
             .legacy_octal_literal,
             .@"[",
             => {
+                // TODO(@injuly): instead of calling `destructuredPropertyDefinition`,
+                // for both binding patterns and regular patterns, write a separate
+                // `destructuredBindingProperty` function that handles binding properties.
                 const prop = try self.destructuredPropertyDefinition();
+                self.reinterpretAsBindingPattern(prop);
                 destruct_kind.update(self.current_destructure_kind);
                 try self.scratch.append(prop);
             },
@@ -3466,6 +3478,7 @@ fn objectBindingPattern(self: *Self) Error!Node.Index {
             else => {
                 if (cur_token.tag.isKeyword()) {
                     const prop = try self.destructuredPropertyDefinition();
+                    self.reinterpretAsBindingPattern(prop);
                     destruct_kind.update(self.current_destructure_kind);
                     try self.scratch.append(prop);
                 } else {

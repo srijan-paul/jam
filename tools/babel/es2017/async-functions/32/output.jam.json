@@ -45,7 +45,7 @@
                       "name": "async"
                     },
                     "computed": false,
-                    "shorthand": true,
+                    "shorthand": false,
                     "value": {
                       "type": "AssignmentPattern",
                       "start": 21,
