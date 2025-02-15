@@ -135,6 +135,7 @@ pub fn jamToEstreeTag(node: ast.NodeData) []const u8 {
         .rest_element => "RestElement",
         .object_literal => "ObjectExpression",
         .object_property => "Property",
+        .shorthand_property => "Property",
         .class_expression => "ClassExpression",
         .class_field => "ClassProperty",
         .class_method => "MethodDefinition",
@@ -340,7 +341,7 @@ fn nodeToEsTree(
 
         .call_expr => |payload| {
             const callee = try nodeToEsTree(t, al, payload.callee, opts);
-            const arguments = t.nodeData(payload.arguments).arguments;
+            const arguments = payload.arguments.get(t).arguments;
             const args = try subRangeToJsonArray(al, t, arguments, opts);
             try o.put("callee", callee);
             try o.put("arguments", args);
@@ -424,15 +425,25 @@ fn nodeToEsTree(
             const value = try nodeToEsTree(t, al, payload.value, opts);
             const kind = @tagName(payload.flags.kind);
             const computed = payload.flags.is_computed;
-            const shorthand = payload.flags.is_shorthand;
             const method = payload.flags.is_method;
 
             try o.put("method", JValue{ .bool = method });
             try o.put("key", key);
             try o.put("computed", JValue{ .bool = computed });
-            try o.put("shorthand", JValue{ .bool = shorthand });
+            try o.put("shorthand", JFalse);
             try o.put("value", value);
             try o.put("kind", JValue{ .string = kind });
+        },
+
+        .shorthand_property => |payload| {
+            const key = try nodeToEsTree(t, al, payload.name, opts);
+
+            try o.put("method", JFalse);
+            try o.put("key", key);
+            try o.put("computed", JFalse);
+            try o.put("shorthand", JTrue);
+            try o.put("value", key);
+            try o.put("kind", JValue{ .string = "init" });
         },
 
         .try_statement => |payload| {

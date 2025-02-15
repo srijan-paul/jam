@@ -3322,6 +3322,7 @@ fn completePropertyPatternDef(self: *Self, key: Node.Index) Error!Node.Index {
 
 fn destructuredPropertyDefinition(self: *Self) Error!Node.Index {
     switch (self.current.token.tag) {
+        // TODO(@injuly): we can use a mask check here
         .string_literal,
         .decimal_literal,
         .octal_literal,
@@ -3415,13 +3416,7 @@ fn destructuredIdentifierProperty(self: *Self) Error!Node.Index {
     }
 
     return self.addNode(
-        .{
-            .object_property = ast.PropertyDefinition{
-                .key = key,
-                .value = key,
-                .flags = .{ .is_shorthand = true },
-            },
-        },
+        .{ .shorthand_property = ast.ShorthandProperty{ .name = key } },
         key_token.id,
         key_token.id,
     );
@@ -5190,7 +5185,7 @@ fn identifierProperty(self: *Self) Error!Node.Index {
             const property = ast.PropertyDefinition{
                 .value = try self.addNode(assignment_pattern, start_pos, end_pos),
                 .key = key,
-                .flags = .{ .kind = .init, .is_shorthand = true },
+                .flags = .{ .kind = .init },
             };
 
             // 'Identifier = AssignmentExpression' is allowed in object patterns but not in object literals
@@ -5206,18 +5201,14 @@ fn identifierProperty(self: *Self) Error!Node.Index {
 
             // { a } <- 'a' is a *reference* to some variable.
             const key = try self.identifierReference(key_token.id);
-            const kv_node = ast.PropertyDefinition{
-                .key = key,
-                .value = key,
-                .flags = .{ .is_shorthand = true },
-            };
+            const kv_node = ast.ShorthandProperty{ .name = key };
 
             // { k }
             //   ^-- Is a valid property in a destructuring pattern
             self.current_destructure_kind.can_destruct = true;
             self.current_destructure_kind.can_be_assigned_to = true;
             return self.addNode(
-                .{ .object_property = kv_node },
+                .{ .shorthand_property = kv_node },
                 key_token.id,
                 key_token.id,
             );
@@ -5390,7 +5381,6 @@ fn completePropertyDef(
         return self.parseMethodBody(key, .{
             .is_method = true,
             .is_computed = flags.is_computed,
-            .is_shorthand = flags.is_shorthand,
             .kind = flags.kind,
         }, .{});
     }

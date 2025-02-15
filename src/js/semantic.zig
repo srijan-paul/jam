@@ -109,6 +109,7 @@ pub const Scope = struct {
         self.references.deinit(allocator);
         for (self.children.items) |child| {
             child.deinit(allocator);
+            allocator.destroy(child);
         }
         self.children.deinit(allocator);
     }
@@ -124,6 +125,11 @@ pub const Scope = struct {
         }
 
         return null;
+    }
+
+    /// Search for a variable inside this scope, but do not visit parent scopes.
+    pub fn findVariableWithin(self: *Scope, variable_name: String) ?Variable {
+        return self.variables.get(variable_name);
     }
 };
 
@@ -243,14 +249,17 @@ pub fn onEnter(self: *Self, node_id: ast.Node.Index, node: ast.NodeData, parent_
     switch (node) {
         .block_statement => try self.createScope(Scope.Kind.block),
         .function_expr => try self.createScope(Scope.Kind.function),
-        .function_declaration => |func| {
-            const name_token_id = func.getNameTokenId(self.tree) orelse
-                unreachable; // function declarations always have a name
-            try self.registerDeclaration(name_token_id);
+        .function_declaration => {
             try self.createScope(Scope.Kind.function);
+
+            const ctx = BindingContext{
+                .kind = .variable_binding,
+                .decl_node = node_id,
+            };
+            try self.stack.append(self.allocator, ctx);
         },
         .variable_declarator => {
-            const parent = self.tree.nodeData(parent_id.?); // SAFETY: parent is sure to exist here
+            const parent = parent_id.?.get(self.tree); // SAFETY: parent is sure to exist here
             const binding_kind: Variable.Kind = switch (parent.variable_declaration.kind) {
                 .let, .@"const" => .lexical_binding,
                 .@"var" => .variable_binding,
@@ -264,38 +273,82 @@ pub fn onEnter(self: *Self, node_id: ast.Node.Index, node: ast.NodeData, parent_
                 },
             );
         },
-        .binding_identifier => |name_id| try self.registerDeclaration(name_id),
+        .binding_identifier => |name_id| {
+            std.debug.assert(self.stack.items.len > 0);
+            const curr_binding_ctx = self.stack.getLast();
+            const name_token = self.tree.getToken(name_id);
+
+            if (std.mem.eql(u8, self.strings.toByteSlice(
+                try self.strings.stringValue(name_token),
+            ), "feb15")) {
+                std.debug.print("here\n", .{});
+            }
+
+            try self.registerDeclaration(
+                name_token,
+                curr_binding_ctx.kind,
+                curr_binding_ctx.decl_node,
+            );
+        },
+        .parameters => unreachable, // TODO
         else => {},
     }
 }
 
 /// Create a new variable in the current scope with the given name.
-pub fn registerDeclaration(self: *Self, name: Token.Index) AnalysisError!void {
-    const curr_binding_ctx = self.stack.getLast();
-    const token = self.tree.getToken(name);
-    const name_str = try self.strings.stringValue(&token);
+fn registerDeclaration(
+    self: *Self,
+    name_token: *const Token,
+    binding_kind: Variable.Kind,
+    def_node: ast.Node.Index,
+) AnalysisError!void {
+    const name_str = try self.strings.stringValue(name_token);
 
     const variable = Variable{
         .name = name_str,
-        .def_node = curr_binding_ctx.decl_node,
+        .def_node = def_node,
         .scope = self.current_scope,
-        .kind = curr_binding_ctx.kind,
+        .kind = binding_kind,
     };
 
-    if (self.current_scope.findVariable(name_str) != null) {
-        return AnalysisError.DuplicateBinding;
+    var dst_scope = self.current_scope;
+    // Var bindings are hoisted out to then nearest functon scope
+    // TODO: instead of doing this loop every time, we should cache it
+    // and only update when exit a new scope.
+    if (variable.kind == .variable_binding) {
+        while (dst_scope.parent) |parent| {
+            dst_scope = parent;
+            if (parent.kind == .function)
+                break;
+        }
     }
 
-    // TODO: check for clashing names
+    // the only case where both declarations are allowed to
+    // co-exist is when both are var-bindings.
+    // ```js
+    // var a = 1;
+    // var a = 2; // OK
+    // function a() {} // OK
+    // ```
+    if (dst_scope.findVariableWithin(name_str)) |existing_var| {
+        // There's already a variable with the same name in the current scope.
+        // Only allow re-declaration if the existing variable is a var-binding.
+        if (!(existing_var.kind == .variable_binding and variable.kind == .variable_binding))
+            // TODO(@injuly): emit a diagnostic, and move on. Do not early exit on this error.
+            return AnalysisError.DuplicateBinding;
+    }
+
     try self.current_scope.variables.put(self.allocator, name_str, variable);
 }
 
 pub fn onExit(self: *Self, _: ast.Node.Index, node: ast.NodeData, _: ?ast.Node.Index) Allocator.Error!void {
     switch (node) {
-        .block_statement,
-        .function_expr,
-        .function_declaration,
-        => self.exitScope(),
+        .block_statement, .function_expr => self.exitScope(),
+        .function_declaration => {
+            _ = self.stack.pop();
+            self.exitScope();
+        },
+        .variable_declaration => _ = self.stack.pop(),
         else => {},
     }
 }
@@ -348,9 +401,89 @@ fn expectError(source: []const u8, expected_error: AnalysisError) !void {
     return error.TestExpectEqual;
 }
 
+fn expectNoError(source: []const u8) !void {
+    var result = parseAndAnalyze(t.allocator, source, .{}) catch |e| {
+        std.debug.print(
+            "Expected no error but got {}:\n{s}\n",
+            .{ e, source },
+        );
+
+        return error.TestExpectError;
+    };
+    result.deinit();
+}
+
 test {
+    // error cases:
+
     try expectError(
         \\ let x = 1;
         \\ let x = 2;
     , AnalysisError.DuplicateBinding);
+
+    try expectError(
+        \\ let { y: x } = 1;
+        \\ let x = 1;
+    , AnalysisError.DuplicateBinding);
+
+    try expectError(
+        \\ let x; 
+        \\ { var x; }  
+    , AnalysisError.DuplicateBinding);
+
+    // TODO: make this fail.
+    // try expectError(
+    //     \\ let { feb15 } = 1;
+    //     \\ let feb15 = 1;
+    // , AnalysisError.DuplicateBinding);
+
+    try expectError(
+        \\ function f() { let f; let f; }
+    , AnalysisError.DuplicateBinding);
+
+    try expectError(
+        \\ let f = function () { let f; let f; }
+    , AnalysisError.DuplicateBinding);
+
+    // success cases:
+
+    try expectError(
+        \\ let x = 1;
+        \\ var x = 2;
+    , AnalysisError.DuplicateBinding);
+
+    try expectNoError(
+        \\ let x = 123;
+        \\ let y = 123;
+    );
+
+    try expectNoError(
+        \\ var x = 123;
+        \\ var x = 123;
+    );
+
+    try expectNoError(
+        \\ var x = 123;
+        \\ function x() { let x; }
+    );
+
+    try expectNoError(
+        \\ let f = function() { let f; } 
+    );
+
+    try expectNoError("let f = function f() {}");
+
+    try expectNoError(
+        \\ let x;
+        \\ {
+        \\   let x;
+        \\ }
+    );
+
+    try expectNoError(
+        \\ var x;
+        \\ {
+        \\   let x;
+        \\ }
+    );
 }

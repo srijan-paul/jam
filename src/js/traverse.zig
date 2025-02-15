@@ -38,7 +38,7 @@ pub fn Traverser(TControl: type) type {
         }
 
         fn visit(self: *Self, node_id: ast.Node.Index, parent_id: ?ast.Node.Index) anyerror!void {
-            const data = self.t.nodeData(node_id).*;
+            const data = node_id.get(self.t).*;
             if (@hasDecl(TControl, "onEnter"))
                 try self.ctrl.onEnter(node_id, data, parent_id);
 
@@ -59,6 +59,8 @@ pub fn Traverser(TControl: type) type {
                     try self.visit(o.key, node_id);
                     try self.visit(o.value, node_id);
                 },
+
+                .shorthand_property => |o| try self.visit(o.name, node_id),
 
                 .if_statement, .conditional_expr => |if_pl| {
                     try self.visit(if_pl.condition, node_id);

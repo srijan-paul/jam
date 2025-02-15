@@ -80,7 +80,7 @@ pub fn stringValue(self: *Self, token: *const Token) error{ OutOfMemory, Overflo
     return string;
 }
 
-fn toByteSlice(self: *Self, string: String) []const u8 {
+pub fn toByteSlice(self: *Self, string: String) []const u8 {
     return self.string_pool.toByteSlice(string);
 }
 

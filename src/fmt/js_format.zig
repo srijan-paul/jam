@@ -201,6 +201,9 @@ pub fn objectLiteral(_: *Self, _: *const ast.NodeData) Doc.Id {
 pub fn objectProperty(_: *Self, _: *const ast.NodeData) Doc.Id {
     unreachable;
 }
+pub fn shorthandProperty(_: *Self, _: *const ast.NodeData) Doc.Id {
+    unreachable;
+}
 pub fn classExpression(_: *Self, _: *const ast.NodeData) Doc.Id {
     unreachable;
 }

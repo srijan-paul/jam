@@ -38,10 +38,10 @@ pub const Tree = struct {
         return &self.nodes.items(.data)[@intFromEnum(index)];
     }
 
+    // TODO: add a getTokenPtr
     /// Get a token by its index (Token.Index)
-    pub fn getToken(self: *const Tree, index: Token.Index) Token {
-        // TODO: return a const ptr
-        return self.tokens.items[@intFromEnum(index)];
+    pub fn getToken(self: *const Tree, index: Token.Index) *const Token {
+        return &self.tokens.items[@intFromEnum(index)];
     }
 
     /// Get the extra data of a node from its ExtraData.Index
@@ -157,9 +157,16 @@ pub const Function = struct {
     /// Get the token ID for the name of this function
     pub fn getNameTokenId(self: *const Function, tree: *const Tree) ?Token.Index {
         if (tree.getExtraData(self.info).function.name) |id_node| {
-            return tree.getNode(id_node).data.identifier;
+            return tree.getNode(id_node).data.binding_identifier;
         }
 
+        return null;
+    }
+
+    /// Get the token for the name of this function
+    pub fn getNameToken(self: *const Function, tree: *const Tree) ?*const Token {
+        if (self.getNameTokenId(tree)) |id|
+            return tree.getToken(id);
         return null;
     }
 
@@ -193,7 +200,7 @@ pub const ForStatement = struct {
 
 /// Describes the kind of property in an object literal.
 /// Differentiates getters and setters from regular property definitions.
-pub const PropertyDefinitionKind = enum(u5) {
+pub const PropertyDefinitionKind = enum(u6) {
     /// Getter
     get,
     /// Setter
@@ -216,7 +223,6 @@ pub const ClassFieldKind = enum(u5) {
 /// Flags for property definitions of an object literal.
 pub const PropertyDefinitionFlags = packed struct(u8) {
     is_method: bool = false,
-    is_shorthand: bool = false,
     is_computed: bool = false,
     kind: PropertyDefinitionKind = .init,
 };
@@ -226,6 +232,10 @@ pub const PropertyDefinition = struct {
     value: Node.Index,
     flags: PropertyDefinitionFlags = .{},
 };
+
+/// A shorthand property definition in an object literal.
+/// e.g: `{ x }`
+pub const ShorthandProperty = struct { name: Node.Index };
 
 pub const ClassFieldFlags = packed struct(u8) {
     is_static: bool = false,
@@ -482,6 +492,9 @@ pub const NodeData = union(enum(u8)) {
     object_literal: ?SubRange,
     /// key-value pair or method in an object-literal.
     object_property: PropertyDefinition,
+    /// shorthand key-value pair in an object literal.
+    /// e.g: `{ x }`.
+    shorthand_property: ShorthandProperty,
     class_expression: Class,
     class_field: ClassFieldDefinition,
     class_method: ClassFieldDefinition,
@@ -604,7 +617,15 @@ pub const ExtraData = union(enum) {
 
 pub const Node = struct {
     /// An index into the AST's `nodes` array list.
-    pub const Index = enum(u32) { empty = 0, _ };
+    pub const Index = enum(u32) {
+        empty = 0,
+        _,
+
+        /// Get a pointer to the `NodeData` associated with this node-id.
+        pub inline fn get(self: Index, tree: *const Tree) *const NodeData {
+            return tree.nodeData(self);
+        }
+    };
     /// The actual data stored by this node.
     data: NodeData,
     /// The start token for this node.
