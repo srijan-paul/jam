@@ -171,7 +171,7 @@ pub fn jamToEstreeTag(node: ast.NodeData) []const u8 {
         .default_case => "SwitchCase",
         .break_statement => "BreakStatement",
         .continue_statement => "ContinueStatement",
-        .parameters => unreachable,
+        .for_in_of_iterator, .for_iterator, .parameters => unreachable,
         .return_statement => "ReturnStatement",
         .import_declaration => "ImportDeclaration",
         .import_default_specifier => "ImportDefaultSpecifier",
@@ -724,7 +724,7 @@ fn nodeToEsTree(
         },
 
         .for_statement => |payload| {
-            const iter = t.getExtraData(payload.iterator).for_iterator;
+            const iter = payload.iterator.get(t).for_iterator;
             try o.put("init", try nodeToEsTree(t, al, iter.init, opts));
             try o.put("test", try nodeToEsTree(t, al, iter.condition, opts));
             try o.put("update", try nodeToEsTree(t, al, iter.update, opts));
@@ -733,10 +733,13 @@ fn nodeToEsTree(
             try o.put("body", body);
         },
 
+        // covered in .for_statement
+        .for_in_of_iterator, .for_iterator => unreachable,
+
         .for_in_statement,
         .for_of_statement,
         => |payload| {
-            const iter = t.getExtraData(payload.iterator).for_in_of_iterator;
+            const iter = payload.iterator.get(t).for_in_of_iterator;
             const left = try nodeToEsTree(t, al, iter.left, opts);
             const right = try nodeToEsTree(t, al, iter.right, opts);
 

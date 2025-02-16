@@ -73,7 +73,7 @@
                 "name": "a"
               },
               "computed": false,
-              "shorthand": false,
+              "shorthand": true,
               "value": {
                 "type": "AssignmentPattern",
                 "start": 25,

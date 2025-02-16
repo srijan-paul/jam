@@ -1472,8 +1472,8 @@ fn forStatement(self: *Self) Error!Node.Index {
 /// Once a 'for' keyword has been consumed, this parses the part inside '()', including the parentheses.
 /// Returns a tuple where the first item is the kind of for loop (for-in, for-of, or basic),
 /// and the second item is the iterator (index of an `ast.ExtraData`).
-fn forLoopIterator(self: *Self) Error!struct { ForLoopKind, ast.ExtraData.Index } {
-    _ = try self.expectToken(.@"(");
+fn forLoopIterator(self: *Self) Error!struct { ForLoopKind, ast.Node.Index } {
+    const lpar = try self.expect(.@"(");
 
     var lhs_starts_with_let = false;
 
@@ -1497,13 +1497,20 @@ fn forLoopIterator(self: *Self) Error!struct { ForLoopKind, ast.ExtraData.Index 
 
     if (maybe_decl_kw) |decl_kw| {
         var loop_kind = ForLoopKind.basic;
-        const iterator = try self.completeVarDeclLoopIterator(decl_kw, &loop_kind);
+        const iterator = try self.completeVarDeclLoopIterator(
+            lpar.id,
+            decl_kw,
+            &loop_kind,
+        );
         return .{ loop_kind, iterator };
     }
 
     // 'for (;' indicates a basic 3-part for loop with empty initializer.
     if (self.isAtToken(.@";")) {
-        const iterator = try self.completeBasicLoopIterator(Node.Index.empty);
+        const iterator = try self.completeBasicLoopIterator(
+            Node.Index.empty,
+            lpar.id,
+        );
         return .{ ForLoopKind.basic, iterator };
     }
 
@@ -1536,7 +1543,7 @@ fn forLoopIterator(self: *Self) Error!struct { ForLoopKind, ast.ExtraData.Index 
                 return Error.UnexpectedPattern;
             }
 
-            const iterator = try self.completeBasicLoopIterator(expr);
+            const iterator = try self.completeBasicLoopIterator(expr, lpar.id);
             return .{ ForLoopKind.basic, iterator };
         },
 
@@ -1570,14 +1577,18 @@ fn forLoopIterator(self: *Self) Error!struct { ForLoopKind, ast.ExtraData.Index 
 
             _ = try self.nextToken();
             const rhs = try self.expression();
-            _ = try self.expectToken(.@")");
+            const rpar = try self.expect(.@")");
 
-            const iterator = try self.addExtraData(.{
-                .for_in_of_iterator = .{
-                    .left = expr,
-                    .right = rhs,
+            const iterator = try self.addNode(
+                .{
+                    .for_in_of_iterator = .{
+                        .left = expr,
+                        .right = rhs,
+                    },
                 },
-            });
+                lpar.id,
+                rpar.id,
+            );
             return .{ loop_kind, iterator };
         },
 
@@ -1606,9 +1617,12 @@ fn forLoopStartExpression(self: *Self) Error!Node.Index {
 /// this function parses the rest of the loop iterator.
 fn completeVarDeclLoopIterator(
     self: *Self,
+    // The '(' that open the for loop
+    lpar_id: Token.Index,
+    // The 'var'/'let'/'const' keyword
     decl_kw: TokenWithId,
     loop_kind: *ForLoopKind,
-) Error!ast.ExtraData.Index {
+) Error!ast.Node.Index {
     std.debug.assert(decl_kw.token.tag == .kw_let or
         decl_kw.token.tag == .kw_var or
         decl_kw.token.tag == .kw_const);
@@ -1643,10 +1657,17 @@ fn completeVarDeclLoopIterator(
 
             _ = try self.nextToken(); // eat 'in' or 'of'
             const rhs = try self.expression();
-            _ = try self.expectToken(.@")");
-            return self.addExtraData(.{
-                .for_in_of_iterator = .{ .left = declaration, .right = rhs },
-            });
+            const rpar = try self.expect(.@")");
+            return self.addNode(
+                .{
+                    .for_in_of_iterator = .{
+                        .left = declaration,
+                        .right = rhs,
+                    },
+                },
+                lpar_id,
+                rpar.id,
+            );
         },
         else => {
             // TODO: can some of this code be shared with `variableDeclarator`?
@@ -1676,7 +1697,7 @@ fn completeVarDeclLoopIterator(
             );
 
             const for_init = try self.completeLoopInitializer(&decl_kw, first_decl);
-            return self.completeBasicLoopIterator(for_init);
+            return self.completeBasicLoopIterator(for_init, lpar_id);
         },
     }
 }
@@ -1684,7 +1705,13 @@ fn completeVarDeclLoopIterator(
 /// A "Basic" loop iterator is a plain old (init; cond; update).
 /// Given the `init` expression or statement, this function parses the rest of the iterator
 /// upto the closing ')'.
-fn completeBasicLoopIterator(self: *Self, for_init: Node.Index) Error!ast.ExtraData.Index {
+fn completeBasicLoopIterator(
+    self: *Self,
+    // The first expression after the '('
+    for_init: Node.Index,
+    // The '(' that opens the for loop iterator
+    lpar_id: Token.Index,
+) Error!ast.Node.Index {
     _ = try self.expectToken(.@";");
 
     const for_cond = switch (self.current.token.tag) {
@@ -1699,15 +1726,19 @@ fn completeBasicLoopIterator(self: *Self, for_init: Node.Index) Error!ast.ExtraD
         else => try self.expression(),
     };
 
-    _ = try self.expectToken(.@")");
+    const rpar = try self.expect(.@")");
 
-    return self.addExtraData(ast.ExtraData{
-        .for_iterator = ast.ForIterator{
-            .init = for_init,
-            .condition = for_cond,
-            .update = for_update,
+    return self.addNode(
+        .{
+            .for_iterator = ast.ForIterator{
+                .init = for_init,
+                .condition = for_cond,
+                .update = for_update,
+            },
         },
-    });
+        lpar_id,
+        rpar.id,
+    );
 }
 
 /// Parse the rest of the for loop initializer.

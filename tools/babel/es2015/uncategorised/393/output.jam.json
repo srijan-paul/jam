@@ -34,7 +34,7 @@
                   "name": "set"
                 },
                 "computed": false,
-                "shorthand": false,
+                "shorthand": true,
                 "value": {
                   "type": "AssignmentPattern",
                   "start": 2,

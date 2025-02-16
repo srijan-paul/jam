@@ -162,21 +162,19 @@ pub fn Traverser(TControl: type) type {
                 .for_in_statement,
                 .for_statement,
                 => |for_pl| {
-                    const iterator = self.t.getExtraData(for_pl.iterator);
-                    switch (data) {
-                        .for_statement => {
-                            try self.visit(iterator.for_iterator.init, node_id);
-                            try self.visit(iterator.for_iterator.condition, node_id);
-                            try self.visit(iterator.for_iterator.update, node_id);
-                        },
-
-                        else => {
-                            try self.visit(iterator.for_in_of_iterator.left, node_id);
-                            try self.visit(iterator.for_in_of_iterator.right, node_id);
-                        },
-                    }
-
                     try self.visit(for_pl.body, node_id);
+                    try self.visit(for_pl.iterator, node_id);
+                },
+
+                .for_iterator => |iter| {
+                    try self.visit(iter.init, node_id);
+                    try self.visit(iter.condition, node_id);
+                    try self.visit(iter.update, node_id);
+                },
+
+                .for_in_of_iterator => |iter| {
+                    try self.visit(iter.left, node_id);
+                    try self.visit(iter.right, node_id);
                 },
 
                 .call_expr => |call_pl| {

@@ -213,8 +213,28 @@ pub const Function = struct {
 };
 
 pub const ForStatement = struct {
-    iterator: ExtraData.Index,
+    iterator: Node.Index,
     body: Node.Index,
+};
+
+/// Iterator for a regular old for-loop
+/// (i.e `for (let i = 0; i < 10; i++) { ... }`).
+/// init: `let i = 0`;
+/// condition: `i < 10`;
+/// update: `i++`
+pub const ForIterator = struct {
+    init: Node.Index,
+    condition: Node.Index,
+    update: Node.Index,
+};
+
+pub const ForInOfIterator = struct {
+    /// Left side of the 'of' keyword
+    left: Node.Index,
+    /// Right side of the 'of' keyword
+    right: Node.Index,
+    /// Set for for-await loops.
+    is_await: bool = false,
 };
 
 /// Describes the kind of property in an object literal.
@@ -563,9 +583,14 @@ pub const NodeData = union(enum(u8)) {
     while_statement: WhileStatement,
     with_statement: WithStatement,
     throw_statement: Node.Index,
+
     for_statement: ForStatement,
     for_of_statement: ForStatement,
     for_in_statement: ForStatement,
+
+    for_iterator: ForIterator,
+    for_in_of_iterator: ForInOfIterator,
+
     switch_statement: SwitchStatement,
     /// A single 'case' block in a switch statement.
     switch_case: SwitchCase,
@@ -607,26 +632,6 @@ pub const NodeData = union(enum(u8)) {
     }
 };
 
-/// Iterator for a regular old for-loop
-/// (i.e `for (let i = 0; i < 10; i++) { ... }`).
-/// init: `let i = 0`;
-/// condition: `i < 10`;
-/// update: `i++`
-pub const ForIterator = struct {
-    init: Node.Index,
-    condition: Node.Index,
-    update: Node.Index,
-};
-
-pub const ForInOfIterator = struct {
-    /// Left side of the 'of' keyword
-    left: Node.Index,
-    /// Right side of the 'of' keyword
-    right: Node.Index,
-    /// Set for for-await loops.
-    is_await: bool = false,
-};
-
 pub const ClassInfo = struct {
     name: ?Node.Index,
     super_class: Node.Index,
@@ -644,8 +649,6 @@ pub const ExtraData = union(enum) {
         flags: FunctionFlags,
     },
     number_value: f64,
-    for_iterator: ForIterator,
-    for_in_of_iterator: ForInOfIterator,
     class: ClassInfo,
 };
 

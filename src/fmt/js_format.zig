@@ -285,6 +285,12 @@ pub fn throwStatement(_: *Self, _: *const ast.NodeData) Doc.Id {
 pub fn forStatement(_: *Self, _: *const ast.NodeData) Doc.Id {
     unreachable;
 }
+pub fn forInOfIterator(_: *Self, _: *const ast.NodeData) Doc.Id {
+    unreachable;
+}
+pub fn forIterator(_: *Self, _: *const ast.NodeData) Doc.Id {
+    unreachable;
+}
 pub fn forOfStatement(_: *Self, _: *const ast.NodeData) Doc.Id {
     unreachable;
 }

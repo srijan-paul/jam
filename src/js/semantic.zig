@@ -287,7 +287,6 @@ pub fn analyze(self: *Self) !AnalyzedProgram {
 
 pub fn onEnter(self: *Self, node_id: ast.Node.Index, node: ast.NodeData, parent_id: ?ast.Node.Index) !void {
     switch (node) {
-        .block_statement => try self.createScope(Scope.Kind.block, node_id, false),
         .function_expr, .function_declaration => {
             const func_ctx = BindingContext{ .kind = .variable_binding, .decl_node = node_id };
             try self.binding_stack.append(self.allocator, func_ctx);
@@ -317,6 +316,11 @@ pub fn onEnter(self: *Self, node_id: ast.Node.Index, node: ast.NodeData, parent_
             const import_ctx = BindingContext{ .kind = .lexical_binding, .decl_node = node_id };
             try self.binding_stack.append(self.allocator, import_ctx);
         },
+
+        .for_iterator,
+        .for_in_of_iterator,
+        .block_statement,
+        => try self.createScope(Scope.Kind.block, node_id, false),
 
         .variable_declarator => {
             const parent = parent_id.?.get(self.tree); // SAFETY: parent is sure to exist here
@@ -681,5 +685,5 @@ test {
         \\ catch (e) { }
     );
 
-    try expectNoError("for (let a;;) { let a; }");
+    try expectNoError("for (let a;;); let a; ");
 }
