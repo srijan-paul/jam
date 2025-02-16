@@ -10,18 +10,18 @@ A high-performance JavaScript toolchain built from the ground up.
 - Support JS, JSX, TypeScript, and CSS out of the box.
 - Support data flow analysis and call-graphs with an accessible API. 
 - API for writing linting rules in Zig.
-- Expose a capable parsing and scoping library, such that a bundler, minifier, etc., can be built on top of it.
-- Custom JS plugins.
-    (I plan to embed the [Kiesel](https://kiesel.dev) JS engine).
+- Expose a capable parsing and scope resolution, such that a bundler, minifier, etc., can be built on top of it.
+- Custom JavaScript plugins.
 
 ## Roadmap
 
 - Phase 1:
     - [x] A fast, 100% Spec compliant JavaScript parser.
+    - [x] Port [ESLint scope](https://github.com/eslint/js/tree/main/packages/eslint-scope) to Zig
     - [ ] JSX support (**Under construction**)
     - [ ] TypeScript support in the parser.
-    - [ ] Port [ESLint scope](https://github.com/eslint/js/tree/main/packages/eslint-scope) to Zig
     - [ ] Runtime for a linter, with Zig plugin support.
+    - [ ] Formatter with a **language agnostic backend**.
 - Alpha release
     - [ ] Simple linter with all the base rules from ESLint.
     - [ ] A prototype of a formatter

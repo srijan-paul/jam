@@ -4,8 +4,8 @@ const offsets = util.offsets;
 const types = util.types;
 
 /// The token data-type is used to represent spans in the source text.
-/// concatenating tokens in order should give yield the original source text.
-/// This allows syntax trees to preserve whitespaces and comments.
+/// concatenating tokens in order should yield the original source text.
+/// This allows syntax trees to preserve white spaces and comments.
 /// Nodes need only store two properties: `start: Token.Index` and `end: Token.Index`,
 /// and we can reliably reconstruct the original source text with whitespaces intact.
 ///

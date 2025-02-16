@@ -2,7 +2,7 @@
 // 1. Resolves variable definitions, scopes, and references.
 // 2. Builds the control flow graph (TBD).
 // 3. Creates a `parent_of_node` array, where `parent_of_node[node_id]`
-//    is the parent of `node_id` (TBD)
+//    is the parent of `node_id`.
 
 const std = @import("std");
 const util = @import("util");
@@ -286,6 +286,8 @@ pub fn analyze(self: *Self) !AnalyzedProgram {
 }
 
 pub fn onEnter(self: *Self, node_id: ast.Node.Index, node: ast.NodeData, parent_id: ?ast.Node.Index) !void {
+    self.parent_of_node[@intFromEnum(node_id)] = parent_id;
+
     switch (node) {
         .function_expr, .function_declaration => {
             const func_ctx = BindingContext{ .kind = .variable_binding, .decl_node = node_id };
