@@ -74,7 +74,7 @@
                     "name": "d"
                   },
                   "computed": false,
-                  "shorthand": false,
+                  "shorthand": true,
                   "value": {
                     "type": "AssignmentPattern",
                     "start": 26,
@@ -107,7 +107,7 @@
                     "name": "f"
                   },
                   "computed": false,
-                  "shorthand": false,
+                  "shorthand": true,
                   "value": {
                     "type": "AssignmentPattern",
                     "start": 35,

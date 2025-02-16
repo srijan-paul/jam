@@ -149,6 +149,9 @@ pub fn updateExpr(_: *Self, _: *const ast.NodeData) Doc.Id {
 pub fn identifier(_: *Self, _: *const ast.NodeData) Doc.Id {
     unreachable;
 }
+pub fn identifierReference(_: *Self, _: *const ast.NodeData) Doc.Id {
+    unreachable;
+}
 
 pub fn bindingIdentifier(_: *Self, _: *const ast.NodeData) Doc.Id {
     unreachable;
@@ -198,6 +201,9 @@ pub fn objectLiteral(_: *Self, _: *const ast.NodeData) Doc.Id {
 pub fn objectProperty(_: *Self, _: *const ast.NodeData) Doc.Id {
     unreachable;
 }
+pub fn shorthandProperty(_: *Self, _: *const ast.NodeData) Doc.Id {
+    unreachable;
+}
 pub fn classExpression(_: *Self, _: *const ast.NodeData) Doc.Id {
     unreachable;
 }
@@ -240,6 +246,9 @@ pub fn catchClause(_: *Self, _: *const ast.NodeData) Doc.Id {
 pub fn blockStatement(_: *Self, _: *const ast.NodeData) Doc.Id {
     unreachable;
 }
+pub fn statementList(_: *Self, _: *const ast.NodeData) Doc.Id {
+    unreachable;
+}
 pub fn expressionStatement(_: *Self, _: *const ast.NodeData) Doc.Id {
     unreachable;
 }
@@ -274,6 +283,12 @@ pub fn throwStatement(_: *Self, _: *const ast.NodeData) Doc.Id {
     unreachable;
 }
 pub fn forStatement(_: *Self, _: *const ast.NodeData) Doc.Id {
+    unreachable;
+}
+pub fn forInOfIterator(_: *Self, _: *const ast.NodeData) Doc.Id {
+    unreachable;
+}
+pub fn forIterator(_: *Self, _: *const ast.NodeData) Doc.Id {
     unreachable;
 }
 pub fn forOfStatement(_: *Self, _: *const ast.NodeData) Doc.Id {

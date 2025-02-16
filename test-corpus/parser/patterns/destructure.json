@@ -237,7 +237,7 @@
                   "name": "x"
                 },
                 "computed": false,
-                "shorthand": false,
+                "shorthand": true,
                 "value": {
                   "type": "AssignmentPattern",
                   "start": 54,
@@ -296,7 +296,7 @@
                 "name": "x"
               },
               "computed": false,
-              "shorthand": false,
+              "shorthand": true,
               "value": {
                 "type": "AssignmentPattern",
                 "start": 69,

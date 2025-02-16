@@ -1,5 +1,5 @@
 const std = @import("std");
-const Token = @import("token.zig").Token;
+pub const Token = @import("token.zig").Token;
 const Parser = @import("parser.zig");
 const util = @import("util");
 
@@ -38,9 +38,10 @@ pub const Tree = struct {
         return &self.nodes.items(.data)[@intFromEnum(index)];
     }
 
+    // TODO: add a getTokenPtr
     /// Get a token by its index (Token.Index)
-    pub fn getToken(self: *const Tree, index: Token.Index) Token {
-        return self.tokens.items[@intFromEnum(index)];
+    pub fn getToken(self: *const Tree, index: Token.Index) *const Token {
+        return &self.tokens.items[@intFromEnum(index)];
     }
 
     /// Get the extra data of a node from its ExtraData.Index
@@ -60,9 +61,21 @@ pub const Tree = struct {
     }
 
     pub fn tag(self: *const Tree, node_id: Node.Index) std.meta.Tag(NodeData) {
+        // TODO: optimize using a cached self.nodes.slice().
         return std.meta.activeTag(
             self.nodes.items(.data)[@intFromEnum(node_id)],
         );
+    }
+
+    /// Get the source text for a node as a byte slice.
+    pub fn nodeToByteSlice(self: *const Tree, node_id: Node.Index) []const u8 {
+        // TODO: use a cached nodes.slice instead of .start and .end
+        const start = self.nodes.items(.start)[@intFromEnum(node_id)];
+        const end = self.nodes.items(.end)[@intFromEnum(node_id)];
+
+        const start_byte = self.getToken(start).start;
+        const end_byte = start_byte + self.getToken(end).len;
+        return self.source[start_byte..end_byte];
     }
 
     pub fn deinit(self: *Tree) void {
@@ -133,14 +146,16 @@ pub const FunctionFlags = packed struct(u8) {
     is_generator: bool = false,
     is_async: bool = false,
     is_arrow: bool = false,
-    _: u5 = 0,
+    /// Whether the function body has a "use strict" directive.
+    has_strict_directive: bool = false,
+    _: u4 = 0,
 };
 
 /// Represents the payload for a function expression or declaration.
 pub const Function = struct {
     /// points to a `ast.NodeData.parameters` (?SubRange)
     parameters: Node.Index,
-    /// points to an expression or a block statement
+    /// points to an expression or a statement list
     body: Node.Index,
     /// Function name and flags.
     info: ExtraData.Index,
@@ -150,7 +165,23 @@ pub const Function = struct {
         const name_id = tree.getExtraData(self.info).function.name orelse
             return null;
         const name = tree.nodes.items(.data)[@intFromEnum(name_id)];
-        return tree.string_pool.toByteSlice(name.identifier);
+        return tree.getToken(name.binding_identifier).toByteSlice(tree.source);
+    }
+
+    /// Get the token ID for the name of this function
+    pub fn getNameTokenId(self: *const Function, tree: *const Tree) ?Token.Index {
+        if (tree.getExtraData(self.info).function.name) |id_node| {
+            return tree.getNode(id_node).data.binding_identifier;
+        }
+
+        return null;
+    }
+
+    /// Get the token for the name of this function
+    pub fn getNameToken(self: *const Function, tree: *const Tree) ?*const Token {
+        if (self.getNameTokenId(tree)) |id|
+            return tree.getToken(id);
+        return null;
     }
 
     /// Returns a slice containing all the parameter nodes in the function.
@@ -174,16 +205,41 @@ pub const Function = struct {
         }
         return 0;
     }
+
+    /// Check whether the body of this function has a "use strict" directive
+    pub fn hasStrictDirective(self: *const Function, tree: *const Tree) bool {
+        return tree.getExtraData(self.info).function.flags.has_strict_directive;
+    }
 };
 
 pub const ForStatement = struct {
-    iterator: ExtraData.Index,
+    iterator: Node.Index,
     body: Node.Index,
+};
+
+/// Iterator for a regular old for-loop
+/// (i.e `for (let i = 0; i < 10; i++) { ... }`).
+/// init: `let i = 0`;
+/// condition: `i < 10`;
+/// update: `i++`
+pub const ForIterator = struct {
+    init: Node.Index,
+    condition: Node.Index,
+    update: Node.Index,
+};
+
+pub const ForInOfIterator = struct {
+    /// Left side of the 'of' keyword
+    left: Node.Index,
+    /// Right side of the 'of' keyword
+    right: Node.Index,
+    /// Set for for-await loops.
+    is_await: bool = false,
 };
 
 /// Describes the kind of property in an object literal.
 /// Differentiates getters and setters from regular property definitions.
-pub const PropertyDefinitionKind = enum(u5) {
+pub const PropertyDefinitionKind = enum(u6) {
     /// Getter
     get,
     /// Setter
@@ -206,7 +262,6 @@ pub const ClassFieldKind = enum(u5) {
 /// Flags for property definitions of an object literal.
 pub const PropertyDefinitionFlags = packed struct(u8) {
     is_method: bool = false,
-    is_shorthand: bool = false,
     is_computed: bool = false,
     kind: PropertyDefinitionKind = .init,
 };
@@ -216,6 +271,10 @@ pub const PropertyDefinition = struct {
     value: Node.Index,
     flags: PropertyDefinitionFlags = .{},
 };
+
+/// A shorthand property definition in an object literal.
+/// e.g: `{ x }`
+pub const ShorthandProperty = struct { name: Node.Index };
 
 pub const ClassFieldFlags = packed struct(u8) {
     is_static: bool = false,
@@ -262,18 +321,18 @@ pub const VariableDeclaration = struct {
 };
 
 pub const CatchClause = struct {
-    /// points to a 'block_statement'
+    /// points to a 'statement_list'
     body: Node.Index,
     /// points to an identifier or a pattern.
     param: ?Node.Index,
 };
 
 pub const TryStatement = struct {
-    /// Points to a 'block_statement'
+    /// Points to a 'statement_list'
     body: Node.Index,
     /// Points to a 'catch_clause'
     catch_clause: Node.Index,
-    /// Points to a 'block_statement'
+    /// Points to a 'statement_list'
     finalizer: Node.Index,
 };
 
@@ -307,17 +366,29 @@ pub const LabeledStatement = struct {
     body: Node.Index,
 };
 
+// TODO(@injuly): have optional name property for class expression,
+// but make it non-nullable for class declaration.
 pub const Class = struct {
     class_information: ExtraData.Index,
     body: SubRange,
 
-    /// Return the name of the class.
+    /// Return a slice representing the name of the class.
     pub fn className(self: *const Class, p: *const Parser) ?[]const u8 {
         const maybe_name_node = p.getExtraData(self.class_information).class.name;
         if (maybe_name_node) |name_node| {
             const node = p.getNode(name_node);
             const start_token = p.getToken(node.start);
             return start_token.toByteSlice(p.source);
+        }
+        return null;
+    }
+
+    /// Get the token ID for the name of this class
+    pub fn nameTokenId(self: *const Class, t: *const Tree) ?Token.Index {
+        if (t.getExtraData(self.class_information).class.name) |id_node| {
+            const name_node = t.nodeData(id_node);
+            std.debug.assert(std.meta.activeTag(name_node.*) == .binding_identifier);
+            return name_node.binding_identifier;
         }
         return null;
     }
@@ -375,7 +446,8 @@ pub const ExportSpecifier = struct {
     /// Name of the top-level declaration that is being exported
     local: Node.Index,
     /// Alias used when importing the exported item.
-    /// If no alias is present (i.e no "as"), this is null.
+    /// If no alias is present (i.e `import {foo}` instead of import `{ foo as bar }`),
+    /// this is null.
     exported: ?Node.Index,
 };
 
@@ -409,6 +481,7 @@ pub const Boolean = struct {
     token: Token.Index,
 };
 
+/// Data contained inside an AST node
 pub const NodeData = union(enum(u8)) {
     program: ?SubRange,
     assignment_expr: BinaryPayload,
@@ -432,9 +505,25 @@ pub const NodeData = union(enum(u8)) {
     yield_expr: YieldPayload,
     update_expr: UnaryPayload,
 
-    identifier: String,
-    binding_identifier: String,
+    /// An identifier that is neither a reference, nor a binding.
+    /// E.g: property node in a member expression, a label in a labeled statement,
+    /// or a key in an object literal.
+    identifier: Token.Index,
+    /// An identifier that references some value in the program.
+    /// ```js
+    /// let x = 1; // "x" is a `binding_identifier`
+    /// x = 2; // "x" is an `identifier_reference`
+    /// ```
+    identifier_reference: Token.Index,
+    /// An identifier occurring on the LHS of a declaration.
+    /// E.g: In a variable binding, destructuring, or function parameter.
+    /// ```js
+    /// let x = 1; // "x" is a `binding_identifier`
+    /// x = 2; // "x" is an `identifier_reference`
+    /// ```
+    binding_identifier: Token.Index,
 
+    // Literals:
     string_literal: Token.Index,
     number_literal: Number,
     boolean_literal: Boolean,
@@ -455,6 +544,9 @@ pub const NodeData = union(enum(u8)) {
     object_literal: ?SubRange,
     /// key-value pair or method in an object-literal.
     object_property: PropertyDefinition,
+    /// shorthand key-value pair in an object literal.
+    /// e.g: `{ x }`.
+    shorthand_property: ShorthandProperty,
     class_expression: Class,
     class_field: ClassFieldDefinition,
     class_method: ClassFieldDefinition,
@@ -477,7 +569,9 @@ pub const NodeData = union(enum(u8)) {
     labeled_statement: LabeledStatement,
     try_statement: TryStatement,
     catch_clause: CatchClause,
+    // TODO: replace ?SubRange with SubRange
     block_statement: ?SubRange,
+    statement_list: SubRange,
     expression_statement: Node.Index,
     variable_declaration: VariableDeclaration,
     variable_declarator: VariableDeclarator,
@@ -489,9 +583,14 @@ pub const NodeData = union(enum(u8)) {
     while_statement: WhileStatement,
     with_statement: WithStatement,
     throw_statement: Node.Index,
+
     for_statement: ForStatement,
     for_of_statement: ForStatement,
     for_in_statement: ForStatement,
+
+    for_iterator: ForIterator,
+    for_in_of_iterator: ForInOfIterator,
+
     switch_statement: SwitchStatement,
     /// A single 'case' block in a switch statement.
     switch_case: SwitchCase,
@@ -533,26 +632,6 @@ pub const NodeData = union(enum(u8)) {
     }
 };
 
-/// Iterator for a regular old for-loop
-/// (i.e `for (let i = 0; i < 10; i++) { ... }`).
-/// init: `let i = 0`;
-/// condition: `i < 10`;
-/// update: `i++`
-pub const ForIterator = struct {
-    init: Node.Index,
-    condition: Node.Index,
-    update: Node.Index,
-};
-
-pub const ForInOfIterator = struct {
-    /// Left side of the 'of' keyword
-    left: Node.Index,
-    /// Right side of the 'of' keyword
-    right: Node.Index,
-    /// Set for for-await loops.
-    is_await: bool = false,
-};
-
 pub const ClassInfo = struct {
     name: ?Node.Index,
     super_class: Node.Index,
@@ -570,20 +649,44 @@ pub const ExtraData = union(enum) {
         flags: FunctionFlags,
     },
     number_value: f64,
-    for_iterator: ForIterator,
-    for_in_of_iterator: ForInOfIterator,
     class: ClassInfo,
 };
 
 pub const Node = struct {
     /// An index into the AST's `nodes` array list.
-    pub const Index = enum(u32) { empty = 0, _ };
+    pub const Index = enum(u32) {
+        empty = 0,
+        _,
+
+        /// Get a pointer to the `NodeData` associated with this node-id.
+        pub inline fn get(self: Index, tree: *const Tree) *const NodeData {
+            return tree.nodeData(self);
+        }
+    };
     /// The actual data stored by this node.
     data: NodeData,
     /// The start token for this node.
     start: Token.Index,
     /// The end token for this node.
     end: Token.Index,
+
+    /// Check if this node is a literal
+    pub fn isLiteral(self: *const Node) bool {
+        return switch (std.meta.activeTag(self.data)) {
+            .string_literal,
+            .number_literal,
+            .boolean_literal,
+            .null_literal,
+            .regex_literal,
+            => true,
+            else => false,
+        };
+    }
+
+    /// Get the type tag for this AST node
+    pub fn tag(self: *const Node) std.meta.Tag(NodeData) {
+        return std.meta.activeTag(self.data);
+    }
 
     comptime {
         std.debug.assert(@bitSizeOf(Node) <= 196);

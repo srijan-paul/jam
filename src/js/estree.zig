@@ -115,7 +115,10 @@ pub fn jamToEstreeTag(node: ast.NodeData) []const u8 {
         .yield_expr => "YieldExpression",
         .update_expr => "UpdateExpression",
 
-        .binding_identifier, .identifier => "Identifier",
+        .binding_identifier,
+        .identifier,
+        .identifier_reference,
+        => "Identifier",
 
         .string_literal,
         .number_literal,
@@ -132,6 +135,7 @@ pub fn jamToEstreeTag(node: ast.NodeData) []const u8 {
         .rest_element => "RestElement",
         .object_literal => "ObjectExpression",
         .object_property => "Property",
+        .shorthand_property => "Property",
         .class_expression => "ClassExpression",
         .class_field => "ClassProperty",
         .class_method => "MethodDefinition",
@@ -145,7 +149,9 @@ pub fn jamToEstreeTag(node: ast.NodeData) []const u8 {
         .labeled_statement => "LabeledStatement",
         .try_statement => "TryStatement",
         .catch_clause => "CatchClause",
-        .block_statement => "BlockStatement",
+        .block_statement,
+        .statement_list,
+        => "BlockStatement",
         .expression_statement => "ExpressionStatement",
         .variable_declaration => "VariableDeclaration",
         .variable_declarator => "VariableDeclarator",
@@ -165,7 +171,7 @@ pub fn jamToEstreeTag(node: ast.NodeData) []const u8 {
         .default_case => "SwitchCase",
         .break_statement => "BreakStatement",
         .continue_statement => "ContinueStatement",
-        .parameters => unreachable,
+        .for_in_of_iterator, .for_iterator, .parameters => unreachable,
         .return_statement => "ReturnStatement",
         .import_declaration => "ImportDeclaration",
         .import_default_specifier => "ImportDefaultSpecifier",
@@ -221,9 +227,10 @@ fn nodeToEsTree(
             try o.put("right", rhs);
         },
 
-        .binding_identifier, .identifier => |s| {
-            const name = t.string_pool.toByteSlice(s);
-            try o.put("name", JValue{ .string = name });
+        .binding_identifier, .identifier, .identifier_reference => |tok_id| {
+            const name = t.getToken(tok_id).toByteSlice(t.source);
+            const escapedName = try processEscapes(al, name);
+            try o.put("name", JValue{ .string = escapedName });
         },
 
         .program => |maybe_statements| {
@@ -336,7 +343,7 @@ fn nodeToEsTree(
 
         .call_expr => |payload| {
             const callee = try nodeToEsTree(t, al, payload.callee, opts);
-            const arguments = t.nodeData(payload.arguments).arguments;
+            const arguments = payload.arguments.get(t).arguments;
             const args = try subRangeToJsonArray(al, t, arguments, opts);
             try o.put("callee", callee);
             try o.put("arguments", args);
@@ -420,15 +427,29 @@ fn nodeToEsTree(
             const value = try nodeToEsTree(t, al, payload.value, opts);
             const kind = @tagName(payload.flags.kind);
             const computed = payload.flags.is_computed;
-            const shorthand = payload.flags.is_shorthand;
             const method = payload.flags.is_method;
 
             try o.put("method", JValue{ .bool = method });
             try o.put("key", key);
+
             try o.put("computed", JValue{ .bool = computed });
-            try o.put("shorthand", JValue{ .bool = shorthand });
+            if (std.meta.activeTag(payload.value.get(t).*) == .assignment_pattern)
+                try o.put("shorthand", JTrue)
+            else
+                try o.put("shorthand", JFalse);
             try o.put("value", value);
             try o.put("kind", JValue{ .string = kind });
+        },
+
+        .shorthand_property => |payload| {
+            const key = try nodeToEsTree(t, al, payload.name, opts);
+
+            try o.put("method", JFalse);
+            try o.put("key", key);
+            try o.put("computed", JFalse);
+            try o.put("shorthand", JTrue);
+            try o.put("value", key);
+            try o.put("kind", JValue{ .string = "init" });
         },
 
         .try_statement => |payload| {
@@ -453,6 +474,11 @@ fn nodeToEsTree(
 
         .block_statement => |maybe_statements| {
             const body = try subRangeToJsonArray(al, t, maybe_statements, opts);
+            try o.put("body", body);
+        },
+
+        .statement_list => |stats| {
+            const body = try subRangeToJsonArray(al, t, stats, opts);
             try o.put("body", body);
         },
 
@@ -698,7 +724,7 @@ fn nodeToEsTree(
         },
 
         .for_statement => |payload| {
-            const iter = t.getExtraData(payload.iterator).for_iterator;
+            const iter = payload.iterator.get(t).for_iterator;
             try o.put("init", try nodeToEsTree(t, al, iter.init, opts));
             try o.put("test", try nodeToEsTree(t, al, iter.condition, opts));
             try o.put("update", try nodeToEsTree(t, al, iter.update, opts));
@@ -707,10 +733,13 @@ fn nodeToEsTree(
             try o.put("body", body);
         },
 
+        // covered in .for_statement
+        .for_in_of_iterator, .for_iterator => unreachable,
+
         .for_in_statement,
         .for_of_statement,
         => |payload| {
-            const iter = t.getExtraData(payload.iterator).for_in_of_iterator;
+            const iter = payload.iterator.get(t).for_in_of_iterator;
             const left = try nodeToEsTree(t, al, iter.left, opts);
             const right = try nodeToEsTree(t, al, iter.right, opts);
 

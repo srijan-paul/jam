@@ -1,32 +1,38 @@
 // A recursive decent parser for JavaScript.
 
+const util = @import("util");
 const std = @import("std");
 
-const Self = @This();
 const Tokenizer = @import("./tokenize.zig");
-const Token = @import("./token.zig").Token;
 const ast = @import("./ast.zig");
-const StringHelper = @import("./strings.zig");
 const ScopeManager = @import("./scope.zig");
 
-const util = @import("util");
-const types = util.types;
+const Token = @import("./token.zig").Token;
+const TokenMask = @import("./token.zig").Mask;
 
+const types = util.types;
 const Node = ast.Node;
 const NodeData = ast.NodeData;
-
 pub const Tree = ast.Tree;
+
+const Self = @This();
 
 const TokenWithId = struct {
     token: Token,
     id: Token.Index,
 };
 
-pub const Error = error{
+const ParseError = error{
     UnexpectedToken,
+    /// `async` keyword used on a property that isn't a method
+    InvalidAsyncProperty,
+    /// Keywords cannot be used as shorthand property names
+    InvalidKeywordShorthandProperty,
+    /// 'static' modifier used twice on a class field or method
+    DuplicateStaticModifier,
+    /// `async` keyword used on a getter or setter
+    AsyncGetterOrSetter,
     /// Invalid modifier like 'async'
-    IllegalModifier,
-    /// Return statement outside functions
     IllegalReturn,
     /// Break statement outside loops
     IllegalBreak,
@@ -40,13 +46,21 @@ pub const Error = error{
     IllegalFatArrow,
     /// Found a newline where there shouldn't be one
     IllegalNewline,
+    /// Using '??' with '||' or '&&' without parentheses
+    InvalidCoalesceExpression,
+    /// Invalid operand for a rest expression (e.g: ...1)
+    InvalidRestOperand,
+    /// Invalid operand for an update expression (e.g: 1++)
+    InvalidUpdateOperand,
     // Incorrect use of a meta property like 'new.target'
     InvalidMetaProperty,
     /// 5 = ...
     InvalidAssignmentTarget,
     ///  (1) => ...
     InvalidArrowParameters,
-    InvalidArrowFunction,
+    MalformedArrowFnBody,
+    /// Saw a '()' without a '=>'
+    MissingArrow,
     /// Setter must have exactly one parameter
     InvalidSetter,
     /// Getter must have no parameters
@@ -65,30 +79,43 @@ pub const Error = error{
     UnexpectedPattern,
     /// let x = 5 let 6 = 5 <- no ';' between statements
     ExpectedSemicolon,
+    /// `export` keyword without a following declaration
+    ExpectedExport,
+    /// `import` keyword without a following specifier
+    ExpectedImportSpecifier,
     /// let [a, ...as, b] = [1, 2, 3] <- 'as' must be the last
     RestElementNotLast,
+    /// Rest element must be the last item in a function parameter list
+    RestElementNotLastInParams,
     /// let { x, y } <- destructuring pattern must have an initializer
-    MissingInitializer,
+    MissingInitializerInBinding,
+    /// const x <- const declaration must have an initializer
+    MissingInitializerInConst,
     /// Multiple default clauses in a switch statement.
     /// switch (x) { default: 1 default: 2 }
     MultipleDefaults,
     /// Class definition with multiple constructors
     MultipleConstructors,
+    /// Classes cannot have a field named ""
+    InvalidClassFieldNamedConstructor,
     /// "with" statement used in strict mode.
     WithInStrictMode,
-    /// A variable is declared twice.
-    DuplicateBinding,
     /// Attempt to delete a local variable in strict mode.
     IllegalDeleteInStrictMode,
-    /// std.mem.Allocator.Error
-    OutOfMemory,
-    Overflow,
+    /// Invalid expression or pattern inside '(...)'
+    InvalidExpressionInsideParens,
     // TODO: remove these two errors
     JsxNotImplemented,
     TypeScriptNotImplemented,
     // The parser instance has already been used
     AlreadyParsed,
-} || Tokenizer.Error;
+};
+
+pub const Error =
+    ParseError ||
+    Tokenizer.Error ||
+    error{ OutOfMemory, Overflow };
+
 const ParseFn = fn (self: *Self) Error!Node.Index;
 
 /// An error or warning raised by the Parser.
@@ -117,11 +144,8 @@ pub const ParseContext = packed struct(u16) {
     /// Are `in` expressions allowed?
     /// Used to parse for-in loops.
     in: bool = true,
-    /// Whether we are currently parsing the LHS of a variable
-    /// declarator, or a function parameter.
-    parsing_declarator: enum(u2) { @"var", lexical, none } = .none,
     // padding
-    _: u6 = 0,
+    _: u8 = 0,
 };
 
 pub const SourceType = enum { script, module };
@@ -139,74 +163,6 @@ pub const Config = struct {
     /// Parses `(a)` as `parenthesized_expression {  identifier }` instead of  { identifier }
     preserve_parens: bool = true,
 };
-
-// arranged in highest to lowest binding order
-
-// TODO: Officially, exponentiation operator is defined as:
-// ExponentiationExpression :
-//  UnaryExpression
-//  | UpdateExpression ** ExponentiationExpression
-// So this isn't exactly correct.
-// The parselet for this will have to be hand-written.
-const exponentExpr = makeRightAssoc(.@"**", Self.unaryExpression);
-
-const multiplicativeExpr = makeLeftAssoc(.multiplicative_start, .multiplicative_end, exponentExpr);
-const additiveExpr = makeLeftAssoc(.additive_start, .additive_end, multiplicativeExpr);
-const shiftExpr = makeLeftAssoc(.shift_op_start, .shift_op_end, additiveExpr);
-
-// this one has to be hand-written to disallow 'in' inside for-loop iterators.
-// see: forStatement
-fn relationalExpr(self: *Self) Error!Node.Index {
-    var node = try shiftExpr(self);
-
-    const rel_op_start: u32 = @intFromEnum(Token.Tag.relational_start);
-    const rel_op_end: u32 = @intFromEnum(Token.Tag.relational_end);
-
-    var token = self.peek();
-    while (true) : (token = self.peek()) {
-        const itag: u32 = @intFromEnum(token.tag);
-        if ((itag > rel_op_start and itag < rel_op_end) or
-            token.tag == .kw_in or token.tag == .kw_instanceof)
-        {
-
-            // `in` expressions are not allowed when parsing the LHS
-            // for `for-loop` iterators.
-            if (token.tag == .kw_in and !self.context.in) {
-                break;
-            }
-
-            self.current_destructure_kind.setNoAssignOrDestruct();
-
-            const op_token = try self.next();
-            const rhs = try shiftExpr(self);
-
-            const nodes = self.nodes.slice();
-            const start_pos = nodes.items(.start)[@intFromEnum(node)];
-            const end_pos = nodes.items(.end)[@intFromEnum(rhs)];
-
-            const binary_pl: ast.BinaryPayload = .{
-                .lhs = node,
-                .rhs = rhs,
-                .operator = op_token.id,
-            };
-
-            node = try self.addNode(.{ .binary_expr = binary_pl }, start_pos, end_pos);
-        } else {
-            break;
-        }
-    }
-
-    return node;
-}
-
-const eqExpr = makeLeftAssoc(.eq_op_start, .eq_op_end, relationalExpr);
-
-const bAndExpr = makeLeftAssoc(.@"&", .@"&", eqExpr);
-const bXorExpr = makeLeftAssoc(.@"^", .@"^", bAndExpr);
-const bOrExpr = makeLeftAssoc(.@"|", .@"|", bXorExpr);
-
-const lAndExpr = makeLeftAssoc(.@"&&", .@"&&", bOrExpr);
-const lOrExpr = makeLeftAssoc(.@"||", .@"||", lAndExpr);
 
 allocator: std.mem.Allocator,
 
@@ -241,8 +197,6 @@ current: TokenWithId,
 /// of the first token in the expression/statement that was last parsed.
 /// Useful for Automatic Semicolon Insertion.
 prev_token_line: u32 = 0,
-/// Helper struct to manage, escape, and compare strings in source code.
-strings: StringHelper,
 /// The current grammatical context of the parser. See struct `ParseContext`.
 context: ParseContext = .{},
 /// The kind of destructuring that is allowed for the expression
@@ -256,7 +210,6 @@ jsx: bool = false,
 typescript: bool = false,
 /// The parse result
 tree: ?*Tree,
-scope: ScopeManager,
 /// Used in `asyncExpression`.
 /// Reset to `false` after an async arrow function is parsed.
 is_current_arrow_func_async: bool = false,
@@ -401,8 +354,6 @@ pub fn init(
 
         .diagnostics = try std.ArrayList(Diagnostic).initCapacity(allocator, 2),
         .scratch = try std.ArrayList(Node.Index).initCapacity(allocator, 32),
-        .strings = try StringHelper.init(allocator, source, &parse_tree.string_pool),
-        .scope = try ScopeManager.init(allocator, if (config.source_type == .module) .module else .script),
     };
 
     errdefer self.deinit();
@@ -442,8 +393,6 @@ pub fn deinit(self: *Self) void {
         self.allocator.free(d.message);
     }
     self.diagnostics.deinit();
-    self.strings.deinit();
-    self.scope.deinit();
 }
 
 pub const Result = struct {
@@ -581,12 +530,7 @@ pub fn importDeclaration(self: *Self) Error!Node.Index {
     }
 
     if (!has_imports) {
-        try self.emitDiagnosticOnToken(
-            self.current.token,
-            "Expected an import specifier, '*', or a default import",
-            .{},
-        );
-        return Error.UnexpectedToken;
+        return self.errorOnToken(import_kw.token, ParseError.ExpectedImportSpecifier);
     }
 
     const specifiers = self.scratch.items[prev_scratch_len..];
@@ -601,7 +545,7 @@ fn starImportSpecifier(self: *Self) Error!Node.Index {
     _ = try self.expectToken(.kw_as);
 
     const name_token = try self.expectIdentifier();
-    const name = try self.identifier(name_token);
+    const name = try self.bindingIdentifier(name_token.id);
 
     const specifier = try self.addNode(
         .{
@@ -640,7 +584,7 @@ fn completeImportDeclaration(
 /// Parse the next identifier token as a default import specifier.
 fn defaultImportSpecifier(self: *Self) Error!Node.Index {
     const name_token = try self.next();
-    const name = try self.identifier(name_token);
+    const name = try self.bindingIdentifier(name_token.id);
     return self.addNode(
         .{
             .import_default_specifier = .{ .name = name },
@@ -659,13 +603,19 @@ fn importSpecifier(self: *Self) Error!Node.Index {
         }
 
         name_token = try self.expectIdOrKeyword();
-        break :blk try self.identifier(name_token);
+
+        // `import {foo as bar }` // <- `foo` is an identifier node
+        // `import { foo }` // <- `foo` is a BINDING identifier node
+        break :blk try if (self.isAtToken(.kw_as))
+            self.identifier(name_token.id)
+        else
+            self.bindingIdentifier(name_token.id);
     };
 
     if (self.isAtToken(.kw_as) or !self.isIdentifier(name_token.token.tag)) {
         _ = try self.expectToken(.kw_as); // eat 'as'
         const alias_token = try self.expectIdentifier();
-        const alias = try self.identifier(alias_token);
+        const alias = try self.bindingIdentifier(alias_token.id);
 
         return self.addNode(
             .{
@@ -699,7 +649,7 @@ fn moduleExportName(self: *Self) Error!Node.Index {
         return Error.UnexpectedToken;
     }
 
-    return self.identifier(name_token);
+    return self.identifierReference(name_token.id);
 }
 
 /// Parse an 'export' declaration:
@@ -742,6 +692,8 @@ fn exportDeclaration(self: *Self) Error!Node.Index {
         // export { x, y } from "foo";
         // ```
         if (self.isAtToken(.kw_from)) {
+            self.rewriteRefsInExportList(specifiers);
+
             _ = try self.expect(.kw_from);
             end_pos = self.current.id;
             const source = try self.stringLiteral();
@@ -770,13 +722,7 @@ fn exportDeclaration(self: *Self) Error!Node.Index {
         return self.starExportDeclaration(export_kw);
     }
 
-    try self.emitDiagnosticOnToken(
-        self.current.token,
-        "Expected an export declaration",
-        .{},
-    );
-
-    return Error.UnexpectedToken;
+    return self.errorOnToken(self.current.token, ParseError.ExpectedExport);
 }
 
 /// Parse an export all statement, assuming the `export` token has been consumed already
@@ -795,7 +741,7 @@ fn starExportDeclaration(self: *Self, export_kw: TokenWithId) Error!Node.Index {
                 return Error.UnexpectedToken;
             }
 
-            break :blk try self.identifier(name_token);
+            break :blk try self.identifier(name_token.id);
         }
 
         break :blk null;
@@ -877,7 +823,9 @@ fn defaultExport(self: *Self, export_kw: Token.Index) Error!Node.Index {
     );
 }
 
-pub fn namedExportList(self: *Self) Error!ast.SubRange {
+/// Parse a list of export specifiers:
+/// https://tc39.es/ecma262/#prod-ExportsList
+fn namedExportList(self: *Self) Error!ast.SubRange {
     const prev_scratch_len = self.scratch.items.len;
     defer self.scratch.items.len = prev_scratch_len;
 
@@ -890,6 +838,42 @@ pub fn namedExportList(self: *Self) Error!ast.SubRange {
 
     const specifiers = self.scratch.items[prev_scratch_len..];
     return try self.addSubRange(specifiers);
+}
+
+/// Go through all specifiers in an export declaration, and convert
+/// every `identifier_reference` to an `identifier`.
+/// This done to appropriately parse cases like:
+/// ```js
+/// export { foo, bar as y } from "baz"
+/// ```
+/// Before we've seen the `from` keyword, we don't know if `foo` and `bar`
+/// are identifiers (i.e references into the "baz" file), or whether they're
+/// `identifier_reference`s, referencing top-level variables declared within the same file.
+/// So, we parse them as `identifier_reference` nodes, and then rewrite them
+/// if we see a `from` keyword after the specifier list.
+fn rewriteRefsInExportList(self: *Self, specifiers: ast.SubRange) void {
+    const from: usize = @intFromEnum(specifiers.from);
+    const to: usize = @intFromEnum(specifiers.to);
+    const node_pls: []ast.NodeData = self.nodes.items(.data);
+    for (from..to) |i| {
+        const node_id = self.node_lists.items[i];
+        const node_pl = &node_pls[@intFromEnum(node_id)];
+        std.debug.assert(std.meta.activeTag(node_pl.*) == .export_specifier);
+
+        identifierRefToIdentifier(node_pls, node_pl.export_specifier.local);
+
+        if (node_pl.export_specifier.exported) |exported_id| {
+            identifierRefToIdentifier(node_pls, exported_id);
+        }
+    }
+}
+
+/// Convert an existing `identifier_reference` node to an `identifier` node.
+/// This just updates the tag of the node's `NodeData` union.
+fn identifierRefToIdentifier(node_pls: []NodeData, id: Node.Index) void {
+    const pl = &node_pls[@intFromEnum(id)];
+    std.debug.assert(std.meta.activeTag(pl.*) == .identifier_reference);
+    pl.* = .{ .identifier = pl.identifier_reference };
 }
 
 /// Parse an export specifier.
@@ -992,7 +976,7 @@ fn labeledStatement(self: *Self) Error!Node.Index {
         .{
             .labeled_statement = .{
                 .body = body,
-                .label = try self.identifier(label),
+                .label = try self.identifier(label.id),
             },
         },
         label.id,
@@ -1063,7 +1047,7 @@ fn classDeclaration(self: *Self) Error!Node.Index {
         return Error.UnexpectedToken;
     }
 
-    const name = try self.identifier(name_token);
+    const name = try self.bindingIdentifier(name_token.id);
 
     const super_class = if (self.current.token.tag == .kw_extends)
         try self.classHeritage()
@@ -1097,7 +1081,7 @@ fn classExpression(self: *Self, class_kw_id: Token.Index) Error!Node.Index {
         const cur = self.current.token.tag;
         if (cur.isIdentifier() or self.isKeywordIdentifier(cur)) {
             const name_token = try self.next();
-            break :blk try self.identifier(name_token);
+            break :blk try self.bindingIdentifier(name_token.id);
         }
 
         break :blk null;
@@ -1154,11 +1138,7 @@ fn classBody(self: *Self) Error!ast.SubRange {
         if (saw_constructor) n_constructors += 1;
 
         if (n_constructors > 1) {
-            try self.emitDiagnosticOnNode(
-                element,
-                "A class cannot have multiple constructor implementations",
-            );
-            return Error.MultipleConstructors;
+            return self.errorOnNode(element, ParseError.MultipleConstructors);
         }
         try self.scratch.append(element);
     }
@@ -1174,11 +1154,10 @@ fn classElement(self: *Self, saw_constructor_inout: *bool) Error!Node.Index {
         .kw_constructor => {
             saw_constructor_inout.* = true;
             const ctor = try self.next();
-            const ctor_key = try self.identifier(ctor);
+            const ctor_key = try self.identifier(ctor.id);
 
             if (!self.isAtToken(.@"(")) {
-                try self.emitDiagnosticOnNode(ctor_key, "Classes cannot have a field named 'constructor'");
-                return Error.UnexpectedToken;
+                return self.errorOnToken(self.current.token, ParseError.InvalidClassFieldNamedConstructor);
             }
 
             return self.parseClassMethodBody(
@@ -1236,7 +1215,7 @@ fn asyncClassProperty(self: *Self, modifiers: ClassFieldModifiers) Error!Node.In
     } else {
         // A regular field named 'async', like `class A { async = 5; }`
         // or `class A { async() { return 1; } }`
-        const key = try self.identifier(async_kw);
+        const key = try self.identifierReference(async_kw.id);
         return self.completeClassProperty(key, modifiers);
     }
 }
@@ -1258,12 +1237,7 @@ fn staticClassProperty(self: *Self, modifiers: ClassFieldModifiers) Error!Node.I
         self.current.token.line == static_kw.token.line)
     {
         if (modifiers.field_flags.is_static) {
-            try self.emitDiagnosticOnToken(
-                static_kw.token,
-                "Duplicate 'static' modifier",
-                .{},
-            );
-            return Error.UnexpectedToken;
+            return self.errorOnToken(static_kw.token, ParseError.DuplicateStaticModifier);
         }
 
         if (modifiers.method_flags.is_async) {
@@ -1279,7 +1253,7 @@ fn staticClassProperty(self: *Self, modifiers: ClassFieldModifiers) Error!Node.I
         new_modifiers.field_flags.is_static = true;
         return self.classPropertyWithModifier(new_modifiers);
     } else {
-        const key = try self.identifier(static_kw);
+        const key = try self.identifierReference(static_kw.id);
         return self.completeClassProperty(key, modifiers);
     }
 }
@@ -1330,7 +1304,7 @@ fn classProperty(self: *Self, modifiers: ClassFieldModifiers) Error!Node.Index {
 
         // Probably a regular field named 'get' or 'set',
         // like `class A { get() { return 1 }; set = 2;  } `
-        const key = try self.identifier(get_or_set);
+        const key = try self.identifierReference(get_or_set.id);
         return self.completeClassProperty(key, modifiers);
     }
 
@@ -1351,11 +1325,7 @@ fn completeClassProperty(
 
     if (modifiers.method_flags.is_async) {
         // disallow fields like `async x = 5;`
-        try self.emitDiagnosticOnNode(
-            key,
-            "'async' modifier cannot be used on fields that are not methods",
-        );
-        return Error.IllegalModifier;
+        return self.errorOnNode(key, ParseError.InvalidAsyncProperty);
     }
 
     const start_pos = modifiers.start_position;
@@ -1412,12 +1382,7 @@ fn parseClassMethodBody(
 
     if (modifiers.field_flags.kind == .get or modifiers.field_flags.kind == .set) {
         if (modifiers.method_flags.is_async) {
-            try self.emitDiagnosticOnNode(
-                key,
-                "'async' modifier cannot be used on getters or setters",
-            );
-
-            return Error.IllegalModifier;
+            return self.errorOnNode(key, ParseError.AsyncGetterOrSetter);
         }
 
         // verify the number of parameters for getters and setters.
@@ -1433,33 +1398,6 @@ fn parseClassMethodBody(
         modifiers.start_position,
         end_pos,
     );
-}
-
-/// Return any statement except a labeled statement.
-/// Used in contexts where a labeled statement is not allowed, like the body of
-/// a WhileStatement.
-fn stmtNotLabeledFunction(self: *Self) Error!Node.Index {
-    const lstmt = try self.statementOrDeclaration();
-    const data_slice: []ast.NodeData = self.nodes.items(.data);
-    const stmt_node = data_slice[@intFromEnum(lstmt)];
-
-    switch (stmt_node) {
-        .labeled_statement => |labeled_stmt| {
-            // TODO: this should change to a helper function.
-            const stmt = data_slice[@intFromEnum(labeled_stmt.body)];
-            if (std.meta.activeTag(stmt) == .function_declaration) {
-                try self.emitDiagnosticOnToken(
-                    self.getToken(labeled_stmt.label),
-                    "Function declarations cannot be labeled here",
-                    .{},
-                );
-                return Error.IllegalLabeledStatement;
-            }
-        },
-        else => {},
-    }
-
-    return lstmt;
 }
 
 fn ifStatement(self: *Self) Error!Node.Index {
@@ -1505,9 +1443,6 @@ fn forStatement(self: *Self) Error!Node.Index {
     const for_kw = try self.next();
     std.debug.assert(for_kw.token.tag == .kw_for);
 
-    try self.scope.enterScope(.block, self.context.strict);
-    defer self.scope.exitScope();
-
     const loop_kind, const iterator = try self.forLoopIterator();
 
     const saved_context = self.context;
@@ -1537,8 +1472,8 @@ fn forStatement(self: *Self) Error!Node.Index {
 /// Once a 'for' keyword has been consumed, this parses the part inside '()', including the parentheses.
 /// Returns a tuple where the first item is the kind of for loop (for-in, for-of, or basic),
 /// and the second item is the iterator (index of an `ast.ExtraData`).
-fn forLoopIterator(self: *Self) Error!struct { ForLoopKind, ast.ExtraData.Index } {
-    _ = try self.expectToken(.@"(");
+fn forLoopIterator(self: *Self) Error!struct { ForLoopKind, ast.Node.Index } {
+    const lpar = try self.expect(.@"(");
 
     var lhs_starts_with_let = false;
 
@@ -1562,13 +1497,20 @@ fn forLoopIterator(self: *Self) Error!struct { ForLoopKind, ast.ExtraData.Index 
 
     if (maybe_decl_kw) |decl_kw| {
         var loop_kind = ForLoopKind.basic;
-        const iterator = try self.completeVarDeclLoopIterator(decl_kw, &loop_kind);
+        const iterator = try self.completeVarDeclLoopIterator(
+            lpar.id,
+            decl_kw,
+            &loop_kind,
+        );
         return .{ loop_kind, iterator };
     }
 
     // 'for (;' indicates a basic 3-part for loop with empty initializer.
     if (self.isAtToken(.@";")) {
-        const iterator = try self.completeBasicLoopIterator(Node.Index.empty);
+        const iterator = try self.completeBasicLoopIterator(
+            Node.Index.empty,
+            lpar.id,
+        );
         return .{ ForLoopKind.basic, iterator };
     }
 
@@ -1601,7 +1543,7 @@ fn forLoopIterator(self: *Self) Error!struct { ForLoopKind, ast.ExtraData.Index 
                 return Error.UnexpectedPattern;
             }
 
-            const iterator = try self.completeBasicLoopIterator(expr);
+            const iterator = try self.completeBasicLoopIterator(expr, lpar.id);
             return .{ ForLoopKind.basic, iterator };
         },
 
@@ -1635,14 +1577,18 @@ fn forLoopIterator(self: *Self) Error!struct { ForLoopKind, ast.ExtraData.Index 
 
             _ = try self.nextToken();
             const rhs = try self.expression();
-            _ = try self.expectToken(.@")");
+            const rpar = try self.expect(.@")");
 
-            const iterator = try self.addExtraData(.{
-                .for_in_of_iterator = .{
-                    .left = expr,
-                    .right = rhs,
+            const iterator = try self.addNode(
+                .{
+                    .for_in_of_iterator = .{
+                        .left = expr,
+                        .right = rhs,
+                    },
                 },
-            });
+                lpar.id,
+                rpar.id,
+            );
             return .{ loop_kind, iterator };
         },
 
@@ -1671,21 +1617,17 @@ fn forLoopStartExpression(self: *Self) Error!Node.Index {
 /// this function parses the rest of the loop iterator.
 fn completeVarDeclLoopIterator(
     self: *Self,
+    // The '(' that open the for loop
+    lpar_id: Token.Index,
+    // The 'var'/'let'/'const' keyword
     decl_kw: TokenWithId,
     loop_kind: *ForLoopKind,
-) Error!ast.ExtraData.Index {
+) Error!ast.Node.Index {
     std.debug.assert(decl_kw.token.tag == .kw_let or
         decl_kw.token.tag == .kw_var or
         decl_kw.token.tag == .kw_const);
 
-    const ctx = self.context;
-    self.context.parsing_declarator = if (decl_kw.token.tag == .kw_var)
-        .@"var"
-    else
-        .lexical;
-
     const lhs = try self.bindingIdentifierOrPattern();
-    self.context = ctx;
 
     const lhs_span = self.nodeSpan(lhs);
     switch (self.current.token.tag) {
@@ -1715,10 +1657,17 @@ fn completeVarDeclLoopIterator(
 
             _ = try self.nextToken(); // eat 'in' or 'of'
             const rhs = try self.expression();
-            _ = try self.expectToken(.@")");
-            return self.addExtraData(.{
-                .for_in_of_iterator = .{ .left = declaration, .right = rhs },
-            });
+            const rpar = try self.expect(.@")");
+            return self.addNode(
+                .{
+                    .for_in_of_iterator = .{
+                        .left = declaration,
+                        .right = rhs,
+                    },
+                },
+                lpar_id,
+                rpar.id,
+            );
         },
         else => {
             // TODO: can some of this code be shared with `variableDeclarator`?
@@ -1736,11 +1685,9 @@ fn completeVarDeclLoopIterator(
                 end_pos = self.nodeSpan(init_expr).end;
                 rhs = init_expr;
             } else if (self.nodeTag(lhs) != .binding_identifier) {
-                try self.emitDiagnosticOnNode(lhs, "Complex binding patterns require an initializer");
-                return Error.MissingInitializer;
+                return self.errorOnNode(lhs, ParseError.MissingInitializerInBinding);
             } else if (decl_kw.token.tag == .kw_const) {
-                try self.emitDiagnosticOnNode(lhs, "Missing initializer in const declaration");
-                return Error.MissingInitializer;
+                return self.errorOnNode(lhs, ParseError.MissingInitializerInConst);
             }
 
             const first_decl = try self.addNode(
@@ -1750,7 +1697,7 @@ fn completeVarDeclLoopIterator(
             );
 
             const for_init = try self.completeLoopInitializer(&decl_kw, first_decl);
-            return self.completeBasicLoopIterator(for_init);
+            return self.completeBasicLoopIterator(for_init, lpar_id);
         },
     }
 }
@@ -1758,7 +1705,13 @@ fn completeVarDeclLoopIterator(
 /// A "Basic" loop iterator is a plain old (init; cond; update).
 /// Given the `init` expression or statement, this function parses the rest of the iterator
 /// upto the closing ')'.
-fn completeBasicLoopIterator(self: *Self, for_init: Node.Index) Error!ast.ExtraData.Index {
+fn completeBasicLoopIterator(
+    self: *Self,
+    // The first expression after the '('
+    for_init: Node.Index,
+    // The '(' that opens the for loop iterator
+    lpar_id: Token.Index,
+) Error!ast.Node.Index {
     _ = try self.expectToken(.@";");
 
     const for_cond = switch (self.current.token.tag) {
@@ -1773,15 +1726,19 @@ fn completeBasicLoopIterator(self: *Self, for_init: Node.Index) Error!ast.ExtraD
         else => try self.expression(),
     };
 
-    _ = try self.expectToken(.@")");
+    const rpar = try self.expect(.@")");
 
-    return self.addExtraData(ast.ExtraData{
-        .for_iterator = ast.ForIterator{
-            .init = for_init,
-            .condition = for_cond,
-            .update = for_update,
+    return self.addNode(
+        .{
+            .for_iterator = ast.ForIterator{
+                .init = for_init,
+                .condition = for_cond,
+                .update = for_update,
+            },
         },
-    });
+        lpar_id,
+        rpar.id,
+    );
 }
 
 /// Parse the rest of the for loop initializer.
@@ -1993,7 +1950,7 @@ fn catchClause(self: *Self) Error!Node.Index {
     const catch_kw = try self.expect(.kw_catch);
     const param = try self.catchParameter();
 
-    const body = try self.blockStatement();
+    const body = try self.statementList();
     return self.addNode(.{
         .catch_clause = ast.CatchClause{
             .param = param,
@@ -2180,8 +2137,7 @@ fn withStatement(self: *Self) Error!Node.Index {
 
     if (self.context.strict) {
         // TODO: emit this error but continue parsing.
-        try self.emitDiagnosticOnNode(stmt, "With statements are not allowed in strict mode");
-        return Error.WithInStrictMode;
+        return self.errorOnNode(stmt, ParseError.WithInStrictMode);
     }
 
     return stmt;
@@ -2256,10 +2212,7 @@ fn startLetBinding(self: *Self) Error!?TokenWithId {
 ///  BindingPattern Initializer?
 ///  BindingElement Initializer?
 fn variableDeclarator(self: *Self, kind: ast.VarDeclKind) Error!Node.Index {
-    const ctx = self.context;
-    self.context.parsing_declarator = if (kind == .@"var") .@"var" else .lexical;
     const lhs = try self.bindingIdentifierOrPattern();
-    self.context = ctx;
 
     const lhs_span = self.nodeSpan(lhs);
     const start_pos = lhs_span.start;
@@ -2273,12 +2226,10 @@ fn variableDeclarator(self: *Self, kind: ast.VarDeclKind) Error!Node.Index {
             break :blk init_expr;
         } else if (self.nodeTag(lhs) != .binding_identifier) {
             // Assignment patterns must have an initializer.
-            try self.emitDiagnosticOnNode(lhs, "A destructuring declaration must have an initializer");
-            return Error.MissingInitializer;
+            return self.errorOnNode(lhs, ParseError.MissingInitializerInBinding);
         } else if (kind == .@"const") {
             // Constants must have an initializer.
-            try self.emitDiagnosticOnNode(lhs, "Missing initializer in const declaration");
-            return Error.MissingInitializer;
+            return self.errorOnNode(lhs, ParseError.MissingInitializerInConst);
         }
 
         break :blk null;
@@ -2321,14 +2272,32 @@ fn expressionStatement(self: *Self) Error!Node.Index {
 /// BlockStatement:
 ///   '{' StatementList? '}'
 fn blockStatement(self: *Self) Error!Node.Index {
+    const stats = try self.parseStatements();
+    const block_node = ast.NodeData{ .block_statement = stats.statements };
+    return self.addNode(block_node, stats.start, stats.end);
+}
+
+/// Parse a
+///   '{' StatementList? '}'
+fn statementList(self: *Self) Error!Node.Index {
+    const stats = try self.parseStatements();
+    const block_node = ast.NodeData{ .statement_list = stats.statements };
+    return self.addNode(block_node, stats.start, stats.end);
+}
+
+const Statements = struct {
+    statements: ast.SubRange,
+    start: Token.Index,
+    end: Token.Index,
+};
+
+/// Parse a list of statements inside  '{}'
+fn parseStatements(self: *Self) Error!Statements {
     const lbrac = try self.expect(.@"{");
     const start_pos = lbrac.id;
 
     const prev_scratch_len = self.scratch.items.len;
     defer self.scratch.items.len = prev_scratch_len;
-
-    try self.scope.enterScope(.block, self.context.strict);
-    defer self.scope.exitScope();
 
     while (self.current.token.tag != .@"}") {
         const stmt = try self.statementOrDeclaration();
@@ -2340,13 +2309,8 @@ fn blockStatement(self: *Self) Error!Node.Index {
     const end_pos = rbrace.id;
 
     const statements = self.scratch.items[prev_scratch_len..];
-    if (statements.len == 0) {
-        return self.addNode(.{ .block_statement = null }, start_pos, end_pos);
-    }
-
-    const stmt_list_node = try self.addSubRange(statements);
-    const block_node = ast.NodeData{ .block_statement = stmt_list_node };
-    return self.addNode(block_node, start_pos, end_pos);
+    const statement_nodes = try self.addSubRange(statements);
+    return .{ .statements = statement_nodes, .start = start_pos, .end = end_pos };
 }
 
 /// Assuming the parser is at the `function` keyword,
@@ -2369,12 +2333,10 @@ fn functionDeclaration(
 fn functionName(self: *Self) Error!Node.Index {
     const context = self.context;
     defer self.context = context;
-    self.context.parsing_declarator = .@"var"; // functions are hoisted
 
     const token = try self.next();
-    if (self.isIdentifier(token.token.tag)) {
-        return self.bindingIdentifier(token);
-    }
+    if (self.isIdentifier(token.token.tag))
+        return self.bindingIdentifier(token.id);
 
     try self.emitBadTokenDiagnostic("function name", &token.token);
     return Error.UnexpectedToken;
@@ -2436,7 +2398,7 @@ fn breakStatement(self: *Self) Error!Node.Index {
         {
             // TODO: check if this label exists.
             const token = try self.next();
-            const id = try self.identifier(token);
+            const id = try self.identifier(token.id);
             end_pos = token.id;
             break :blk id;
         }
@@ -2476,7 +2438,7 @@ fn continueStatement(self: *Self) Error!Node.Index {
         {
             // TODO: check if this label exists.
             const token = try self.next();
-            const id = try self.identifier(token);
+            const id = try self.identifier(token.id);
             end_pos = token.id;
             break :blk id;
         }
@@ -2495,6 +2457,75 @@ fn continueStatement(self: *Self) Error!Node.Index {
 // ------------------------
 // Common helper functions
 // ------------------------
+
+fn errorMessage(err: ParseError) []const u8 {
+    return switch (err) {
+        ParseError.InvalidAsyncProperty => "The async modifier is only allowed on methods",
+        ParseError.DuplicateStaticModifier => "Duplicate 'static' modifier",
+        ParseError.InvalidKeywordShorthandProperty => "Keywords cannot be used as shorthand property names",
+        ParseError.AsyncGetterOrSetter => "The async modifier cannot be used on getters and setters",
+        ParseError.IllegalReturn => "Return statement is not allowed outside of a function",
+        ParseError.IllegalBreak => "'break' is not allowed outside loops and switch statements",
+        ParseError.IllegalContinue => "'continue' is not allowed outside switch statements",
+        ParseError.IllegalAwait => "'await' expressions are not allowed outside async functions",
+        ParseError.InvalidSetter => "Setter functions must have exactly one parameter",
+        ParseError.InvalidGetter => "Getter functions must have no parameters",
+        ParseError.InvalidLoopLhs => "left hand side of for-loop must be a name or assignment pattern",
+        ParseError.MissingInitializerInConst => "Missing initializer in const declaration",
+        ParseError.MissingInitializerInBinding => "Binding patterns must have an initializer",
+        ParseError.MultipleDefaults => "Multiple 'default' clauses are not allowed in a switch statement",
+        ParseError.UnexpectedToken => "Unexpected token",
+        ParseError.WithInStrictMode => "With statements are not allowed in strict mode",
+        ParseError.ExpectedSemicolon => "Expected a ';' or a newline",
+        ParseError.ExpectedExport => "`export` keyword must be followed by an export declaration",
+        ParseError.UnexpectedPattern => "Expected expression, found binding pattern",
+        ParseError.RestElementNotLast => "Rest element must be the last element in a destructuring pattern",
+        ParseError.IllegalDeleteInStrictMode => "Cannot delete a variable in strict mode",
+        ParseError.IllegalFatArrow => "'=>' must appear immediately after arrow function parameters",
+        ParseError.IllegalNewline => "Unexpected newline",
+        ParseError.InvalidCoalesceExpression => "Logical operators cannot be mixed with the nullish coalescing operator",
+        ParseError.InvalidRestOperand => "A '...' here must be followed by a valid assignment target",
+        ParseError.InvalidUpdateOperand => "Invalid operand for update expression",
+        ParseError.InvalidAssignmentTarget => "Invalid assignment target",
+        ParseError.LexicallyBoundLet => "'let' cannot be used as a lexically bound variable name",
+        ParseError.MultipleConstructors => "Classes cannot multiple constructors",
+        ParseError.InvalidClassFieldNamedConstructor => "Classes cannot have a field with the name 'constructor'",
+        ParseError.InvalidObject => "Expression is neither an object literal, nor a destructuring pattern",
+        ParseError.InvalidMetaProperty => "Invalid meta property",
+        ParseError.JsxNotImplemented => "JSX support is not implemented",
+        ParseError.TypeScriptNotImplemented => "TypeScript support is not implemented",
+        ParseError.InvalidArrowParameters => "Invalid arrow function parameters",
+        ParseError.MissingArrow => "Missing '=>' after arrow function parameter list",
+        ParseError.MalformedArrowFnBody => "Malformed arrow function body",
+        ParseError.LetInStrictMode => "'let' is not allowed in strict mode",
+        ParseError.InvalidFunctionParameter => "Function parameter must be a name or binding pattern",
+        ParseError.IllegalLabeledStatement => "Labelled statements are not allowed here",
+        ParseError.AlreadyParsed => "The parser has already been used",
+        ParseError.ExpectedImportSpecifier => "Expected an import specifier, '*', or file path",
+        ParseError.InvalidExpressionInsideParens => "Invalid expression or pattern inside (...)",
+        ParseError.RestElementNotLastInParams => "Rest element must be the last item in a function parameter list",
+    };
+}
+
+fn emitError(self: *Self, coord: types.Coordinate, err: ParseError) Error {
+    const msg = errorMessage(err);
+    try self.emitDiagnostic(coord, "{s}", .{msg});
+    return err;
+}
+
+fn errorOnToken(self: *Self, token: Token, err: ParseError) Error {
+    const coord = token.startCoord(self.source);
+    return self.emitError(coord, err);
+}
+
+fn errorOnNode(self: *Self, node: Node.Index, err: ParseError) Error {
+    const token_id = self.nodes.items(.start)[@intFromEnum(node)];
+    const start_coord = util.offsets.byteIndexToCoordinate(
+        self.source,
+        self.getToken(token_id).start,
+    );
+    return self.emitError(start_coord, err);
+}
 
 /// Enter strict mode by modifying the current context.
 /// Returns the previous context that must be passed to `contextExitStrictMode`.
@@ -2577,7 +2608,7 @@ fn isKeywordIdentifier(self: *const Self, tag: Token.Tag) bool {
     }
 }
 
-fn isIdentifier(self: *const Self, tag: Token.Tag) bool {
+inline fn isIdentifier(self: *const Self, tag: Token.Tag) bool {
     return tag.isIdentifier() or self.isKeywordIdentifier(tag);
 }
 
@@ -2643,15 +2674,6 @@ fn emitBadDestructureDiagnostic(self: *Self, expr: Node.Index) error{OutOfMemory
     const start_token = self.nodes.items(.start)[@intFromEnum(expr)];
     const start_coord = self.getToken(start_token).startCoord(self.source);
     return self.emitDiagnostic(start_coord, "Unexpected destructuring pattern", .{});
-}
-
-fn emitDiagnosticOnNode(self: *Self, expr: Node.Index, comptime message: []const u8) error{OutOfMemory}!void {
-    const token_id = self.nodes.items(.start)[@intFromEnum(expr)];
-    const start_coord = util.offsets.byteIndexToCoordinate(
-        self.source,
-        self.getToken(token_id).start,
-    );
-    return self.emitDiagnostic(start_coord, message, .{});
 }
 
 /// Emit a diagnostic about an un-expected token.
@@ -2887,7 +2909,7 @@ fn bindingIdentifierOrPattern(self: *Self) Error!Node.Index {
         .@"[" => return self.arrayBindingPattern(),
         else => {
             if (self.isIdentifier(token.tag))
-                return self.bindingIdentifier(try self.next());
+                return self.bindingIdentifier((try self.next()).id);
 
             try self.emitBadTokenDiagnostic("a variable name or binding target", token);
             return Error.InvalidAssignmentTarget;
@@ -2895,47 +2917,116 @@ fn bindingIdentifierOrPattern(self: *Self) Error!Node.Index {
     }
 }
 
-/// Mutate existing nodes to convert a PrimaryExpression to an
-/// AssignmentPattern (or Identifier) (e.g, .object_literal => .object_pattern)
-fn reinterpretAsPattern(self: *Self, node_id: Node.Index) void {
-    const node: *ast.NodeData = &self.nodes.items(.data)[@intFromEnum(node_id)];
+fn reinterpretPattern(
+    self: *Self,
+    node_pls: []NodeData,
+    node_id: Node.Index,
+    is_binding_pattern: bool,
+) void {
+    const node: *ast.NodeData = &node_pls[@intFromEnum(node_id)];
     switch (node.*) {
-        .identifier,
         .member_expr,
-        .assignment_pattern,
         .empty_array_item,
-        .rest_element,
         .computed_member_expr,
         .call_expr,
         => return,
-        .meta_property => {
-            // TODO: import.meta is not assignable. raise an error here
-            return;
+
+        .assignment_pattern => |pattern| {
+            self.reinterpretPattern(node_pls, pattern.lhs, is_binding_pattern);
         },
+
+        .rest_element => |rest_pl| {
+            self.reinterpretPattern(node_pls, rest_pl, is_binding_pattern);
+        },
+
+        .identifier_reference => |id_token| {
+            if (is_binding_pattern) {
+                node.* = .{ .binding_identifier = id_token };
+            }
+        },
+
+        .identifier => |id_token| {
+            // ({ x:y } = 1) // <- convert y to an identifier REFERENCE
+            // ({ x:y }) => 1 // <- convert y to a BINDING identifier
+            node.* = if (is_binding_pattern)
+                .{ .binding_identifier = id_token }
+            else
+                .{ .identifier_reference = id_token };
+        },
+        // TODO: import.meta is not assignable. raise an error here
+        .meta_property => return,
         .object_literal => |object_pl| {
             node.* = .{ .object_pattern = object_pl };
             const elems = self.subRangeToSlice(object_pl orelse return);
             for (elems) |elem_id| {
-                self.reinterpretAsPattern(elem_id);
+                self.reinterpretPattern(node_pls, elem_id, is_binding_pattern);
             }
         },
         .array_literal => |array_pl| {
             node.* = .{ .array_pattern = array_pl };
             const elems = self.subRangeToSlice(array_pl orelse return);
             for (elems) |elem_id| {
-                self.reinterpretAsPattern(elem_id);
+                self.reinterpretPattern(node_pls, elem_id, is_binding_pattern);
             }
         },
-        .object_property => |property_definiton| self.reinterpretAsPattern(property_definiton.value),
+        .object_property => |property_definiton| {
+            const key_id = property_definiton.key;
+            const value_id = property_definiton.value;
+            if (key_id == value_id) {
+                // foo({x}) // <- `x` is an IDENTIFIER REFERENCE
+                // ({x} = 1) // <- `x` is a BINDING IDENTIFIER
+                const key = &node_pls[@intFromEnum(property_definiton.key)];
+                switch (key.*) {
+                    .identifier,
+                    .identifier_reference,
+                    => |key_token| {
+                        key.* = if (is_binding_pattern)
+                            ast.NodeData{ .binding_identifier = key_token }
+                        else
+                            ast.NodeData{ .identifier_reference = key_token };
+                    },
+                    // when the key and value are the same,the key must be an identifier
+                    else => unreachable,
+                }
+            } else {
+                self.reinterpretPattern(node_pls, value_id, is_binding_pattern);
+            }
+        },
         .assignment_expr => |assign_pl| {
+            // ({x:y}=1) // <- LHS goes from object expression to object pattern
+            self.reinterpretPattern(node_pls, assign_pl.lhs, is_binding_pattern);
             node.* = .{ .assignment_pattern = assign_pl };
         },
         .spread_element => |spread_pl| {
-            self.reinterpretAsPattern(spread_pl);
+            self.reinterpretPattern(node_pls, spread_pl, is_binding_pattern);
             node.* = .{ .rest_element = spread_pl };
+        },
+        .shorthand_property => |o| {
+            if (is_binding_pattern) {
+                const name_token_pl = node_pls[@intFromEnum(o.name)];
+                // TODO(@injuly): for non-binding shorthand properties, the name should be smth like a 'shorthand_id_ref' (RW)
+                std.debug.assert(std.meta.activeTag(name_token_pl) == .identifier_reference);
+                node_pls[@intFromEnum(o.name)] = .{ .binding_identifier = name_token_pl.identifier_reference };
+            }
         },
         else => {},
     }
+}
+
+/// Mutate existing nodes to convert a PrimaryExpression to an
+/// AssignmentPattern (or Identifier) (e.g, .object_literal => .object_pattern)
+/// This will also convert some `identifier` nodes to `binding` identifier nodes.
+/// E.g: `{ x }` <- `x` becomes a `binding_identifier` node.
+fn reinterpretAsBindingPattern(self: *Self, node_id: Node.Index) void {
+    const node_pls = self.nodes.items(.data);
+    self.reinterpretPattern(node_pls, node_id, true);
+}
+
+/// Mutate existing nodes to convert a PrimaryExpression to an
+/// AssignmentPattern (or Identifier) (e.g, .object_literal => .object_pattern)
+fn reinterpretAsPattern(self: *Self, node_id: Node.Index) void {
+    const node_pls = self.nodes.items(.data);
+    self.reinterpretPattern(node_pls, node_id, false);
 }
 
 /// Parse an assignment expression that may be an L or an R-value.
@@ -3045,52 +3136,63 @@ fn assignExpressionNoPattern(self: *Self) Error!Node.Index {
     return expr;
 }
 
-fn coalesceExpression(self: *Self, start_expr: Node.Index) Error!Node.Index {
-    const nodes = self.nodes.slice();
-    const start: Token.Index = nodes.items(.start)[@intFromEnum(start_expr)];
-    var end: Token.Index = nodes.items(.end)[@intFromEnum(start_expr)];
+fn binaryExpression(self: *Self) Error!Node.Index {
+    const lhs = try self.exponentExpression();
+    const cur_token = self.current.token;
+    if (cur_token.tag.is(TokenMask.IsBinaryOp))
+        return self.completeBinaryExpression(lhs, cur_token.tag, 0);
 
-    var expr: Node.Index = start_expr;
-    while (self.isAtToken(.@"??")) {
-        const op = try self.next(); // eat '??'
-        const rhs = try bOrExpr(self);
-        end = self.nodes.items(.end)[@intFromEnum(rhs)];
+    return lhs;
+}
 
-        self.current_destructure_kind.setNoAssignOrDestruct();
+/// Parse a binary expression with the given precedence, where the left-hand side
+/// is [lhs], which may or may not be followed by a binary operator.
+fn completeBinaryExpression(
+    self: *Self,
+    lhs: Node.Index,
+    op_token: Token.Tag,
+    current_prec: u8,
+) Error!Node.Index {
+    var expr = lhs;
+    const start = self.nodes.items(.start)[@intFromEnum(lhs)];
+    while (self.current.token.tag.is(TokenMask.IsBinaryOp)) {
+        const cur = &self.current;
+        const prec = cur.token.tag.precedence();
 
-        expr = try self.addNode(
-            .{
-                .binary_expr = .{
-                    .lhs = expr,
-                    .rhs = rhs,
-                    .operator = op.id,
-                },
-            },
-            start,
-            end,
+        if (prec <= current_prec) return expr;
+
+        // `in` expressions are not allowed when parsing the LHS
+        // for `for-loop` iterators.
+        if (!self.context.in and cur.token.tag == .kw_in) break;
+
+        const current_op = try self.next(); // eat the operator.
+        if ((current_op.token.tag.isLogicalOperator() and op_token == .@"??") or
+            (op_token.isLogicalOperator() and current_op.token.tag == .@"??"))
+        {
+            return self.errorOnToken(current_op.token, ParseError.InvalidCoalesceExpression);
+        }
+
+        const rhs_start_expr = try self.exponentExpression();
+        // Parse the right-hand side of the binary expression.
+        // 2 + 3 * 4 + 5
+        //   ^---------  At this point, we parse `3` as `rhs_start`,
+        //               then the next call to `binaryExpression` parses
+        //               `3 * 4` as `rhs` (that's as far as we can go with the current precedence),
+        //                and then we return to this loop to parse `5` as the remainder.
+        const rhs = try self.completeBinaryExpression(
+            rhs_start_expr,
+            current_op.token.tag,
+            @intCast(prec),
         );
+
+        const nodes = self.nodes.slice();
+        const end = nodes.items(.end)[@intFromEnum(rhs)];
+
+        const binary_pl = ast.BinaryPayload{ .lhs = expr, .rhs = rhs, .operator = current_op.id };
+        expr = try self.addNode(.{ .binary_expr = binary_pl }, start, end);
     }
 
     return expr;
-}
-
-/// ShortCircuitExpression:
-///    LogicalOrExpression
-///    CoalesceExpression
-fn shortCircuitExpresion(self: *Self) Error!Node.Index {
-    const expr = try lOrExpr(self);
-    switch (self.nodes.items(.data)[@intFromEnum(expr)]) {
-        .binary_expr => |pl| {
-            const op_tag = self.tokens.items[@intFromEnum(pl.operator)].tag;
-            if (op_tag == .@"||" or op_tag == .@"&&") {
-                return expr;
-            }
-            return self.coalesceExpression(expr);
-        },
-        else => {
-            return self.coalesceExpression(expr);
-        },
-    }
 }
 
 fn yieldOrConditionalExpression(self: *Self) Error!Node.Index {
@@ -3151,8 +3253,9 @@ fn yieldExpression(self: *Self) Error!Node.Index {
 ///     ShortCircuitExpression
 ///     ShortCircuitExpression '?' AssignmentExpression ':' AssignmentExpression
 fn conditionalExpression(self: *Self) Error!Node.Index {
-    const cond_expr = try self.shortCircuitExpresion();
-    if (!self.isAtToken(.@"?")) return cond_expr;
+    const test_expr = try self.binaryExpression();
+
+    if (!self.isAtToken(.@"?")) return test_expr;
 
     self.current_destructure_kind.setNoAssignOrDestruct();
 
@@ -3167,13 +3270,13 @@ fn conditionalExpression(self: *Self) Error!Node.Index {
     self.context = context;
 
     const nodes = self.nodes.slice();
-    const start_pos = nodes.items(.start)[@intFromEnum(cond_expr)];
+    const start_pos = nodes.items(.start)[@intFromEnum(test_expr)];
     const end_pos = nodes.items(.end)[@intFromEnum(false_expr)];
 
     return try self.addNode(
         .{
             .conditional_expr = .{
-                .condition = cond_expr,
+                .condition = test_expr,
                 .consequent = true_expr,
                 .alternate = false_expr,
             },
@@ -3274,6 +3377,7 @@ fn completePropertyPatternDef(self: *Self, key: Node.Index) Error!Node.Index {
 
 fn destructuredPropertyDefinition(self: *Self) Error!Node.Index {
     switch (self.current.token.tag) {
+        // TODO(@injuly): we can use a mask check here
         .string_literal,
         .decimal_literal,
         .octal_literal,
@@ -3326,11 +3430,7 @@ fn destructuredIdentifierProperty(self: *Self) Error!Node.Index {
 
     const cur_token = self.peek();
 
-    const key = try if (cur_token.tag == .@"=")
-        self.bindingIdentifier(key_token)
-    else
-        self.identifier(key_token);
-
+    const key = try self.identifierReference(key_token.id);
     if (cur_token.tag == .@"=") {
         const eq_token = try self.next(); // eat '='
         const rhs = try self.assignmentExpression();
@@ -3371,13 +3471,7 @@ fn destructuredIdentifierProperty(self: *Self) Error!Node.Index {
     }
 
     return self.addNode(
-        .{
-            .object_property = ast.PropertyDefinition{
-                .key = key,
-                .value = key,
-                .flags = .{ .is_shorthand = true },
-            },
-        },
+        .{ .shorthand_property = ast.ShorthandProperty{ .name = key } },
         key_token.id,
         key_token.id,
     );
@@ -3419,7 +3513,11 @@ fn objectBindingPattern(self: *Self) Error!Node.Index {
             .legacy_octal_literal,
             .@"[",
             => {
+                // TODO(@injuly): instead of calling `destructuredPropertyDefinition`,
+                // for both binding patterns and regular patterns, write a separate
+                // `destructuredBindingProperty` function that handles binding properties.
                 const prop = try self.destructuredPropertyDefinition();
+                self.reinterpretAsBindingPattern(prop);
                 destruct_kind.update(self.current_destructure_kind);
                 try self.scratch.append(prop);
             },
@@ -3427,6 +3525,7 @@ fn objectBindingPattern(self: *Self) Error!Node.Index {
             else => {
                 if (cur_token.tag.isKeyword()) {
                     const prop = try self.destructuredPropertyDefinition();
+                    self.reinterpretAsBindingPattern(prop);
                     destruct_kind.update(self.current_destructure_kind);
                     try self.scratch.append(prop);
                 } else {
@@ -3499,7 +3598,7 @@ fn singleNameBinding(self: *Self) Error!Node.Index {
     const id_token = try self.next();
     std.debug.assert(self.isIdentifier(id_token.token.tag));
 
-    const id = try self.bindingIdentifier(id_token);
+    const id = try self.bindingIdentifier(id_token.id);
     if (!self.isAtToken(.@"=")) return id;
 
     const op_token = try self.next(); // eat '='
@@ -3519,6 +3618,34 @@ fn singleNameBinding(self: *Self) Error!Node.Index {
         start_pos,
         end_pos,
     );
+}
+
+// TODO: this isn't 100% spec compliant right now, but that's an easy
+// fix really.
+fn exponentExpression(self: *Self) Error!Node.Index {
+    const lhs = try self.unaryExpression();
+    if (self.current.token.tag == .@"**") {
+        const op_token = try self.next();
+        const rhs = try self.exponentExpression();
+
+        const nodes = self.nodes.slice();
+        const start_pos = nodes.items(.start)[@intFromEnum(lhs)];
+        const end_pos = nodes.items(.end)[@intFromEnum(rhs)];
+
+        return self.addNode(
+            .{
+                .binary_expr = ast.BinaryPayload{
+                    .lhs = lhs,
+                    .rhs = rhs,
+                    .operator = op_token.id,
+                },
+            },
+            start_pos,
+            end_pos,
+        );
+    }
+
+    return lhs;
 }
 
 fn unaryExpression(self: *Self) Error!Node.Index {
@@ -3543,14 +3670,9 @@ fn unaryExpression(self: *Self) Error!Node.Index {
                 op.token.tag == .kw_delete and
                 expr_tag == .identifier)
             {
-                try self.emitDiagnosticOnNode(
-                    expr,
-                    "Cannot delete variable in strict mode",
-                );
-
                 // TODO: instead of returning en error here.
                 // we can continue parsing.
-                return Error.IllegalDeleteInStrictMode;
+                return self.errorOnNode(expr, ParseError.IllegalDeleteInStrictMode);
             }
 
             const expr_end = slice.items(.end)[@intFromEnum(expr)];
@@ -3614,12 +3736,7 @@ fn updateExpression(self: *Self) Error!Node.Index {
 
         const is_operand_simple = self.current_destructure_kind.is_simple_expression;
         if (!is_operand_simple) {
-            try self.emitDiagnosticOnToken(
-                op_token.token,
-                "Invalid operand for update expression",
-                .{},
-            );
-            return Error.UnexpectedToken;
+            return self.errorOnToken(op_token.token, ParseError.InvalidUpdateOperand);
         }
 
         const expr_end_pos = self.nodes.items(.end)[@intFromEnum(expr)];
@@ -3880,7 +3997,7 @@ fn optionalChain(self: *Self, object: Node.Index) Error!Node.Index {
 
                 const expr = try self.addNode(.{ .member_expr = .{
                     .object = object,
-                    .property = try self.identifier(prop_name_token),
+                    .property = try self.identifier(prop_name_token.id),
                 } }, start_pos, end_pos);
                 return self.addNode(.{ .optional_expr = expr }, start_pos, end_pos);
             }
@@ -4009,8 +4126,8 @@ fn parseMetaProperty(
         return Error.InvalidMetaProperty;
     }
 
-    const meta = try self.identifier(.{ .token = meta_token, .id = meta_token_id });
-    const property = try self.identifier(property_token);
+    const meta = try self.identifier(meta_token_id);
+    const property = try self.identifier(property_token.id);
 
     const end_pos = property_token.id;
     return self.addNode(
@@ -4050,7 +4167,7 @@ fn completeMemberExpression(self: *Self, object: Node.Index) Error!Node.Index {
         const tok_with_id = try self.next();
         // Yes, keywords are valid property names...
         if (tok_with_id.token.tag.isIdentifier() or tok_with_id.token.tag.isKeyword()) {
-            break :blk try self.identifier(tok_with_id);
+            break :blk try self.identifier(tok_with_id.id);
         }
 
         try self.emitDiagnostic(
@@ -4136,7 +4253,7 @@ fn primaryExpression(self: *Self) Error!Node.Index {
                 // 'x => 1'.
                 return self.identifierArrowParameter(&token.token, token.id);
             }
-            return self.identifier(token);
+            return self.identifierReference(token.id);
         },
         .decimal_literal,
         .octal_literal,
@@ -4162,7 +4279,7 @@ fn primaryExpression(self: *Self) Error!Node.Index {
             // arrow function starting with keyword identifier: 'yield => 1'
             return self.identifierArrowParameter(&token.token, token.id);
         }
-        return self.identifier(token);
+        return self.identifierReference(token.id);
     }
 
     try self.emitDiagnostic(
@@ -4188,34 +4305,29 @@ fn isValidStrictModeNumber(self: *const Self, token: *const Token) bool {
 }
 
 fn parseLiteral(self: *Self, token: TokenWithId) Error!Node.Index {
-    if (self.context.strict) {
-        // Disallow 01, 08, etc. in strict mode.
-        switch (token.token.tag) {
-            .legacy_octal_literal => {
-                try self.emitDiagnostic(
-                    token.token.startCoord(self.source),
-                    "Legacy octal numbers are not allowed in strict mode",
-                    .{},
-                );
-                return Error.UnexpectedToken;
-            },
-
-            .decimal_literal,
-            .octal_literal,
-            .hex_literal,
-            .binary_literal,
-            => {
-                if (!self.isValidStrictModeNumber(&token.token)) {
-                    try self.emitDiagnostic(
-                        token.token.startCoord(self.source),
-                        "Numbers with leading '0' are not allowed in strict mode",
-                        .{},
-                    );
-                    return Error.UnexpectedToken;
-                }
-            },
-            else => {},
+    const token_tag = token.token.tag;
+    if (self.context.strict and token_tag.isNumericLiteral()) {
+        if (token_tag == .legacy_octal_literal) {
+            try self.emitDiagnostic(
+                token.token.startCoord(self.source),
+                "Legacy octal numbers are not allowed in strict mode",
+                .{},
+            );
+            return Error.UnexpectedToken;
         }
+
+        if (!self.isValidStrictModeNumber(&token.token)) {
+            try self.emitDiagnostic(
+                token.token.startCoord(self.source),
+                "Numbers with leading '0' are not allowed in strict mode",
+                .{},
+            );
+            return Error.UnexpectedToken;
+        }
+
+        self.current_destructure_kind.setNoAssignOrDestruct();
+        const numeric_literal = ast.NodeData{ .number_literal = try self.parseNumericToken(&token) };
+        return self.addNode(numeric_literal, token.id, token.id);
     }
 
     self.current_destructure_kind.setNoAssignOrDestruct();
@@ -4241,6 +4353,7 @@ fn parseNumericToken(self: *Self, token: *const TokenWithId) Error!ast.Number {
         .legacy_octal_literal,
         .octal_literal,
         => parseOctal(str),
+        // TODO(perf): non-floating point numbers can be parsed with `parseInt`, actually.
         .decimal_literal => parseDecimal(str),
         .binary_literal => parseBinary(str),
         .hex_literal => parseHex(str),
@@ -4256,7 +4369,8 @@ fn parseNumericToken(self: *Self, token: *const TokenWithId) Error!ast.Number {
 }
 
 fn parseDecimal(str: []const u8) f64 {
-    return std.fmt.parseFloat(f64, str) catch unreachable;
+    return std.fmt.parseFloat(f64, str) catch
+        std.debug.panic("Invalid number: {s}\n", .{str});
 }
 
 fn parseOctal(str: []const u8) f64 {
@@ -4328,7 +4442,7 @@ fn identifierArrowParameter(
     token: *const Token,
     token_id: Token.Index,
 ) Error!Node.Index {
-    const id = try self.identifier(.{ .token = token.*, .id = token_id });
+    const id = try self.bindingIdentifier(token_id);
     const params_range = try self.addSubRange(&[_]Node.Index{id});
     // TODO: should functions with single parameters just not store a SubRange and store the
     // parameter directly?
@@ -4433,7 +4547,7 @@ fn asyncExpression(self: *Self, async_kw: *const TokenWithId) Error!Node.Index {
         switch (parsed.*) {
             .parameters => return argsOrArrowParams,
             .arguments => {
-                const async_identifier = try self.identifier(async_kw.*);
+                const async_identifier = try self.bindingIdentifier(async_kw.id);
                 return self.addNode(
                     .{ .call_expr = .{ .callee = async_identifier, .arguments = argsOrArrowParams } },
                     async_kw.id,
@@ -4449,7 +4563,7 @@ fn asyncExpression(self: *Self, async_kw: *const TokenWithId) Error!Node.Index {
     {
         // async x => ...
         const id_token = try self.next();
-        const param = try self.identifier(id_token);
+        const param = try self.bindingIdentifier(id_token.id);
         const params_range = try self.addSubRange(&[_]Node.Index{param});
         const params = try self.addNode(
             .{ .parameters = params_range },
@@ -4462,7 +4576,8 @@ fn asyncExpression(self: *Self, async_kw: *const TokenWithId) Error!Node.Index {
         return params;
     }
 
-    return self.identifier(async_kw.*);
+    // Just a reference to some variable/function called "async"
+    return self.identifierReference(async_kw.id);
 }
 
 fn callArgsOrAsyncArrowParams(self: *Self, _: ast.FunctionFlags) Error!Node.Index {
@@ -4494,8 +4609,7 @@ fn callArgsOrAsyncArrowParams(self: *Self, _: ast.FunctionFlags) Error!Node.Inde
             if (self.isAtToken(.@")")) break;
             // spread element must be the last item in a parameter list.
             if (destructure_kind.must_destruct) {
-                try self.emitDiagnosticOnNode(spread_elem, "Expected ')' after rest element");
-                return Error.RestElementNotLast;
+                return self.errorOnNode(spread_elem, ParseError.RestElementNotLast);
             }
             // If 'must_destruct' is not set, but we parsed a spread element
             // without seeing a ')' right after, then we must be inside a call-expression's
@@ -4512,11 +4626,10 @@ fn callArgsOrAsyncArrowParams(self: *Self, _: ast.FunctionFlags) Error!Node.Inde
             // TODO: this error message can be improved based
             // on whether the most recently parsed node was a
             // pattern.
-            try self.emitDiagnosticOnNode(
+            return self.errorOnNode(
                 self.scratch.items[self.scratch.items.len - 1],
-                "Unexpected expression or pattern inside '( ... )'",
+                ParseError.InvalidExpressionInsideParens,
             );
-            return Error.UnexpectedToken;
         }
 
         if (self.isAtToken(.@","))
@@ -4531,11 +4644,10 @@ fn callArgsOrAsyncArrowParams(self: *Self, _: ast.FunctionFlags) Error!Node.Inde
     if (self.isAtToken(.@"=>")) {
         if (!destructure_kind.can_destruct) {
             if (spread_elem_in_middle) |node| {
-                try self.emitDiagnosticOnNode(
+                return self.errorOnNode(
                     node,
-                    "Rest element must be the last item in a parameter list",
+                    ParseError.RestElementNotLastInParams,
                 );
-                return Error.InvalidArrowParameters;
             }
 
             // TODO: improve the location of the diagnostic.
@@ -4550,7 +4662,7 @@ fn callArgsOrAsyncArrowParams(self: *Self, _: ast.FunctionFlags) Error!Node.Inde
 
         // mutate the expressions so far to be interpreted as patterns.
         for (sub_exprs) |node| {
-            self.reinterpretAsPattern(node);
+            self.reinterpretAsBindingPattern(node);
         }
 
         const params_range = if (sub_exprs.len > 0)
@@ -4587,93 +4699,19 @@ fn callArgsOrAsyncArrowParams(self: *Self, _: ast.FunctionFlags) Error!Node.Inde
     return self.addNode(.{ .arguments = call_args }, lparen.id, rparen.id);
 }
 
+/// Save `token` as an identifier reference node.
+fn identifierReference(self: *Self, name: Token.Index) Error!Node.Index {
+    return self.addNode(.{ .identifier_reference = name }, name, name);
+}
+
 /// Save `token` as an identifier node.
-fn identifier(self: *Self, token: TokenWithId) Error!Node.Index {
-    const token_string = try self.strings.stringValue(&token.token);
-    return self.addNode(.{ .identifier = token_string }, token.id, token.id);
+fn identifier(self: *Self, name: Token.Index) Error!Node.Index {
+    return self.addNode(.{ .identifier = name }, name, name);
 }
 
 /// Save `token` as an binding identifier on the LHS of a variable declaration
-fn bindingIdentifier(self: *Self, token_with_id: TokenWithId) Error!Node.Index {
-    const name_string = try self.strings.stringValue(&token_with_id.token);
-
-    switch (self.context.parsing_declarator) {
-        .lexical => {
-            // If we're in a let declaration, like `let x = ... ` or `let [{ x }] = ...`,
-            // Ensure there are no variables with the same name in the current scope.
-            // ```js
-            // var x;
-            // let x; // clashes with `var x` above
-            // ```
-            if (self.scope.findInCurrentScope((name_string))) |_| {
-                try self.emitDiagnostic(
-                    token_with_id.token.startCoord(self.source),
-                    "Variable '{s}' has already been declared",
-                    .{token_with_id.token.toByteSlice(self.source)},
-                );
-                return Error.DuplicateBinding;
-            }
-
-            if (token_with_id.token.tag == .kw_let) {
-                try self.emitDiagnostic(
-                    token_with_id.token.startCoord(self.source),
-                    "'let' is not allowed as a lexically bound name",
-                    .{},
-                );
-                return Error.LexicallyBoundLet;
-            }
-        },
-        .@"var" => {
-            // Look for let-bindings with the same name within,
-            // or outside the current scope:
-            // ```js
-            // let x;
-            // {
-            //    var x; // clashes with the `x` above because of hoisting
-            // }
-            // ```
-            // Keep going up until we find a function scope,
-            // and for each scope along that path, check if there is an existing
-            // variable with the same name.
-            var scope: *const ScopeManager.Scope = self.scope.current_scope;
-            while (true) {
-                if (self.scope.findInScope(scope, name_string)) |existing_var| {
-                    if (existing_var.kind == .lexical_binding) {
-                        try self.emitDiagnostic(
-                            token_with_id.token.startCoord(self.source),
-                            "Variable '{s}' has already been declared",
-                            .{token_with_id.token.toByteSlice(self.source)},
-                        );
-                        return Error.DuplicateBinding;
-                    }
-                }
-
-                // We've scanned the scope where the current variable
-                // will be inserted into via hoisting.
-                // TODO: now that we have the scope, we can immediately
-                // add the variable right here, instead of doing it below.
-                if (scope.kind != .block) break;
-                const parent_scope_id = scope.upper orelse break;
-                scope = self.scope.getScope(parent_scope_id);
-            }
-        },
-        .none => {},
-    }
-
-    const id = try self.addNode(
-        .{ .binding_identifier = name_string },
-        token_with_id.id,
-        token_with_id.id,
-    );
-
-    const decl_kind: ScopeManager.Variable.Kind =
-        if (self.context.parsing_declarator == .lexical)
-        .lexical_binding
-    else
-        .variable_binding;
-
-    try self.scope.addVariable(name_string, id, decl_kind);
-    return id;
+fn bindingIdentifier(self: *Self, name: Token.Index) Error!Node.Index {
+    return try self.addNode(.{ .binding_identifier = name }, name, name);
 }
 
 fn makeSuper(
@@ -4697,31 +4735,12 @@ fn ensureFatArrow(
     params_end_token: *const Token,
 ) Error!void {
     if (!self.isAtToken(.@"=>")) {
-        if (params_start_token.tag == .@"(") {
-            try self.emitDiagnostic(
-                params_start_token.startCoord(self.source),
-                "'()' is not a valid expression. Arrow functions start with '() => '",
-                .{},
-            );
-        } else {
-            try self.emitDiagnostic(
-                params_start_token.startCoord(self.source),
-                "Expected '=>' after arrow function parameters",
-                .{},
-            );
-        }
-
-        return Error.InvalidArrowFunction;
+        return self.errorOnToken(params_start_token.*, ParseError.MissingArrow);
     }
 
     const fat_arrow = self.current.token;
     if (params_end_token.line != fat_arrow.line) {
-        try self.emitDiagnostic(
-            fat_arrow.startCoord(self.source),
-            "'=>' must be on the same line as the arrow function parameters",
-            .{},
-        );
-        return Error.IllegalFatArrow;
+        return self.errorOnToken(fat_arrow, ParseError.IllegalFatArrow);
     }
 }
 
@@ -4740,7 +4759,7 @@ fn completeArrowFunction(self: *Self, params: Node.Index) Error!Node.Index {
     const is_async = self.is_current_arrow_func_async;
     self.is_current_arrow_func_async = false;
 
-    const body = blk: {
+    const is_strict, const body = blk: {
         const context = self.context;
 
         defer self.context = context;
@@ -4753,22 +4772,15 @@ fn completeArrowFunction(self: *Self, params: Node.Index) Error!Node.Index {
         // we will attempt to parse it as a block statement, and not an object literal.
         if (body_start_token.tag == .@"{") {
             self.context.@"return" = true;
-            try self.scope.enterScope(.function, self.context.strict);
-            defer self.scope.exitScope();
             break :blk try self.functionBody();
         }
 
         const assignment = try self.assignmentExpression();
         if (self.current_destructure_kind.must_destruct) {
-            try self.emitDiagnostic(
-                body_start_token.startCoord(self.source),
-                "Unexpected destructuring pattern in arrow function body",
-                .{},
-            );
-            return Error.InvalidArrowFunction;
+            return self.errorOnToken(body_start_token, ParseError.MalformedArrowFnBody);
         }
 
-        break :blk assignment;
+        break :blk .{ false, assignment };
     };
 
     const nodes = self.nodes.slice();
@@ -4788,8 +4800,9 @@ fn completeArrowFunction(self: *Self, params: Node.Index) Error!Node.Index {
                         .name = null,
                         .flags = .{
                             .is_arrow = true,
-                            .is_async = is_async,
                             .is_generator = false,
+                            .is_async = is_async,
+                            .has_strict_directive = is_strict,
                         },
                     },
                 }),
@@ -4816,11 +4829,7 @@ fn restElement(self: *Self) Error!Node.Index {
     const rest_arg = try self.lhsExpression();
 
     if (!self.current_destructure_kind.can_be_assigned_to) {
-        try self.emitDiagnosticOnNode(
-            rest_arg,
-            "A '...' here must be followed by an expression that is a valid left-hand-side for assignments",
-        );
-        return Error.UnexpectedPattern;
+        return self.errorOnNode(rest_arg, ParseError.InvalidRestOperand);
     }
 
     const end_pos = self.nodes.items(.end)[@intFromEnum(rest_arg)];
@@ -4841,7 +4850,7 @@ fn bindingRestElement(self: *Self) Error!Node.Index {
     std.debug.assert(dotdotdot.token.tag == .@"...");
     const rest_arg = blk: {
         if (self.isIdentifier(self.current.token.tag))
-            break :blk try self.bindingIdentifier(try self.next());
+            break :blk try self.bindingIdentifier((try self.next()).id);
         break :blk try self.bindingPattern();
     };
     const end_pos = self.nodes.items(.end)[@intFromEnum(rest_arg)];
@@ -4927,7 +4936,7 @@ fn completeArrowParamsOrGroupingExpr(
         }
 
         for (nodes.items) |node| {
-            self.reinterpretAsPattern(node);
+            self.reinterpretAsBindingPattern(node);
         }
 
         const params_range = try self.addSubRange(nodes.items);
@@ -5170,7 +5179,7 @@ fn identifierProperty(self: *Self) Error!Node.Index {
             if (is_generator) _ = try self.nextToken(); // eat '*'
 
             const property_key_token = try self.expectIdOrKeyword();
-            const property_key = try self.identifier(property_key_token);
+            const property_key = try self.identifier(property_key_token.id);
             const property_val = try self.parseMethodBody(
                 property_key,
                 .{ .is_method = true },
@@ -5204,17 +5213,17 @@ fn identifierProperty(self: *Self) Error!Node.Index {
         return Error.UnexpectedToken;
     }
 
-    const key = try self.identifier(key_token);
-
     const cur_token_tag = self.current.token.tag;
     switch (cur_token_tag) {
         .@":", .@"(" => {
+            const key = try self.identifier(key_token.id);
             return self.completePropertyDef(key, .{
                 .is_method = cur_token_tag == .@"(",
             });
         },
 
         .@"=" => {
+            const key = try self.identifier(key_token.id);
             const op_token = try self.next(); // eat '='
             if (!key_token.token.tag.isValidPropertyName()) {
                 try self.emitBadTokenDiagnostic("property name", &key_token.token);
@@ -5237,7 +5246,7 @@ fn identifierProperty(self: *Self) Error!Node.Index {
             const property = ast.PropertyDefinition{
                 .value = try self.addNode(assignment_pattern, start_pos, end_pos),
                 .key = key,
-                .flags = .{ .kind = .init, .is_shorthand = true },
+                .flags = .{ .kind = .init },
             };
 
             // 'Identifier = AssignmentExpression' is allowed in object patterns but not in object literals
@@ -5248,26 +5257,19 @@ fn identifierProperty(self: *Self) Error!Node.Index {
 
         else => {
             if (!self.isIdentifier(key_token.token.tag)) {
-                try self.emitDiagnosticOnToken(
-                    key_token.token,
-                    "Keywords cannot be used as shorthand properties",
-                    .{},
-                );
-                return Error.UnexpectedToken;
+                return self.errorOnToken(key_token.token, ParseError.InvalidKeywordShorthandProperty);
             }
 
-            const kv_node = ast.PropertyDefinition{
-                .key = key,
-                .value = key,
-                .flags = .{ .is_shorthand = true },
-            };
+            // { a } <- 'a' is a *reference* to some variable.
+            const key = try self.identifierReference(key_token.id);
+            const kv_node = ast.ShorthandProperty{ .name = key };
 
             // { k }
             //   ^-- Is a valid property in a destructuring pattern
             self.current_destructure_kind.can_destruct = true;
             self.current_destructure_kind.can_be_assigned_to = true;
             return self.addNode(
-                .{ .object_property = kv_node },
+                .{ .shorthand_property = kv_node },
                 key_token.id,
                 key_token.id,
             );
@@ -5321,7 +5323,7 @@ fn classElementName(self: *Self) Error!Node.Index {
         .non_ascii_identifier,
         .identifier,
         .private_identifier,
-        => return self.identifier(token),
+        => return self.identifier(token.id),
         .@"[" => {
             const expr = try self.assignmentExpression();
             _ = try self.expectToken(.@"]");
@@ -5336,7 +5338,7 @@ fn classElementName(self: *Self) Error!Node.Index {
         => return try self.parseLiteral(token),
         else => {
             if (token.token.tag.isKeyword())
-                return self.identifier(token);
+                return self.identifier(token.id);
 
             try self.emitDiagnostic(
                 token.token.startCoord(self.source),
@@ -5440,7 +5442,6 @@ fn completePropertyDef(
         return self.parseMethodBody(key, .{
             .is_method = true,
             .is_computed = flags.is_computed,
-            .is_shorthand = flags.is_shorthand,
             .kind = flags.kind,
         }, .{});
     }
@@ -5575,9 +5576,6 @@ fn parseFunctionBody(
     self.context.@"break" = false;
     self.context.@"continue" = false;
 
-    try self.scope.enterScope(.function, self.context.strict);
-    defer self.scope.exitScope();
-
     const parameters = try self.parseFormalParameters();
 
     // Allow return statements inside function
@@ -5586,14 +5584,17 @@ fn parseFunctionBody(
     self.context.@"return" = true;
 
     // TODO: make the body a statement list.
-    const body = try self.functionBody();
+    const is_strict, const body = try self.functionBody();
     const end_pos = self.nodeSpan(body).end;
+
+    var fn_flags = flags;
+    fn_flags.has_strict_directive = is_strict;
 
     const function_data = try self.addExtraData(
         ast.ExtraData{
             .function = .{
                 .name = func_name,
-                .flags = flags,
+                .flags = fn_flags,
             },
         },
     );
@@ -5613,7 +5614,10 @@ fn parseFunctionBody(
 
 /// Parse a list of statements surrounded by '{}'.
 /// Does not introduce a new scope.
-fn functionBody(self: *Self) Error!Node.Index {
+/// Returns a (bool, Node.Index) pair:
+///     1. A boolean indicating whether the body has a 'use strict' directive
+///     2. The index of the block statement node.
+fn functionBody(self: *Self) Error!struct { bool, Node.Index } {
     const start_pos = (try self.expect(.@"{")).id;
 
     const prev_scratch_len = self.scratch.items.len;
@@ -5651,13 +5655,9 @@ fn functionBody(self: *Self) Error!Node.Index {
     const end_pos = rbrace.id;
 
     const statements = self.scratch.items[prev_scratch_len..];
-    if (statements.len == 0) {
-        return self.addNode(.{ .block_statement = null }, start_pos, end_pos);
-    }
-
     const stmt_list_node = try self.addSubRange(statements);
-    const block_node = ast.NodeData{ .block_statement = stmt_list_node };
-    return self.addNode(block_node, start_pos, end_pos);
+    const block_node = ast.NodeData{ .statement_list = stmt_list_node };
+    return .{ is_strict, try self.addNode(block_node, start_pos, end_pos) };
 }
 
 /// Encodes the kind of directive present at the beginning of a function
@@ -5723,7 +5723,6 @@ fn parseParameter(self: *Self) Error!Node.Index {
 fn parseFormalParameters(self: *Self) Error!Node.Index {
     const context = self.context;
     defer self.context = context;
-    self.context.parsing_declarator = .@"var";
 
     const start_pos = (try self.expect(.@"(")).id;
 
@@ -5859,84 +5858,6 @@ fn parseArgs(self: *Self) Error!struct { ast.SubRange, Token.Index, Token.Index 
     return .{ try self.addSubRange(arg_list), start_pos, end_pos };
 }
 
-/// make a right associative parse function for an infix operator represented
-/// by tokens of tag `toktag`
-fn makeRightAssoc(
-    comptime toktag: Token.Tag,
-    comptime l: *const ParseFn,
-) *const ParseFn {
-    const Parselet = struct {
-        fn parseFn(self: *Self) Error!Node.Index {
-            var node = try l(self);
-
-            var token = self.peek();
-            while (true) : (token = self.peek()) {
-                if (token.tag != toktag) break;
-                const op_token = try self.next();
-
-                const rhs = try parseFn(self);
-                const nodes = self.nodes.slice();
-                const start_pos = nodes.items(.start)[@intFromEnum(node)];
-                const end_pos = nodes.items(.end)[@intFromEnum(rhs)];
-                node = try self.addNode(.{
-                    .binary_expr = .{
-                        .lhs = node,
-                        .rhs = rhs,
-                        .operator = op_token.id,
-                    },
-                }, start_pos, end_pos);
-            }
-
-            return node;
-        }
-    };
-
-    return &Parselet.parseFn;
-}
-
-/// make a left associative parse function for an infix operator represented
-/// by tokens of tag `toktag`
-fn makeLeftAssoc(
-    comptime tag_min: Token.Tag,
-    comptime tag_max: Token.Tag,
-    comptime nextFn: *const ParseFn,
-) *const ParseFn {
-    const min: u32 = @intFromEnum(tag_min);
-    const max: u32 = @intFromEnum(tag_max);
-
-    const S = struct {
-        fn parseFn(self: *Self) Error!Node.Index {
-            var node = try nextFn(self);
-
-            var token = self.peek();
-            while (true) : (token = self.peek()) {
-                const itag: u32 = @intFromEnum(token.tag);
-                if (itag >= min and itag <= max) {
-                    self.current_destructure_kind.setNoAssignOrDestruct();
-
-                    const op_token = try self.next();
-                    const rhs = try nextFn(self);
-                    const start_pos = self.nodes.items(.start)[@intFromEnum(node)];
-                    const end_pos = self.nodes.items(.end)[@intFromEnum(rhs)];
-                    node = try self.addNode(.{
-                        .binary_expr = .{
-                            .lhs = node,
-                            .rhs = rhs,
-                            .operator = op_token.id,
-                        },
-                    }, start_pos, end_pos);
-                } else {
-                    break;
-                }
-            }
-
-            return node;
-        }
-    };
-
-    return &S.parseFn;
-}
-
 // -----
 // Tests
 // -----
@@ -5992,7 +5913,7 @@ fn runTestOnFile(tests_dir: std.fs.Dir, file_path: []const u8) !void {
         json_file_path,
         std.math.maxInt(u32),
     ) catch |err| {
-        std.debug.print("failed to read file: {s}\n", .{json_file_path});
+        std.debug.print("could not read file: {s}\n", .{json_file_path});
         return err;
     };
     defer t.allocator.free(expected_ast_json);
@@ -6005,7 +5926,11 @@ fn runTestOnFile(tests_dir: std.fs.Dir, file_path: []const u8) !void {
 
 test parse {
     var root_dir = std.fs.cwd();
-    var tests_dir = try root_dir.openDir("parser-tests", .{ .iterate = true });
+
+    const tests_dir_path = try std.fs.path.join(t.allocator, &.{ "test-corpus", "parser" });
+    defer t.allocator.free(tests_dir_path);
+
+    var tests_dir = try root_dir.openDir(tests_dir_path, .{ .iterate = true });
     defer tests_dir.close();
 
     var iter = tests_dir.iterate();

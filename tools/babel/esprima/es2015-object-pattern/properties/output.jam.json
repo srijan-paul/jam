@@ -91,7 +91,7 @@
                   "name": "e"
                 },
                 "computed": false,
-                "shorthand": false,
+                "shorthand": true,
                 "value": {
                   "type": "AssignmentPattern",
                   "start": 17,

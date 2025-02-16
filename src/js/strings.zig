@@ -44,7 +44,7 @@ pub fn stringValue(self: *Self, token: *const Token) error{ OutOfMemory, Overflo
     // we can just return the slice after interning it as is.
     // Non-ASCII identifiers are tagged with ".non_ascii_identifier"
     if (token.tag == .identifier) {
-        @branchHint(.cold);
+        @branchHint(.likely);
         return try self.string_pool.getOrInsertNoOwn(str);
     }
 
@@ -80,7 +80,7 @@ pub fn stringValue(self: *Self, token: *const Token) error{ OutOfMemory, Overflo
     return string;
 }
 
-fn toByteSlice(self: *Self, string: String) []const u8 {
+pub fn toByteSlice(self: *Self, string: String) []const u8 {
     return self.string_pool.toByteSlice(string);
 }
 
