@@ -149,7 +149,9 @@ pub fn jamToEstreeTag(node: ast.NodeData) []const u8 {
         .labeled_statement => "LabeledStatement",
         .try_statement => "TryStatement",
         .catch_clause => "CatchClause",
-        .block_statement => "BlockStatement",
+        .block_statement,
+        .statement_list,
+        => "BlockStatement",
         .expression_statement => "ExpressionStatement",
         .variable_declaration => "VariableDeclaration",
         .variable_declarator => "VariableDeclarator",
@@ -429,10 +431,12 @@ fn nodeToEsTree(
 
             try o.put("method", JValue{ .bool = method });
             try o.put("key", key);
-            // TODO: if the value is of type assignment_pattern,
-            // the flag shorthand is set in ESTree for some reason?
+
             try o.put("computed", JValue{ .bool = computed });
-            try o.put("shorthand", JFalse);
+            if (std.meta.activeTag(payload.value.get(t).*) == .assignment_pattern)
+                try o.put("shorthand", JTrue)
+            else
+                try o.put("shorthand", JFalse);
             try o.put("value", value);
             try o.put("kind", JValue{ .string = kind });
         },
@@ -470,6 +474,11 @@ fn nodeToEsTree(
 
         .block_statement => |maybe_statements| {
             const body = try subRangeToJsonArray(al, t, maybe_statements, opts);
+            try o.put("body", body);
+        },
+
+        .statement_list => |stats| {
+            const body = try subRangeToJsonArray(al, t, stats, opts);
             try o.put("body", body);
         },
 

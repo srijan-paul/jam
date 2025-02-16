@@ -56,6 +56,8 @@ pub fn Traverser(TControl: type) type {
                     try self.subRange(stmts, node_id);
                 },
 
+                .statement_list => |stmts| try self.subRange(stmts, node_id),
+
                 .object_property => |o| {
                     try self.visit(o.key, node_id);
                     try self.visit(o.value, node_id);

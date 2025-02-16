@@ -1919,7 +1919,7 @@ fn catchClause(self: *Self) Error!Node.Index {
     const catch_kw = try self.expect(.kw_catch);
     const param = try self.catchParameter();
 
-    const body = try self.blockStatement();
+    const body = try self.statementList();
     return self.addNode(.{
         .catch_clause = ast.CatchClause{
             .param = param,
@@ -2241,6 +2241,27 @@ fn expressionStatement(self: *Self) Error!Node.Index {
 /// BlockStatement:
 ///   '{' StatementList? '}'
 fn blockStatement(self: *Self) Error!Node.Index {
+    const stats = try self.parseStatements();
+    const block_node = ast.NodeData{ .block_statement = stats.statements };
+    return self.addNode(block_node, stats.start, stats.end);
+}
+
+/// Parse a
+///   '{' StatementList? '}'
+fn statementList(self: *Self) Error!Node.Index {
+    const stats = try self.parseStatements();
+    const block_node = ast.NodeData{ .statement_list = stats.statements };
+    return self.addNode(block_node, stats.start, stats.end);
+}
+
+const Statements = struct {
+    statements: ast.SubRange,
+    start: Token.Index,
+    end: Token.Index,
+};
+
+/// Parse a list of statements inside  '{}'
+fn parseStatements(self: *Self) Error!Statements {
     const lbrac = try self.expect(.@"{");
     const start_pos = lbrac.id;
 
@@ -2257,13 +2278,8 @@ fn blockStatement(self: *Self) Error!Node.Index {
     const end_pos = rbrace.id;
 
     const statements = self.scratch.items[prev_scratch_len..];
-    if (statements.len == 0) {
-        return self.addNode(.{ .block_statement = null }, start_pos, end_pos);
-    }
-
-    const stmt_list_node = try self.addSubRange(statements);
-    const block_node = ast.NodeData{ .block_statement = stmt_list_node };
-    return self.addNode(block_node, start_pos, end_pos);
+    const statement_nodes = try self.addSubRange(statements);
+    return .{ .statements = statement_nodes, .start = start_pos, .end = end_pos };
 }
 
 /// Assuming the parser is at the `function` keyword,
@@ -4712,7 +4728,7 @@ fn completeArrowFunction(self: *Self, params: Node.Index) Error!Node.Index {
     const is_async = self.is_current_arrow_func_async;
     self.is_current_arrow_func_async = false;
 
-    const body = blk: {
+    const is_strict, const body = blk: {
         const context = self.context;
 
         defer self.context = context;
@@ -4733,7 +4749,7 @@ fn completeArrowFunction(self: *Self, params: Node.Index) Error!Node.Index {
             return self.errorOnToken(body_start_token, ParseError.MalformedArrowFnBody);
         }
 
-        break :blk assignment;
+        break :blk .{ false, assignment };
     };
 
     const nodes = self.nodes.slice();
@@ -4753,8 +4769,9 @@ fn completeArrowFunction(self: *Self, params: Node.Index) Error!Node.Index {
                         .name = null,
                         .flags = .{
                             .is_arrow = true,
-                            .is_async = is_async,
                             .is_generator = false,
+                            .is_async = is_async,
+                            .has_strict_directive = is_strict,
                         },
                     },
                 }),
@@ -5536,14 +5553,17 @@ fn parseFunctionBody(
     self.context.@"return" = true;
 
     // TODO: make the body a statement list.
-    const body = try self.functionBody();
+    const is_strict, const body = try self.functionBody();
     const end_pos = self.nodeSpan(body).end;
+
+    var fn_flags = flags;
+    fn_flags.has_strict_directive = is_strict;
 
     const function_data = try self.addExtraData(
         ast.ExtraData{
             .function = .{
                 .name = func_name,
-                .flags = flags,
+                .flags = fn_flags,
             },
         },
     );
@@ -5563,7 +5583,10 @@ fn parseFunctionBody(
 
 /// Parse a list of statements surrounded by '{}'.
 /// Does not introduce a new scope.
-fn functionBody(self: *Self) Error!Node.Index {
+/// Returns a (bool, Node.Index) pair:
+///     1. A boolean indicating whether the body has a 'use strict' directive
+///     2. The index of the block statement node.
+fn functionBody(self: *Self) Error!struct { bool, Node.Index } {
     const start_pos = (try self.expect(.@"{")).id;
 
     const prev_scratch_len = self.scratch.items.len;
@@ -5601,13 +5624,9 @@ fn functionBody(self: *Self) Error!Node.Index {
     const end_pos = rbrace.id;
 
     const statements = self.scratch.items[prev_scratch_len..];
-    if (statements.len == 0) {
-        return self.addNode(.{ .block_statement = null }, start_pos, end_pos);
-    }
-
     const stmt_list_node = try self.addSubRange(statements);
-    const block_node = ast.NodeData{ .block_statement = stmt_list_node };
-    return self.addNode(block_node, start_pos, end_pos);
+    const block_node = ast.NodeData{ .statement_list = stmt_list_node };
+    return .{ is_strict, try self.addNode(block_node, start_pos, end_pos) };
 }
 
 /// Encodes the kind of directive present at the beginning of a function

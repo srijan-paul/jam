@@ -246,6 +246,9 @@ pub fn catchClause(_: *Self, _: *const ast.NodeData) Doc.Id {
 pub fn blockStatement(_: *Self, _: *const ast.NodeData) Doc.Id {
     unreachable;
 }
+pub fn statementList(_: *Self, _: *const ast.NodeData) Doc.Id {
+    unreachable;
+}
 pub fn expressionStatement(_: *Self, _: *const ast.NodeData) Doc.Id {
     unreachable;
 }

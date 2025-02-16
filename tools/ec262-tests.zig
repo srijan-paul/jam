@@ -1,7 +1,7 @@
 const std = @import("std");
-const syntax = @import("js");
+const js = @import("js");
 
-const Parser = syntax.Parser;
+const Parser = js.Parser;
 
 const ParseResult = enum {
     pass,
@@ -115,7 +115,7 @@ fn testOnPassingFile(
     const source = try pass_dir.readFileAlloc(allocator, file_name, std.math.maxInt(u32));
     defer allocator.free(source);
 
-    const source_type: syntax.Parser.SourceType =
+    const source_type: js.Parser.SourceType =
         if (std.mem.endsWith(u8, file_name, ".module.js"))
         .module
     else
@@ -128,14 +128,13 @@ fn testOnPassingFile(
     }
 
     // parse the program
-    var parser = try Parser.init(
+
+    std.debug.print("{s}\n", .{file_name});
+    var result = try js.semantic.parseAndAnalyze(
         allocator,
         source,
         .{ .source_type = source_type, .preserve_parens = false },
     );
-    defer parser.deinit();
-
-    var result = try parser.parse();
     defer result.deinit();
 
     const source_explicit = try pass_explicit_dir.readFileAlloc(
@@ -145,26 +144,40 @@ fn testOnPassingFile(
     );
     defer allocator.free(source_explicit);
 
-    var parser2 = try Parser.init(
+    var result2 = try js.semantic.parseAndAnalyze(
         allocator,
         source_explicit,
         .{ .source_type = source_type, .preserve_parens = false },
     );
-    defer parser2.deinit();
-
-    var result2 = try parser2.parse();
     defer result2.deinit();
 
-    if (parser.nodes.len != parser2.nodes.len) {
+    if (result.tree.nodes.len != result2.tree.nodes.len) {
         return ParseResult.ast_no_match;
     }
 
-    for (0..parser.nodes.len) |i| {
-        const n1 = parser.nodes.get(i);
-        const n2 = parser.nodes.get(i);
+    for (0..result.tree.nodes.len) |i| {
+        const n1 = result.tree.nodes.get(i);
+        const n2 = result2.tree.nodes.get(i);
 
         if (std.meta.activeTag(n1.data) != std.meta.activeTag(n2.data)) {
-            // see `pass_exceptions` array.
+            // in my AST, `string_literal` and `numeric_literal` are different node types,
+            // but in the tc39 test-suite (and ESTree), they are the same 'Literal' ast node.
+            if (n1.isLiteral() and n2.isLiteral()) continue;
+
+            // ({ "a": 1 }) and ({ a: 1 }) should be considered equal.
+            // But my AST represents them differently. Honestly, that is OK.
+            if (n1.tag() == .identifier and n2.tag() == .string_literal) {
+                const n1_src = result.tree.nodeToByteSlice(@enumFromInt(i));
+                const n2_src = result2.tree.nodeToByteSlice(@enumFromInt(i));
+                if (std.mem.eql(u8, n1_src, n2_src[1 .. n2_src.len - 1]))
+                    continue;
+            } else if (n2.tag() == .identifier and n1.tag() == .string_literal) {
+                const n2_src = result2.tree.nodeToByteSlice(@enumFromInt(i));
+                const n1_src = result.tree.nodeToByteSlice(@enumFromInt(i));
+                if (std.mem.eql(u8, n2_src, n1_src[1 .. n1_src.len - 1]))
+                    continue;
+            }
+
             return ParseResult.ast_no_match;
         }
     }
@@ -182,7 +195,7 @@ fn testOnMalformedFile(
     const source = try fail_dir.readFileAlloc(allocator, file_name, std.math.maxInt(u32));
     defer allocator.free(source);
 
-    const source_type: syntax.Parser.SourceType =
+    const source_type: js.Parser.SourceType =
         if (std.mem.endsWith(u8, file_name, ".module.js"))
         .module
     else

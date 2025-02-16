@@ -67,6 +67,17 @@ pub const Tree = struct {
         );
     }
 
+    /// Get the source text for a node as a byte slice.
+    pub fn nodeToByteSlice(self: *const Tree, node_id: Node.Index) []const u8 {
+        // TODO: use a cached nodes.slice instead of .start and .end
+        const start = self.nodes.items(.start)[@intFromEnum(node_id)];
+        const end = self.nodes.items(.end)[@intFromEnum(node_id)];
+
+        const start_byte = self.getToken(start).start;
+        const end_byte = start_byte + self.getToken(end).len;
+        return self.source[start_byte..end_byte];
+    }
+
     pub fn deinit(self: *Tree) void {
         self.nodes.deinit(self.allocator);
         self.tokens.deinit();
@@ -135,14 +146,16 @@ pub const FunctionFlags = packed struct(u8) {
     is_generator: bool = false,
     is_async: bool = false,
     is_arrow: bool = false,
-    _: u5 = 0,
+    /// Whether the function body has a "use strict" directive.
+    has_strict_directive: bool = false,
+    _: u4 = 0,
 };
 
 /// Represents the payload for a function expression or declaration.
 pub const Function = struct {
     /// points to a `ast.NodeData.parameters` (?SubRange)
     parameters: Node.Index,
-    /// points to an expression or a block statement
+    /// points to an expression or a statement list
     body: Node.Index,
     /// Function name and flags.
     info: ExtraData.Index,
@@ -191,6 +204,11 @@ pub const Function = struct {
             return to - from;
         }
         return 0;
+    }
+
+    /// Check whether the body of this function has a "use strict" directive
+    pub fn hasStrictDirective(self: *const Function, tree: *const Tree) bool {
+        return tree.getExtraData(self.info).function.flags.has_strict_directive;
     }
 };
 
@@ -283,18 +301,18 @@ pub const VariableDeclaration = struct {
 };
 
 pub const CatchClause = struct {
-    /// points to a 'block_statement'
+    /// points to a 'statement_list'
     body: Node.Index,
     /// points to an identifier or a pattern.
     param: ?Node.Index,
 };
 
 pub const TryStatement = struct {
-    /// Points to a 'block_statement'
+    /// Points to a 'statement_list'
     body: Node.Index,
     /// Points to a 'catch_clause'
     catch_clause: Node.Index,
-    /// Points to a 'block_statement'
+    /// Points to a 'statement_list'
     finalizer: Node.Index,
 };
 
@@ -328,17 +346,29 @@ pub const LabeledStatement = struct {
     body: Node.Index,
 };
 
+// TODO(@injuly): have optional name property for class expression,
+// but make it non-nullable for class declaration.
 pub const Class = struct {
     class_information: ExtraData.Index,
     body: SubRange,
 
-    /// Return the name of the class.
+    /// Return a slice representing the name of the class.
     pub fn className(self: *const Class, p: *const Parser) ?[]const u8 {
         const maybe_name_node = p.getExtraData(self.class_information).class.name;
         if (maybe_name_node) |name_node| {
             const node = p.getNode(name_node);
             const start_token = p.getToken(node.start);
             return start_token.toByteSlice(p.source);
+        }
+        return null;
+    }
+
+    /// Get the token ID for the name of this class
+    pub fn nameTokenId(self: *const Class, t: *const Tree) ?Token.Index {
+        if (t.getExtraData(self.class_information).class.name) |id_node| {
+            const name_node = t.nodeData(id_node);
+            std.debug.assert(std.meta.activeTag(name_node.*) == .binding_identifier);
+            return name_node.binding_identifier;
         }
         return null;
     }
@@ -473,6 +503,7 @@ pub const NodeData = union(enum(u8)) {
     /// ```
     binding_identifier: Token.Index,
 
+    // Literals:
     string_literal: Token.Index,
     number_literal: Number,
     boolean_literal: Boolean,
@@ -518,7 +549,9 @@ pub const NodeData = union(enum(u8)) {
     labeled_statement: LabeledStatement,
     try_statement: TryStatement,
     catch_clause: CatchClause,
+    // TODO: replace ?SubRange with SubRange
     block_statement: ?SubRange,
+    statement_list: SubRange,
     expression_statement: Node.Index,
     variable_declaration: VariableDeclaration,
     variable_declarator: VariableDeclarator,
@@ -633,6 +666,24 @@ pub const Node = struct {
     start: Token.Index,
     /// The end token for this node.
     end: Token.Index,
+
+    /// Check if this node is a literal
+    pub fn isLiteral(self: *const Node) bool {
+        return switch (std.meta.activeTag(self.data)) {
+            .string_literal,
+            .number_literal,
+            .boolean_literal,
+            .null_literal,
+            .regex_literal,
+            => true,
+            else => false,
+        };
+    }
+
+    /// Get the type tag for this AST node
+    pub fn tag(self: *const Node) std.meta.Tag(NodeData) {
+        return std.meta.activeTag(self.data);
+    }
 
     comptime {
         std.debug.assert(@bitSizeOf(Node) <= 196);

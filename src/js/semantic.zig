@@ -23,6 +23,8 @@ const Token = ast.Token;
 /// Result of the semantic analysis pass.
 /// Contains resolved references, scopes, control flow graph, etc.
 pub const AnalyzedProgram = struct {
+    /// Used to allocate memory for this struct
+    allocator: Allocator,
     /// The syntax tree that was analyzed.
     tree: *ast.Tree,
     /// Top-level scope of the program.
@@ -34,10 +36,12 @@ pub const AnalyzedProgram = struct {
     parent_of_node: []?ast.Node.Index,
 
     pub fn deinit(self: *AnalyzedProgram) void {
-        self.root_scope.deinit(self.tree.allocator);
-        self.tree.allocator.destroy(self.root_scope);
-        self.tree.allocator.free(self.parent_of_node);
+        // release resources allocated during semantic analysis
+        self.root_scope.deinit(self.allocator);
+        self.allocator.destroy(self.root_scope);
+        self.allocator.free(self.parent_of_node);
 
+        // release the tree
         self.tree.deinit();
         self.tree.allocator.destroy(self.tree);
     }
@@ -53,6 +57,8 @@ pub const Variable = struct {
         variable_binding = 1 | IsHoistedMask,
         /// A function parameter binding
         function_parameter = 2 | IsHoistedMask,
+        /// A parameter in a catch block
+        catch_parameter = 3,
 
         /// Whether the declaration is hoisted to the nearest function scope
         pub inline fn isHoisted(self: Kind) bool {
@@ -88,7 +94,13 @@ pub const Reference = struct {
 /// Scope contains information about the variables contained within it,
 /// along with any references made to other variables within the same or an outer scope.
 pub const Scope = struct {
-    pub const Kind = enum { function, block, module, script };
+    pub const Kind = enum {
+        function,
+        block,
+        module,
+        script,
+        class,
+    };
 
     /// Points to the surrounding scope.
     /// Is `null` for the global scope of the program.
@@ -154,7 +166,12 @@ pub const Scope = struct {
 
 const Self = @This();
 
-const AnalysisError = error{ DuplicateBinding, Overflow, OutOfMemory };
+const AnalysisError = error{
+    DuplicateBinding,
+    DuplicateParameterBinding,
+    Overflow,
+    OutOfMemory,
+};
 
 /// Denotes the type of a variable binding (lexical or hoisted)
 const BindingKind = enum {
@@ -242,6 +259,7 @@ pub fn deinit(self: *Self) void {
     if (self.owns_tree) {
         self.tree.deinit();
         self.tree.allocator.destroy(self.tree);
+
         self.root_scope.deinit(self.allocator);
         self.allocator.free(self.parent_of_node);
         self.allocator.destroy(self.root_scope);
@@ -257,8 +275,10 @@ pub fn analyze(self: *Self) !AnalyzedProgram {
     };
 
     try traverser.traverse();
+
     self.owns_tree = false;
     return AnalyzedProgram{
+        .allocator = self.allocator,
         .tree = self.tree,
         .root_scope = self.root_scope,
         .parent_of_node = self.parent_of_node,
@@ -267,15 +287,35 @@ pub fn analyze(self: *Self) !AnalyzedProgram {
 
 pub fn onEnter(self: *Self, node_id: ast.Node.Index, node: ast.NodeData, parent_id: ?ast.Node.Index) !void {
     switch (node) {
-        .block_statement => {
-            const parent_tag = self.tree.tag(parent_id.?);
-            if (parent_tag != .function_declaration and .parent_tag != .function_expr) {
-                try self.createScope(Scope.Kind.block, node_id);
-            }
-        },
+        .block_statement => try self.createScope(Scope.Kind.block, node_id, false),
         .function_expr, .function_declaration => {
             const func_ctx = BindingContext{ .kind = .variable_binding, .decl_node = node_id };
             try self.binding_stack.append(self.allocator, func_ctx);
+        },
+
+        .class_declaration => |class| {
+            if (class.nameTokenId(self.tree)) |name_id| {
+                try self.registerDeclaration(
+                    self.tree.getToken(name_id),
+                    .lexical_binding,
+                    node_id,
+                );
+            }
+
+            try self.createScope(.class, node_id, true);
+        },
+
+        .catch_clause => |c| {
+            if (c.param) |param_id| {
+                const param_ctx = BindingContext{ .kind = .catch_parameter, .decl_node = param_id };
+                try self.binding_stack.append(self.allocator, param_ctx);
+            }
+            try self.createScope(Scope.Kind.block, node_id, false);
+        },
+
+        .import_default_specifier, .import_specifier, .import_namespace_specifier => {
+            const import_ctx = BindingContext{ .kind = .lexical_binding, .decl_node = node_id };
+            try self.binding_stack.append(self.allocator, import_ctx);
         },
 
         .variable_declarator => {
@@ -294,10 +334,12 @@ pub fn onEnter(self: *Self, node_id: ast.Node.Index, node: ast.NodeData, parent_
             );
         },
         .binding_identifier => |name_id| {
-            if (parent_id) |p| {
-                if (self.tree.tag(p) == .function_expr) {
-                    return;
-                }
+            switch (self.tree.tag(parent_id.?)) {
+                .class_expression,
+                .class_declaration,
+                .function_expr,
+                => return,
+                else => {},
             }
 
             std.debug.assert(self.binding_stack.items.len > 0);
@@ -313,7 +355,15 @@ pub fn onEnter(self: *Self, node_id: ast.Node.Index, node: ast.NodeData, parent_
         .parameters => {
             // create a broader scope for the function
             const func_id = parent_id.?; // SAFETY: parent is sure to exist here
-            try self.createScope(.function, func_id);
+            const func_has_use_strict =
+                switch (func_id.get(self.tree).*) {
+                .function_declaration,
+                .function_expr,
+                => |func| func.hasStrictDirective(self.tree),
+                else => unreachable,
+            };
+
+            try self.createScope(.function, func_id, func_has_use_strict);
 
             const params_ctx = BindingContext{ .kind = .function_parameter, .decl_node = node_id };
             try self.binding_stack.append(self.allocator, params_ctx);
@@ -357,11 +407,30 @@ fn registerDeclaration(
     // function a() {} // OK
     // ```
     if (dst_scope.findVariableWithin(name_str)) |existing_var| {
+        const existing_kind = existing_var.kind;
+        const new_kind = variable.kind;
         // There's already a variable with the same name in the current scope.
         // Only allow re-declaration if the existing variable is a var-binding.
-        if (!(existing_var.kind.isHoisted() and variable.kind.isHoisted()))
+        if (!(existing_kind.isHoisted() and new_kind.isHoisted())) {
             // TODO(@injuly): emit a diagnostic, and move on. Do not early exit on this error.
             return AnalysisError.DuplicateBinding;
+        } else {
+            // In non-strict mode, also called "sloppy mode" (yeah...), it's okay to
+            // have duplicate parameter bindings in the same function scope.
+            //
+            // ```js
+            // function f(a, a) { } // OK!
+            // function f(a, a) { "use strict" } // NOT OK!
+            // ```
+            const is_illegal_parameter_redecl =
+                existing_kind == .function_parameter and
+                new_kind == .function_parameter and
+                dst_scope.kind == .function and dst_scope.is_strict;
+
+            if (is_illegal_parameter_redecl) {
+                return AnalysisError.DuplicateParameterBinding;
+            }
+        }
     }
 
     try self.current_scope.variables.put(self.allocator, name_str, variable);
@@ -379,7 +448,12 @@ pub fn onExit(self: *Self, node_id: ast.Node.Index, _: ast.NodeData, _: ?ast.Nod
 }
 
 /// Create and enter a new scope
-fn createScope(self: *Self, scope_kind: Scope.Kind, node: ast.Node.Index) Allocator.Error!void {
+fn createScope(
+    self: *Self,
+    scope_kind: Scope.Kind,
+    node: ast.Node.Index,
+    is_strict: bool,
+) Allocator.Error!void {
     const parent = self.current_scope;
     const new_scope = try self.allocator.create(Scope);
     new_scope.* = try Scope.init(
@@ -387,7 +461,7 @@ fn createScope(self: *Self, scope_kind: Scope.Kind, node: ast.Node.Index) Alloca
         node,
         scope_kind,
         parent,
-        parent.is_strict,
+        parent.is_strict or is_strict,
     );
 
     try parent.children.append(self.allocator, new_scope);
@@ -414,12 +488,34 @@ pub fn parseAndAnalyze(allocator: Allocator, source: []const u8, parser_config: 
 
 const t = std.testing;
 fn expectError(source: []const u8, expected_error: AnalysisError) !void {
-    var result = parseAndAnalyze(t.allocator, source, .{}) catch |actual_error| {
+    var result = parseAndAnalyze(
+        t.allocator,
+        source,
+        .{ .source_type = .script },
+    ) catch |actual_error| {
         return t.expectEqual(expected_error, actual_error);
     };
 
     std.debug.print(
         "Expected {} but source was parsed successfully:\n{s}\n",
+        .{ expected_error, source },
+    );
+    result.deinit();
+
+    return error.TestExpectEqual;
+}
+
+fn expectErrorInModule(source: []const u8, expected_error: AnalysisError) !void {
+    var result = parseAndAnalyze(
+        t.allocator,
+        source,
+        .{ .source_type = .module },
+    ) catch |actual_error| {
+        return t.expectEqual(expected_error, actual_error);
+    };
+
+    std.debug.print(
+        "Expected {} but module was parsed successfully:\n{s}\n",
         .{ expected_error, source },
     );
     result.deinit();
@@ -458,6 +554,46 @@ test {
     , AnalysisError.DuplicateBinding);
 
     try expectError(
+        "let { x, x } = 1",
+        AnalysisError.DuplicateBinding,
+    );
+
+    try expectError(
+        "let { x, x: { y: x } } = 1",
+        AnalysisError.DuplicateBinding,
+    );
+
+    try expectError(
+        "let { x, x: { x } } = 1",
+        AnalysisError.DuplicateBinding,
+    );
+
+    try expectError(
+        "class C {}; let C;",
+        AnalysisError.DuplicateBinding,
+    );
+
+    try expectError(
+        "class C {}; var C;",
+        AnalysisError.DuplicateBinding,
+    );
+
+    try expectError(
+        "class C{}; class C{};",
+        AnalysisError.DuplicateBinding,
+    );
+
+    try expectError(
+        "class C { constructor(a, a) {} };",
+        AnalysisError.DuplicateParameterBinding,
+    );
+
+    try expectError(
+        "class C {}; let C;",
+        AnalysisError.DuplicateBinding,
+    );
+
+    try expectError(
         \\ let x; 
         \\ { var x; }  
     , AnalysisError.DuplicateBinding);
@@ -468,21 +604,26 @@ test {
     , AnalysisError.DuplicateBinding);
 
     try expectError(
+        \\ let { y: x } = 456;
+        \\ {
+        \\     var { x: x } = 123;
+        \\ }
+    , AnalysisError.DuplicateBinding);
+
+    try expectError(
         "function f() { let f; let f; }",
         AnalysisError.DuplicateBinding,
     );
 
-    // TODO: make this work and handle different behavior in modules and scripts,
-    // and strict and sloppy mode
-    // try expectError(
-    //     "function f(a, a) {}",
-    //     AnalysisError.DuplicateBinding,
-    // );
-    //
-    // try expectError(
-    //     "function f(a, a) { 'use strict'; }",
-    //     AnalysisError.DuplicateBinding,
-    // );
+    try expectError(
+        "function f(a, a) { 'use strict' }",
+        AnalysisError.DuplicateParameterBinding,
+    );
+
+    try expectErrorInModule(
+        "function f(a, a) {}",
+        AnalysisError.DuplicateParameterBinding,
+    );
 
     try expectError(
         \\ let f = function () { let f; let f; }
@@ -510,11 +651,10 @@ test {
         \\ function x() { let x; }
     );
 
-    try expectNoError(
-        \\ let f = function() { let f; } 
-    );
-
+    try expectNoError("let f = function() { let f; } ");
     try expectNoError("let f = function f() {}");
+    try expectNoError("function f() { let f; }");
+    try expectNoError("let { x: a, x: b } = 2");
 
     try expectNoError(
         \\ let x;
@@ -529,4 +669,17 @@ test {
         \\   let x;
         \\ }
     );
+
+    try expectNoError(
+        \\ try { let e; }
+        \\ catch (e) { }
+    );
+
+    try expectNoError(
+        \\ let e
+        \\ try { }
+        \\ catch (e) { }
+    );
+
+    try expectNoError("for (let a;;) { let a; }");
 }
