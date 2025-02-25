@@ -11,6 +11,8 @@ const ast = @import("ast.zig");
 const StrUtil = @import("strings.zig");
 const Parser = @import("./parser.zig");
 
+const assert = std.debug.assert;
+
 const Allocator = std.mem.Allocator;
 const List = std.ArrayListUnmanaged;
 const Map = std.AutoHashMapUnmanaged;
@@ -66,9 +68,9 @@ pub const Variable = struct {
         }
 
         comptime {
-            std.debug.assert(!Kind.lexical_binding.isHoisted());
-            std.debug.assert(Kind.variable_binding.isHoisted());
-            std.debug.assert(Kind.function_parameter.isHoisted());
+            assert(!Kind.lexical_binding.isHoisted());
+            assert(Kind.variable_binding.isHoisted());
+            assert(Kind.function_parameter.isHoisted());
         }
     };
 
@@ -348,7 +350,7 @@ pub fn onEnter(self: *Self, node_id: ast.Node.Index, node: ast.NodeData, parent_
                 else => {},
             }
 
-            std.debug.assert(self.binding_stack.items.len > 0);
+            assert(self.binding_stack.items.len > 0);
             const curr_binding_ctx = self.binding_stack.getLast();
             const name_token = self.tree.getToken(name_id);
 

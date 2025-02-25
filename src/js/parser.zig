@@ -15,6 +15,9 @@ const Node = ast.Node;
 const NodeData = ast.NodeData;
 pub const Tree = ast.Tree;
 
+const assert = std.debug.assert;
+const meta = std.meta;
+
 const Self = @This();
 
 const TokenWithId = struct {
@@ -375,7 +378,7 @@ pub fn init(
     // the `null` node always lives at index-0.
     // see: ast.NodeData.none
     const i = try self.addNode(.{ .none = {} }, @enumFromInt(0), @enumFromInt(0));
-    std.debug.assert(i == Node.Index.empty);
+    assert(i == Node.Index.empty);
 
     // this call will initialize `current_token`.
     try self.startTokenizer();
@@ -471,7 +474,7 @@ pub fn moduleItem(self: *Self) Error!Node.Index {
 
 pub fn importDeclaration(self: *Self) Error!Node.Index {
     const import_kw = try self.next();
-    std.debug.assert(import_kw.token.tag == .kw_import);
+    assert(import_kw.token.tag == .kw_import);
 
     // import "foo";
     if (self.isAtToken(.string_literal)) {
@@ -656,7 +659,7 @@ fn moduleExportName(self: *Self) Error!Node.Index {
 /// https://tc39.es/ecma262/#prod-ExportDeclaration
 fn exportDeclaration(self: *Self) Error!Node.Index {
     const export_kw = try self.next();
-    std.debug.assert(export_kw.token.tag == .kw_export);
+    assert(export_kw.token.tag == .kw_export);
 
     if (self.isAtToken(.kw_default)) {
         return try self.defaultExport(export_kw.id);
@@ -765,9 +768,12 @@ fn starExportDeclaration(self: *Self, export_kw: TokenWithId) Error!Node.Index {
     );
 }
 
+/// After the `export` keyword has already been consumed,
+/// parse a default export statement, assuming the parser is currently
+/// on the 'default' keyword.
 fn defaultExport(self: *Self, export_kw: Token.Index) Error!Node.Index {
     const default_kw = try self.next();
-    std.debug.assert(default_kw.token.tag == .kw_default);
+    assert(default_kw.token.tag == .kw_default);
     var end_pos = default_kw.id;
 
     const exported = blk: {
@@ -858,7 +864,7 @@ fn rewriteRefsInExportList(self: *Self, specifiers: ast.SubRange) void {
     for (from..to) |i| {
         const node_id = self.node_lists.items[i];
         const node_pl = &node_pls[@intFromEnum(node_id)];
-        std.debug.assert(std.meta.activeTag(node_pl.*) == .export_specifier);
+        assert(meta.activeTag(node_pl.*) == .export_specifier);
 
         identifierRefToIdentifier(node_pls, node_pl.export_specifier.local);
 
@@ -872,7 +878,7 @@ fn rewriteRefsInExportList(self: *Self, specifiers: ast.SubRange) void {
 /// This just updates the tag of the node's `NodeData` union.
 fn identifierRefToIdentifier(node_pls: []NodeData, id: Node.Index) void {
     const pl = &node_pls[@intFromEnum(id)];
-    std.debug.assert(std.meta.activeTag(pl.*) == .identifier_reference);
+    assert(meta.activeTag(pl.*) == .identifier_reference);
     pl.* = .{ .identifier = pl.identifier_reference };
 }
 
@@ -1037,7 +1043,7 @@ fn declarationStatement(self: *Self) Error!?Node.Index {
 /// https://tc39.es/ecma262/#sec-class-definitions
 fn classDeclaration(self: *Self) Error!Node.Index {
     const class_kw = try self.next();
-    std.debug.assert(class_kw.token.tag == .kw_class);
+    assert(class_kw.token.tag == .kw_class);
 
     const name_token = try self.next();
     if (!name_token.token.tag.isIdentifier() and
@@ -1261,7 +1267,7 @@ fn staticClassProperty(self: *Self, modifiers: ClassFieldModifiers) Error!Node.I
 /// Parse a class method starting with a '*' token.
 fn generatorClassProperty(self: *Self, modifiers: ClassFieldModifiers) Error!Node.Index {
     const star_token = try self.nextToken();
-    std.debug.assert(star_token.tag == .@"*");
+    assert(star_token.tag == .@"*");
 
     if (!canStartClassElementName(&self.current.token)) {
         try self.emitBadTokenDiagnostic("a method name after '*'", &self.current.token);
@@ -1272,7 +1278,7 @@ fn generatorClassProperty(self: *Self, modifiers: ClassFieldModifiers) Error!Nod
     // arrow functions cannot be generators.
     // this should've raised an error already instead of getting this
     // far in the parser.
-    std.debug.assert(!modifiers.method_flags.is_arrow);
+    assert(!modifiers.method_flags.is_arrow);
 
     var new_modifiers = modifiers;
     new_modifiers.method_flags.is_generator = true;
@@ -1291,7 +1297,7 @@ fn classProperty(self: *Self, modifiers: ClassFieldModifiers) Error!Node.Index {
     };
 
     if (kind == .get or kind == .set) {
-        std.debug.assert(!modifiers.method_flags.is_generator);
+        assert(!modifiers.method_flags.is_generator);
 
         const get_or_set = try self.next(); // eat 'get' or 'set'
         if (canStartClassElementName(&self.current.token)) {
@@ -1364,7 +1370,7 @@ fn parseClassMethodBody(
     key: Node.Index,
     modifiers: ClassFieldModifiers,
 ) Error!Node.Index {
-    std.debug.assert(self.current.token.tag == .@"(");
+    assert(self.current.token.tag == .@"(");
 
     const func_expr = try self.parseFunctionBody(
         modifiers.start_position,
@@ -1402,7 +1408,7 @@ fn parseClassMethodBody(
 
 fn ifStatement(self: *Self) Error!Node.Index {
     const if_kw = try self.next();
-    std.debug.assert(if_kw.token.tag == .kw_if);
+    assert(if_kw.token.tag == .kw_if);
 
     _ = try self.expectToken(.@"(");
     const cond = try self.expression();
@@ -1441,7 +1447,7 @@ const ForLoopKind = enum {
 /// ForOfStatement / ForInStatement / ForStatement
 fn forStatement(self: *Self) Error!Node.Index {
     const for_kw = try self.next();
-    std.debug.assert(for_kw.token.tag == .kw_for);
+    assert(for_kw.token.tag == .kw_for);
 
     const loop_kind, const iterator = try self.forLoopIterator();
 
@@ -1623,7 +1629,7 @@ fn completeVarDeclLoopIterator(
     decl_kw: TokenWithId,
     loop_kind: *ForLoopKind,
 ) Error!ast.Node.Index {
-    std.debug.assert(decl_kw.token.tag == .kw_let or
+    assert(decl_kw.token.tag == .kw_let or
         decl_kw.token.tag == .kw_var or
         decl_kw.token.tag == .kw_const);
 
@@ -1784,7 +1790,7 @@ fn completeLoopInitializer(self: *Self, kw: *const TokenWithId, first_decl: Node
 
 fn whileStatement(self: *Self) Error!Node.Index {
     const while_kw = try self.next();
-    std.debug.assert(while_kw.token.tag == .kw_while);
+    assert(while_kw.token.tag == .kw_while);
 
     _ = try self.expectToken(.@"(");
     const cond = try self.expression();
@@ -1808,7 +1814,7 @@ fn whileStatement(self: *Self) Error!Node.Index {
 
 fn doWhileStatement(self: *Self) Error!Node.Index {
     const do_kw = try self.next();
-    std.debug.assert(do_kw.token.tag == .kw_do);
+    assert(do_kw.token.tag == .kw_do);
 
     const saved_context = self.context;
     defer self.context = saved_context;
@@ -1848,7 +1854,7 @@ fn debuggerStatement(self: *Self) Error!Node.Index {
 /// Parse a VariableStatement, where `kw` is the keyword used to declare the variable (let, var, or const).
 fn variableStatement(self: *Self, kw: TokenWithId) Error!Node.Index {
     const kw_token = kw.token;
-    std.debug.assert(kw_token.tag == .kw_let or
+    assert(kw_token.tag == .kw_let or
         kw_token.tag == .kw_var or
         kw_token.tag == .kw_const);
 
@@ -1907,7 +1913,7 @@ fn varDeclKind(tag: Token.Tag) ast.VarDeclKind {
 fn tryStatement(self: *Self) Error!Node.Index {
     const try_kw = try self.next();
     const start_pos = try_kw.id;
-    std.debug.assert(try_kw.token.tag == .kw_try);
+    assert(try_kw.token.tag == .kw_try);
 
     const body = try self.blockStatement();
 
@@ -1970,14 +1976,14 @@ fn catchParameter(self: *Self) Error!?Node.Index {
 
 fn finallyBlock(self: *Self) Error!Node.Index {
     const finally_kw = try self.nextToken();
-    std.debug.assert(finally_kw.tag == .kw_finally);
+    assert(finally_kw.tag == .kw_finally);
     const body = try self.blockStatement();
     return body;
 }
 
 fn switchStatement(self: *Self) Error!Node.Index {
     const switch_kw = try self.next();
-    std.debug.assert(switch_kw.token.tag == .kw_switch);
+    assert(switch_kw.token.tag == .kw_switch);
 
     _ = try self.expectToken(.@"(");
     const discriminant = try self.expression();
@@ -2046,7 +2052,7 @@ fn caseBlock(self: *Self) Error!ast.SubRange {
 /// 'case' Expression ':' StatementList
 fn caseClause(self: *Self) Error!Node.Index {
     const case_kw = try self.next();
-    std.debug.assert(case_kw.token.tag == .kw_case);
+    assert(case_kw.token.tag == .kw_case);
 
     const test_expr = try self.expression();
 
@@ -2087,7 +2093,7 @@ fn caseClause(self: *Self) Error!Node.Index {
 /// Parse the 'default' case inside a switch statement.
 fn defaultCase(self: *Self) Error!Node.Index {
     const default_kw = try self.next();
-    std.debug.assert(default_kw.token.tag == .kw_default);
+    assert(default_kw.token.tag == .kw_default);
 
     _ = try self.expectToken(.@":");
 
@@ -2120,7 +2126,7 @@ fn defaultCase(self: *Self) Error!Node.Index {
 
 fn withStatement(self: *Self) Error!Node.Index {
     const with_kw = try self.next();
-    std.debug.assert(with_kw.token.tag == .kw_with);
+    assert(with_kw.token.tag == .kw_with);
 
     _ = try self.expectToken(.@"(");
     const obj = try self.expression();
@@ -2145,7 +2151,7 @@ fn withStatement(self: *Self) Error!Node.Index {
 
 fn throwStatement(self: *Self) Error!Node.Index {
     const throw_kw = try self.next();
-    std.debug.assert(throw_kw.token.tag == .kw_throw);
+    assert(throw_kw.token.tag == .kw_throw);
 
     if (self.current.token.line != throw_kw.token.line) {
         try self.emitDiagnostic(
@@ -2171,7 +2177,7 @@ fn throwStatement(self: *Self) Error!Node.Index {
 /// This cannot be a variable declaration, let is either an identifier
 /// or a label here.
 fn letStatement(self: *Self) Error!Node.Index {
-    std.debug.assert(self.current.token.tag == .kw_let);
+    assert(self.current.token.tag == .kw_let);
     const let_kw = try self.startLetBinding() orelse {
         // If the `let` keyword doesn't start a declaration,
         // then its an identifier.
@@ -2197,7 +2203,7 @@ fn letStatement(self: *Self) Error!Node.Index {
 ///
 /// Must be called when `self.current.token` is a 'let' keyword.
 fn startLetBinding(self: *Self) Error!?TokenWithId {
-    std.debug.assert(self.current.token.tag == .kw_let);
+    assert(self.current.token.tag == .kw_let);
 
     const lookahead = try self.lookAhead();
     if (self.isDeclaratorStart(lookahead.tag)) {
@@ -2245,7 +2251,7 @@ fn variableDeclarator(self: *Self, kind: ast.VarDeclKind) Error!Node.Index {
 /// EmptyStatement: ';'
 fn emptyStatement(self: *Self) Error!Node.Index {
     const semicolon = try self.next();
-    std.debug.assert(semicolon.token.tag == .@";");
+    assert(semicolon.token.tag == .@";");
 
     return self.addNode(
         .{ .empty_statement = {} },
@@ -2305,7 +2311,7 @@ fn parseStatements(self: *Self) Error!Statements {
     }
 
     const rbrace = try self.next();
-    std.debug.assert(rbrace.token.tag == .@"}");
+    assert(rbrace.token.tag == .@"}");
     const end_pos = rbrace.id;
 
     const statements = self.scratch.items[prev_scratch_len..];
@@ -2347,7 +2353,7 @@ fn functionName(self: *Self) Error!Node.Index {
 ///    'return' [no LineTerminator here] Expression? ';'
 fn returnStatement(self: *Self) Error!Node.Index {
     const return_kw = try self.next();
-    std.debug.assert(return_kw.token.tag == .kw_return);
+    assert(return_kw.token.tag == .kw_return);
 
     if (!self.context.@"return") {
         // todo: maybe we should just emit a diagnostic here and continue parsing?
@@ -2377,7 +2383,7 @@ fn returnStatement(self: *Self) Error!Node.Index {
 /// BreakStatement: 'break' ';'
 fn breakStatement(self: *Self) Error!Node.Index {
     const break_kw = try self.next();
-    std.debug.assert(break_kw.token.tag == .kw_break);
+    assert(break_kw.token.tag == .kw_break);
 
     if (!self.context.@"break") {
         try self.emitDiagnostic(
@@ -2417,7 +2423,7 @@ fn breakStatement(self: *Self) Error!Node.Index {
 /// ContinueStatement: 'continue' ';'
 fn continueStatement(self: *Self) Error!Node.Index {
     const continue_kw = try self.next();
-    std.debug.assert(continue_kw.token.tag == .kw_continue);
+    assert(continue_kw.token.tag == .kw_continue);
 
     if (!self.context.@"continue") {
         try self.emitDiagnostic(
@@ -3005,7 +3011,7 @@ fn reinterpretPattern(
             if (is_binding_pattern) {
                 const name_token_pl = node_pls[@intFromEnum(o.name)];
                 // TODO(@injuly): for non-binding shorthand properties, the name should be smth like a 'shorthand_id_ref' (RW)
-                std.debug.assert(std.meta.activeTag(name_token_pl) == .identifier_reference);
+                assert(meta.activeTag(name_token_pl) == .identifier_reference);
                 node_pls[@intFromEnum(o.name)] = .{ .binding_identifier = name_token_pl.identifier_reference };
             }
         },
@@ -3060,7 +3066,7 @@ fn assignmentExpression(self: *Self) Error!Node.Index {
             return self.completeArrowFunction(lhs);
         } else {
             const lhs_tag = self.nodeTag(lhs);
-            std.debug.assert(lhs_tag != .parameters);
+            assert(lhs_tag != .parameters);
         }
         return lhs;
     }
@@ -3205,7 +3211,7 @@ fn yieldOrConditionalExpression(self: *Self) Error!Node.Index {
 
 fn yieldExpression(self: *Self) Error!Node.Index {
     const yield_kw = try self.next();
-    std.debug.assert(
+    assert(
         yield_kw.token.tag == .kw_yield and
             self.context.is_yield_reserved,
     );
@@ -3303,7 +3309,7 @@ fn bindingPattern(self: *Self) Error!Node.Index {
 /// https://tc39.es/ecma262/#prod-ArrayBindingPattern
 fn arrayBindingPattern(self: *Self) Error!Node.Index {
     const lbrac = try self.next(); // eat '['
-    std.debug.assert(lbrac.token.tag == .@"[");
+    assert(lbrac.token.tag == .@"[");
 
     const prev_scratch_len = self.scratch.items.len;
     defer self.scratch.items.len = prev_scratch_len;
@@ -3480,7 +3486,7 @@ fn destructuredIdentifierProperty(self: *Self) Error!Node.Index {
 /// https://tc39.es/ecma262/#prod-ObjectAssignmentPattern
 fn objectBindingPattern(self: *Self) Error!Node.Index {
     const lbrace = try self.next(); // eat '{'
-    std.debug.assert(lbrace.token.tag == .@"{");
+    assert(lbrace.token.tag == .@"{");
 
     const prev_scratch_len = self.scratch.items.len;
     defer self.scratch.items.len = prev_scratch_len;
@@ -3596,7 +3602,7 @@ fn bindingElement(self: *Self) Error!Node.Index {
 /// Ref: https://tc39.es/ecma262/#prod-SingleNameBinding
 fn singleNameBinding(self: *Self) Error!Node.Index {
     const id_token = try self.next();
-    std.debug.assert(self.isIdentifier(id_token.token.tag));
+    assert(self.isIdentifier(id_token.token.tag));
 
     const id = try self.bindingIdentifier(id_token.id);
     if (!self.isAtToken(.@"=")) return id;
@@ -3665,7 +3671,7 @@ fn unaryExpression(self: *Self) Error!Node.Index {
             // Ensure that "delete Identifier" is not used in
             // strict mode code.
             const slice = self.nodes.slice();
-            const expr_tag = std.meta.activeTag(slice.items(.data)[@intFromEnum(expr)]);
+            const expr_tag = meta.activeTag(slice.items(.data)[@intFromEnum(expr)]);
             if (self.context.strict and
                 op.token.tag == .kw_delete and
                 expr_tag == .identifier)
@@ -3698,7 +3704,7 @@ fn unaryExpression(self: *Self) Error!Node.Index {
 /// is the `await` keyword.
 fn awaitExpression(self: *Self) Error!Node.Index {
     const await_token = try self.next();
-    std.debug.assert(await_token.token.tag == .kw_await);
+    assert(await_token.token.tag == .kw_await);
 
     if (!self.context.is_await_reserved) {
         try self.emitDiagnostic(
@@ -3797,7 +3803,7 @@ fn lhsExpression(self: *Self) Error!Node.Index {
 fn superExpression(self: *Self) Error!Node.Index {
     const super_token = try self.nextToken();
     // TODO: check if we're in a surrounding class.
-    std.debug.assert(super_token.tag == .kw_super);
+    assert(super_token.tag == .kw_super);
 
     const super_args, const start, const end = try self.parseArgs();
     return self.addNode(.{ .super_call_expr = super_args }, start, end);
@@ -3969,7 +3975,7 @@ fn optionalChain(self: *Self, object: Node.Index) Error!Node.Index {
     const start_pos = self.nodes.items(.start)[@intFromEnum(object)];
 
     const chain_op = try self.nextToken();
-    std.debug.assert(chain_op.tag == .@"?.");
+    assert(chain_op.tag == .@"?.");
 
     const cur_token = self.peek();
 
@@ -4037,7 +4043,7 @@ fn memberExpression(self: *Self) Error!Node.Index {
 /// https://tc39.es/ecma262/#prod-NewExpression
 fn newTargetOrExpression(self: *Self) Error!Node.Index {
     const new_token = try self.next();
-    std.debug.assert(new_token.token.tag == .kw_new);
+    assert(new_token.token.tag == .kw_new);
     if (self.isAtToken(.@"."))
         return self.parseMetaProperty(new_token.id, "target");
     // No '.' after 'new', so we're parsing a regular old
@@ -4070,7 +4076,7 @@ fn importMetaOrCall(self: *Self) Error!Node.Index {
 fn superPropertyOrCall(self: *Self) Error!Node.Index {
     // TODO: disallow super outside classes that have a super class
     const super_token = try self.next();
-    std.debug.assert(super_token.token.tag == .kw_super);
+    assert(super_token.token.tag == .kw_super);
 
     switch (self.current.token.tag) {
         .@"[" => {
@@ -4097,7 +4103,7 @@ fn parseMetaProperty(
     wanted_property_name: []const u8,
 ) Error!Node.Index {
     const dot = try self.nextToken();
-    std.debug.assert(dot.tag == .@".");
+    assert(dot.tag == .@".");
 
     const meta_token = self.getToken(meta_token_id);
 
@@ -4126,14 +4132,14 @@ fn parseMetaProperty(
         return Error.InvalidMetaProperty;
     }
 
-    const meta = try self.identifier(meta_token_id);
+    const meta_object = try self.identifier(meta_token_id);
     const property = try self.identifier(property_token.id);
 
     const end_pos = property_token.id;
     return self.addNode(
         .{
             .meta_property = .{
-                .meta = meta,
+                .meta = meta_object,
                 .property = property,
             },
         },
@@ -4161,7 +4167,7 @@ fn completeTaggedTemplate(self: *Self, tag: Node.Index) Error!Node.Index {
 
 fn completeMemberExpression(self: *Self, object: Node.Index) Error!Node.Index {
     const dot = try self.nextToken(); // eat "."
-    std.debug.assert(dot.tag == .@".");
+    assert(dot.tag == .@".");
 
     const property_id: Node.Index = blk: {
         const tok_with_id = try self.next();
@@ -4200,7 +4206,7 @@ fn completeComputedMemberExpression(self: *Self, object: Node.Index) Error!Node.
     defer self.context = old_ctx;
 
     const lbrace = try self.nextToken(); // eat "["
-    std.debug.assert(lbrace.tag == .@"[");
+    assert(lbrace.tag == .@"[");
 
     const property = try self.expression();
     const rbrace = try self.expect(.@"]");
@@ -4298,7 +4304,7 @@ fn primaryExpression(self: *Self) Error!Node.Index {
 /// Check whether a numeric literal is valid in strict mode.
 /// Decimals and legacy octal literals are not allowed (e.g: 01, 09, 023127, etc.).
 fn isValidStrictModeNumber(self: *const Self, token: *const Token) bool {
-    std.debug.assert(token.tag.isNumericLiteral() and token.tag != .legacy_octal_literal);
+    assert(token.tag.isNumericLiteral() and token.tag != .legacy_octal_literal);
     if (token.len == 1) return true; // Just a '0' is fine.
     // 0x, 0b, 0o are Ok. 09 is not.
     return !(self.source[token.start] == '0' and std.ascii.isDigit(self.source[token.start + 1]));
@@ -4374,7 +4380,7 @@ fn parseDecimal(str: []const u8) f64 {
 }
 
 fn parseOctal(str: []const u8) f64 {
-    std.debug.assert(str[0] == '0');
+    assert(str[0] == '0');
 
     const numeric = if (str[1] == 'O' or str[1] == 'o')
         str[2..]
@@ -4391,8 +4397,8 @@ fn parseOctal(str: []const u8) f64 {
 }
 
 fn parseBinary(str: []const u8) f64 {
-    std.debug.assert(str[0] == '0');
-    std.debug.assert(str[1] == 'b' or str[1] == 'B');
+    assert(str[0] == '0');
+    assert(str[1] == 'b' or str[1] == 'B');
 
     var val: i64 = 0;
     for (str[2..]) |ch| {
@@ -4403,8 +4409,8 @@ fn parseBinary(str: []const u8) f64 {
 }
 
 fn parseHex(str: []const u8) f64 {
-    std.debug.assert(str[0] == '0');
-    std.debug.assert(str[1] == 'x' or str[1] == 'X');
+    assert(str[0] == '0');
+    assert(str[1] == 'x' or str[1] == 'X');
 
     var val: i64 = 0;
     for (str[2..]) |ch| {
@@ -4463,7 +4469,7 @@ fn templateLiteral(self: *Self) Error!Node.Index {
     defer self.scratch.items.len = prev_scratch_len;
 
     var template_token = try self.next();
-    std.debug.assert(template_token.token.tag == .template_literal_part);
+    assert(template_token.token.tag == .template_literal_part);
 
     const start_pos = template_token.id;
     var end_pos = template_token.id;
@@ -4582,7 +4588,7 @@ fn asyncExpression(self: *Self, async_kw: *const TokenWithId) Error!Node.Index {
 
 fn callArgsOrAsyncArrowParams(self: *Self, _: ast.FunctionFlags) Error!Node.Index {
     const lparen = try self.next();
-    std.debug.assert(lparen.token.tag == .@"(");
+    assert(lparen.token.tag == .@"(");
 
     const scratch_start = self.scratch.items.len;
     defer self.scratch.items.len = scratch_start;
@@ -4718,7 +4724,7 @@ fn makeSuper(
     self: *Self,
     super_token: *const TokenWithId,
 ) Error!Node.Index {
-    std.debug.assert(super_token.token.tag == .kw_super);
+    assert(super_token.token.tag == .kw_super);
     return self.addNode(
         .{ .super = super_token.id },
         super_token.id,
@@ -4747,7 +4753,7 @@ fn ensureFatArrow(
 /// Assuming the parameter list has been consumed, parse the body of
 /// an arrow function and return the complete arrow function AST node id.
 fn completeArrowFunction(self: *Self, params: Node.Index) Error!Node.Index {
-    std.debug.assert(self.current.token.tag == .@"=>");
+    assert(self.current.token.tag == .@"=>");
 
     if (self.nodeTag(params) != .parameters) {
         try self.emitDiagnosticOnToken(self.current.token, "Unexpected '=>'", .{});
@@ -4816,7 +4822,7 @@ fn completeArrowFunction(self: *Self, params: Node.Index) Error!Node.Index {
 /// Parse a spread element when current_token is '...'
 fn spreadElement(self: *Self) Error!Node.Index {
     const dotdotdot = try self.next();
-    std.debug.assert(dotdotdot.token.tag == .@"...");
+    assert(dotdotdot.token.tag == .@"...");
     const rest_arg = try self.assignExpressionNoPattern();
     const end_pos = self.nodes.items(.end)[@intFromEnum(rest_arg)];
     return self.addNode(.{ .spread_element = rest_arg }, dotdotdot.id, end_pos);
@@ -4825,7 +4831,7 @@ fn spreadElement(self: *Self) Error!Node.Index {
 /// Parse a RestElement, assuming we're at the `...` token
 fn restElement(self: *Self) Error!Node.Index {
     const dotdotdot = try self.next();
-    std.debug.assert(dotdotdot.token.tag == .@"...");
+    assert(dotdotdot.token.tag == .@"...");
     const rest_arg = try self.lhsExpression();
 
     if (!self.current_destructure_kind.can_be_assigned_to) {
@@ -4847,7 +4853,7 @@ fn restElement(self: *Self) Error!Node.Index {
 /// https://tc39.es/ecma262/#prod-BindingRestElement
 fn bindingRestElement(self: *Self) Error!Node.Index {
     const dotdotdot = try self.next();
-    std.debug.assert(dotdotdot.token.tag == .@"...");
+    assert(dotdotdot.token.tag == .@"...");
     const rest_arg = blk: {
         if (self.isIdentifier(self.current.token.tag))
             break :blk try self.bindingIdentifier((try self.next()).id);
@@ -5164,7 +5170,7 @@ fn propertyDefinitionList(self: *Self) Error!?ast.SubRange {
 /// Parse an the property of an object literal or object pattern that starts with an identifier.
 fn identifierProperty(self: *Self) Error!Node.Index {
     const key_token = try self.next();
-    std.debug.assert(key_token.token.tag.isIdentifier() or
+    assert(key_token.token.tag.isIdentifier() or
         key_token.token.tag.isKeyword());
 
     const cur_token = self.current.token;
@@ -5651,7 +5657,7 @@ fn functionBody(self: *Self) Error!struct { bool, Node.Index } {
     }
 
     const rbrace = try self.next();
-    std.debug.assert(rbrace.token.tag == .@"}");
+    assert(rbrace.token.tag == .@"}");
     const end_pos = rbrace.id;
 
     const statements = self.scratch.items[prev_scratch_len..];
@@ -5676,7 +5682,7 @@ fn checkDirective(self: *const Self, stmt: Node.Index) DirectiveKind {
     const nodes = self.nodes.slice();
     const data: []ast.NodeData = nodes.items(.data);
 
-    if (std.meta.activeTag(data[@intFromEnum(stmt)]) != .expression_statement)
+    if (meta.activeTag(data[@intFromEnum(stmt)]) != .expression_statement)
         return .not_directive;
 
     const expr_id: usize = @intFromEnum(
@@ -5684,7 +5690,7 @@ fn checkDirective(self: *const Self, stmt: Node.Index) DirectiveKind {
     );
 
     const expr = data[expr_id];
-    if (std.meta.activeTag(expr) != .string_literal)
+    if (meta.activeTag(expr) != .string_literal)
         return .not_directive;
 
     const literal_token = self.getToken(expr.string_literal);
@@ -5814,7 +5820,7 @@ fn nodeStartCoord(self: *const Self, index: Node.Index) types.Coordinate {
 
 /// Return the tag that identifies the type of a node.
 fn nodeTag(self: *const Self, index: Node.Index) std.meta.Tag(NodeData) {
-    return std.meta.activeTag(self.nodes.items(.data)[@intFromEnum(index)]);
+    return meta.activeTag(self.nodes.items(.data)[@intFromEnum(index)]);
 }
 
 fn nodeData(self: *const Self, index: Node.Index) *const NodeData {
@@ -5944,7 +5950,7 @@ test parse {
 
         var d_iter = dir.iterate();
         while (try d_iter.next()) |test_case_entry| {
-            std.debug.assert(test_case_entry.kind == .file);
+            assert(test_case_entry.kind == .file);
             if (!std.mem.endsWith(u8, test_case_entry.name, ".js")) continue;
             runTestOnFile(dir, test_case_entry.name) catch |err| {
                 std.log.err("Error comparing ASTs for file: {s}\n", .{test_case_entry.name});
