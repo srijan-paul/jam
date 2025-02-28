@@ -510,6 +510,24 @@ pub const ImportSpecifier = struct {
     local: Node.Index,
 };
 
+/// `export * from "module"`
+pub const ExportAllDeclaration = struct {
+    source: Node.Index,
+    // TODO: this is always a string literal
+    name: ?Node.Index,
+};
+
+/// `export { x, y, z } from "module"`
+pub const ExportFromDeclaration = struct {
+    source: Node.Index,
+    specifiers: SubRange,
+};
+
+/// `export { x, y, z }`
+pub const ExportListDeclaration = struct {
+    specifiers: SubRange,
+};
+
 /// An exported identifier.
 /// `export { foo as bar }` -> `foo as bar` is the specifier
 pub const ExportSpecifier = struct {
@@ -652,6 +670,7 @@ pub const NodeData = union(enum(u8)) {
     do_while_statement: WhileStatement,
     while_statement: WhileStatement,
     with_statement: WithStatement,
+    // TODO: store the throw keyword in a struct
     throw_statement: Node.Index,
 
     for_statement: ForStatement,
@@ -680,16 +699,10 @@ pub const NodeData = union(enum(u8)) {
     export_declaration: ExportedDeclaration,
     export_specifier: ExportSpecifier,
     /// Represents a node like `export { x, y, z }`
-    export_list_declaration: struct { specifiers: SubRange },
+    export_list_declaration: ExportListDeclaration,
     /// `export { <specifiers> } from "module"`
-    export_from_declaration: struct {
-        source: Node.Index,
-        specifiers: SubRange,
-    },
-    export_all_declaration: struct {
-        source: Node.Index,
-        name: ?Node.Index,
-    },
+    export_from_declaration: ExportFromDeclaration,
+    export_all_declaration: ExportAllDeclaration,
 
     /// Represents `null` AST node.
     /// This is a sentinel, and always present at index 0 of the `nodes` array.

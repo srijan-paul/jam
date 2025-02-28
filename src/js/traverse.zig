@@ -339,7 +339,7 @@ test Traverser {
     var traverser = Traverser(TestCtrl){ .t = p.tree, .ctrl = &ctrl };
     try traverser.traverse();
 
-    try t.expectEqualSlices(NodeKind, &.{
+    const expected = [_]NodeKind{
         .program,
         .expression_statement,
         .assignment_expr,
@@ -347,5 +347,18 @@ test Traverser {
         .binary_expr,
         .number_literal,
         .number_literal,
-    }, ctrl.visited.items);
+    };
+    try t.expectEqualSlices(NodeKind, &expected, ctrl.visited.items);
+
+    const Iterator = @import("./iterator.zig");
+    var iter = try Iterator.init(t.allocator, p.tree, p.tree.root);
+    defer iter.deinit();
+
+    const meta = std.meta;
+
+    var i: usize = 0;
+    while (iter.next()) |item| : (i += 1) {
+        try t.expectEqual(expected[i], meta.activeTag(item.node_pl.*));
+        try iter.enqueueChildren(item.node_id);
+    }
 }
