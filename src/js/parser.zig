@@ -5,7 +5,6 @@ const std = @import("std");
 
 const Tokenizer = @import("./tokenize.zig");
 const ast = @import("./ast.zig");
-const ScopeManager = @import("./scope.zig");
 
 const Token = @import("./token.zig").Token;
 const TokenMask = @import("./token.zig").Mask;
