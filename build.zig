@@ -176,6 +176,25 @@ pub fn build(b: *std.Build) !void {
         }
     }
 
+    // Command to generate traversal code from the js AST definition
+    {
+        const ast_gen = b.addExecutable(.{
+            .name = "astgen",
+            .root_source_file = b.path("tools/gen/main.zig"),
+            .target = target,
+            .optimize = optimize,
+        });
+
+        const ast_gen_cmd = b.addRunArtifact(ast_gen);
+        const ast_gen_step = b.step("astgen", "Generate traversal code from the js AST definition");
+        ast_gen_step.dependOn(&ast_gen_cmd.step);
+
+        // forward all CLI arguments from build.zig to the test runner.
+        if (b.args) |args| {
+            ast_gen_cmd.addArgs(args);
+        }
+    }
+
     const run_cmd = b.addRunArtifact(exe);
     run_cmd.step.dependOn(b.getInstallStep());
 
@@ -205,15 +224,6 @@ pub fn build(b: *std.Build) !void {
     js_unit_tests.root_module.addImport("util", util_module);
     js_unit_tests.root_module.addImport("syntax", jam_syntax_module);
 
-    const scope_unit_tests = b.addTest(.{
-        .root_source_file = b.path("./src/js/scope.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-
-    scope_unit_tests.root_module.addImport("util", util_module);
-    scope_unit_tests.root_module.addImport("syntax", jam_syntax_module);
-
     const util_unit_tests = b.addTest(.{
         .root_source_file = b.path("src/util/root.zig"),
         .target = target,
@@ -223,13 +233,11 @@ pub fn build(b: *std.Build) !void {
     const run_lib_unit_tests = b.addRunArtifact(lib_unit_tests);
     const run_js_unit_tests = b.addRunArtifact(js_unit_tests);
     const run_util_unit_tests = b.addRunArtifact(util_unit_tests);
-    const run_scope_unit_tests = b.addRunArtifact(scope_unit_tests);
 
     const test_step = b.step("test", "Run unit tests");
     test_step.dependOn(&run_lib_unit_tests.step);
     test_step.dependOn(&run_js_unit_tests.step);
     test_step.dependOn(&run_util_unit_tests.step);
-    test_step.dependOn(&run_scope_unit_tests.step);
 
     exe.root_module.addImport("fmt", jam_fmt_module);
     exe.root_module.addImport("js", jam_js_module);

@@ -16,3 +16,6 @@ echo "Comparing results.json files"
 zig build test-262 -- --compare ./results-old.json
 rm ./results-old.json
 
+# Format all .zig files
+zig fmt --check ./**/*.zig
+
