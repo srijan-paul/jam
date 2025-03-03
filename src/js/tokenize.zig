@@ -841,62 +841,54 @@ fn matchIdentifierStart(self: *Self) Error!IdCharKind {
     return .invalid;
 }
 
-/// Check if the code point(s) form a valid identifier part.
-/// If so, consume the code point and return whether it was an ASCII char.
-/// Otherwise, return "invalid".
+/// If the code point form a valid identifier part, consume
+/// it and advance the `self.index` pointer.
+///
 /// https://tc39.es/ecma262/#prod-IdentifierPartChar
-fn matchIdentifierContt(self: *Self) Error!IdCharKind {
+///
+/// Returns `true` if a code point was consumed.
+fn matchIdentifierContt(self: *Self) Error!bool {
     const byte = self.source[self.index];
     if (std.ascii.isAscii(byte)) {
         // A-Za-z0-9$_
         if (canCodepointContinueId(byte)) {
             self.index += 1;
-            return .ascii;
+            return true;
         }
 
         // unicode escape sequence.
-        if (byte != '\\') return .invalid;
+        if (byte != '\\') return false;
         const s = self.source[self.index..];
         const parsed = utf8.parseUnicodeEscape(s) orelse
-            return .invalid;
+            return Error.MalformedIdentifier;
 
         if (canCodepointContinueId(parsed.codepoint)) {
             self.index += parsed.len;
-            return .non_ascii;
+            return true;
         }
-        return .invalid;
-    }
 
-    // UTF-8 code point
-    const cp = utf8.codePointAt(self.source, self.index);
-    if (canCodepointContinueId(cp.value)) {
-        self.index += cp.len;
-        return .non_ascii;
+        return false;
+    } else {
+        const cp = utf8.codePointAt(self.source, self.index);
+        if (canCodepointContinueId(cp.value)) {
+            self.index += cp.len;
+            return true;
+        }
+
+        return false;
     }
-    return .invalid;
 }
 
 fn identifier(self: *Self) Error!Token {
     const start = self.index;
     const str = self.source[start..];
 
-    const start_char = try matchIdentifierStart(self);
-    if (start_char == .invalid) return Error.MalformedIdentifier;
-
-    var token_tag: Token.Tag = if (start_char == .ascii)
-        .identifier
-    else
-        .non_ascii_identifier;
-
-    while (!self.eof()) {
-        const part_char = try self.matchIdentifierContt();
-        switch (part_char) {
-            .ascii => {},
-            .non_ascii => token_tag = Token.Tag.non_ascii_identifier,
-            .invalid => break,
-        }
+    const start_char_kind = try matchIdentifierStart(self);
+    if (start_char_kind == .invalid) {
+        return Error.MalformedIdentifier;
     }
 
+    const token_tag = try self.matchIdentifierTail(start_char_kind);
     const len = self.index - start;
 
     // TODO: ensure its not an escaped keyword.
@@ -922,6 +914,55 @@ fn identifier(self: *Self) Error!Token {
         .tag = token_tag,
         .line = self.line,
     };
+}
+
+/// After the first character of an identifier has been consumed, this function
+/// eats the rest of the identifier lexeme.
+///
+/// [first_char_kind]: Kind of the first character (.ascii or .non_ascii).
+///
+/// Returns the token kind of the identifier.
+fn matchIdentifierTail(self: *Self, first_char_kind: IdCharKind) Error!Token.Tag {
+    var token_kind = if (first_char_kind == .ascii)
+        Token.Tag.identifier
+    else
+        Token.Tag.non_ascii_identifier;
+
+    // First, eat all the non-escaped ascii chars in the identifier name
+    // in one loop. This is the "hot" path, as most identifiers will be normal ascii.
+    if (first_char_kind == .ascii) {
+        while (!self.eof() and
+            isAsciiIdentifierContt(self.source[self.index])) : (self.index += 1)
+        {}
+    }
+
+    // Then, eat the rest of the identifier name which may contain
+    // non-ascii characters and escape sequences.
+    if (!self.eof() and try self.matchIdentifierContt()) {
+        token_kind = .non_ascii_identifier;
+        while (!self.eof() and try self.matchIdentifierContt()) {}
+    }
+
+    return token_kind;
+}
+
+/// Assuming the current character is a '\',
+/// consume an escaped character inside an identifier.
+fn matchIdentifierEscape(self: *Self) Error!void {
+    const s = self.source[self.index..];
+    const parsed = utf8.parseUnicodeEscape(s) orelse
+        return Error.MalformedIdentifier;
+
+    if (canCodepointContinueId(parsed.codepoint)) {
+        self.index += parsed.len;
+    } else {
+        return Error.MalformedIdentifier;
+    }
+}
+
+/// Match a sequence of ASCII characters that are considered whitespace.
+fn isAsciiIdentifierContt(ch: u8) bool {
+    return std.ascii.isAlphanumeric(ch) or ch == '_' or ch == '$';
 }
 
 /// https://262.ecma-international.org/15.0/index.html#prod-PrivateIdentifier

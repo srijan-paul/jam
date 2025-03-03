@@ -65,6 +65,7 @@ pub const CodePoint = struct { len: u3, value: u21 };
 
 /// Returns the UTF-8 code point in the string starting at the given index,
 /// along with its length in bytes.
+/// TODO: get rid of the `unreachable`s and add an error annotation to the return type.
 pub fn codePointAt(str: []const u8, i: usize) CodePoint {
     const len = std.unicode.utf8ByteSequenceLength(str[i]) catch unreachable;
     const codepoint = switch (len) {
