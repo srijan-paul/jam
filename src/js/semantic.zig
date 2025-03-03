@@ -365,11 +365,11 @@ pub fn onEnter(self: *Self, node_id: ast.Node.Index, node: ast.NodeData, parent_
             const func_id = parent_id.?; // SAFETY: parent is sure to exist here
             const func_has_use_strict =
                 switch (func_id.get(self.tree).*) {
-                .function_declaration,
-                .function_expr,
-                => |func| func.hasStrictDirective(self.tree),
-                else => unreachable,
-            };
+                    .function_declaration,
+                    .function_expr,
+                    => |func| func.hasStrictDirective(self.tree),
+                    else => unreachable,
+                };
 
             try self.createScope(.function, func_id, func_has_use_strict);
 

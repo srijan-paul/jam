@@ -355,7 +355,7 @@ fn generateTraversalSwitch(
         \\
         \\/// Get the next node from the node iterator.
         \\pub fn next(self: *Self) ?Item {
-        \\    return self.stack.popOrNull();
+        \\    return self.stack.pop();
         \\}
         \\
         \\pub fn pushNode(self: *Self, node_id: Node.Index, parent_id: ?Node.Index,) Allocator.Error!void {
