@@ -17,279 +17,28 @@ const TypesInAst = struct {
     struct_decls: std.StringHashMap(Ast.Node.Index),
 };
 
-fn collectTypeNodesFromAst(allocator: Allocator, ast: zig.Ast) !TypesInAst {
-    const root_decls = ast.rootDecls();
-    var node_data_tagged_union: ?Ast.full.ContainerDecl = null;
-    var struct_decls = std.StringHashMap(Ast.Node.Index).init(allocator);
+pub fn main() !void {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    const gpa_allocator = gpa.allocator();
+    defer assert(gpa.deinit() == .ok);
 
-    for (root_decls) |decl| {
-        const node = ast.nodes.get(decl);
-        if (node.tag != .simple_var_decl) continue;
-        // print("simple var decl: {s}\n", .{ast.getNodeSource(decl)});
+    var arena = std.heap.ArenaAllocator.init(gpa_allocator);
+    defer arena.deinit();
 
-        const var_decl = ast.simpleVarDecl(decl);
-        if (var_decl.visib_token == null) continue;
-        const name_token_index = var_decl.ast.mut_token + 1;
-        const name_token = ast.tokens.get(name_token_index);
-        assert(name_token.tag == .identifier);
+    const allocator = arena.allocator();
+    const ast = try parseAstZigSource(allocator);
+    const ast_types = try collectTypeNodesFromAst(allocator, ast);
 
-        if (var_decl.ast.init_node == 0) continue;
+    const out_file_path = try std.fs.path.join(allocator, &.{ "src", "js", "iterator.zig" });
+    const cwd = std.fs.cwd();
 
-        const name = ast.tokenSlice(name_token_index);
-        if (std.mem.eql(u8, name, "Node")) continue;
-
-        const init = ast.nodes.get(var_decl.ast.init_node);
-        if (init.tag == .tagged_union_enum_tag) {
-            assert(std.mem.eql(u8, name, "NodeData"));
-            node_data_tagged_union = ast.taggedUnionEnumTag(var_decl.ast.init_node);
-            continue;
-        }
-
-        switch (init.tag) {
-            .container_decl,
-            .container_decl_two,
-            .container_decl_two_trailing,
-            .container_decl_trailing,
-            => {
-                try struct_decls.put(name, var_decl.ast.init_node);
-            },
-            else => {},
-        }
-    }
-
-    return TypesInAst{
-        .ast = ast,
-        .node_data_tagged_union = node_data_tagged_union orelse
-            panic("NodeData not found", .{}),
-        .struct_decls = struct_decls,
-    };
+    const out_file =
+        try cwd.createFile(out_file_path, .{ .truncate = true });
+    try generateNodeIterator(allocator, &ast_types, out_file);
 }
 
-fn generateStmtForFieldAccessAnn(
-    allocator: Allocator,
-    types: *const TypesInAst,
-    w: std.fs.File,
-    field_name: []const u8,
-    ty_ann_node: Ast.Node,
-    maybe_param_name: ?[]const u8,
-) !void {
-    const ast = types.ast;
-    assert(ty_ann_node.tag == .field_access);
-    const field_access_lhs = ast.nodes.get(ty_ann_node.data.lhs);
-    const property_name = ast.tokenSlice(ty_ann_node.data.rhs);
-    assert(std.mem.eql(u8, property_name, "Index"));
-    assert(field_access_lhs.tag == .identifier);
-    const type_name = ast.tokenSlice(field_access_lhs.main_token);
-
-    // a `Node.Index` field.
-    if (std.mem.eql(u8, type_name, "Node")) {
-        const push_node_str = if (maybe_param_name) |param_name|
-            try std.fmt.allocPrint(
-                allocator,
-                "    try self.pushNode({s}, node_id);\n",
-                .{param_name},
-            )
-        else
-            try std.fmt.allocPrint(
-                allocator,
-                "    try self.pushNode(data.{s}, node_id);\n",
-                .{field_name},
-            );
-
-        _ = try w.write(push_node_str);
-    }
-}
-
-fn isPayloadTypeLeaf(
-    types: *const TypesInAst,
-    type_node: Ast.full.ContainerDecl,
-) bool {
-    const ast = types.ast;
-    for (type_node.ast.members) |member_id| {
-        const member = ast.nodes.get(member_id);
-        if (member.tag != .container_field_init) continue;
-        const type_ann_node = ast.nodes.get(member.data.lhs);
-        if (type_ann_node.tag == .identifier) {
-            if (std.mem.eql(u8, ast.tokenSlice(type_ann_node.main_token), "SubRange")) {
-                return false;
-            }
-            const type_ann_name = ast.tokenSlice(type_ann_node.main_token);
-            if (types.struct_decls.get(type_ann_name)) |decl_id| {
-                var buffer: [2]Ast.Node.Index = undefined;
-                const decl = ast.fullContainerDecl(&buffer, decl_id).?;
-                const init = ast.tokens.get(decl.ast.main_token);
-                if (init.tag == .keyword_enum or !isPayloadTypeLeaf(types, decl))
-                    return false;
-            }
-        } else if (type_ann_node.tag == .optional_type) {
-            const actual_type = ast.nodes.get(type_ann_node.data.lhs);
-            if (actual_type.tag == .identifier) {
-                const type_name = ast.tokenSlice(actual_type.main_token);
-                if (std.mem.eql(u8, type_name, "SubRange")) {
-                    return false;
-                }
-                if (types.struct_decls.get(type_name)) |decl_id| {
-                    var buffer: [2]Ast.Node.Index = undefined;
-                    const decl = ast.fullContainerDecl(&buffer, decl_id).?;
-                    const init = ast.tokens.get(decl.ast.main_token);
-                    if (init.tag == .keyword_enum or !isPayloadTypeLeaf(types, decl)) {
-                        return false;
-                    }
-                }
-            }
-        } else if (type_ann_node.tag == .field_access) {
-            const field_lhs = ast.nodes.get(type_ann_node.data.lhs);
-            const property_name = ast.tokenSlice(type_ann_node.data.rhs);
-            assert(std.mem.eql(u8, property_name, "Index"));
-            assert(field_lhs.tag == .identifier);
-            const type_name = ast.tokenSlice(field_lhs.main_token);
-            if (std.mem.eql(u8, type_name, "Node")) return false;
-        } else {
-            print("type_ann_node.tag: {s}\n", .{@tagName(type_ann_node.tag)});
-            return false;
-        }
-    }
-
-    return true;
-}
-
-fn generateStmtForAnn(
-    allocator: Allocator,
-    w: std.fs.File,
-    types: *const TypesInAst,
-    type_ann_node: Ast.Node,
-    field_name: []const u8,
-    maybe_param_name: ?[]const u8,
-) !void {
-    const ast = types.ast;
-
-    if (type_ann_node.tag == .field_access) {
-        try generateStmtForFieldAccessAnn(
-            allocator,
-            types,
-            w,
-            field_name,
-            type_ann_node,
-            maybe_param_name,
-        );
-    } else if (type_ann_node.tag == .optional_type) {
-        const s = try std.fmt.allocPrint(
-            allocator,
-            "    if (data.{s}) |_pl|\n    ",
-            .{field_name},
-        );
-        _ = try w.write(s);
-        const actual_type = ast.nodes.get(type_ann_node.data.lhs);
-        try generateStmtForAnn(
-            allocator,
-            w,
-            types,
-            actual_type,
-            field_name,
-            "_pl",
-        );
-    } else if (type_ann_node.tag == .identifier) {
-        const type_name = ast.tokenSlice(type_ann_node.main_token);
-        if (std.mem.eql(u8, type_name, "SubRange")) {
-            const s = try std.fmt.allocPrint(
-                allocator,
-                "    try self.visitSubRange(&data.{s}, node_id);\n",
-                .{field_name},
-            );
-            _ = try w.write(s);
-        } else {
-            if (std.mem.indexOf(u8, type_name, "Flags") != null)
-                return;
-
-            if (std.mem.eql(u8, type_name, "bool") or
-                std.mem.eql(u8, type_name, "f64"))
-            {
-                return;
-            }
-
-            if (types.struct_decls.get(type_name)) |decl_id| {
-                var buffer: [2]Ast.Node.Index = undefined;
-                const container_decl = ast.fullContainerDecl(&buffer, decl_id).?;
-                const container_type = ast.tokens.get(container_decl.ast.main_token);
-                if (container_type.tag == .keyword_enum) {
-                    return;
-                }
-                print("type_name: {s}\n", .{type_name});
-            }
-
-            panic(
-                "This type annotation '{s}' on the field is not supported by the iterator generation script\n",
-                .{type_name},
-            );
-        }
-    }
-}
-
-fn generateVisitFn(
-    allocator: Allocator,
-    w: std.fs.File,
-    types: *const TypesInAst,
-    ty_name: []const u8,
-    init_node_id: Ast.Node.Index,
-) !void {
-    const ast = types.ast;
-    if (std.mem.eql(u8, ty_name, "NodeData") or
-        std.mem.eql(u8, ty_name, "Tree") or
-        std.mem.eql(u8, ty_name, "ExtraData") or
-        std.mem.eql(u8, ty_name, "SubRange") or
-        // Any `...Flags`
-        std.mem.indexOf(u8, ty_name, "Flags") != null)
-    {
-        return;
-    }
-
-    var buffer: [2]Ast.Node.Index = undefined;
-    const init_node = ast.fullContainerDecl(&buffer, init_node_id).?;
-    if (isPayloadTypeLeaf(types, init_node)) return;
-
-    const container_type = ast.tokens.get(init_node.ast.main_token);
-    if (container_type.tag != .keyword_struct) {
-        return;
-    }
-
-    const fn_header = try std.fmt.allocPrint(
-        allocator,
-        "\nfn visit{s}(self: *Self, data: *const ast.{s}, node_id: Node.Index,) Allocator.Error!void {{\n",
-        .{ ty_name, ty_name },
-    );
-    _ = try w.write(fn_header);
-
-    const members = try allocator.dupe(Ast.Node.Index, init_node.ast.members);
-    std.mem.reverse(Ast.Node.Index, members); // for correct traversal order.
-    for (members) |member_id| {
-        const member_node = ast.nodes.get(member_id);
-        if (member_node.tag != .container_field_init) {
-            continue;
-        }
-
-        const field_name_token = member_node.main_token;
-        const field_name = ast.tokenSlice(field_name_token);
-        if (member_node.data.lhs == 0) continue;
-
-        const type_ann_node = ast.nodes.get(member_node.data.lhs);
-        try generateStmtForAnn(
-            allocator,
-            w,
-            types,
-            type_ann_node,
-            field_name,
-            null,
-        );
-    }
-
-    _ = try w.write("\n}\n");
-}
-
-fn generateNodeIterator(
-    allocator: Allocator,
-    types: *const TypesInAst,
-    out_file: std.fs.File,
-) !void {
+/// Writes zig code the represents the NodeIterator to the given file handle.
+fn generateNodeIterator(allocator: Allocator, types: *const TypesInAst, out_file: std.fs.File) !void {
     const iterator_file_start =
         \\// !THIS IS A GENERATED FILE!
         \\// To regenerate, run `zig build astgen`.
@@ -344,7 +93,7 @@ fn generateNodeIterator(
         \\    self.stack.deinit(self.allocator);
         \\}
         \\
-        \\pub fn childIterator(allocator: Allocator, tree: *const Tree, start_node_id: Node.Index,) Allocator.Error!Self {
+        \\pub fn childrenOf(allocator: Allocator, tree: *const Tree, start_node_id: Node.Index,) Allocator.Error!Self {
         \\    var iter = Self.init(allocator, tree, start_node_id);
         \\    try iter.enqueueChildren(start_node_id);
         \\    return iter;
@@ -414,6 +163,8 @@ fn generateNodeIterator(
 
 }
 
+/// Generate the part following the `.foo` in the switch statement generated by
+/// `generateNodeIterator`.
 fn generateCaseArm(
     allocator: Allocator,
     types: *const TypesInAst,
@@ -521,22 +272,314 @@ fn parseAstZigSource(allocator: Allocator) !zig.Ast {
     return try zig.Ast.parse(allocator, ast_source_z, .zig);
 }
 
-pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    const gpa_allocator = gpa.allocator();
-    defer assert(gpa.deinit() == .ok);
+/// Gather all 'payload' types from the `ast.zig` file.
+/// Maps a type name in the `ast.zig` file, like `"BinaryExpression"`, to the (zig) AST Node that declares it.
+fn collectTypeNodesFromAst(allocator: Allocator, ast: zig.Ast) !TypesInAst {
+    const root_decls = ast.rootDecls();
+    var node_data_tagged_union: ?Ast.full.ContainerDecl = null;
+    var struct_decls = std.StringHashMap(Ast.Node.Index).init(allocator);
 
-    var arena = std.heap.ArenaAllocator.init(gpa_allocator);
-    defer arena.deinit();
+    for (root_decls) |decl| {
+        const node = ast.nodes.get(decl);
+        if (node.tag != .simple_var_decl) continue;
+        // print("simple var decl: {s}\n", .{ast.getNodeSource(decl)});
 
-    const allocator = arena.allocator();
-    const ast = try parseAstZigSource(allocator);
-    const ast_types = try collectTypeNodesFromAst(allocator, ast);
+        const var_decl = ast.simpleVarDecl(decl);
+        if (var_decl.visib_token == null) continue;
+        const name_token_index = var_decl.ast.mut_token + 1;
+        const name_token = ast.tokens.get(name_token_index);
+        assert(name_token.tag == .identifier);
 
-    const out_file_path = try std.fs.path.join(allocator, &.{ "src", "js", "iterator.zig" });
-    const cwd = std.fs.cwd();
+        if (var_decl.ast.init_node == 0) continue;
 
-    const out_file =
-        try cwd.createFile(out_file_path, .{ .truncate = true });
-    try generateNodeIterator(allocator, &ast_types, out_file);
+        const name = ast.tokenSlice(name_token_index);
+        if (std.mem.eql(u8, name, "Node")) continue;
+
+        const init = ast.nodes.get(var_decl.ast.init_node);
+        if (init.tag == .tagged_union_enum_tag) {
+            assert(std.mem.eql(u8, name, "NodeData"));
+            node_data_tagged_union = ast.taggedUnionEnumTag(var_decl.ast.init_node);
+            continue;
+        }
+
+        switch (init.tag) {
+            .container_decl,
+            .container_decl_two,
+            .container_decl_two_trailing,
+            .container_decl_trailing,
+            => {
+                try struct_decls.put(name, var_decl.ast.init_node);
+            },
+            else => {},
+        }
+    }
+
+    return TypesInAst{
+        .ast = ast,
+        .node_data_tagged_union = node_data_tagged_union orelse
+            panic("NodeData not found", .{}),
+        .struct_decls = struct_decls,
+    };
+}
+
+/// Generate a `self.pushNode` statement that places the child field of a payload
+/// onto the stack, so its explored in subsequent calls to `.next()`.
+/// This assumes that the field has a type annotation that's a "field_access", e.g: `Node.Index`
+/// or `Token.Index`.
+///
+/// For the 'left' field ast.zig's `BinaryExpression` type,
+/// this would produce: `self.pushNode(pl.left, node_id)`.
+///
+/// [w]: The file handle which will be written to.
+/// [field_name]: The name of the field on the payload type.
+/// [ty_ann_node]: The type annotation of the field (e.g: `Node.Index` in `left: Node.Index`)
+/// [maybe_param_name]: If this is not null, then instead of `self.pushNode(pl.<field_name>, node_id)`,
+/// `self.pushNode(<maybe_param_name>, node_id)` will be generated instead.
+fn generateStmtForFieldAccessAnn(
+    allocator: Allocator,
+    types: *const TypesInAst,
+    w: std.fs.File,
+    field_name: []const u8,
+    ty_ann_node: Ast.Node,
+    maybe_param_name: ?[]const u8,
+) !void {
+    const ast = types.ast;
+    assert(ty_ann_node.tag == .field_access);
+    const field_access_lhs = ast.nodes.get(ty_ann_node.data.lhs);
+    const property_name = ast.tokenSlice(ty_ann_node.data.rhs);
+    assert(std.mem.eql(u8, property_name, "Index"));
+    assert(field_access_lhs.tag == .identifier);
+    const type_name = ast.tokenSlice(field_access_lhs.main_token);
+
+    // a `Node.Index` field.
+    if (std.mem.eql(u8, type_name, "Node")) {
+        const push_node_str = if (maybe_param_name) |param_name|
+            try std.fmt.allocPrint(
+                allocator,
+                "    try self.pushNode({s}, node_id);\n",
+                .{param_name},
+            )
+        else
+            try std.fmt.allocPrint(
+                allocator,
+                "    try self.pushNode(data.{s}, node_id);\n",
+                .{field_name},
+            );
+
+        _ = try w.write(push_node_str);
+    }
+}
+
+/// Generate a `self.pushNode` statement that places the child field of a payload
+/// onto the stack, so its explored in subsequent calls to `Iterator.next()`.
+///
+/// [w]: The file handle to which we should write.
+/// [type_ann_node]: The type annotation of the payload type's field (e.g: `Node.Index` in `left: Node.Index`)
+/// [field_name]: The name of the field (e.g: 'left' in `left: Node.Index`)
+/// [maybe_param_name]: If this is not null, then instead of `self.pushNode(pl.<field_name>, node_id)`,
+/// `self.pushNode(<maybe_param_name>, node_id)` will be generated instead.
+fn generateStmtForAnn(
+    allocator: Allocator,
+    w: std.fs.File,
+    types: *const TypesInAst,
+    type_ann_node: Ast.Node,
+    field_name: []const u8,
+    maybe_param_name: ?[]const u8,
+) !void {
+    const ast = types.ast;
+
+    if (type_ann_node.tag == .field_access) {
+        try generateStmtForFieldAccessAnn(
+            allocator,
+            types,
+            w,
+            field_name,
+            type_ann_node,
+            maybe_param_name,
+        );
+    } else if (type_ann_node.tag == .optional_type) {
+        const s = try std.fmt.allocPrint(
+            allocator,
+            "    if (data.{s}) |_pl|\n    ",
+            .{field_name},
+        );
+        _ = try w.write(s);
+        const actual_type = ast.nodes.get(type_ann_node.data.lhs);
+        try generateStmtForAnn(
+            allocator,
+            w,
+            types,
+            actual_type,
+            field_name,
+            "_pl",
+        );
+    } else if (type_ann_node.tag == .identifier) {
+        const type_name = ast.tokenSlice(type_ann_node.main_token);
+        if (std.mem.eql(u8, type_name, "SubRange")) {
+            const s = try std.fmt.allocPrint(
+                allocator,
+                "    try self.visitSubRange(&data.{s}, node_id);\n",
+                .{field_name},
+            );
+            _ = try w.write(s);
+        } else {
+            if (std.mem.indexOf(u8, type_name, "Flags") != null)
+                return;
+
+            if (std.mem.eql(u8, type_name, "bool") or
+                std.mem.eql(u8, type_name, "f64"))
+            {
+                return;
+            }
+
+            if (types.struct_decls.get(type_name)) |decl_id| {
+                var buffer: [2]Ast.Node.Index = undefined;
+                const container_decl = ast.fullContainerDecl(&buffer, decl_id).?;
+                const container_type = ast.tokens.get(container_decl.ast.main_token);
+                if (container_type.tag == .keyword_enum) {
+                    return;
+                }
+                print("type_name: {s}\n", .{type_name});
+            }
+
+            panic(
+                "This type annotation '{s}' on the field is not supported by the iterator generation script\n",
+                .{type_name},
+            );
+        }
+    }
+}
+
+/// For a payload of type `Foo`, this generates a function `visitFoo(self: *Self, pl: *const Foo, id: Node.Index)`.
+/// This function will go through all field of the struct `Foo`, and push every child child node onto the iterator's stack.
+/// If `Foo` is a leaf node in the AST, no code is generated.
+///
+/// [w]: The file handle to which this writes.
+/// [ty_name]: Name of the payload type.
+/// [init_node_id]: The `std.zig.Ast.Node.Index` that points to the struct initializing [ty_name].
+fn generateVisitFn(
+    allocator: Allocator,
+    w: std.fs.File,
+    types: *const TypesInAst,
+    ty_name: []const u8,
+    init_node_id: Ast.Node.Index,
+) !void {
+    const ast = types.ast;
+    if (std.mem.eql(u8, ty_name, "NodeData") or
+        std.mem.eql(u8, ty_name, "Tree") or
+        std.mem.eql(u8, ty_name, "ExtraData") or
+        std.mem.eql(u8, ty_name, "SubRange") or
+        // Any `...Flags`
+        std.mem.indexOf(u8, ty_name, "Flags") != null)
+    {
+        return;
+    }
+
+    var buffer: [2]Ast.Node.Index = undefined;
+    const init_node = ast.fullContainerDecl(&buffer, init_node_id).?;
+    if (isPayloadTypeLeaf(types, init_node)) return;
+
+    const container_type = ast.tokens.get(init_node.ast.main_token);
+    if (container_type.tag != .keyword_struct) {
+        return;
+    }
+
+    const fn_header = try std.fmt.allocPrint(
+        allocator,
+        "\nfn visit{s}(self: *Self, data: *const ast.{s}, node_id: Node.Index,) Allocator.Error!void {{\n",
+        .{ ty_name, ty_name },
+    );
+    _ = try w.write(fn_header);
+
+    const members = try allocator.dupe(Ast.Node.Index, init_node.ast.members);
+    std.mem.reverse(Ast.Node.Index, members); // for correct traversal order.
+    for (members) |member_id| {
+        const member_node = ast.nodes.get(member_id);
+        if (member_node.tag != .container_field_init) {
+            continue;
+        }
+
+        const field_name_token = member_node.main_token;
+        const field_name = ast.tokenSlice(field_name_token);
+        if (member_node.data.lhs == 0) continue;
+
+        const type_ann_node = ast.nodes.get(member_node.data.lhs);
+        try generateStmtForAnn(
+            allocator,
+            w,
+            types,
+            type_ann_node,
+            field_name,
+            null,
+        );
+    }
+
+    _ = try w.write("\n}\n");
+}
+
+/// Whether a node payload has any child nodes, or if it's a leaf node.
+/// ```zig
+/// // isPayloadTypeLeaf --> false
+/// const BinaryExpression = struct {
+///     left: Node.Index,
+///     operator: Token.Index,
+///     right: Node.Index
+/// };
+///
+/// // isPayloadTypeLeaf --> true
+/// const Number = struct {
+///     value: ExtraData.Index,
+/// };
+/// ```
+fn isPayloadTypeLeaf(
+    types: *const TypesInAst,
+    type_node: Ast.full.ContainerDecl,
+) bool {
+    const ast = types.ast;
+    for (type_node.ast.members) |member_id| {
+        const member = ast.nodes.get(member_id);
+        if (member.tag != .container_field_init) continue;
+        const type_ann_node = ast.nodes.get(member.data.lhs);
+        if (type_ann_node.tag == .identifier) {
+            if (std.mem.eql(u8, ast.tokenSlice(type_ann_node.main_token), "SubRange")) {
+                return false;
+            }
+            const type_ann_name = ast.tokenSlice(type_ann_node.main_token);
+            if (types.struct_decls.get(type_ann_name)) |decl_id| {
+                var buffer: [2]Ast.Node.Index = undefined;
+                const decl = ast.fullContainerDecl(&buffer, decl_id).?;
+                const init = ast.tokens.get(decl.ast.main_token);
+                if (init.tag == .keyword_enum or !isPayloadTypeLeaf(types, decl))
+                    return false;
+            }
+        } else if (type_ann_node.tag == .optional_type) {
+            const actual_type = ast.nodes.get(type_ann_node.data.lhs);
+            if (actual_type.tag == .identifier) {
+                const type_name = ast.tokenSlice(actual_type.main_token);
+                if (std.mem.eql(u8, type_name, "SubRange")) {
+                    return false;
+                }
+                if (types.struct_decls.get(type_name)) |decl_id| {
+                    var buffer: [2]Ast.Node.Index = undefined;
+                    const decl = ast.fullContainerDecl(&buffer, decl_id).?;
+                    const init = ast.tokens.get(decl.ast.main_token);
+                    if (init.tag == .keyword_enum or !isPayloadTypeLeaf(types, decl)) {
+                        return false;
+                    }
+                }
+            }
+        } else if (type_ann_node.tag == .field_access) {
+            const field_lhs = ast.nodes.get(type_ann_node.data.lhs);
+            const property_name = ast.tokenSlice(type_ann_node.data.rhs);
+            assert(std.mem.eql(u8, property_name, "Index"));
+            assert(field_lhs.tag == .identifier);
+            const type_name = ast.tokenSlice(field_lhs.main_token);
+            if (std.mem.eql(u8, type_name, "Node")) return false;
+        } else {
+            print("type_ann_node.tag: {s}\n", .{@tagName(type_ann_node.tag)});
+            return false;
+        }
+    }
+
+    return true;
 }

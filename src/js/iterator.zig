@@ -51,7 +51,7 @@ pub fn deinit(self: *Self) void {
     self.stack.deinit(self.allocator);
 }
 
-pub fn childIterator(
+pub fn childrenOf(
     allocator: Allocator,
     tree: *const Tree,
     start_node_id: Node.Index,
