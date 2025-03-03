@@ -350,6 +350,14 @@ pub fn parenthesizedExpr(_: *Self, _: *const ast.NodeData) Doc.Id {
     unreachable;
 }
 
+pub fn functionMeta(_: *Self, _: *const ast.NodeData) Doc.Id {
+    unreachable;
+}
+
+pub fn classMeta(_: *Self, _: *const ast.NodeData) Doc.Id {
+    unreachable;
+}
+
 pub fn none(_: *Self, _: *const ast.NodeData) Doc.Id {
     unreachable;
 }

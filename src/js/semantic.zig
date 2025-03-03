@@ -11,6 +11,8 @@ const ast = @import("ast.zig");
 const StrUtil = @import("strings.zig");
 const Parser = @import("./parser.zig");
 
+const assert = std.debug.assert;
+
 const Allocator = std.mem.Allocator;
 const List = std.ArrayListUnmanaged;
 const Map = std.AutoHashMapUnmanaged;
@@ -66,9 +68,9 @@ pub const Variable = struct {
         }
 
         comptime {
-            std.debug.assert(!Kind.lexical_binding.isHoisted());
-            std.debug.assert(Kind.variable_binding.isHoisted());
-            std.debug.assert(Kind.function_parameter.isHoisted());
+            assert(!Kind.lexical_binding.isHoisted());
+            assert(Kind.variable_binding.isHoisted());
+            assert(Kind.function_parameter.isHoisted());
         }
     };
 
@@ -341,14 +343,11 @@ pub fn onEnter(self: *Self, node_id: ast.Node.Index, node: ast.NodeData, parent_
         },
         .binding_identifier => |name_id| {
             switch (self.tree.tag(parent_id.?)) {
-                .class_expression,
-                .class_declaration,
-                .function_expr,
-                => return,
+                .class_meta, .function_meta => return,
                 else => {},
             }
 
-            std.debug.assert(self.binding_stack.items.len > 0);
+            assert(self.binding_stack.items.len > 0);
             const curr_binding_ctx = self.binding_stack.getLast();
             const name_token = self.tree.getToken(name_id);
 
@@ -363,11 +362,11 @@ pub fn onEnter(self: *Self, node_id: ast.Node.Index, node: ast.NodeData, parent_
             const func_id = parent_id.?; // SAFETY: parent is sure to exist here
             const func_has_use_strict =
                 switch (func_id.get(self.tree).*) {
-                .function_declaration,
-                .function_expr,
-                => |func| func.hasStrictDirective(self.tree),
-                else => unreachable,
-            };
+                    .function_declaration,
+                    .function_expr,
+                    => |func| func.hasStrictDirective(self.tree),
+                    else => unreachable,
+                };
 
             try self.createScope(.function, func_id, func_has_use_strict);
 

@@ -1,12 +1,12 @@
 .{
-    .name = "jsickle",
+    .name = .jam,
     .version = "0.0.0",
     .minimum_zig_version = "0.13.0",
-
+    .fingerprint = 0xf5e4d0e7ae4f08d5,
     .dependencies = .{
         .unicode_id = .{
-            .url = "https://codeberg.org/injuly/unicode-id/archive/10e8dfae849b3e550529de663f71ae8e49e5bde8.tar.gz",
-            .hash = "1220d21683f2d62b7488ca640c79cd3004cef4b7a369c8193882aec78ddb196410de",
+            .url = "https://codeberg.org/injuly/unicode-id/archive/d56c5ed310058463cf6587a62a9febc595efc5e7.tar.gz",
+            .hash = "unicode_id-0.0.1-MsAuU0yBAQA-Wqv13y7g9rSLkmVWJSwy2Ke9BxsOmq0c",
         },
     },
 

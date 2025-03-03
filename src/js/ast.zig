@@ -1,8 +1,10 @@
 const std = @import("std");
-pub const Token = @import("token.zig").Token;
-const Parser = @import("parser.zig");
 const util = @import("util");
+const Parser = @import("parser.zig");
+pub const Token = @import("token.zig").Token;
 
+const meta = std.meta;
+const assert = std.debug.assert;
 const String = util.StringPool.String;
 
 /// Represents a parse tree.
@@ -44,6 +46,16 @@ pub const Tree = struct {
         return &self.tokens.items[@intFromEnum(index)];
     }
 
+    /// Returns the string slice for a token by its ID
+    pub fn getTokenSlice(self: *const Tree, id: Token.Index) []const u8 {
+        return self.tokens.items[@intFromEnum(id)].toByteSlice(self.source);
+    }
+
+    /// Returns the tag representing the type of a token.
+    pub fn getTokenKind(self: *const Tree, id: Token.Index) Token.Tag {
+        return self.tokens.items[@intFromEnum(id)].tag;
+    }
+
     /// Get the extra data of a node from its ExtraData.Index
     pub fn getExtraData(self: *const Tree, index: ExtraData.Index) ExtraData {
         return self.extras.items[@intFromEnum(index)];
@@ -60,9 +72,9 @@ pub const Tree = struct {
         return self.node_indices.items[from..to];
     }
 
-    pub fn tag(self: *const Tree, node_id: Node.Index) std.meta.Tag(NodeData) {
+    pub fn tag(self: *const Tree, node_id: Node.Index) meta.Tag(NodeData) {
         // TODO: optimize using a cached self.nodes.slice().
-        return std.meta.activeTag(
+        return meta.activeTag(
             self.nodes.items(.data)[@intFromEnum(node_id)],
         );
     }
@@ -91,11 +103,31 @@ pub const BinaryPayload = struct {
     lhs: Node.Index,
     rhs: Node.Index,
     operator: Token.Index,
+
+    /// Return the operator token
+    pub fn getOperator(self: *const BinaryPayload, t: *const Tree) *const Token {
+        return t.getToken(self.operator);
+    }
+
+    /// Return the type tag of the operator token
+    pub fn getOperatorKind(self: *const BinaryPayload, t: *const Tree) Token.Tag {
+        return t.getTokenKind(self.operator);
+    }
 };
 
 pub const UnaryPayload = struct {
     operand: Node.Index,
     operator: Token.Index,
+
+    /// Return the operator token
+    pub fn getOperator(self: *const UnaryPayload, t: *const Tree) *const Token {
+        return t.getToken(self.operator);
+    }
+
+    /// Return the type tag of the operator token
+    pub fn getOperatorKind(self: *const UnaryPayload, t: *const Tree) Token.Tag {
+        return t.getTokenKind(self.operator);
+    }
 };
 
 // TODO: make `computed` a flag in the `PropertyAccess` struct
@@ -151,6 +183,10 @@ pub const FunctionFlags = packed struct(u8) {
     _: u4 = 0,
 };
 
+// TODO(@injuly): have separate `Function` structs for function declaration
+// and function expression, to properly handle the `name` field in the type system,
+// is optional for function expressions.
+
 /// Represents the payload for a function expression or declaration.
 pub const Function = struct {
     /// points to a `ast.NodeData.parameters` (?SubRange)
@@ -158,22 +194,35 @@ pub const Function = struct {
     /// points to an expression or a statement list
     body: Node.Index,
     /// Function name and flags.
-    info: ExtraData.Index,
-    /// Get the name of this function, if it has one,
-    /// directly from the source buffer.
-    pub fn getName(self: *const Function, tree: *const Tree) ?[]const u8 {
-        const name_id = tree.getExtraData(self.info).function.name orelse
-            return null;
-        const name = tree.nodes.items(.data)[@intFromEnum(name_id)];
-        return tree.getToken(name.binding_identifier).toByteSlice(tree.source);
+    meta: Node.Index,
+    /// Get the name node of this function, if it has one.
+    pub fn getName(self: *const Function, tree: *const Tree) ?Node.Index {
+        const fn_meta = self.meta.get(tree);
+        assert(meta.activeTag(fn_meta.*) == .function_meta);
+
+        if (fn_meta.function_meta.name) |name_id| {
+            assert(name_id.tag(tree) == .binding_identifier);
+            return name_id;
+        }
+
+        return null;
+    }
+
+    /// Get a string slice representing the name of this function.
+    pub fn getNameSlice(self: *const Function, tree: *const Tree) ?[]const u8 {
+        if (self.getName(tree)) |name_id| {
+            assert(name_id.tag(tree) == .binding_identifier);
+            return tree.getTokenSlice(name_id.get(tree).binding_identifier);
+        }
+        return null;
     }
 
     /// Get the token ID for the name of this function
     pub fn getNameTokenId(self: *const Function, tree: *const Tree) ?Token.Index {
-        if (tree.getExtraData(self.info).function.name) |id_node| {
-            return tree.getNode(id_node).data.binding_identifier;
+        if (self.getName(tree)) |name| {
+            assert(name.tag(tree) == .binding_identifier);
+            return name.get(tree).binding_identifier;
         }
-
         return null;
     }
 
@@ -189,7 +238,7 @@ pub const Function = struct {
         const params_node = tree.getNode(self.parameters);
         const maybe_params_range = params_node.data.parameters;
         if (maybe_params_range) |params_range| {
-            return tree.getSubRange(params_range.from, params_range.to);
+            return params_range.asSlice(tree);
         }
         return &[_]Node.Index{};
     }
@@ -208,7 +257,9 @@ pub const Function = struct {
 
     /// Check whether the body of this function has a "use strict" directive
     pub fn hasStrictDirective(self: *const Function, tree: *const Tree) bool {
-        return tree.getExtraData(self.info).function.flags.has_strict_directive;
+        const fn_meta = self.meta.get(tree);
+        assert(meta.activeTag(fn_meta.*) == .function_meta);
+        return fn_meta.function_meta.flags.has_strict_directive;
     }
 };
 
@@ -334,6 +385,18 @@ pub const TryStatement = struct {
     catch_clause: Node.Index,
     /// Points to a 'statement_list'
     finalizer: Node.Index,
+
+    // Get a pointer to the body of this try statement
+    pub fn getBody(self: *const TryStatement, t: *const Tree) *const SubRange {
+        const body = self.body.get(t);
+        assert(meta.activeTag(body.*) == .statement_list);
+        return &body.statement_list;
+    }
+
+    /// Get a slice of all statements in the body of this try statement
+    pub fn getBodySlice(self: *const TryStatement, t: *const Tree) []const Node.Index {
+        return self.getBody(t).asSlice(t);
+    }
 };
 
 /// A single 'case' block in a switch statement.
@@ -354,6 +417,11 @@ pub const SwitchStatement = struct {
     discriminant: Node.Index,
     /// A list of `switch_case` nodes with at-most one `default_case`.
     cases: SubRange,
+
+    /// Returns a slice containing all the case nodes in the switch statement
+    pub fn getCases(self: *const SwitchStatement, t: *const Tree) []const Node.Index {
+        return self.cases.asSlice(t);
+    }
 };
 
 pub const WithStatement = struct {
@@ -366,38 +434,58 @@ pub const LabeledStatement = struct {
     body: Node.Index,
 };
 
+pub const ClassMeta = struct {
+    name: Node.Index,
+    super_class: Node.Index,
+};
+
+pub const FunctionMeta = struct {
+    name: ?Node.Index,
+    flags: FunctionFlags,
+};
+
 // TODO(@injuly): have optional name property for class expression,
 // but make it non-nullable for class declaration.
 pub const Class = struct {
-    class_information: ExtraData.Index,
+    /// Points to a `ast.NodeData.class_meta`
+    meta: Node.Index,
     body: SubRange,
 
     /// Return a slice representing the name of the class.
-    pub fn className(self: *const Class, p: *const Parser) ?[]const u8 {
-        const maybe_name_node = p.getExtraData(self.class_information).class.name;
-        if (maybe_name_node) |name_node| {
-            const node = p.getNode(name_node);
-            const start_token = p.getToken(node.start);
-            return start_token.toByteSlice(p.source);
+    pub fn className(self: *const Class, t: *const Tree) ?[]const u8 {
+        if (self.nameTokenId(t)) |name_id| {
+            return t.getTokenSlice(name_id);
         }
+
         return null;
     }
 
     /// Get the token ID for the name of this class
     pub fn nameTokenId(self: *const Class, t: *const Tree) ?Token.Index {
-        if (t.getExtraData(self.class_information).class.name) |id_node| {
-            const name_node = t.nodeData(id_node);
-            std.debug.assert(std.meta.activeTag(name_node.*) == .binding_identifier);
-            return name_node.binding_identifier;
-        }
-        return null;
+        const class_meta_id = self.meta.get(t);
+        assert(meta.activeTag(class_meta_id.*) == .class_meta);
+
+        const name_id = class_meta_id.class_meta.name;
+        if (name_id == .empty) return null;
+        return name_id.get(t).binding_identifier;
     }
 };
 
+/// A tagged template expression like:
+/// ```js
+/// div`something ${here}`
+/// ```
 pub const TaggedTemplateExpression = struct {
     tag: Node.Index,
     /// Points to a template_literal
     template: Node.Index,
+
+    /// Get a slice of of all elements in the template literal
+    pub fn getTemplateLiteral(self: *const TaggedTemplateExpression, t: *const Tree) []const Node.Index {
+        const template_node = self.template.get(t);
+        assert(meta.activeTag(template_node.*) == .template_literal);
+        return template_node.template_literal.asSlice(t);
+    }
 };
 
 /// A meta property like `new.target` or `import.meta`
@@ -438,6 +526,24 @@ pub const ImportSpecifier = struct {
     /// The alias used when referencing the item in the current module.
     /// If `imported` is null, then this is just the name of the imported item.
     local: Node.Index,
+};
+
+/// `export * from "module"`
+pub const ExportAllDeclaration = struct {
+    source: Node.Index,
+    // TODO: this is always a string literal
+    name: ?Node.Index,
+};
+
+/// `export { x, y, z } from "module"`
+pub const ExportFromDeclaration = struct {
+    source: Node.Index,
+    specifiers: SubRange,
+};
+
+/// `export { x, y, z }`
+pub const ExportListDeclaration = struct {
+    specifiers: SubRange,
 };
 
 /// An exported identifier.
@@ -548,6 +654,8 @@ pub const NodeData = union(enum(u8)) {
     /// e.g: `{ x }`.
     shorthand_property: ShorthandProperty,
     class_expression: Class,
+    /// The name and superclass of a class def node.
+    class_meta: ClassMeta,
     class_field: ClassFieldDefinition,
     class_method: ClassFieldDefinition,
     sequence_expr: SubRange,
@@ -576,12 +684,14 @@ pub const NodeData = union(enum(u8)) {
     variable_declaration: VariableDeclaration,
     variable_declarator: VariableDeclarator,
     function_declaration: Function,
+    function_meta: FunctionMeta,
     class_declaration: Class,
     debugger_statement,
     if_statement: Conditional,
     do_while_statement: WhileStatement,
     while_statement: WhileStatement,
     with_statement: WithStatement,
+    // TODO: store the throw keyword in a struct
     throw_statement: Node.Index,
 
     for_statement: ForStatement,
@@ -610,16 +720,10 @@ pub const NodeData = union(enum(u8)) {
     export_declaration: ExportedDeclaration,
     export_specifier: ExportSpecifier,
     /// Represents a node like `export { x, y, z }`
-    export_list_declaration: struct { specifiers: SubRange },
+    export_list_declaration: ExportListDeclaration,
     /// `export { <specifiers> } from "module"`
-    export_from_declaration: struct {
-        source: Node.Index,
-        specifiers: SubRange,
-    },
-    export_all_declaration: struct {
-        source: Node.Index,
-        name: ?Node.Index,
-    },
+    export_from_declaration: ExportFromDeclaration,
+    export_all_declaration: ExportAllDeclaration,
 
     /// Represents `null` AST node.
     /// This is a sentinel, and always present at index 0 of the `nodes` array.
@@ -628,13 +732,8 @@ pub const NodeData = union(enum(u8)) {
     none,
 
     comptime {
-        std.debug.assert(@bitSizeOf(NodeData) <= 128);
+        assert(@bitSizeOf(NodeData) <= 128);
     }
-};
-
-pub const ClassInfo = struct {
-    name: ?Node.Index,
-    super_class: Node.Index,
 };
 
 /// Extra metadata about a node.
@@ -642,14 +741,7 @@ pub const ClassInfo = struct {
 /// tag (i.e the active field of NodeData).
 pub const ExtraData = union(enum) {
     pub const Index = enum(u32) { none = 0, _ };
-    function: struct {
-        /// Name of the function, if present (always an identifier node).
-        name: ?Node.Index,
-        /// Flags: generator, async, arrow, etc.
-        flags: FunctionFlags,
-    },
     number_value: f64,
-    class: ClassInfo,
 };
 
 pub const Node = struct {
@@ -662,6 +754,11 @@ pub const Node = struct {
         pub inline fn get(self: Index, tree: *const Tree) *const NodeData {
             return tree.nodeData(self);
         }
+
+        /// Get the AST node tag.
+        pub inline fn tag(self: Index, tree: *const Tree) meta.Tag(NodeData) {
+            return tree.tag(self);
+        }
     };
     /// The actual data stored by this node.
     data: NodeData,
@@ -672,7 +769,7 @@ pub const Node = struct {
 
     /// Check if this node is a literal
     pub fn isLiteral(self: *const Node) bool {
-        return switch (std.meta.activeTag(self.data)) {
+        return switch (meta.activeTag(self.data)) {
             .string_literal,
             .number_literal,
             .boolean_literal,
@@ -684,11 +781,11 @@ pub const Node = struct {
     }
 
     /// Get the type tag for this AST node
-    pub fn tag(self: *const Node) std.meta.Tag(NodeData) {
-        return std.meta.activeTag(self.data);
+    pub fn tag(self: *const Node) meta.Tag(NodeData) {
+        return meta.activeTag(self.data);
     }
 
     comptime {
-        std.debug.assert(@bitSizeOf(Node) <= 196);
+        assert(@bitSizeOf(Node) <= 196);
     }
 };
