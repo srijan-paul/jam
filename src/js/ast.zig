@@ -194,26 +194,35 @@ pub const Function = struct {
     /// points to an expression or a statement list
     body: Node.Index,
     /// Function name and flags.
-    info: ExtraData.Index,
-    /// Get the name of this function, if it has one,
-    /// directly from the source buffer.
-    pub fn getName(self: *const Function, tree: *const Tree) ?[]const u8 {
-        const name_id = tree.getExtraData(self.info).function.name orelse
-            return null;
-        const name = tree.nodes.items(.data)[@intFromEnum(name_id)];
-        return tree.getToken(name.binding_identifier).toByteSlice(tree.source);
+    meta: Node.Index,
+    /// Get the name node of this function, if it has one.
+    pub fn getName(self: *const Function, tree: *const Tree) ?Node.Index {
+        const fn_meta = self.meta.get(tree);
+        assert(meta.activeTag(fn_meta.*) == .function_meta);
+
+        if (fn_meta.function_meta.name) |name_id| {
+            assert(name_id.tag(tree) == .binding_identifier);
+            return name_id;
+        }
+
+        return null;
+    }
+
+    /// Get a string slice representing the name of this function.
+    pub fn getNameSlice(self: *const Function, tree: *const Tree) ?[]const u8 {
+        if (self.getName(tree)) |name_id| {
+            assert(name_id.tag(tree) == .binding_identifier);
+            return tree.getTokenSlice(name_id.get(tree).binding_identifier);
+        }
+        return null;
     }
 
     /// Get the token ID for the name of this function
     pub fn getNameTokenId(self: *const Function, tree: *const Tree) ?Token.Index {
-        const extra = tree.getExtraData(self.info);
-        assert(meta.activeTag(extra) == .function);
-        if (extra.function.name) |name_id| {
-            const name_node = name_id.get(tree);
-            assert(meta.activeTag(name_node.*) == .binding_identifier);
-            return name_node.binding_identifier;
+        if (self.getName(tree)) |name| {
+            assert(name.tag(tree) == .binding_identifier);
+            return name.get(tree).binding_identifier;
         }
-
         return null;
     }
 
@@ -248,9 +257,9 @@ pub const Function = struct {
 
     /// Check whether the body of this function has a "use strict" directive
     pub fn hasStrictDirective(self: *const Function, tree: *const Tree) bool {
-        const extra = tree.getExtraData(self.info);
-        assert(meta.activeTag(extra) == .function);
-        return extra.function.flags.has_strict_directive;
+        const fn_meta = self.meta.get(tree);
+        assert(meta.activeTag(fn_meta.*) == .function_meta);
+        return fn_meta.function_meta.flags.has_strict_directive;
     }
 };
 
@@ -425,31 +434,40 @@ pub const LabeledStatement = struct {
     body: Node.Index,
 };
 
+pub const ClassMeta = struct {
+    name: Node.Index,
+    super_class: Node.Index,
+};
+
+pub const FunctionMeta = struct {
+    name: ?Node.Index,
+    flags: FunctionFlags,
+};
+
 // TODO(@injuly): have optional name property for class expression,
 // but make it non-nullable for class declaration.
 pub const Class = struct {
-    class_information: ExtraData.Index,
+    /// Points to a `ast.NodeData.class_meta`
+    meta: Node.Index,
     body: SubRange,
 
     /// Return a slice representing the name of the class.
-    pub fn className(self: *const Class, p: *const Parser) ?[]const u8 {
-        const maybe_name_node = p.getExtraData(self.class_information).class.name;
-        if (maybe_name_node) |name_node| {
-            const node = p.getNode(name_node);
-            const start_token = p.getToken(node.start);
-            return start_token.toByteSlice(p.source);
+    pub fn className(self: *const Class, t: *const Tree) ?[]const u8 {
+        if (self.nameTokenId(t)) |name_id| {
+            return t.getTokenSlice(name_id);
         }
+
         return null;
     }
 
     /// Get the token ID for the name of this class
     pub fn nameTokenId(self: *const Class, t: *const Tree) ?Token.Index {
-        if (t.getExtraData(self.class_information).class.name) |id_node| {
-            const name_node = t.nodeData(id_node);
-            assert(meta.activeTag(name_node.*) == .binding_identifier);
-            return name_node.binding_identifier;
-        }
-        return null;
+        const class_meta_id = self.meta.get(t);
+        assert(meta.activeTag(class_meta_id.*) == .class_meta);
+
+        const name_id = class_meta_id.class_meta.name;
+        if (name_id == .empty) return null;
+        return name_id.get(t).binding_identifier;
     }
 };
 
@@ -636,6 +654,8 @@ pub const NodeData = union(enum(u8)) {
     /// e.g: `{ x }`.
     shorthand_property: ShorthandProperty,
     class_expression: Class,
+    /// The name and superclass of a class def node.
+    class_meta: ClassMeta,
     class_field: ClassFieldDefinition,
     class_method: ClassFieldDefinition,
     sequence_expr: SubRange,
@@ -664,6 +684,7 @@ pub const NodeData = union(enum(u8)) {
     variable_declaration: VariableDeclaration,
     variable_declarator: VariableDeclarator,
     function_declaration: Function,
+    function_meta: FunctionMeta,
     class_declaration: Class,
     debugger_statement,
     if_statement: Conditional,
@@ -715,24 +736,12 @@ pub const NodeData = union(enum(u8)) {
     }
 };
 
-pub const ClassInfo = struct {
-    name: ?Node.Index,
-    super_class: Node.Index,
-};
-
 /// Extra metadata about a node.
 /// The specific type of meta-data is determined by the node's
 /// tag (i.e the active field of NodeData).
 pub const ExtraData = union(enum) {
     pub const Index = enum(u32) { none = 0, _ };
-    function: struct {
-        /// Name of the function, if present (always an identifier node).
-        name: ?Node.Index,
-        /// Flags: generator, async, arrow, etc.
-        flags: FunctionFlags,
-    },
     number_value: f64,
-    class: ClassInfo,
 };
 
 pub const Node = struct {
@@ -744,6 +753,11 @@ pub const Node = struct {
         /// Get a pointer to the `NodeData` associated with this node-id.
         pub inline fn get(self: Index, tree: *const Tree) *const NodeData {
             return tree.nodeData(self);
+        }
+
+        /// Get the AST node tag.
+        pub inline fn tag(self: Index, tree: *const Tree) meta.Tag(NodeData) {
+            return tree.tag(self);
         }
     };
     /// The actual data stored by this node.

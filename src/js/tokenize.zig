@@ -446,7 +446,7 @@ fn consumeMultiLineCommentChars(self: *Self) Error!void {
 fn consumeUtf8CodePoint(self: *Self) Error!void {
     const code_point_len =
         std.unicode.utf8ByteSequenceLength(self.source[self.index]) catch
-        return Error.BadEscapeSequence;
+            return Error.BadEscapeSequence;
     self.index += code_point_len;
 }
 
@@ -586,7 +586,7 @@ fn consumeEscape(self: *Self) !void {
             // \xXX
             if (self.index + 4 < self.source.len and
                 (std.ascii.isHex(self.source[self.index + 2]) and
-                std.ascii.isHex(self.source[self.index + 3])))
+                    std.ascii.isHex(self.source[self.index + 3])))
             {
                 self.index += 4;
             } else {

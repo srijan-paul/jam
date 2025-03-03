@@ -285,12 +285,12 @@ fn generateVisitFn(
     _ = try w.write("\n}\n");
 }
 
-fn generateTraversalSwitch(
+fn generateNodeIterator(
     allocator: Allocator,
     types: *const TypesInAst,
     out_file: std.fs.File,
 ) !void {
-    const iterator_header =
+    const iterator_file_start =
         \\// !THIS IS A GENERATED FILE!
         \\// To regenerate, run `zig build astgen`.
         \\// To modify the generation process, see: tools/gen/main.zig
@@ -309,8 +309,6 @@ fn generateTraversalSwitch(
         \\const Item = struct {
         \\    /// Node ID
         \\    node_id: Node.Index,
-        \\    /// Node payload
-        \\    node_pl: *const NodeData,
         \\    /// Parent of this node 
         \\    parent_id: ?Node.Index, 
         \\};
@@ -331,7 +329,6 @@ fn generateTraversalSwitch(
         \\    var stack = try std.ArrayListUnmanaged(Item).initCapacity(allocator, 128);
         \\    stack.appendAssumeCapacity(. { 
         \\      .node_id = start_node_id, 
-        \\      .node_pl = &node_pls[@intFromEnum(start_node_id)], 
         \\      .parent_id = null,
         \\    });
         \\
@@ -359,10 +356,8 @@ fn generateTraversalSwitch(
         \\}
         \\
         \\pub fn pushNode(self: *Self, node_id: Node.Index, parent_id: ?Node.Index,) Allocator.Error!void {
-        \\    const node_pl = &self.node_pls[@intFromEnum(node_id)];
         \\    try self.stack.append(self.allocator, .{
         \\        .node_id = node_id,
-        \\        .node_pl = node_pl,
         \\        .parent_id = parent_id,
         \\    });
         \\}
@@ -380,12 +375,10 @@ fn generateTraversalSwitch(
         \\    }
         \\}
     ;
-    // var iter = types.struct_decls.iterator();
     const ast = types.ast;
     const NodeData = types.node_data_tagged_union;
 
-    _ = try out_file.write(iterator_header);
-    // _ = iterator_header;
+    _ = try out_file.write(iterator_file_start);
 
     var iter = types.struct_decls.iterator();
     while (iter.next()) |kv| {
@@ -545,5 +538,5 @@ pub fn main() !void {
 
     const out_file =
         try cwd.createFile(out_file_path, .{ .truncate = true });
-    try generateTraversalSwitch(allocator, &ast_types, out_file);
+    try generateNodeIterator(allocator, &ast_types, out_file);
 }

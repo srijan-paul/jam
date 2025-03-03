@@ -183,7 +183,7 @@ pub fn jamToEstreeTag(node: ast.NodeData) []const u8 {
         .export_from_declaration => "ExportFromDeclaration",
         .export_all_declaration => "ExportAllDeclaration",
         .parenthesized_expr => "GroupingExpression",
-        .none => unreachable,
+        .function_meta, .class_meta, .none => unreachable,
     };
 }
 
@@ -584,27 +584,26 @@ fn nodeToEsTree(
                 try o.put("optional", JValue{ .bool = false });
         },
 
-        .function_expr, .function_declaration => |payload| {
-            const params_range = t.nodes.get(@intFromEnum(payload.parameters)).data.parameters;
+        .function_expr, .function_declaration => |func| {
+            const params_range = t.nodes.get(@intFromEnum(func.parameters)).data.parameters;
             const params = try subRangeToJsonArray(al, t, params_range, opts);
-            const body = try nodeToEsTree(t, al, payload.body, opts);
+            const body = try nodeToEsTree(t, al, func.body, opts);
 
-            const extra: ast.ExtraData = t.getExtraData(payload.info);
-            const fn_info = extra.function;
-            if (fn_info.name) |name| {
+            const fn_meta = func.meta.get(t).function_meta;
+            if (func.getName(t)) |name| {
                 if (name != Node.Index.empty) {
                     const id = try nodeToEsTree(t, al, name, opts);
                     try o.put("id", id);
                 }
             }
 
-            try o.put("generator", JValue{ .bool = fn_info.flags.is_generator });
-            try o.put("async", JValue{ .bool = fn_info.flags.is_async });
+            try o.put("generator", JValue{ .bool = fn_meta.flags.is_generator });
+            try o.put("async", JValue{ .bool = fn_meta.flags.is_async });
 
             // function_declaration can never be `arrow`, so only have the "arrow"
             // field for function_exprs.
             if (meta.activeTag(node.data) == .function_expr)
-                try o.put("arrow", JValue{ .bool = fn_info.flags.is_arrow });
+                try o.put("arrow", JValue{ .bool = fn_meta.flags.is_arrow });
 
             try o.put("params", params);
             try o.put("body", body);
@@ -649,19 +648,19 @@ fn nodeToEsTree(
             try o.put("label", label);
         },
 
-        .class_expression, .class_declaration => |payload| {
-            const info = t.getExtraData(payload.class_information).class;
-            if (info.super_class != .empty) {
-                const superClass = try nodeToEsTree(t, al, info.super_class, opts);
+        .class_expression, .class_declaration => |class| {
+            const class_meta = class.meta.get(t).class_meta;
+            if (class_meta.super_class != .empty) {
+                const superClass = try nodeToEsTree(t, al, class_meta.super_class, opts);
                 try o.put("superClass", superClass);
             }
 
-            if (info.name) |id| {
-                const id_ = try nodeToEsTree(t, al, id, opts);
+            if (class_meta.name != .empty) {
+                const id_ = try nodeToEsTree(t, al, class_meta.name, opts);
                 try o.put("id", id_);
             }
 
-            const body_defs = try subRangeToJsonArray(al, t, payload.body, opts);
+            const body_defs = try subRangeToJsonArray(al, t, class.body, opts);
             var body = std.json.ObjectMap.init(al);
             try body.put("type", JValue{ .string = "ClassBody" });
             try body.put("body", body_defs);
@@ -787,6 +786,8 @@ fn nodeToEsTree(
         .none,
         .arguments,
         .parenthesized_expr,
+        .class_meta,
+        .function_meta,
         => {
             std.debug.panic("Bad call to nodeToEstree: parameters", .{});
         },

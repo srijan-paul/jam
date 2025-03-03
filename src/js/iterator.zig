@@ -16,8 +16,6 @@ const Self = @This();
 const Item = struct {
     /// Node ID
     node_id: Node.Index,
-    /// Node payload
-    node_pl: *const NodeData,
     /// Parent of this node
     parent_id: ?Node.Index,
 };
@@ -38,7 +36,6 @@ pub fn init(
     var stack = try std.ArrayListUnmanaged(Item).initCapacity(allocator, 128);
     stack.appendAssumeCapacity(.{
         .node_id = start_node_id,
-        .node_pl = &node_pls[@intFromEnum(start_node_id)],
         .parent_id = null,
     });
 
@@ -74,10 +71,8 @@ pub fn pushNode(
     node_id: Node.Index,
     parent_id: ?Node.Index,
 ) Allocator.Error!void {
-    const node_pl = &self.node_pls[@intFromEnum(node_id)];
     try self.stack.append(self.allocator, .{
         .node_id = node_id,
-        .node_pl = node_pl,
         .parent_id = parent_id,
     });
 }
@@ -103,6 +98,7 @@ fn visitFunction(
     data: *const ast.Function,
     node_id: Node.Index,
 ) Allocator.Error!void {
+    try self.pushNode(data.meta, node_id);
     try self.pushNode(data.body, node_id);
     try self.pushNode(data.parameters, node_id);
 }
@@ -203,6 +199,7 @@ fn visitClass(
     node_id: Node.Index,
 ) Allocator.Error!void {
     try self.visitSubRange(&data.body, node_id);
+    try self.pushNode(data.meta, node_id);
 }
 
 fn visitExportSpecifier(
@@ -221,16 +218,6 @@ fn visitShorthandProperty(
     node_id: Node.Index,
 ) Allocator.Error!void {
     try self.pushNode(data.name, node_id);
-}
-
-fn visitClassInfo(
-    self: *Self,
-    data: *const ast.ClassInfo,
-    node_id: Node.Index,
-) Allocator.Error!void {
-    try self.pushNode(data.super_class, node_id);
-    if (data.name) |_pl|
-        try self.pushNode(_pl, node_id);
 }
 
 fn visitComputedPropertyAccess(
@@ -304,6 +291,15 @@ fn visitCatchClause(
     if (data.param) |_pl|
         try self.pushNode(_pl, node_id);
     try self.pushNode(data.body, node_id);
+}
+
+fn visitClassMeta(
+    self: *Self,
+    data: *const ast.ClassMeta,
+    node_id: Node.Index,
+) Allocator.Error!void {
+    try self.pushNode(data.super_class, node_id);
+    try self.pushNode(data.name, node_id);
 }
 
 fn visitImportSpecifier(
@@ -471,6 +467,7 @@ pub fn enqueueChildren(self: *Self, node_id: Node.Index) Allocator.Error!void {
         .object_property => |pl| try self.visitPropertyDefinition(&pl, node_id),
         .shorthand_property => |pl| try self.visitShorthandProperty(&pl, node_id),
         .class_expression => |pl| try self.visitClass(&pl, node_id),
+        .class_meta => |pl| try self.visitClassMeta(&pl, node_id),
         .class_field => |pl| try self.visitClassFieldDefinition(&pl, node_id),
         .class_method => |pl| try self.visitClassFieldDefinition(&pl, node_id),
         .sequence_expr => |pl| try self.visitSubRange(&pl, node_id),
@@ -490,6 +487,7 @@ pub fn enqueueChildren(self: *Self, node_id: Node.Index) Allocator.Error!void {
         .variable_declaration => |pl| try self.visitVariableDeclaration(&pl, node_id),
         .variable_declarator => |pl| try self.visitVariableDeclarator(&pl, node_id),
         .function_declaration => |pl| try self.visitFunction(&pl, node_id),
+        .function_meta => {}, // leaf
         .class_declaration => |pl| try self.visitClass(&pl, node_id),
         .debugger_statement => {}, // leaf
         .if_statement => |pl| try self.visitConditional(&pl, node_id),

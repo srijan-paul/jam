@@ -126,9 +126,9 @@ fn testOnPassingFile(
 
     const source_type: js.Parser.SourceType =
         if (std.mem.endsWith(u8, file_name, ".module.js"))
-        .module
-    else
-        .script;
+            .module
+        else
+            .script;
 
     for (pass_exceptions) |exception_filename| {
         if (std.mem.eql(u8, file_name, exception_filename)) {
@@ -204,9 +204,9 @@ fn testOnMalformedFile(
 
     const source_type: js.Parser.SourceType =
         if (std.mem.endsWith(u8, file_name, ".module.js"))
-        .module
-    else
-        .script;
+            .module
+        else
+            .script;
 
     // parse the program
     var parser = Parser.init(

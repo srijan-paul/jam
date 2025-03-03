@@ -422,17 +422,16 @@ pub fn parse(self: *Self) Error!Result {
     } else {
         // first, check for "use strict" directive
         const has_use_strict =
-            blk: while (!self.isAtToken(.eof))
-        {
-            const stmt = try self.statementOrDeclaration();
-            try self.scratch.append(stmt);
+            blk: while (!self.isAtToken(.eof)) {
+                const stmt = try self.statementOrDeclaration();
+                try self.scratch.append(stmt);
 
-            switch (self.checkDirective(stmt)) {
-                .use_strict => break :blk true,
-                .directive => {},
-                .not_directive => break :blk false,
-            }
-        } else break :blk false;
+                switch (self.checkDirective(stmt)) {
+                    .use_strict => break :blk true,
+                    .directive => {},
+                    .not_directive => break :blk false,
+                }
+            } else break :blk false;
 
         const ctx = self.contextEnterStrictMode(has_use_strict);
         defer self.contextExitStrictMode(ctx);
@@ -1054,25 +1053,29 @@ fn classDeclaration(self: *Self) Error!Node.Index {
 
     const name = try self.bindingIdentifier(name_token.id);
 
-    const super_class = if (self.current.token.tag == .kw_extends)
-        try self.classHeritage()
-    else
-        Node.Index.empty;
+    const super_class: Node.Index, const meta_end_pos: Token.Index = blk: {
+        if (self.current.token.tag == .kw_extends) {
+            const heritage = try self.classHeritage();
+            break :blk .{ heritage, self.nodes.items(.end)[@intFromEnum(heritage)] };
+        }
+
+        break :blk .{ Node.Index.empty, name_token.id };
+    };
 
     const class_body = try self.classBody();
     const rb = try self.expect(.@"}");
 
-    const info = try self.addExtraData(ast.ExtraData{
-        .class = .{
+    const class_meta = try self.addNode(ast.NodeData{
+        .class_meta = ast.ClassMeta{
             .name = name,
             .super_class = super_class,
         },
-    });
+    }, name_token.id, meta_end_pos);
 
     return try self.addNode(
         .{
             .class_declaration = .{
-                .class_information = info,
+                .meta = class_meta,
                 .body = class_body,
             },
         },
@@ -1082,33 +1085,42 @@ fn classDeclaration(self: *Self) Error!Node.Index {
 }
 
 fn classExpression(self: *Self, class_kw_id: Token.Index) Error!Node.Index {
-    const name = blk: {
+    const name, const meta_start_pos = blk: {
         const cur = self.current.token.tag;
         if (cur.isIdentifier() or self.isKeywordIdentifier(cur)) {
             const name_token = try self.next();
-            break :blk try self.bindingIdentifier(name_token.id);
+            break :blk .{ try self.bindingIdentifier(name_token.id), name_token.id };
         }
 
-        break :blk null;
+        break :blk .{ Node.Index.empty, class_kw_id };
     };
 
-    const super_class = if (self.isAtToken(.kw_extends))
-        try self.classHeritage()
-    else
-        Node.Index.empty;
+    const super_class: Node.Index, const meta_end_pos: Token.Index = blk: {
+        if (self.current.token.tag == .kw_extends) {
+            const heritage = try self.classHeritage();
+            break :blk .{ heritage, self.nodes.items(.end)[@intFromEnum(heritage)] };
+        }
+
+        break :blk .{ Node.Index.empty, class_kw_id };
+    };
 
     const class_body = try self.classBody();
     const rb = try self.expect(.@"}");
 
-    const info = try self.addExtraData(ast.ExtraData{
-        .class = .{
+    const class_meta = try self.addNode(ast.NodeData{
+        .class_meta = ast.ClassMeta{
             .name = name,
             .super_class = super_class,
         },
-    });
+    }, meta_start_pos, meta_end_pos);
 
     return try self.addNode(
-        .{ .class_expression = .{ .class_information = info, .body = class_body } },
+        .{
+            .class_expression = .{
+                .meta = class_meta,
+                .body = class_body,
+            },
+        },
         class_kw_id,
         rb.id,
     );
@@ -2071,9 +2083,9 @@ fn caseClause(self: *Self) Error!Node.Index {
 
     const end_pos =
         if (consequent_stmts.len > 0)
-        self.nodes.items(.end)[@intFromEnum(consequent_stmts[consequent_stmts.len - 1])]
-    else
-        case_kw.id;
+            self.nodes.items(.end)[@intFromEnum(consequent_stmts[consequent_stmts.len - 1])]
+        else
+            case_kw.id;
 
     const case_node = try self.addNode(
         .{
@@ -2108,9 +2120,9 @@ fn defaultCase(self: *Self) Error!Node.Index {
     const consequent_stmts = self.scratch.items[prev_scratch_len..];
     const end_pos =
         if (consequent_stmts.len > 0)
-        self.nodes.items(.end)[@intFromEnum(consequent_stmts[consequent_stmts.len - 1])]
-    else
-        default_kw.id;
+            self.nodes.items(.end)[@intFromEnum(consequent_stmts[consequent_stmts.len - 1])]
+        else
+            default_kw.id;
 
     return self.addNode(
         .{
@@ -4795,22 +4807,22 @@ fn completeArrowFunction(self: *Self, params: Node.Index) Error!Node.Index {
     // cannot be destructured or assigned to.
     self.current_destructure_kind.reset();
 
+    const fn_meta = ast.FunctionMeta{
+        .name = null,
+        .flags = .{
+            .is_arrow = true,
+            .is_generator = false,
+            .is_async = is_async,
+            .has_strict_directive = is_strict,
+        },
+    };
+
     return self.addNode(
         ast.NodeData{
             .function_expr = ast.Function{
                 .parameters = params,
                 .body = body,
-                .info = try self.addExtraData(.{
-                    .function = .{
-                        .name = null,
-                        .flags = .{
-                            .is_arrow = true,
-                            .is_generator = false,
-                            .is_async = is_async,
-                            .has_strict_directive = is_strict,
-                        },
-                    },
-                }),
+                .meta = try self.addNode(.{ .function_meta = fn_meta }, start, start),
             },
         },
         start,
@@ -5553,9 +5565,9 @@ fn functionExpression(
     const name_token: ?Node.Index =
         if (self.current.token.tag.isIdentifier() or
         self.isKeywordIdentifier(self.current.token.tag))
-        try self.functionName()
-    else
-        null;
+            try self.functionName()
+        else
+            null;
 
     self.context = saved_ctx;
 
@@ -5595,19 +5607,25 @@ fn parseFunctionBody(
     var fn_flags = flags;
     fn_flags.has_strict_directive = is_strict;
 
-    const function_data = try self.addExtraData(
-        ast.ExtraData{
-            .function = .{
+    const meta_token_id = if (func_name) |name|
+        self.nodeData(name).binding_identifier
+    else
+        start_pos;
+    const function_meta = try self.addNode(
+        .{
+            .function_meta = ast.FunctionMeta{
                 .name = func_name,
                 .flags = fn_flags,
             },
         },
+        meta_token_id,
+        meta_token_id,
     );
 
     const function = ast.Function{
         .parameters = parameters,
         .body = body,
-        .info = function_data,
+        .meta = function_meta,
     };
 
     const node_data: ast.NodeData = if (is_decl)

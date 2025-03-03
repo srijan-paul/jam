@@ -87,10 +87,15 @@ pub fn Traverser(TControl: type) type {
                 .class_declaration,
                 .class_expression,
                 => |class_pl| {
-                    const info = self.t.getExtraData(class_pl.class_information).class;
-                    if (info.name) |name| try self.visit(name, node_id);
-                    try self.visit(info.super_class, node_id);
+                    try self.visit(class_pl.meta, node_id);
                     try self.subRange(class_pl.body, node_id);
+                },
+
+                .class_meta => |meta_pl| {
+                    if (meta_pl.name != .empty)
+                        try self.visit(meta_pl.name, node_id);
+                    if (meta_pl.super_class != .empty)
+                        try self.visit(meta_pl.super_class, node_id);
                 },
 
                 .return_statement => |maybe_node_id| {
@@ -151,11 +156,14 @@ pub fn Traverser(TControl: type) type {
                 },
 
                 .function_declaration, .function_expr => |func_pl| {
-                    if (self.t.getExtraData(func_pl.info).function.name) |func_name| {
-                        try self.visit(func_name, node_id);
-                    }
+                    try self.visit(func_pl.meta, node_id);
                     try self.visit(func_pl.parameters, node_id);
                     try self.visit(func_pl.body, node_id);
+                },
+
+                .function_meta => |func_meta_pl| {
+                    if (func_meta_pl.name) |name|
+                        try self.visit(name, node_id);
                 },
 
                 .for_of_statement,
@@ -358,7 +366,7 @@ test Traverser {
 
     var i: usize = 0;
     while (iter.next()) |item| : (i += 1) {
-        try t.expectEqual(expected[i], meta.activeTag(item.node_pl.*));
+        try t.expectEqual(expected[i], meta.activeTag(item.node_id.get(p.tree).*));
         try iter.enqueueChildren(item.node_id);
     }
 }

@@ -331,7 +331,7 @@ fn matchSingleEscape(str: []const u8) ?u32 {
 
     const cp_len =
         std.unicode.utf8ByteSequenceLength(str[1]) catch
-        unreachable; // input has already been validated at this point.
+            unreachable; // input has already been validated at this point.
 
     return 1 + cp_len; // '\' + length of codepoint
 }

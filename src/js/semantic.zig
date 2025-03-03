@@ -343,10 +343,7 @@ pub fn onEnter(self: *Self, node_id: ast.Node.Index, node: ast.NodeData, parent_
         },
         .binding_identifier => |name_id| {
             switch (self.tree.tag(parent_id.?)) {
-                .class_expression,
-                .class_declaration,
-                .function_expr,
-                => return,
+                .class_meta, .function_meta => return,
                 else => {},
             }
 
