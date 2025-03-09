@@ -212,6 +212,33 @@ fn runTests(al: Allocator, babel_tests_dir: []const u8) !json.ObjectMap {
     return out;
 }
 
+/// Compare an existing `babel-ressults.json` file to a new result object
+/// obtained from running the test suite.
+///
+/// Exits the process with status code 1 if any test cases regressed.
+fn compareTestResults(old_result: json.Value, new_result: json.Value) void {
+    const old_test_cases = old_result.object.get("cases").?.object;
+    const new_test_cases = new_result.object.get("cases").?.object;
+
+    var num_regressed: usize = 0;
+    for (old_test_cases.keys()) |old_key| {
+        const old_value = old_test_cases.get(old_key).?.string;
+        const new_value = new_test_cases.get(old_key).?.string;
+
+        if (std.mem.eql(u8, old_value, new_value)) continue;
+
+        if (std.mem.eql(u8, old_value, "pass")) {
+            std.debug.print("{s} went from pass to {s}\n", .{ old_key, new_value });
+            num_regressed += 1;
+        }
+    }
+
+    if (num_regressed > 0) {
+        std.debug.print("{d} test cases regressed\n", .{num_regressed});
+        std.process.exit(1);
+    }
+}
+
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer std.debug.assert(gpa.deinit() == .ok);
@@ -221,18 +248,54 @@ pub fn main() !void {
     defer arena.deinit();
     const al = arena.allocator();
 
+    var maybe_compare_filepath: ?[]const u8 = null;
+    var args_iter = std.process.args();
+
+    var write_results: bool = false;
+    while (args_iter.next()) |arg| {
+        if (std.mem.eql(u8, arg, "--compare")) {
+            maybe_compare_filepath = args_iter.next() orelse {
+                std.debug.print("'--compare' expects a path to a JSON file as argument\n", .{});
+                std.process.exit(1);
+            };
+        } else {
+            write_results = std.mem.eql(u8, arg, "--write");
+        }
+    }
+
     const babel_tests_dir = try std.fs.path.join(al, &.{ "tools", "babel" });
 
-    const results_json = try runTests(al, babel_tests_dir);
-    const results_json_str = try json.stringifyAlloc(
+    const results_map = try runTests(al, babel_tests_dir);
+    const results = json.Value{ .object = results_map };
+    const results_json = try json.stringifyAlloc(
         al,
-        json.Value{ .object = results_json },
+        results,
         .{ .whitespace = .indent_2 },
     );
 
-    const results_file_path = try std.fs.path.join(al, &.{ "tools", "babel-results.json" });
-    var results_file = try std.fs.cwd().createFile(results_file_path, .{});
-    defer results_file.close();
+    if (write_results) {
+        const results_file_path = try std.fs.path.join(al, &.{ "tools", "babel-results.json" });
+        var results_file = try std.fs.cwd().createFile(results_file_path, .{});
+        defer results_file.close();
+        try results_file.writeAll(results_json);
+    }
 
-    try results_file.writeAll(results_json_str);
+    if (maybe_compare_filepath) |compare_filepath| {
+        const cwd = std.fs.cwd();
+        const original_results_json = try cwd.readFileAlloc(
+            al,
+            compare_filepath,
+            std.math.maxInt(u32),
+        );
+
+        const existing_results = try std.json.parseFromSlice(
+            std.json.Value,
+            al,
+            original_results_json,
+            .{},
+        );
+
+        compareTestResults(existing_results.value, results);
+        std.debug.print("No regressions found. All tests are passing\n", .{});
+    }
 }

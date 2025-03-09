@@ -12,6 +12,7 @@ const StrUtil = @import("strings.zig");
 const Parser = @import("./parser.zig");
 
 const assert = std.debug.assert;
+const panic = std.debug.panic;
 
 const Allocator = std.mem.Allocator;
 const List = std.ArrayListUnmanaged;
@@ -49,6 +50,9 @@ pub const AnalyzedProgram = struct {
     }
 };
 
+/// Represents any declaration in the program.
+/// Can be a function name, imported item, class,
+/// a parameter for catch/function block, etc.
 pub const Variable = struct {
     pub const Kind = enum(u8) {
         const IsHoistedMask: u8 = 1 << 5;
@@ -82,15 +86,15 @@ pub const Variable = struct {
     /// function parameter, import statement, or class declaration.
     def_node: ast.Node.Index,
     /// Scope to which this variable belongs
-    scope: *const Scope,
+    scope: *Scope,
     kind: Kind,
 };
 
 pub const Reference = struct {
     /// The variable that this reference points to.
-    variable: *const Variable,
+    to: *const Variable,
     /// The AST node that is the reference.
-    node: ast.Node.Index,
+    from: ast.Node.Index,
 };
 
 /// Scope contains information about the variables contained within it,
@@ -113,6 +117,7 @@ pub const Scope = struct {
     references: List(Reference),
     /// Nested scopes within this scope.
     children: List(*Scope),
+    /// Whether this a function, block, or module scope etc.
     kind: Kind,
     /// The node that this scope is associated with.
     node: ast.Node.Index,
@@ -148,8 +153,8 @@ pub const Scope = struct {
     }
 
     /// Find a variable by name in this scope or any of its parent scopes.
-    pub fn findVariable(self: *Scope, variable_name: String) ?Variable {
-        if (self.variables.get(variable_name)) |v| {
+    pub fn findVariable(self: *Scope, variable_name: String) ?*const Variable {
+        if (self.variables.getPtr(variable_name)) |v| {
             return v;
         }
 
@@ -161,8 +166,8 @@ pub const Scope = struct {
     }
 
     /// Search for a variable inside this scope, but do not visit parent scopes.
-    pub fn findVariableWithin(self: *Scope, variable_name: String) ?Variable {
-        return self.variables.get(variable_name);
+    pub fn findVariableWithin(self: *Scope, variable_name: String) ?*const Variable {
+        return self.variables.getPtr(variable_name);
     }
 };
 
@@ -173,6 +178,13 @@ const AnalysisError = error{
     DuplicateParameterBinding,
     Overflow,
     OutOfMemory,
+};
+
+const UnresolvedRef = struct {
+    /// Name used to reference the declaration (that couldn't be found).
+    name: String,
+    /// The scope where the `identifier_reference` occurs
+    ref_scope: *Scope,
 };
 
 /// Denotes the type of a variable binding (lexical or hoisted)
@@ -202,6 +214,8 @@ owns_tree: bool = true,
 /// The parse tree returned by the parser
 tree: *ast.Tree,
 /// Maps an AST node ID to the ID of its parent
+/// Every node is guaranteed to have a parent except
+/// the `.program` and `.none` node types.
 parent_of_node: []?ast.Node.Index,
 /// Presently active scope.
 current_scope: *Scope,
@@ -219,8 +233,14 @@ root_scope: *Scope,
 binding_stack: List(BindingContext),
 /// Helper for string manipulation and escape code processing in identifiers
 strings: StrUtil,
+/// List of references that could not be resolved during the first
+/// semantic analysis pass because of, say, hoisting.
+/// When the AST walk is over and we exit the `.program` node,
+/// all unresolved references are visited to try and resolve them
+/// one more time.
+unresolved_refs: List(UnresolvedRef),
 
-/// Create a semantic analyzer from a parse_result.
+/// Create a semantic analyzer from a Parser.Result.
 /// Takes ownership of the parse_result, and the caller must not call `parse_result.deinit()`
 /// after calling this function.
 pub fn init(allocator: Allocator, parse_result: Parser.Result) Allocator.Error!Self {
@@ -248,6 +268,7 @@ pub fn init(allocator: Allocator, parse_result: Parser.Result) Allocator.Error!S
         .current_scope = root_scope,
         .parent_of_node = parent_of_node,
         .binding_stack = try List(BindingContext).initCapacity(allocator, 8),
+        .unresolved_refs = try List(UnresolvedRef).initCapacity(allocator, 8),
         .strings = try StrUtil.init(allocator, parse_result.tree.source, &parse_result.tree.string_pool),
     };
 }
@@ -255,6 +276,7 @@ pub fn init(allocator: Allocator, parse_result: Parser.Result) Allocator.Error!S
 pub fn deinit(self: *Self) void {
     self.binding_stack.deinit(self.allocator);
     self.strings.deinit();
+    self.unresolved_refs.deinit(self.allocator);
 
     // TODO: ensure that we're using the right allocators for the right
     // things. OR that both self.tree.allocator and self.allocator are the same.
@@ -287,7 +309,12 @@ pub fn analyze(self: *Self) !AnalyzedProgram {
     };
 }
 
-pub fn onEnter(self: *Self, node_id: ast.Node.Index, node: ast.NodeData, parent_id: ?ast.Node.Index) !void {
+pub fn onEnter(
+    self: *Self,
+    node_id: ast.Node.Index,
+    node: ast.NodeData,
+    parent_id: ?ast.Node.Index,
+) !void {
     self.parent_of_node[@intFromEnum(node_id)] = parent_id;
 
     switch (node) {
@@ -365,13 +392,25 @@ pub fn onEnter(self: *Self, node_id: ast.Node.Index, node: ast.NodeData, parent_
                     .function_declaration,
                     .function_expr,
                     => |func| func.hasStrictDirective(self.tree),
-                    else => unreachable,
+                    else => panic("BUG: invalid parent node for `parameters` AST node type", .{}),
                 };
 
             try self.createScope(.function, func_id, func_has_use_strict);
 
             const params_ctx = BindingContext{ .kind = .function_parameter, .decl_node = node_id };
             try self.binding_stack.append(self.allocator, params_ctx);
+        },
+        .identifier_reference => |token_id| {
+            const name = try self.strings.stringValue(self.tree.getToken(token_id));
+            if (self.current_scope.findVariable(name)) |variable| {
+                const reference = Reference{ .from = node_id, .to = variable };
+                try variable.scope.references.append(self.allocator, reference);
+            } else {
+                try self.unresolved_refs.append(self.allocator, UnresolvedRef{
+                    .name = name,
+                    .ref_scope = self.current_scope,
+                });
+            }
         },
         else => {},
     }
@@ -441,7 +480,12 @@ fn registerDeclaration(
     try self.current_scope.variables.put(self.allocator, name_str, variable);
 }
 
-pub fn onExit(self: *Self, node_id: ast.Node.Index, _: ast.NodeData, _: ?ast.Node.Index) Allocator.Error!void {
+pub fn onExit(
+    self: *Self,
+    node_id: ast.Node.Index,
+    _: ast.NodeData,
+    _: ?ast.Node.Index,
+) Allocator.Error!void {
     const stack_len = self.binding_stack.items.len;
     if (stack_len > 0 and self.binding_stack.items[stack_len - 1].decl_node == node_id) {
         _ = self.binding_stack.pop();
@@ -475,7 +519,7 @@ fn createScope(
 
 fn exitScope(self: *Self) void {
     self.current_scope = self.current_scope.parent orelse
-        std.debug.panic("attempt to exit root scope", .{});
+        panic("attempt to exit root scope", .{});
 }
 
 pub fn parseAndAnalyze(allocator: Allocator, source: []const u8, parser_config: Parser.Config) !AnalyzedProgram {
@@ -540,7 +584,7 @@ fn expectNoError(source: []const u8) !void {
     result.deinit();
 }
 
-test {
+test Self {
     // error cases:
 
     try expectError(

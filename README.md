@@ -1,16 +1,19 @@
 # Jam
 
-A high-performance JavaScript toolchain built from the ground up.
+A high-performance JavaScript toolchain + analyzer built from the ground up.
 **Work in progress!**
+
+Jam is a JavaScript parser, linter, formatter, printer and vulnerability scanner.
 
 ## Goals
 
-- Faster than (or very close to) existing tools. 
-- Low memory footprint.
-- Support JS, JSX, TypeScript, and CSS out of the box.
+- Competitive in performance with existing tools. 
+- Support JS, JSX, and TypeScript out of the box.
+    - And the `<script>` part of VueJS code.
+- Single, small binary.
 - Support data flow analysis and call-graphs with an accessible API. 
-- API for writing linting rules in Zig.
 - Expose a capable parsing and scope resolution, such that a bundler, minifier, etc., can be built on top of it.
+- API to write lint rules with zig.
 - Custom JavaScript plugins.
 
 ## Roadmap
@@ -18,13 +21,14 @@ A high-performance JavaScript toolchain built from the ground up.
 - Phase 1:
     - [x] A fast, 100% Spec compliant JavaScript parser.
     - [x] Port [ESLint scope](https://github.com/eslint/js/tree/main/packages/eslint-scope) to Zig
-    - [ ] JSX support (**Under construction**)
+    - [ ] Semantic analysis: Control Flow Graphs (**WIP**).
+    - [ ] JSX support (**WIP**)
     - [ ] TypeScript support in the parser.
     - [ ] Runtime for a linter, with Zig plugin support.
     - [ ] Formatter with a **language agnostic backend**.
 - Alpha release
     - [ ] Simple linter with all the base rules from ESLint.
-    - [ ] A prototype of a formatter
+    - [ ] A prototype for the jam formatter
 - Beta release
     - [ ] Data flow analysis and taint checking
 
@@ -35,7 +39,7 @@ I've tried to keep the development process hassle-free.
 You need only a Zig compiler (and optionally an environment variable) to get going.
 
 If you still face any issues, feel free to open an issue
-or reach out to me on discord (`@injuly.`), twitter (`@ptrCast`), or e-mail (`srijan@injuly.in`).
+or reach out to me on discord (`@injuly.`), [twitter](https://x.com/ptrCast), or [e-mail](mailto:srijan@injuly.in).
 I usually respond within a day.
 
 > **NOTE:** If you're willing to contribute, It's a good idea to copy the contents of ./pre-commit to 
@@ -52,8 +56,8 @@ to seamlessly switch between multiple zig versions, I recommend using [zvm](http
 
 ### Checking ECMAScript conformance
 
-To avoid regressions and keep track of spec compliance, we use a `results.json` file,
-the format for which is further explained in the [tests262 runner's README](./tools/README.md).
+To avoid regressions and keep track of spec compliance, we use a `results.json` and `babel-results.json` file –
+their formats are explained in the [tools README](./tools/README.md).
 
 You'll need to set the `JAM_TESTS_262_DIR` environment variable to the path of a cloned [tc39/test262-parser-tests](https://github.com/tc39/test262-parser-tests) repository:
 
@@ -64,9 +68,9 @@ export JAM_TESTS_262_DIR=/tmp/test262-parser-tests
 ```
 
 To compare your changes with the existing test results, run `zig build test262 -- compare ./tools/results.json`.
-If it exits with a zero status code, you didn't break anything!
+If it exits normally, you didn't break anything!
 
-To update the test results, run `zig build test262 > ./tools/results.json`.
+To update the test results when you increase conformance, run `zig build test262 > ./tools/results.json`.
 
 
 Currently, the format of the `results.json` file is roughly as follows:
