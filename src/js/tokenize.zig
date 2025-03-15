@@ -1,10 +1,12 @@
 const std = @import("std");
 const unicode_id = @import("unicode-id");
-const Token = @import("token.zig").Token;
-
 const util = @import("util");
-const utf8 = util.utf8;
+
+const Token = @import("token.zig").Token;
 const parser = @import("parser.zig");
+
+const utf8 = util.utf8;
+const assert = std.debug.assert;
 
 const Self = @This();
 
@@ -28,7 +30,7 @@ pub const Error = error{
 };
 
 // zig fmt: off
-pub const all_keywords = [_][]const u8{
+pub const js_keywords = [_][]const u8{
   "await", "break",  "case",  "catch",
   "class", "const",  "continue", "debugger",
   "default",  "delete", "do", "else", "enum",
@@ -42,13 +44,13 @@ pub const all_keywords = [_][]const u8{
 };
 // zig fmt: on
 
-pub const all_kw_tags: [all_keywords.len]Token.Tag = makeKwTagArray();
-fn makeKwTagArray() [all_keywords.len]Token.Tag {
+pub const all_kw_tags: [js_keywords.len]Token.Tag = makeKwTagArray();
+fn makeKwTagArray() [js_keywords.len]Token.Tag {
     @setEvalBranchQuota(10_000);
 
-    var tags: [all_keywords.len]Token.Tag = undefined;
+    var tags: [js_keywords.len]Token.Tag = undefined;
     const enum_tags = std.meta.tags(Token.Tag);
-    for (0.., all_keywords) |i, kw| {
+    for (0.., js_keywords) |i, kw| {
         for (enum_tags) |tag| {
             const tagname = @tagName(tag);
             if (tagname.len < 3) continue;
@@ -110,6 +112,7 @@ pub fn init(source: []const u8, config: parser.Config) Error!Self {
     };
 }
 
+/// Returns the next token, a token may be whitespaces or comments.
 pub fn next(self: *Self) Error!Token {
     const token = try @call(.always_inline, consumeToken, .{self});
     const is_trivia = (token.tag == .comment or token.tag == .whitespace);
@@ -117,6 +120,120 @@ pub fn next(self: *Self) Error!Token {
     return token;
 }
 
+/// Returns the next JSX token.
+/// A JSX token is one of: '<', '>', '{', '}', or JSX text.
+/// To tokenize JS expressions inside JSX (e.g: prop values), the 'next' function should be used instead.
+/// The caller (parser) must know when to call `nextJsx` or `next` based on surrounding context.
+///
+/// [is_inside_jsx_tags] is `true` when the tokenizer is inside a '<'  and '>' pair.
+pub fn nextJsxChild(self: *Self) Error!Token {
+    const byte = self.peekByte() orelse {
+        return Token{
+            .tag = Token.Tag.eof,
+            .start = self.index,
+            .len = 0,
+            .line = self.line,
+        };
+    };
+
+    switch (byte) {
+        '<' => {
+            self.index += 1;
+            return Token{
+                .start = self.index - 1,
+                .len = 1,
+                .line = self.line,
+                .tag = .@"<",
+            };
+        },
+
+        '{' => {
+            self.index += 1;
+            return Token{
+                .start = self.index - 1,
+                .len = 1,
+                .line = self.line,
+                .tag = .@"{",
+            };
+        },
+
+        else => {
+            const start = self.index;
+            const jsx_text_end_pos: u32 = @intCast(util.indexOfCh2(
+                self.source,
+                self.index,
+                '<',
+                '{',
+            ) orelse self.source.len);
+
+            self.index = jsx_text_end_pos;
+            return Token{
+                .tag = Token.Tag.jsx_text,
+                .start = start,
+                .len = jsx_text_end_pos - start,
+                .line = self.line,
+            };
+        },
+    }
+}
+
+/// Once an identifier or keyword has been eaten, this function can be called to
+/// "continue" the previously eaten identifier as a JSXIdentifier and return the
+/// full token.
+///
+/// [start] MUST be the token that was returned by `next` or `nextJsx`
+/// immediately before calling this function.
+///
+/// JSXIdentifier :
+///     IdentifierStart
+///     JSXIdentifier IdentifierPart
+///     JSXIdentifier [no WhiteSpace or Comment here] -
+pub fn continueJsxIdentifier(self: *Self, start: *const Token) Error!Token {
+    assert((start.tag == .identifier or
+        start.tag == .non_ascii_identifier or
+        start.tag.isKeyword()) and
+        self.line == start.line and
+        self.index == start.start + start.len);
+
+    try eatJsxIdentifierTail(self);
+
+    return Token{
+        .tag = .jsx_identifier,
+        .start = start.start,
+        .len = self.index - start.start,
+        .line = start.line,
+    };
+}
+
+/// Consume all characters that form a part of a JSXIdentifier.
+fn eatJsxIdentifierTail(self: *Self) Error!void {
+    while (!self.eof() and
+        isAsciiJsxIdentifierContt(self.source[self.index])) : (self.index += 1)
+    {}
+
+    if (!self.eof() and try self.matchIdentifierContt()) {
+        @branchHint(.cold);
+        while (!self.eof() and try self.matchJsxIdentifierContt()) {}
+    }
+}
+
+/// If the current character can continue a JSXIdentifier,
+/// return true and advance the index.
+fn matchJsxIdentifierContt(self: *Self) Error!bool {
+    if (self.source[self.index] == '-') {
+        self.index += 1;
+        return true;
+    }
+
+    return self.matchIdentifierContt();
+}
+
+/// Returns whether the ASCII byte [ch] can appear in the middle of a JSX Identifer
+fn isAsciiJsxIdentifierContt(ch: u8) bool {
+    return isAsciiIdentifierContt(ch) or ch == '-';
+}
+
+/// Return the next token that may be whitespaces or comments.
 fn consumeToken(self: *Self) Error!Token {
     const byte = self.peekByte() orelse {
         return Token{
@@ -223,21 +340,25 @@ fn consumeToken(self: *Self) Error!Token {
                 return self.dot();
             }
         },
-        else => {
-            // Check for non-ASCII whitespaces
-            const code_point_len = std.unicode.utf8ByteSequenceLength(byte) catch
-                return Error.InvalidUtf8;
-
-            if (code_point_len > 1) {
-                const code_point = utf8.codePointAt(self.source, self.index);
-                if (isNewline(code_point.value) or isMultiByteSpace(code_point.value)) {
-                    return self.whiteSpaces();
-                }
-            }
-
-            return self.identifier();
-        },
+        else => return (try self.checkNonAsciiWhitespace()) orelse self.identifier(),
     }
+}
+
+/// If the next byte starts a whitespace sequence that starts with a non-ascii space,
+/// consume it and return a whitespace token.
+/// Otherwise, return null.
+fn checkNonAsciiWhitespace(self: *Self) Error!?Token {
+    const code_point_len = std.unicode.utf8ByteSequenceLength(self.source[self.index]) catch
+        return Error.InvalidUtf8;
+
+    if (code_point_len > 1) {
+        const code_point = utf8.codePointAt(self.source, self.index);
+        if (isNewline(code_point.value) or isMultiByteSpace(code_point.value)) {
+            return try self.whiteSpaces();
+        }
+    }
+
+    return null;
 }
 
 /// Rewind the tokenizer to a previous location in the source code.
@@ -351,7 +472,7 @@ fn matchWhiteSpaces(str: []const u8) u32 {
 /// Otherwise, return null.
 /// https://tc39.es/ecma262/#prod-annexB-SingleLineHTMLOpenComment
 fn singleLineHtmlCommentOpen(self: *Self) Error!?Token {
-    std.debug.assert(self.source[self.index] == '<');
+    assert(self.source[self.index] == '<');
     const start = self.index;
 
     if (std.mem.startsWith(u8, self.source[self.index..], "<!--")) {
@@ -373,7 +494,7 @@ fn singleLineHtmlCommentOpen(self: *Self) Error!?Token {
 /// Otherwise, return null.
 /// https://tc39.es/ecma262/#prod-annexB-SingleLineHTMLCloseComment
 fn singleLineHtmlCommentClose(self: *Self) Error!?Token {
-    std.debug.assert(self.source[self.index] == '-');
+    assert(self.source[self.index] == '-');
     // "-->" is only allowed on a line if all preceding characters
     // are whitespaces or part of a comment.
     if (!self.is_trivial_line) return null;
@@ -455,7 +576,7 @@ fn consumeUtf8CodePoint(self: *Self) Error!void {
 /// https://tc39.es/ecma262/#prod-RegularExpressionBackslashSequence
 /// This function advances the `self.index` pointer.
 fn consumeRegexEscape(self: *Self) Error!void {
-    std.debug.assert(self.source[self.index] == '\\');
+    assert(self.source[self.index] == '\\');
     if (self.index + 1 >= self.source.len)
         return Error.UnexpectedEof;
 
@@ -473,7 +594,7 @@ fn consumeRegexEscape(self: *Self) Error!void {
 /// Consume a regex character class like "[a-zA-Z_]".
 /// This function advances the `self.index` pointer.
 fn consumeRegexCharacterClass(self: *Self) Error!void {
-    std.debug.assert(self.source[self.index] == '[');
+    assert(self.source[self.index] == '[');
 
     while (!self.eof()) {
         // Consume a RegularExpressionClassChar:
@@ -547,7 +668,7 @@ fn consumeRegexFlags(self: *Self) Error!void {
 /// Parse a regex literal.
 /// https://tc39.es/ecma262/#prod-RegularExpressionLiteral
 fn regexLiteral(self: *Self) Error!Token {
-    std.debug.assert(self.source[self.index] == '/');
+    assert(self.source[self.index] == '/');
 
     const start = self.index;
     const line = self.line;
@@ -745,7 +866,7 @@ fn templateAfterInterpolation(self: *Self) Error!Token {
 /// Parses the beginning of a template literal,
 /// starting from the opening '`' character.
 fn startTemplateLiteral(self: *Self) Error!Token {
-    std.debug.assert(self.source[self.index] == '`');
+    assert(self.source[self.index] == '`');
     const start = self.index;
     const line = self.line;
 
@@ -879,6 +1000,12 @@ fn matchIdentifierContt(self: *Self) Error!bool {
     }
 }
 
+/// Parse an identifier token.
+/// When [check_for_keywords] is `true`, this function will check if the identifier
+/// is a reserved keyword and return the appropriate token tag instead.
+///
+/// Otherwise, it will treat all lexemes as identifiers (with the tag set to .non_ascii_identifier
+/// or .identifier).
 fn identifier(self: *Self) Error!Token {
     const start = self.index;
     const str = self.source[start..];
@@ -896,7 +1023,7 @@ fn identifier(self: *Self) Error!Token {
     // enum.
     const id_str = str[0..len];
     if (len >= 2 and len <= 12) {
-        for (0.., all_keywords) |i, kw| {
+        for (0.., js_keywords) |i, kw| {
             if (std.mem.eql(u8, id_str, kw)) {
                 return Token{
                     .start = start,
@@ -931,6 +1058,7 @@ fn matchIdentifierTail(self: *Self, first_char_kind: IdCharKind) Error!Token.Tag
     // First, eat all the non-escaped ascii chars in the identifier name
     // in one loop. This is the "hot" path, as most identifiers will be normal ascii.
     if (first_char_kind == .ascii) {
+        @branchHint(.likely);
         while (!self.eof() and
             isAsciiIdentifierContt(self.source[self.index])) : (self.index += 1)
         {}
@@ -939,6 +1067,7 @@ fn matchIdentifierTail(self: *Self, first_char_kind: IdCharKind) Error!Token.Tag
     // Then, eat the rest of the identifier name which may contain
     // non-ascii characters and escape sequences.
     if (!self.eof() and try self.matchIdentifierContt()) {
+        @branchHint(.cold);
         token_kind = .non_ascii_identifier;
         while (!self.eof() and try self.matchIdentifierContt()) {}
     }
@@ -960,7 +1089,7 @@ fn matchIdentifierEscape(self: *Self) Error!void {
     }
 }
 
-/// Match a sequence of ASCII characters that are considered whitespace.
+/// Returns whether the ASCII byte [ch] can appear in the middle of an identifier.
 fn isAsciiIdentifierContt(ch: u8) bool {
     return std.ascii.isAlphanumeric(ch) or ch == '_' or ch == '$';
 }

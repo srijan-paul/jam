@@ -725,6 +725,17 @@ pub const NodeData = union(enum(u8)) {
     export_from_declaration: ExportFromDeclaration,
     export_all_declaration: ExportAllDeclaration,
 
+    // JSX:
+
+    /// A list of JSX children nodes.
+    jsx_fragment: SubRange,
+    jsx_text: Token.Index,
+    /// A JSX element wrapped within {}s
+    jsx_expression: Node.Index,
+    /// A JSX spread element wrapped within '{}'s
+    /// The Node.Index payload points to the expression that is being spread.
+    jsx_spread_child: Node.Index,
+
     /// Represents `null` AST node.
     /// This is a sentinel, and always present at index 0 of the `nodes` array.
     /// Used to represent nodes like a missing `else` branch (instead of ?Node.Index)

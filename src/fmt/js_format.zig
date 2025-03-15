@@ -362,6 +362,22 @@ pub fn none(_: *Self, _: *const ast.NodeData) Doc.Id {
     unreachable;
 }
 
+pub fn jsxSpreadChild(_: *Self, _: *const ast.NodeData) Doc.Id {
+    unreachable;
+}
+
+pub fn jsxExpression(_: *Self, _: *const ast.NodeData) Doc.Id {
+    unreachable;
+}
+
+pub fn jsxFragment(_: *Self, _: *const ast.NodeData) Doc.Id {
+    unreachable;
+}
+
+pub fn jsxText(_: *Self, _: *const ast.NodeData) Doc.Id {
+    unreachable;
+}
+
 const t = std.testing;
 
 fn parse(s: []const u8) !js.Parser.Result {

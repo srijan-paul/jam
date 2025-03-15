@@ -15,6 +15,7 @@ const NodeData = ast.NodeData;
 pub const Tree = ast.Tree;
 
 const assert = std.debug.assert;
+const panic = std.debug.panic;
 const meta = std.meta;
 
 const Self = @This();
@@ -106,8 +107,8 @@ const ParseError = error{
     IllegalDeleteInStrictMode,
     /// Invalid expression or pattern inside '(...)'
     InvalidExpressionInsideParens,
-    // TODO: remove these two errors
-    JsxNotImplemented,
+    JsxExpectedTagName,
+
     TypeScriptNotImplemented,
     // The parser instance has already been used
     AlreadyParsed,
@@ -155,15 +156,19 @@ pub const SourceType = enum { script, module };
 pub const Config = struct {
     /// Whether we're parsing a script or a module.
     source_type: SourceType = .module,
-    /// Enable strict mode by default
+    /// Enable strict mode in the entire file
     strict_mode: bool = false,
     /// Enable JSX support
-    jsx: bool = false,
+    jsx: bool = true,
     /// Enable typescript support
     typescript: bool = false,
     /// Add a special ast node for expressions wrapped in '()'.
-    /// Parses `(a)` as `parenthesized_expression {  identifier }` instead of  { identifier }
+    /// Parses `(a)` as `parenthesized_expression {  identifier }` instead of  '{ identifier }'
     preserve_parens: bool = true,
+
+    pub fn isTsx(self: Config) bool {
+        return self.jsx and self.typescript;
+    }
 };
 
 allocator: std.mem.Allocator,
@@ -206,10 +211,6 @@ context: ParseContext = .{},
 current_destructure_kind: DestructureKind = @bitCast(@as(u8, 0)),
 /// Whether we're parsing a module or a script.
 source_type: SourceType,
-/// Whether we're parsing JSX
-jsx: bool = false,
-/// Whether we're parsing TypeScript
-typescript: bool = false,
 /// The parse result
 tree: ?*Tree,
 /// Used in `asyncExpression`.
@@ -364,13 +365,7 @@ pub fn init(
     const is_strict = config.strict_mode or config.source_type == SourceType.module;
     _ = self.contextEnterStrictMode(is_strict);
 
-    if (config.jsx) {
-        self.jsx = true;
-        return Error.JsxNotImplemented;
-    }
-
     if (config.typescript) {
-        self.typescript = true;
         return Error.TypeScriptNotImplemented;
     }
 
@@ -596,21 +591,22 @@ fn defaultImportSpecifier(self: *Self) Error!Node.Index {
 }
 
 fn importSpecifier(self: *Self) Error!Node.Index {
-    var name_token: TokenWithId = undefined; // assigned in the 'blk' block
-    const name = blk: {
+    const name, const name_token = blk: {
         if (self.isAtToken(.string_literal)) {
-            name_token = try self.next();
-            break :blk try self.stringLiteralFromToken(name_token.id);
+            const name_tok = try self.next();
+            break :blk .{ try self.stringLiteralFromToken(name_tok.id), name_tok };
         }
 
-        name_token = try self.expectIdOrKeyword();
+        const name_tok = try self.expectIdOrKeyword();
 
         // `import {foo as bar }` // <- `foo` is an identifier node
         // `import { foo }` // <- `foo` is a BINDING identifier node
-        break :blk try if (self.isAtToken(.kw_as))
-            self.identifier(name_token.id)
+        const name_node = try if (self.isAtToken(.kw_as))
+            self.identifier(name_tok.id)
         else
-            self.bindingIdentifier(name_token.id);
+            self.bindingIdentifier(name_tok.id);
+
+        break :blk .{ name_node, name_tok };
     };
 
     if (self.isAtToken(.kw_as) or !self.isIdentifier(name_token.token.tag)) {
@@ -637,6 +633,8 @@ fn importSpecifier(self: *Self) Error!Node.Index {
     );
 }
 
+/// A string literal or an identifier reference.
+/// https://262.ecma-international.org/15.0/index.html#prod-ModuleExportName
 fn moduleExportName(self: *Self) Error!Node.Index {
     if (self.isAtToken(.string_literal))
         return self.stringLiteral();
@@ -777,14 +775,13 @@ fn defaultExport(self: *Self, export_kw: Token.Index) Error!Node.Index {
     const exported = blk: {
         switch (self.current.token.tag) {
             .kw_class => {
-                const class_kw = try self.next();
-                const class = try self.classExpression(class_kw.id);
+                const class = try self.classExpression();
                 end_pos = self.nodes.items(.end)[@intFromEnum(class)];
                 break :blk class;
             },
             .kw_function => {
-                const fn_token = try self.next();
-                const func = try self.functionExpression(fn_token.id, .{});
+                const func_kw = try self.next();
+                const func = try self.functionExpression(func_kw.id, .{});
                 end_pos = self.nodes.items(.end)[@intFromEnum(func)];
                 break :blk func;
             },
@@ -964,6 +961,9 @@ fn labeledOrExpressionStatement(self: *Self) Error!Node.Index {
     return self.expressionStatement();
 }
 
+/// https://262.ecma-international.org/15.0/index.html#prod-LabelledStatement
+/// LabeledStatement:
+///     LabelIdentifier ':' LabelledItem
 fn labeledStatement(self: *Self) Error!Node.Index {
     const label = try self.next();
     _ = try self.expectToken(.@":");
@@ -988,6 +988,10 @@ fn labeledStatement(self: *Self) Error!Node.Index {
     );
 }
 
+/// https://262.ecma-international.org/15.0/index.html#prod-LabelledItem
+/// LabelledItem:
+///     Statement
+///     FunctionDeclaration
 fn labeledItem(self: *Self) Error!Node.Index {
     if (self.isAtToken(.kw_function)) {
         const lookahead = try self.lookAhead();
@@ -1084,7 +1088,10 @@ fn classDeclaration(self: *Self) Error!Node.Index {
     );
 }
 
-fn classExpression(self: *Self, class_kw_id: Token.Index) Error!Node.Index {
+fn classExpression(self: *Self) Error!Node.Index {
+    const class_kw = try self.next();
+    assert(class_kw.token.tag == .kw_class);
+
     const name, const meta_start_pos = blk: {
         const cur = self.current.token.tag;
         if (cur.isIdentifier() or self.isKeywordIdentifier(cur)) {
@@ -1092,7 +1099,7 @@ fn classExpression(self: *Self, class_kw_id: Token.Index) Error!Node.Index {
             break :blk .{ try self.bindingIdentifier(name_token.id), name_token.id };
         }
 
-        break :blk .{ Node.Index.empty, class_kw_id };
+        break :blk .{ Node.Index.empty, class_kw.id };
     };
 
     const super_class: Node.Index, const meta_end_pos: Token.Index = blk: {
@@ -1101,7 +1108,7 @@ fn classExpression(self: *Self, class_kw_id: Token.Index) Error!Node.Index {
             break :blk .{ heritage, self.nodes.items(.end)[@intFromEnum(heritage)] };
         }
 
-        break :blk .{ Node.Index.empty, class_kw_id };
+        break :blk .{ Node.Index.empty, class_kw.id };
     };
 
     const class_body = try self.classBody();
@@ -1121,7 +1128,7 @@ fn classExpression(self: *Self, class_kw_id: Token.Index) Error!Node.Index {
                 .body = class_body,
             },
         },
-        class_kw_id,
+        class_kw.id,
         rb.id,
     );
 }
@@ -1498,7 +1505,7 @@ fn forLoopIterator(self: *Self) Error!struct { ForLoopKind, ast.Node.Index } {
     // for (var/let/const x = 0; x < 10; x++)
     // for (var/let/const x in y)
     // for (var/let/const x of y)
-    const maybe_decl_kw = blk: {
+    const maybe_vardecl_keyword = blk: {
         const curr = self.current.token.tag;
         if (curr == .kw_var or curr == .kw_const) {
             break :blk try self.next();
@@ -1512,7 +1519,7 @@ fn forLoopIterator(self: *Self) Error!struct { ForLoopKind, ast.Node.Index } {
         break :blk null;
     };
 
-    if (maybe_decl_kw) |decl_kw| {
+    if (maybe_vardecl_keyword) |decl_kw| {
         var loop_kind = ForLoopKind.basic;
         const iterator = try self.completeVarDeclLoopIterator(
             lpar.id,
@@ -1976,6 +1983,11 @@ fn catchClause(self: *Self) Error!Node.Index {
     }, catch_kw.id, self.nodeSpan(body).end);
 }
 
+/// https://262.ecma-international.org/15.0/index.html#prod-CatchParameter
+///
+/// CatchParameter:
+///     BindingIdentifier
+///     BindingPattern
 fn catchParameter(self: *Self) Error!?Node.Index {
     if (!self.isAtToken(.@"(")) return null;
     _ = try self.nextToken();
@@ -2033,12 +2045,8 @@ fn caseBlock(self: *Self) Error!ast.SubRange {
                 .kw_case => break :blk try self.caseClause(),
                 .kw_default => {
                     if (saw_default) {
-                        try self.emitDiagnostic(
-                            self.current.token.startCoord(self.source),
-                            "Multiple 'default' clauses are not allowed in a switch statement",
-                            .{},
-                        );
-                        return Error.MultipleDefaults;
+                        // TODO: emit this error and keep going. No need to stop parsing.
+                        return self.errorOnToken(self.current.token, ParseError.MultipleDefaults);
                     }
 
                     saw_default = true;
@@ -2509,7 +2517,6 @@ fn errorMessage(err: ParseError) []const u8 {
         ParseError.InvalidClassFieldNamedConstructor => "Classes cannot have a field with the name 'constructor'",
         ParseError.InvalidObject => "Expression is neither an object literal, nor a destructuring pattern",
         ParseError.InvalidMetaProperty => "Invalid meta property",
-        ParseError.JsxNotImplemented => "JSX support is not implemented",
         ParseError.TypeScriptNotImplemented => "TypeScript support is not implemented",
         ParseError.InvalidArrowParameters => "Invalid arrow function parameters",
         ParseError.MissingArrow => "Missing '=>' after arrow function parameter list",
@@ -2521,6 +2528,7 @@ fn errorMessage(err: ParseError) []const u8 {
         ParseError.ExpectedImportSpecifier => "Expected an import specifier, '*', or file path",
         ParseError.InvalidExpressionInsideParens => "Invalid expression or pattern inside (...)",
         ParseError.RestElementNotLastInParams => "Rest element must be the last item in a function parameter list",
+        ParseError.JsxExpectedTagName => "Expected a tag name after '<' in JSX code",
     };
 }
 
@@ -2737,14 +2745,32 @@ fn emitDiagnosticOnToken(
 fn expect(self: *Self, tag: Token.Tag) Error!TokenWithId {
     if (self.current.token.tag == tag) {
         return try self.next();
+    } else {
+        try self.emitDiagnostic(
+            self.current.token.startCoord(self.source),
+            "Expected a '{s}', but found a '{s}'",
+            .{ @tagName(tag), self.current.token.toByteSlice(self.source) },
+        );
+        return Error.UnexpectedToken;
     }
+}
 
-    try self.emitDiagnostic(
-        self.current.token.startCoord(self.source),
-        "Expected a '{s}', but found a '{s}'",
-        .{ @tagName(tag), self.current.token.toByteSlice(self.source) },
-    );
-    return Error.UnexpectedToken;
+/// Expect the current token to have a specific tag, and continue tokenization
+/// as if we're inside a JSX text.
+///
+/// [tag] MUST be one of .jsx_identifier, .@"<", .@">", .@"/", .@"{", .@"}",
+/// or .jsx_text.
+fn expectJsx(self: *Self, tag: Token.Tag) Error!TokenWithId {
+    if (self.current.token.tag == tag) {
+        return try self.nextJsx();
+    } else {
+        try self.emitDiagnostic(
+            self.current.token.startCoord(self.source),
+            "Expected a '{s}', but found a '{s}'",
+            .{ @tagName(tag), self.current.token.toByteSlice(self.source) },
+        );
+        return Error.UnexpectedToken;
+    }
 }
 
 /// Emit a parse error if the current token does not match `tag`.
@@ -2804,15 +2830,35 @@ fn expect2(self: *Self, tag1: Token.Tag, tag2: Token.Tag) Error!TokenWithId {
     return Error.UnexpectedToken;
 }
 
-/// Consume the next token from the lexer, skipping all comments.
+/// Consume the next token from the lexer, skipping all comments and whitespaces.
+/// Returns the CURRENT token which was consumed in the previous call to 'next',
+/// and advances the pointer to the next token.
 fn next(self: *Self) Error!TokenWithId {
     var next_token = try self.tokenizer.next();
-    while (next_token.tag == .comment or
-        next_token.tag == .whitespace) : (next_token = try self.tokenizer.next())
-    {
+    while (next_token.tag == .comment or next_token.tag == .whitespace) {
         try self.saveToken(next_token);
+        next_token = try self.tokenizer.next();
     }
 
+    return self.advanceToToken(next_token);
+}
+
+/// Consume the next JSX token from the lexer, skipping all comments and whitespaces.
+///
+/// [is_inside_jsx_tags]: Whether we are currently inside JSX tags (i.e. between '<' and '>').
+fn nextJsx(self: *Self) Error!TokenWithId {
+    var next_token = try self.tokenizer.nextJsxChild();
+    while (next_token.tag == .comment or next_token.tag == .whitespace) {
+        try self.saveToken(next_token);
+        next_token = try self.tokenizer.nextJsxChild();
+    }
+
+    return self.advanceToToken(next_token);
+}
+
+/// Set [next_token] as the current token, and update `self.current`, and `self.prev_token_line`
+/// Returns the newly saved token along with its ID.
+fn advanceToToken(self: *Self, next_token: Token) error{OutOfMemory}!TokenWithId {
     try self.saveToken(next_token);
 
     const current = self.current.token;
@@ -2821,6 +2867,7 @@ fn next(self: *Self) Error!TokenWithId {
     self.current.token = next_token;
     self.current.id = @enumFromInt(self.tokens.items.len - 1);
     self.prev_token_line = current.line;
+
     return TokenWithId{ .token = current, .id = current_id };
 }
 
@@ -2847,7 +2894,7 @@ inline fn nextToken(self: *Self) Error!Token {
 /// without consuming it, or advancing in the source.
 ///
 /// NOTE: The token returned by this function should only be used for
-/// inspection, and never added to the AST.
+/// inspection, and should not be added to the AST.
 fn lookAhead(self: *Self) Error!Token {
     const line = self.tokenizer.line;
     const index = self.tokenizer.index;
@@ -2862,7 +2909,7 @@ fn lookAhead(self: *Self) Error!Token {
     return next_token;
 }
 
-inline fn peek(self: *Self) Token {
+fn peek(self: *Self) Token {
     return self.current.token;
 }
 
@@ -4256,21 +4303,23 @@ fn primaryExpression(self: *Self) Error!Node.Index {
 
     if (cur.tag == .template_literal_part) return self.templateLiteral();
 
-    const token = try self.next();
-    switch (token.token.tag) {
-        .kw_class => return self.classExpression(token.id),
+    switch (cur.tag) {
+        .kw_class => return self.classExpression(),
         .kw_this => {
+            const this = try self.next();
             self.current_destructure_kind.setNoAssignOrDestruct();
-            return self.addNode(.{ .this = token.id }, token.id, token.id);
+            return self.addNode(.{ .this = this.id }, this.id, this.id);
         },
 
         .non_ascii_identifier, .identifier => {
-            if (self.isAtToken(.@"=>")) {
-                // arrow function starting with an identifier:
+            const look_ahead = try self.lookAhead();
+            if (look_ahead.tag == .@"=>") {
+                // arrow function starting with an identifier, like
                 // 'x => 1'.
-                return self.identifierArrowParameter(&token.token, token.id);
+                return self.identifierArrowParameter();
             }
-            return self.identifierReference(token.id);
+            const name_token = try self.next();
+            return self.identifierReference(name_token.id);
         },
         .decimal_literal,
         .octal_literal,
@@ -4282,34 +4331,179 @@ fn primaryExpression(self: *Self) Error!Node.Index {
         .kw_true,
         .kw_false,
         .kw_null,
-        => return self.parseLiteral(token),
-        .@"[" => return self.arrayLiteral(token.id),
-        .@"{" => return self.objectLiteral(token.id),
-        .@"(" => return self.groupingExprOrArrowParameters(&token),
-        .kw_async => return self.asyncExpression(&token),
-        .kw_function => return self.functionExpression(token.id, .{}),
+        => return self.parseLiteral(try self.next()),
+        .@"[" => return self.arrayLiteral(),
+        .@"{" => return self.objectLiteral(),
+        .@"(" => return self.groupingExprOrArrowParameters(),
+        .kw_async => return self.asyncExpression(),
+        .kw_function => {
+            const func_kw = try self.next();
+            return self.functionExpression(func_kw.id, .{});
+        },
+        .@"<" => {
+            if (self.config.jsx) {
+                const jsx_expr = self.jsxFragmentOrElement();
+                self.current_destructure_kind.setNoAssignOrDestruct();
+                return jsx_expr;
+            } else {
+                try self.emitDiagnosticOnToken(
+                    self.current.token,
+                    "Unexpected '<' in expression",
+                    .{},
+                );
+
+                return Error.UnexpectedToken;
+            }
+        },
         else => {},
     }
 
-    if (self.isKeywordIdentifier(token.token.tag)) {
-        if (self.isAtToken(.@"=>")) {
-            // arrow function starting with keyword identifier: 'yield => 1'
-            return self.identifierArrowParameter(&token.token, token.id);
+    if (self.isKeywordIdentifier(self.current.token.tag)) {
+        const look_ahead = try self.lookAhead();
+        if (look_ahead.tag == .@"=>") {
+            // arrow function starting with keyword identifier, like 'yield => 1'
+            return self.identifierArrowParameter();
         }
-        return self.identifierReference(token.id);
+        const name_token = try self.next();
+        return self.identifierReference(name_token.id);
     }
 
     try self.emitDiagnostic(
-        token.token.startCoord(self.source),
+        self.current.token.startCoord(self.source),
         "Unexpected '{s}'",
         .{
-            if (token.token.tag == .eof)
+            if (self.current.token.tag == .eof)
                 "end of input"
             else
-                token.token.toByteSlice(self.source),
+                self.current.token.toByteSlice(self.source),
         },
     );
     return Error.UnexpectedToken;
+}
+
+/// An extension of the 'PrimaryExpression' grammar specified in the JSX spec.
+/// JSXExpression:
+///     JSXElement
+///     JSXFragment
+fn jsxFragmentOrElement(self: *Self) Error!Node.Index {
+    const lt_token = try self.next();
+    if (self.isAtToken(.@">")) {
+        return self.jsxFragment(lt_token.id);
+    }
+
+    return Error.UnexpectedToken;
+}
+
+/// JSXFragment:
+///     <> JSXChildren* </>
+/// https://facebook.github.io/jsx/#prod-JSXFragment
+fn jsxFragment(self: *Self, opening_lt: Token.Index) Error!Node.Index {
+    // eat the '>' and consume the following characters as a JSX token.
+    const gt = try self.nextJsx();
+    assert(gt.token.tag == .@">");
+
+    const jsx_children = try self.jsxChildren();
+
+    // eat the closing '</>'
+    _ = try self.expectToken(.@"<");
+    _ = try self.expectToken(.@"/");
+    const closing_gt = try self.expect(.@">");
+
+    const end_pos = closing_gt.id;
+
+    return self.addNode(
+        .{ .jsx_fragment = jsx_children },
+        opening_lt,
+        end_pos,
+    );
+}
+
+/// https://facebook.github.io/jsx/#prod-JSXChildren
+/// JSXChildren: JSXChild+
+fn jsxChildren(self: *Self) Error!ast.SubRange {
+    const prev_scratch_len = self.scratch.items.len;
+    defer self.scratch.items.len = prev_scratch_len;
+
+    while (try self.tryJsxChild()) |jsx_child| {
+        try self.scratch.append(jsx_child);
+    }
+
+    const children = self.scratch.items[prev_scratch_len..];
+    return self.addSubRange(children);
+}
+
+/// Try to parse a JSXChild. If no JSXChild can be parsed,
+/// return null.
+///
+/// https://facebook.github.io/jsx/#prod-JSXChild
+/// JSXChild:
+///     JSXText
+///     JSXElement
+///     JSXFragment
+///     { JSXChildExpression }
+fn tryJsxChild(self: *Self) Error!?Node.Index {
+    switch (self.current.token.tag) {
+        .@"<" => {
+            // '</' means we're at a closing tag.
+            const look_ahead = try self.lookAhead();
+            if (look_ahead.tag == .@"/") return null;
+            return try self.jsxFragmentOrElement();
+        },
+        .@"{" => return try self.jsxExpression(),
+        .jsx_text => {
+            const text_token = try self.nextJsx();
+            return try self.addNode(
+                .{ .jsx_text = text_token.id },
+                text_token.id,
+                text_token.id,
+            );
+        },
+        else => return null,
+    }
+}
+
+/// { JSXChildExpression }
+/// where
+/// JSXChildExpression:
+///     ... AssignmentExpression
+///     AssignmentExpression
+///
+/// https://facebook.github.io/jsx/#prod-JSXChildExpression
+fn jsxExpression(self: *Self) Error!Node.Index {
+    assert(self.current.token.tag == .@"{");
+
+    // Eat the '{', and consume the next token as a regular
+    // JS token, not a token within a JSX text.
+    const lbrace = try self.next();
+
+    if (self.isAtToken(.@"...")) {
+        const spread_token = try self.next();
+        const expr = try self.assignExpressionNoPattern();
+        const jsx_spread_expr = try self.addNode(
+            .{ .jsx_spread_child = expr },
+            spread_token.id,
+            self.nodes.items(.end)[@intFromEnum(expr)],
+        );
+
+        const rbrace = try self.expectJsx(.@"}");
+        return self.addNode(
+            .{ .jsx_expression = jsx_spread_expr },
+            lbrace.id,
+            rbrace.id,
+        );
+    }
+
+    const expr = try self.assignExpressionNoPattern();
+    const rbrace = try self.expectJsx(.@"}");
+    return self.addNode(.{ .jsx_expression = expr }, lbrace.id, rbrace.id);
+}
+
+fn continueJsxIdentifier(self: *Self) Error!TokenWithId {
+    assert(self.current.token.tag == .jsx_identifier);
+    _ = try self.tokens.pop();
+
+    const new_token = try self.tokenizer.continueJsxIdentifier(&self.current.token);
+    return self.advanceToToken(new_token);
 }
 
 /// Check whether a numeric literal is valid in strict mode.
@@ -4454,17 +4648,16 @@ fn stringLiteralFromToken(
 
 /// Parse an arrow function that starts with an identifier token.
 /// E.g: `x => 1` or `yield => 2`
-fn identifierArrowParameter(
-    self: *Self,
-    token: *const Token,
-    token_id: Token.Index,
-) Error!Node.Index {
-    const id = try self.bindingIdentifier(token_id);
+fn identifierArrowParameter(self: *Self) Error!Node.Index {
+    const token = try self.next();
+    const id = try self.bindingIdentifier(token.id);
     const params_range = try self.addSubRange(&[_]Node.Index{id});
-    // TODO: should functions with single parameters just not store a SubRange and store the
-    // parameter directly?
-    const params = try self.addNode(.{ .parameters = params_range }, token_id, token_id);
-    try self.ensureFatArrow(token, token);
+    const params = try self.addNode(
+        .{ .parameters = params_range },
+        token.id,
+        token.id,
+    );
+    try self.ensureFatArrow(&token.token, &token.token);
     return params;
 }
 
@@ -4545,7 +4738,10 @@ fn isTemplateEndToken(self: *const Self, token: *const Token) bool {
 /// async // expression statement
 /// x => 1 // regular arrow function, not async
 /// ```
-fn asyncExpression(self: *Self, async_kw: *const TokenWithId) Error!Node.Index {
+fn asyncExpression(self: *Self) Error!Node.Index {
+    const async_kw = try self.next();
+    assert(async_kw.token.tag == .kw_async);
+
     const async_line = async_kw.token.line;
     if (self.current.token.tag == .kw_function and async_line == self.current.token.line) {
         _ = try self.nextToken(); // eat 'function keyword'
@@ -5019,10 +5215,10 @@ fn completeArrowParamsOrGroupingExpr(
 }
 
 /// Parses either an arrow function or a parenthesized expression.
-fn groupingExprOrArrowParameters(
-    self: *Self,
-    lparen: *const TokenWithId,
-) Error!Node.Index {
+fn groupingExprOrArrowParameters(self: *Self) Error!Node.Index {
+    const lparen = try self.next();
+    assert(lparen.token.tag == .@"(");
+
     if (self.isAtToken(.@")")) {
         const rparen = try self.next();
         const params = try self.addNode(
@@ -5053,10 +5249,13 @@ fn groupingExprOrArrowParameters(
 
 /// Parse an object literal, assuming the `{` has already been consumed.
 /// https://262.ecma-international.org/15.0/index.html#prod-ObjectLiteral
-fn objectLiteral(self: *Self, start_pos: Token.Index) Error!Node.Index {
+fn objectLiteral(self: *Self) Error!Node.Index {
+    const lbrace = try self.next();
+    assert(lbrace.token.tag == .@"{");
+
     const properties = try self.propertyDefinitionList();
     const rbrace = try self.expect(.@"}");
-    return self.addNode(.{ .object_literal = properties }, start_pos, rbrace.id);
+    return self.addNode(.{ .object_literal = properties }, lbrace.id, rbrace.id);
 }
 
 /// https://tc39.es/ecma262/#prod-PropertyDefinitionList
@@ -5481,13 +5680,17 @@ fn completePropertyDef(
 
 /// Parse an ArrayLiteral:
 /// https://262.ecma-international.org/15.0/index.html#prod-ArrayLiteral
-fn arrayLiteral(self: *Self, start_pos: Token.Index) Error!Node.Index {
+fn arrayLiteral(self: *Self) Error!Node.Index {
+    const open_brac = try self.next();
+    assert(open_brac.token.tag == .@"[");
+
     const scratch_start = self.scratch.items.len;
     defer self.scratch.items.len = scratch_start;
 
     var destructure_kind = self.current_destructure_kind;
     destructure_kind.is_simple_expression = false;
 
+    const start_pos = open_brac.id;
     var end_pos = start_pos;
     while (true) {
         while (self.isAtToken(.@",")) {
@@ -5543,11 +5746,13 @@ fn arrayLiteral(self: *Self, start_pos: Token.Index) Error!Node.Index {
     return self.addNode(.{ .array_literal = nodes }, start_pos, end_pos);
 }
 
-/// Assuming the parser is at the `function` keyword,
-/// parse a function expression.
+/// Parse a function expression assuming the 'function' keyword
+/// has been consumed before this is called.
+///
+/// [start_token_id] Must be the ID of an 'async' or 'function' keyword
 fn functionExpression(
     self: *Self,
-    start_token: Token.Index,
+    start_token_id: Token.Index,
     flags: ast.FunctionFlags,
 ) Error!Node.Index {
     var fn_flags = flags;
@@ -5572,7 +5777,7 @@ fn functionExpression(
     self.context = saved_ctx;
 
     defer self.current_destructure_kind = DestructureKind.CannotDestruct;
-    return self.parseFunctionBody(start_token, name_token, fn_flags, false);
+    return self.parseFunctionBody(start_token_id, name_token, fn_flags, false);
 }
 
 /// parses the arguments and body of a function expression (or declaration),

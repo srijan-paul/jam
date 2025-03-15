@@ -183,6 +183,11 @@ pub fn jamToEstreeTag(node: ast.NodeData) []const u8 {
         .export_from_declaration => "ExportFromDeclaration",
         .export_all_declaration => "ExportAllDeclaration",
         .parenthesized_expr => "GroupingExpression",
+
+        .jsx_text => "JSXText",
+        .jsx_spread_child => "JSXSpreadChild",
+        .jsx_expression => "JSXExpressionContainer",
+        .jsx_fragment => "JSXFragment",
         .function_meta, .class_meta, .none => unreachable,
     };
 }
@@ -779,6 +784,26 @@ fn nodeToEsTree(
 
             try o.put("tag", pl_tag);
             try o.put("quasi", quasi);
+        },
+
+        .jsx_fragment => |children| {
+            const children_json = try subRangeToJsonArray(al, t, children, opts);
+            try o.put("children", children_json);
+        },
+
+        .jsx_expression => |e| {
+            const expression = try nodeToEsTree(t, al, e, opts);
+            try o.put("expression", expression);
+        },
+
+        .jsx_spread_child => |e| {
+            const expression = try nodeToEsTree(t, al, e, opts);
+            try o.put("expression", expression);
+        },
+
+        .jsx_text => |token_id| {
+            const value = t.getTokenSlice(token_id);
+            try o.put("value", JValue{ .string = value });
         },
 
         // this should be unreachable

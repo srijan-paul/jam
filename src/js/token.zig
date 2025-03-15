@@ -199,6 +199,9 @@ pub const JsTokenTag = enum(u32) {
     kw_from = 145 | Mask.ContextualKeyword,
     kw_of = 146 | Mask.ContextualKeyword,
 
+    jsx_text = 147,
+    jsx_identifier = 148,
+
     eof = 149,
 
     pub fn is(self: JsTokenTag, mask: u32) bool {

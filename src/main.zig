@@ -93,7 +93,11 @@ pub fn main() !void {
 
     const pretty_ast_str = blk: {
         const file_ext = std.fs.path.extension(file_name);
-        if (std.mem.eql(u8, file_ext, ".js")) {
+        if (std.mem.eql(u8, file_ext, ".js") or
+            std.mem.eql(u8, file_ext, ".mjs") or
+            std.mem.eql(u8, file_ext, ".cjs") or
+            std.mem.eql(u8, file_ext, ".jsx"))
+        {
             break :blk try jsFileToJsonAst(allocator, file_name, js_parse_mode);
         } else if (std.mem.eql(u8, file_ext, ".css")) {
             break :blk try cssFileToJsonAst(allocator, file_name);

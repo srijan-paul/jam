@@ -516,6 +516,10 @@ pub fn enqueueChildren(self: *Self, node_id: Node.Index) Allocator.Error!void {
         .export_list_declaration => |pl| try self.visitExportListDeclaration(&pl, node_id),
         .export_from_declaration => |pl| try self.visitExportFromDeclaration(&pl, node_id),
         .export_all_declaration => |pl| try self.visitExportAllDeclaration(&pl, node_id),
+        .jsx_fragment => |pl| try self.visitSubRange(&pl, node_id),
+        .jsx_text => {}, // leaf (token)
+        .jsx_expression => |child_id| try self.pushNode(child_id, node_id),
+        .jsx_spread_child => |child_id| try self.pushNode(child_id, node_id),
         .none => {}, // leaf
     }
 }
