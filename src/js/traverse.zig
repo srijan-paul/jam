@@ -274,6 +274,36 @@ pub fn Traverser(TControl: type) type {
                 .jsx_fragment => |fragment| try self.subRange(fragment.children, node_id),
                 .jsx_expression => |expr| try self.visit(expr, node_id),
                 .jsx_spread_child => |argument| try self.visit(argument, node_id),
+                .jsx_element => |element| {
+                    try self.visit(element.opening_element, node_id);
+                    try self.visit(element.closing_element, node_id);
+                    if (element.children != .empty)
+                        try self.visit(element.children, node_id);
+                },
+
+                .jsx_opening_element => |element| {
+                    try self.visit(element.name, node_id);
+                    try self.subRange(element.attributes, node_id);
+                },
+                .jsx_closing_element => |element| try self.visit(element.name, node_id),
+
+                .jsx_member_expression => |member| {
+                    try self.visit(member.object, node_id);
+                    try self.visit(member.property, node_id);
+                },
+
+                .jsx_namespaced_name => |name| {
+                    try self.visit(name.namespace, node_id);
+                    try self.visit(name.name, node_id);
+                },
+
+                .jsx_children => |children| try self.subRange(children, node_id),
+                .jsx_attribute => |attr| {
+                    try self.visit(attr.name, node_id);
+                    if (attr.value) |value| try self.visit(value, node_id);
+                },
+
+                .jsx_spread_attribute => |arg| try self.visit(arg, node_id),
 
                 // leaf nodes cannot be explored further
                 .number_literal,
@@ -292,6 +322,8 @@ pub fn Traverser(TControl: type) type {
                 .this,
                 .super,
                 .jsx_text,
+                .jsx_identifier,
+                .jsx_identifier_reference,
                 => {},
             }
 

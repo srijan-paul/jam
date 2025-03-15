@@ -619,6 +619,70 @@ pub const JsxFragment = struct {
     }
 };
 
+pub const JsxElement = struct {
+    opening_element: Node.Index,
+    children: Node.Index,
+    closing_element: Node.Index,
+
+    /// Get the opening element of this JSXElement
+    pub fn getOpening(self: JsxElement, t: *const Tree) JsxOpeningElement {
+        return self.opening_element.get(t).jsx_opening_element;
+    }
+
+    /// Get the closing element of this JSXElement
+    pub fn getClosing(self: JsxElement, t: *const Tree) JsxClosingElement {
+        return self.closing_element.get(t).jsx_closing_element;
+    }
+};
+
+pub const JsxOpeningElement = struct {
+    name: Node.Index,
+    attributes: SubRange,
+};
+
+pub const JsxClosingElement = struct {
+    name: Node.Index,
+};
+
+pub const JsxAttribute = struct {
+    name: Node.Index,
+    value: ?Node.Index,
+};
+
+pub const JsxMemberExpression = struct {
+    /// Can be one of:
+    /// - jsx_identifier_reference
+    /// - jsx_member_expression
+    object: Node.Index,
+    /// The field name after the ".".
+    /// This is guaranteed to always be a 'jsx_identifier_reference'
+    property: Node.Index,
+
+    /// Get the field name of the member expression
+    pub fn getProperty(self: *const JsxMemberExpression, t: *const Tree) Token.Index {
+        const property = self.property.get(t);
+        assert(meta.activeTag(property.*) == .jsx_identifier);
+        return property.jsx_identifier;
+    }
+};
+
+pub const JsxNamespacedName = struct {
+    /// Can be one of:
+    /// - jsx_identifier_reference
+    /// - jsx_member_expression
+    namespace: Node.Index,
+    /// The name after the ":".
+    /// This is guaranteed to always be a 'jsx_identifier_reference'
+    name: Node.Index,
+
+    /// Get the field name of the member expression
+    pub fn getProperty(self: *const JsxNamespacedName, t: *const Tree) Token.Index {
+        const property = self.name.get(t);
+        assert(meta.activeTag(property.*) == .jsx_identifier);
+        return property.jsx_identifier;
+    }
+};
+
 /// Data contained inside an AST node
 pub const NodeData = union(enum(u8)) {
     program: ?SubRange,
@@ -761,12 +825,28 @@ pub const NodeData = union(enum(u8)) {
 
     /// A list of JSX children nodes.
     jsx_fragment: JsxFragment,
+    jsx_element: JsxElement,
+    jsx_children: SubRange,
+
+    /// A pair of jsx_opening_element and jsx_closing_element
+    jsx_opening_element: JsxOpeningElement,
+    /// A closing JSX element like '</Foo>'
+    jsx_closing_element: JsxClosingElement,
+    jsx_attribute: JsxAttribute,
+    /// Non-javascript text inside a JSX element.
     jsx_text: Token.Index,
     /// A JSX element wrapped within {}s
     jsx_expression: Node.Index,
+    /// An attribute name, like a prop key.
+    jsx_identifier: Token.Index,
+    /// A JSX Element name
+    jsx_identifier_reference: Token.Index,
+    jsx_member_expression: JsxMemberExpression,
+    jsx_namespaced_name: JsxNamespacedName,
     /// A JSX spread element wrapped within '{}'s
     /// The Node.Index payload points to the expression that is being spread.
     jsx_spread_child: Node.Index,
+    jsx_spread_attribute: Node.Index,
 
     /// Represents `null` AST node.
     /// This is a sentinel, and always present at index 0 of the `nodes` array.

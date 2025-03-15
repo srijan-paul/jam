@@ -112,16 +112,6 @@ fn visitExportFromDeclaration(
     try self.pushNode(data.source, node_id);
 }
 
-fn visitConditional(
-    self: *Self,
-    data: *const ast.Conditional,
-    node_id: Node.Index,
-) Allocator.Error!void {
-    try self.pushNode(data.alternate, node_id);
-    try self.pushNode(data.consequent, node_id);
-    try self.pushNode(data.condition, node_id);
-}
-
 fn visitExportListDeclaration(
     self: *Self,
     data: *const ast.ExportListDeclaration,
@@ -174,15 +164,6 @@ fn visitUnaryPayload(
     try self.pushNode(data.operand, node_id);
 }
 
-fn visitPropertyAccess(
-    self: *Self,
-    data: *const ast.PropertyAccess,
-    node_id: Node.Index,
-) Allocator.Error!void {
-    try self.pushNode(data.property, node_id);
-    try self.pushNode(data.object, node_id);
-}
-
 fn visitTryStatement(
     self: *Self,
     data: *const ast.TryStatement,
@@ -191,15 +172,6 @@ fn visitTryStatement(
     try self.pushNode(data.finalizer, node_id);
     try self.pushNode(data.catch_clause, node_id);
     try self.pushNode(data.body, node_id);
-}
-
-fn visitClass(
-    self: *Self,
-    data: *const ast.Class,
-    node_id: Node.Index,
-) Allocator.Error!void {
-    try self.visitSubRange(&data.body, node_id);
-    try self.pushNode(data.meta, node_id);
 }
 
 fn visitExportSpecifier(
@@ -227,6 +199,142 @@ fn visitComputedPropertyAccess(
 ) Allocator.Error!void {
     try self.pushNode(data.property, node_id);
     try self.pushNode(data.object, node_id);
+}
+
+fn visitWhileStatement(
+    self: *Self,
+    data: *const ast.WhileStatement,
+    node_id: Node.Index,
+) Allocator.Error!void {
+    try self.pushNode(data.body, node_id);
+    try self.pushNode(data.condition, node_id);
+}
+
+fn visitBinaryPayload(
+    self: *Self,
+    data: *const ast.BinaryPayload,
+    node_id: Node.Index,
+) Allocator.Error!void {
+    try self.pushNode(data.rhs, node_id);
+    try self.pushNode(data.lhs, node_id);
+}
+
+fn visitClassMeta(
+    self: *Self,
+    data: *const ast.ClassMeta,
+    node_id: Node.Index,
+) Allocator.Error!void {
+    try self.pushNode(data.super_class, node_id);
+    try self.pushNode(data.name, node_id);
+}
+
+fn visitImportSpecifier(
+    self: *Self,
+    data: *const ast.ImportSpecifier,
+    node_id: Node.Index,
+) Allocator.Error!void {
+    try self.pushNode(data.local, node_id);
+    if (data.imported) |_pl|
+        try self.pushNode(_pl, node_id);
+}
+
+fn visitJsxOpeningElement(
+    self: *Self,
+    data: *const ast.JsxOpeningElement,
+    node_id: Node.Index,
+) Allocator.Error!void {
+    try self.visitSubRange(&data.attributes, node_id);
+    try self.pushNode(data.name, node_id);
+}
+
+fn visitWithStatement(
+    self: *Self,
+    data: *const ast.WithStatement,
+    node_id: Node.Index,
+) Allocator.Error!void {
+    try self.pushNode(data.body, node_id);
+    try self.pushNode(data.object, node_id);
+}
+
+fn visitNewExpr(
+    self: *Self,
+    data: *const ast.NewExpr,
+    node_id: Node.Index,
+) Allocator.Error!void {
+    if (data.arguments) |_pl|
+        try self.pushNode(_pl, node_id);
+    try self.pushNode(data.callee, node_id);
+}
+
+fn visitExportedDeclaration(
+    self: *Self,
+    data: *const ast.ExportedDeclaration,
+    node_id: Node.Index,
+) Allocator.Error!void {
+    try self.pushNode(data.declaration, node_id);
+}
+
+fn visitSwitchDefaultCase(
+    self: *Self,
+    data: *const ast.SwitchDefaultCase,
+    node_id: Node.Index,
+) Allocator.Error!void {
+    try self.visitSubRange(&data.consequent, node_id);
+}
+
+fn visitCallExpr(
+    self: *Self,
+    data: *const ast.CallExpr,
+    node_id: Node.Index,
+) Allocator.Error!void {
+    try self.pushNode(data.arguments, node_id);
+    try self.pushNode(data.callee, node_id);
+}
+
+fn visitConditional(
+    self: *Self,
+    data: *const ast.Conditional,
+    node_id: Node.Index,
+) Allocator.Error!void {
+    try self.pushNode(data.alternate, node_id);
+    try self.pushNode(data.consequent, node_id);
+    try self.pushNode(data.condition, node_id);
+}
+
+fn visitPropertyAccess(
+    self: *Self,
+    data: *const ast.PropertyAccess,
+    node_id: Node.Index,
+) Allocator.Error!void {
+    try self.pushNode(data.property, node_id);
+    try self.pushNode(data.object, node_id);
+}
+
+fn visitClass(
+    self: *Self,
+    data: *const ast.Class,
+    node_id: Node.Index,
+) Allocator.Error!void {
+    try self.visitSubRange(&data.body, node_id);
+    try self.pushNode(data.meta, node_id);
+}
+
+fn visitJsxMemberExpression(
+    self: *Self,
+    data: *const ast.JsxMemberExpression,
+    node_id: Node.Index,
+) Allocator.Error!void {
+    try self.pushNode(data.property, node_id);
+    try self.pushNode(data.object, node_id);
+}
+
+fn visitJsxNamespacedName(
+    self: *Self,
+    data: *const ast.JsxNamespacedName,
+    node_id: Node.Index,
+) Allocator.Error!void {
+    try self.pushNode(data.name, node_id);
+    try self.pushNode(data.namespace, node_id);
 }
 
 fn visitImportNamespaceSpecifier(
@@ -265,22 +373,14 @@ fn visitVariableDeclarator(
     try self.pushNode(data.lhs, node_id);
 }
 
-fn visitWhileStatement(
+fn visitJsxElement(
     self: *Self,
-    data: *const ast.WhileStatement,
+    data: *const ast.JsxElement,
     node_id: Node.Index,
 ) Allocator.Error!void {
-    try self.pushNode(data.body, node_id);
-    try self.pushNode(data.condition, node_id);
-}
-
-fn visitBinaryPayload(
-    self: *Self,
-    data: *const ast.BinaryPayload,
-    node_id: Node.Index,
-) Allocator.Error!void {
-    try self.pushNode(data.rhs, node_id);
-    try self.pushNode(data.lhs, node_id);
+    try self.pushNode(data.closing_element, node_id);
+    try self.pushNode(data.children, node_id);
+    try self.pushNode(data.opening_element, node_id);
 }
 
 fn visitCatchClause(
@@ -293,23 +393,12 @@ fn visitCatchClause(
     try self.pushNode(data.body, node_id);
 }
 
-fn visitClassMeta(
+fn visitJsxClosingElement(
     self: *Self,
-    data: *const ast.ClassMeta,
+    data: *const ast.JsxClosingElement,
     node_id: Node.Index,
 ) Allocator.Error!void {
-    try self.pushNode(data.super_class, node_id);
     try self.pushNode(data.name, node_id);
-}
-
-fn visitImportSpecifier(
-    self: *Self,
-    data: *const ast.ImportSpecifier,
-    node_id: Node.Index,
-) Allocator.Error!void {
-    try self.pushNode(data.local, node_id);
-    if (data.imported) |_pl|
-        try self.pushNode(_pl, node_id);
 }
 
 fn visitClassFieldDefinition(
@@ -319,15 +408,6 @@ fn visitClassFieldDefinition(
 ) Allocator.Error!void {
     try self.pushNode(data.value, node_id);
     try self.pushNode(data.key, node_id);
-}
-
-fn visitWithStatement(
-    self: *Self,
-    data: *const ast.WithStatement,
-    node_id: Node.Index,
-) Allocator.Error!void {
-    try self.pushNode(data.body, node_id);
-    try self.pushNode(data.object, node_id);
 }
 
 fn visitLabeledStatement(
@@ -365,24 +445,6 @@ fn visitForInOfIterator(
     try self.pushNode(data.left, node_id);
 }
 
-fn visitNewExpr(
-    self: *Self,
-    data: *const ast.NewExpr,
-    node_id: Node.Index,
-) Allocator.Error!void {
-    if (data.arguments) |_pl|
-        try self.pushNode(_pl, node_id);
-    try self.pushNode(data.callee, node_id);
-}
-
-fn visitVariableDeclaration(
-    self: *Self,
-    data: *const ast.VariableDeclaration,
-    node_id: Node.Index,
-) Allocator.Error!void {
-    try self.visitSubRange(&data.declarators, node_id);
-}
-
 fn visitImportDeclaration(
     self: *Self,
     data: *const ast.ImportDeclaration,
@@ -392,21 +454,12 @@ fn visitImportDeclaration(
     try self.visitSubRange(&data.specifiers, node_id);
 }
 
-fn visitSwitchDefaultCase(
+fn visitVariableDeclaration(
     self: *Self,
-    data: *const ast.SwitchDefaultCase,
+    data: *const ast.VariableDeclaration,
     node_id: Node.Index,
 ) Allocator.Error!void {
-    try self.visitSubRange(&data.consequent, node_id);
-}
-
-fn visitSwitchStatement(
-    self: *Self,
-    data: *const ast.SwitchStatement,
-    node_id: Node.Index,
-) Allocator.Error!void {
-    try self.visitSubRange(&data.cases, node_id);
-    try self.pushNode(data.discriminant, node_id);
+    try self.visitSubRange(&data.declarators, node_id);
 }
 
 fn visitExportAllDeclaration(
@@ -419,21 +472,23 @@ fn visitExportAllDeclaration(
     try self.pushNode(data.source, node_id);
 }
 
-fn visitExportedDeclaration(
+fn visitJsxAttribute(
     self: *Self,
-    data: *const ast.ExportedDeclaration,
+    data: *const ast.JsxAttribute,
     node_id: Node.Index,
 ) Allocator.Error!void {
-    try self.pushNode(data.declaration, node_id);
+    if (data.value) |_pl|
+        try self.pushNode(_pl, node_id);
+    try self.pushNode(data.name, node_id);
 }
 
-fn visitCallExpr(
+fn visitSwitchStatement(
     self: *Self,
-    data: *const ast.CallExpr,
+    data: *const ast.SwitchStatement,
     node_id: Node.Index,
 ) Allocator.Error!void {
-    try self.pushNode(data.arguments, node_id);
-    try self.pushNode(data.callee, node_id);
+    try self.visitSubRange(&data.cases, node_id);
+    try self.pushNode(data.discriminant, node_id);
 }
 pub fn enqueueChildren(self: *Self, node_id: Node.Index) Allocator.Error!void {
     const node_pl = &self.node_pls[@intFromEnum(node_id)];
@@ -525,9 +580,19 @@ pub fn enqueueChildren(self: *Self, node_id: Node.Index) Allocator.Error!void {
         .export_from_declaration => |pl| try self.visitExportFromDeclaration(&pl, node_id),
         .export_all_declaration => |pl| try self.visitExportAllDeclaration(&pl, node_id),
         .jsx_fragment => |pl| try self.visitJsxFragment(&pl, node_id),
+        .jsx_element => |pl| try self.visitJsxElement(&pl, node_id),
+        .jsx_children => |pl| try self.visitSubRange(&pl, node_id),
+        .jsx_opening_element => |pl| try self.visitJsxOpeningElement(&pl, node_id),
+        .jsx_closing_element => |pl| try self.visitJsxClosingElement(&pl, node_id),
+        .jsx_attribute => |pl| try self.visitJsxAttribute(&pl, node_id),
         .jsx_text => {}, // leaf (token)
         .jsx_expression => |child_id| try self.pushNode(child_id, node_id),
+        .jsx_identifier => {}, // leaf (token)
+        .jsx_identifier_reference => {}, // leaf (token)
+        .jsx_member_expression => |pl| try self.visitJsxMemberExpression(&pl, node_id),
+        .jsx_namespaced_name => |pl| try self.visitJsxNamespacedName(&pl, node_id),
         .jsx_spread_child => |child_id| try self.pushNode(child_id, node_id),
+        .jsx_spread_attribute => |child_id| try self.pushNode(child_id, node_id),
         .none => {}, // leaf
     }
 }

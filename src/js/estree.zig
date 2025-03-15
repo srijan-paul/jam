@@ -120,6 +120,10 @@ pub fn jamToEstreeTag(node: ast.NodeData) []const u8 {
         .identifier_reference,
         => "Identifier",
 
+        .jsx_identifier_reference,
+        .jsx_identifier,
+        => "JSXIdentifier",
+
         .string_literal,
         .number_literal,
         .null_literal,
@@ -188,7 +192,14 @@ pub fn jamToEstreeTag(node: ast.NodeData) []const u8 {
         .jsx_spread_child => "JSXSpreadChild",
         .jsx_expression => "JSXExpressionContainer",
         .jsx_fragment => "JSXFragment",
-        .function_meta, .class_meta, .none => unreachable,
+        .jsx_namespaced_name => "JSXNamespacedName",
+        .jsx_attribute => "JSXAttribute",
+        .jsx_spread_attribute => "JSXSpreadAttribute",
+        .jsx_opening_element => "JSXOpeningElement",
+        .jsx_closing_element => "JSXClosingElement",
+        .jsx_element => "JSXElement",
+        .jsx_member_expression => "JSXMemberExpression",
+        .function_meta, .class_meta, .jsx_children, .none => unreachable,
     };
 }
 
@@ -232,7 +243,12 @@ fn nodeToEsTree(
             try o.put("right", rhs);
         },
 
-        .binding_identifier, .identifier, .identifier_reference => |tok_id| {
+        .binding_identifier,
+        .identifier,
+        .identifier_reference,
+        .jsx_identifier,
+        .jsx_identifier_reference,
+        => |tok_id| {
             const name = t.getToken(tok_id).toByteSlice(t.source);
             const escapedName = try processEscapes(al, name);
             try o.put("name", JValue{ .string = escapedName });
@@ -822,6 +838,62 @@ fn nodeToEsTree(
             try o.put("closing", close_fragment);
         },
 
+        .jsx_namespaced_name => |payload| {
+            const namespace = try nodeToEsTree(t, al, payload.namespace, opts);
+            const name = try nodeToEsTree(t, al, payload.name, opts);
+
+            try o.put("namespace", namespace);
+            try o.put("name", name);
+        },
+
+        .jsx_member_expression => |payload| {
+            const object = try nodeToEsTree(t, al, payload.object, opts);
+            const property = try nodeToEsTree(t, al, payload.property, opts);
+
+            try o.put("object", object);
+            try o.put("property", property);
+        },
+
+        .jsx_attribute => |payload| {
+            const name = try nodeToEsTree(t, al, payload.name, opts);
+
+            try o.put("name", name);
+            if (payload.value) |v| {
+                try o.put("value", try nodeToEsTree(t, al, v, opts));
+            }
+        },
+
+        .jsx_spread_attribute => |arg| {
+            const argument = try nodeToEsTree(t, al, arg, opts);
+            try o.put("argument", argument);
+        },
+
+        .jsx_element => |payload| {
+            const opening = try nodeToEsTree(t, al, payload.opening_element, opts);
+            const closing = try nodeToEsTree(t, al, payload.closing_element, opts);
+            const children = if (payload.children != Node.Index.empty)
+                try subRangeToJsonArray(al, t, payload.children.get(t).jsx_children, opts)
+            else
+                JValue{ .array = std.json.Array.init(al) };
+
+            try o.put("openingElement", opening);
+            try o.put("closingElement", closing);
+            try o.put("children", children);
+        },
+
+        .jsx_opening_element => |payload| {
+            const name = try nodeToEsTree(t, al, payload.name, opts);
+            const attributes = try subRangeToJsonArray(al, t, payload.attributes, opts);
+
+            try o.put("name", name);
+            try o.put("attributes", attributes);
+        },
+
+        .jsx_closing_element => |payload| {
+            const name = try nodeToEsTree(t, al, payload.name, opts);
+            try o.put("name", name);
+        },
+
         .jsx_expression => |e| {
             const expression = try nodeToEsTree(t, al, e, opts);
             try o.put("expression", expression);
@@ -844,6 +916,7 @@ fn nodeToEsTree(
         .parenthesized_expr,
         .class_meta,
         .function_meta,
+        .jsx_children,
         => {
             std.debug.panic("Bad call to nodeToEstree: parameters", .{});
         },

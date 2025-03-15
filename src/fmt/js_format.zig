@@ -378,6 +378,40 @@ pub fn jsxText(_: *Self, _: *const ast.NodeData) Doc.Id {
     unreachable;
 }
 
+pub fn jsxOpeningElement(_: *Self, _: *const ast.NodeData) Doc.Id {
+    unreachable;
+}
+pub fn jsxClosingElement(_: *Self, _: *const ast.NodeData) Doc.Id {
+    unreachable;
+}
+pub fn jsxElement(_: *Self, _: *const ast.NodeData) Doc.Id {
+    unreachable;
+}
+pub fn jsxMemberExpression(_: *Self, _: *const ast.NodeData) Doc.Id {
+    unreachable;
+}
+pub fn jsxNamespacedName(_: *Self, _: *const ast.NodeData) Doc.Id {
+    unreachable;
+}
+pub fn jsxIdentifier(_: *Self, _: *const ast.NodeData) Doc.Id {
+    unreachable;
+}
+pub fn jsxIdentifierReference(_: *Self, _: *const ast.NodeData) Doc.Id {
+    unreachable;
+}
+
+pub fn jsxChildren(_: *Self, _: *const ast.NodeData) Doc.Id {
+    unreachable;
+}
+
+pub fn jsxAttribute(_: *Self, _: *const ast.NodeData) Doc.Id {
+    unreachable;
+}
+
+pub fn jsxSpreadAttribute(_: *Self, _: *const ast.NodeData) Doc.Id {
+    unreachable;
+}
+
 const t = std.testing;
 
 fn parse(s: []const u8) !js.Parser.Result {
