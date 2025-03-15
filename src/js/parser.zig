@@ -4399,22 +4399,34 @@ fn jsxFragmentOrElement(self: *Self) Error!Node.Index {
 /// https://facebook.github.io/jsx/#prod-JSXFragment
 fn jsxFragment(self: *Self, opening_lt: Token.Index) Error!Node.Index {
     // eat the '>' and consume the following characters as a JSX token.
-    const gt = try self.nextJsx();
-    assert(gt.token.tag == .@">");
+    const opening_gt = try self.nextJsx();
+    assert(opening_gt.token.tag == .@">");
 
     const jsx_children = try self.jsxChildren();
 
     // eat the closing '</>'
-    _ = try self.expectToken(.@"<");
+    const closing_lt = try self.expect(.@"<");
     _ = try self.expectToken(.@"/");
     const closing_gt = try self.expect(.@">");
 
-    const end_pos = closing_gt.id;
+    const jsx_open_close_tags = try self.addExtraData(ast.ExtraData{
+        .jsx_fragment_indices = .{
+            // The '<' in the opening "<>"
+            .opening_lt_token = opening_lt,
+            // The '<' in the closing "</>"
+            .closing_lt_token = closing_lt.id,
+        },
+    });
 
     return self.addNode(
-        .{ .jsx_fragment = jsx_children },
+        .{
+            .jsx_fragment = .{
+                .children = jsx_children,
+                .open_close_tags = jsx_open_close_tags,
+            },
+        },
         opening_lt,
-        end_pos,
+        closing_gt.id,
     );
 }
 

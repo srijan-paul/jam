@@ -271,7 +271,7 @@ pub fn Traverser(TControl: type) type {
                 .continue_statement,
                 => |b| if (b.label) |label| try self.visit(label, node_id),
 
-                .jsx_fragment => |children| try self.subRange(children, node_id),
+                .jsx_fragment => |fragment| try self.subRange(fragment.children, node_id),
                 .jsx_expression => |expr| try self.visit(expr, node_id),
                 .jsx_spread_child => |argument| try self.visit(argument, node_id),
 

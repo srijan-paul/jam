@@ -30,7 +30,14 @@ pub fn Token(TagType: type) type {
         ///     right: Node.Index,
         /// };
         /// ```
-        pub const Index = enum(u32) { _ };
+        pub const Index = enum(u32) {
+            _,
+
+            /// Get the token index as a u32.
+            pub inline fn asU32(self: Index) u32 {
+                return @intFromEnum(self);
+            }
+        };
         pub const Tag = TagType;
 
         /// Identifies the token's kind.

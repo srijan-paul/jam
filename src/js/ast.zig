@@ -36,6 +36,14 @@ pub const Tree = struct {
         return self.nodes.get(@intFromEnum(index));
     }
 
+    pub fn getStartTokenId(self: *const Tree, index: Node.Index) Token.Index {
+        return self.nodes.items(.start)[@intFromEnum(index)];
+    }
+
+    pub fn getEndTokenId(self: *const Tree, index: Node.Index) Token.Index {
+        return self.nodes.items(.end)[@intFromEnum(index)];
+    }
+
     pub fn nodeData(self: *const Tree, index: Node.Index) *const NodeData {
         return &self.nodes.items(.data)[@intFromEnum(index)];
     }
@@ -587,6 +595,30 @@ pub const Boolean = struct {
     token: Token.Index,
 };
 
+/// JSX children wrapped inside '<> </>'.
+/// https://facebook.github.io/jsx/#prod-JSXFragment
+pub const JsxFragment = struct {
+    /// All children are one of:
+    /// - `jsx_text`
+    /// - `jsx_expression`
+    /// - `jsx_fragment`
+    /// - `jsx_element`
+    children: SubRange,
+    /// The tokens in '<>' and '</>'
+    open_close_tags: ExtraData.Index,
+
+    /// Get the '<' and '>' tokens in the opening and closing elements of the fragment
+    /// ("<>" and "</>")
+    pub fn getOpenAndCloseTags(
+        self: *const JsxFragment,
+        t: *const Tree,
+    ) JsxFragmentTags {
+        const data = t.getExtraData(self.open_close_tags);
+        assert(meta.activeTag(data) == .jsx_fragment_indices);
+        return data.jsx_fragment_indices;
+    }
+};
+
 /// Data contained inside an AST node
 pub const NodeData = union(enum(u8)) {
     program: ?SubRange,
@@ -728,7 +760,7 @@ pub const NodeData = union(enum(u8)) {
     // JSX:
 
     /// A list of JSX children nodes.
-    jsx_fragment: SubRange,
+    jsx_fragment: JsxFragment,
     jsx_text: Token.Index,
     /// A JSX element wrapped within {}s
     jsx_expression: Node.Index,
@@ -747,12 +779,61 @@ pub const NodeData = union(enum(u8)) {
     }
 };
 
+/// The tokens in '<>' and '</>' that open and close a JSX fragment.
+pub const JsxFragmentTags = struct {
+    /// The '<' token that opens the jsx fragment.
+    opening_lt_token: Token.Index,
+    /// The '<' token that closes the jsx fragment.
+    closing_lt_token: Token.Index,
+
+    /// The opening "<>"
+    pub const Opening = struct {
+        lt: Token.Index,
+        gt: Token.Index,
+    };
+
+    /// The "</>" tokens
+    pub const Closing = struct {
+        lt: Token.Index,
+        gt: Token.Index,
+        slash: Token.Index,
+    };
+
+    /// Get the "<" and ">" tokens that open the JSX fragment.
+    pub fn getOpening(self: JsxFragmentTags, t: *const Tree) Opening {
+        // skip any comments or whitespace tokens between the '<' and closing '>'
+        var opening_gt_token: u32 = self.opening_lt_token.asU32() + 1;
+        while (t.getTokenKind(@enumFromInt(opening_gt_token)) != .@">") : (opening_gt_token += 1) {}
+
+        return Opening{
+            .lt = self.opening_lt_token,
+            .gt = @enumFromInt(opening_gt_token),
+        };
+    }
+
+    /// Get the "<", "/" and ">" tokens that close the JSX fragment
+    pub fn getClosing(self: JsxFragmentTags, t: *const Tree) Closing {
+        var slash_token: u32 = self.closing_lt_token.asU32() + 1;
+        while (t.getTokenKind(@enumFromInt(slash_token)) != .@"/") : (slash_token += 1) {}
+
+        var closing_gt_token: u32 = slash_token + 1;
+        while (t.getTokenKind(@enumFromInt(closing_gt_token)) != .@">") : (closing_gt_token += 1) {}
+
+        return Closing{
+            .lt = self.closing_lt_token,
+            .gt = @enumFromInt(closing_gt_token),
+            .slash = @enumFromInt(slash_token),
+        };
+    }
+};
+
 /// Extra metadata about a node.
 /// The specific type of meta-data is determined by the node's
 /// tag (i.e the active field of NodeData).
 pub const ExtraData = union(enum) {
     pub const Index = enum(u32) { none = 0, _ };
     number_value: f64,
+    jsx_fragment_indices: JsxFragmentTags,
 };
 
 pub const Node = struct {
@@ -769,6 +850,14 @@ pub const Node = struct {
         /// Get the AST node tag.
         pub inline fn tag(self: Index, tree: *const Tree) meta.Tag(NodeData) {
             return tree.tag(self);
+        }
+
+        pub fn startTokenId(self: Index, tree: *const Tree) Token.Index {
+            return tree.getStartTokenId(self);
+        }
+
+        pub fn endTokenId(self: Index, tree: *const Tree) Token.Index {
+            return tree.getEndTokenId(self);
         }
     };
     /// The actual data stored by this node.

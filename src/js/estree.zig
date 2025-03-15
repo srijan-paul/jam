@@ -786,9 +786,40 @@ fn nodeToEsTree(
             try o.put("quasi", quasi);
         },
 
-        .jsx_fragment => |children| {
-            const children_json = try subRangeToJsonArray(al, t, children, opts);
+        .jsx_fragment => |fragment| {
+            const children_json = try subRangeToJsonArray(al, t, fragment.children, opts);
             try o.put("children", children_json);
+
+            const tags = fragment.getOpenAndCloseTags(t);
+
+            const open_fragment = blk: {
+                var obj = std.json.ObjectMap.init(al);
+                try obj.put("type", JValue{ .string = "JSXOpeningFragment" });
+
+                const open = tags.getOpening(t);
+                if (opts.start_end_locs) {
+                    const gt_token = t.getToken(open.gt);
+                    try obj.put("start", JValue{ .integer = t.getToken(open.lt).start });
+                    try obj.put("end", JValue{ .integer = gt_token.start + gt_token.len });
+                }
+                break :blk JValue{ .object = obj };
+            };
+
+            const close_fragment = blk: {
+                var obj = std.json.ObjectMap.init(al);
+                try obj.put("type", JValue{ .string = "JSXClosingFragment" });
+
+                const close = tags.getClosing(t);
+                if (opts.start_end_locs) {
+                    const gt_token = t.getToken(close.gt);
+                    try obj.put("start", JValue{ .integer = t.getToken(close.lt).start });
+                    try obj.put("end", JValue{ .integer = gt_token.start + gt_token.len });
+                }
+                break :blk JValue{ .object = obj };
+            };
+
+            try o.put("opening", open_fragment);
+            try o.put("closing", close_fragment);
         },
 
         .jsx_expression => |e| {
