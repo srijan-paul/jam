@@ -70,12 +70,6 @@ source: []const u8,
 index: u32 = 0,
 /// Current line number (0 indexed).
 line: u32 = 0,
-/// When `true`, the tokenizer will attempt to parse any remaining input
-/// starting with '/' (that isn't a comment starter) as a regex literal (e.g: '/[a-zA-Z0-9]/').
-/// Otherwise, '/' (when not starting a comment) is assumed to be either the '/' or '/=' operator.
-/// This property is used to dis-ambiguate between division operators and regex literals.
-assume_bslash_starts_regex: bool = false,
-
 /// When `true`, the tokenizer assumes that a '}' character is the part of a template
 /// literal after an interpolated expression, and not a "}" token.
 /// e.g:
@@ -120,12 +114,38 @@ pub fn next(self: *Self) Error!Token {
     return token;
 }
 
-/// Returns the next JSX token.
-/// A JSX token is one of: '<', '>', '{', '}', or JSX text.
-/// To tokenize JS expressions inside JSX (e.g: prop values), the 'next' function should be used instead.
-/// The caller (parser) must know when to call `nextJsx` or `next` based on surrounding context.
+/// Regex literals can be ambiguous with "/" or "/=" from the tokenizer's perspective,
+/// as "/a/g" can mean either ['/', 'a', '/', 'g'], or ['/a/g' (regex) ].
 ///
-/// [is_inside_jsx_tags] is `true` when the tokenizer is inside a '<'  and '>' pair.
+/// When the parser sees a "/" or "/=" token, but it expects an expression, it should
+/// call this function to re-scan the source code starting from the '/' character.
+///
+/// [div_token]: The token that was previously returned by the tokenizer when it saw the '/' character
+/// (must be a "/" or "/=" token).
+pub fn reScanRegexLiteral(self: *Self, div_token: *const Token) Error!Token {
+    assert(div_token.tag == .@"/" or div_token.tag == .@"/=");
+    self.rewind(div_token.start, div_token.line);
+    return self.regexLiteral();
+}
+
+/// Inside template literals, a "}" should be treated as the part of a template string,
+/// instead of a lone '}' token.
+/// So '`foo${bar}baz`' should be tokenized as: '`foo${', 'bar', '}baz`'.
+///
+/// When the parser receives a '}' token after 'baz', it should call this function
+/// to rescan the source code starting from the '}' character, and tokenize it as a template part.
+///
+/// [rbrace_token]: The token that was previously returned by the tokenizer when it saw the '}' character.
+pub fn reScanTemplatePart(self: *Self, rbrace_token: *const Token) Error!Token {
+    assert(rbrace_token.tag == .@"}");
+    self.rewind(rbrace_token.start, rbrace_token.line);
+    return self.templateAfterInterpolation();
+}
+
+/// Returns the next token that starts a JSX child.
+/// The token returned is one of: '<', '{', or JSX text.
+/// To tokenize JS expressions inside JSX (e.g: prop values), the 'next' function should be used instead.
+/// The caller (parser) must know when to call `nextJsxChild` or `next` based on surrounding context.
 pub fn nextJsxChild(self: *Self) Error!Token {
     const byte = self.peekByte() orelse {
         return Token{
@@ -248,17 +268,6 @@ fn consumeToken(self: *Self) Error!Token {
         '/' => {
             if (try self.comment()) |tok|
                 return tok;
-
-            // Parsing regex literals is awkward.
-            // A '/abc' can either be the start of a regex literal,
-            // or a '/' (division) token followed by an 'abc' (identifier) token.
-            //
-            // The parser has to tell the tokenizer what it expects
-            // to see next. If it expects to see a literal, then
-            // we want to try tokenizing a regex literal.
-            // Otherwise, we look for '/' or '/='.
-            if (self.assume_bslash_starts_regex)
-                return try self.regexLiteral();
             return try self.punctuator();
         },
         ' ',
@@ -270,9 +279,6 @@ fn consumeToken(self: *Self) Error!Token {
         '\u{000C}',
         => return self.whiteSpaces(),
         '}' => {
-            if (self.assume_rbrace_is_template_part)
-                return try self.templateAfterInterpolation();
-
             self.index += 1;
             return Token{
                 .start = self.index - 1,
@@ -1875,19 +1881,16 @@ test Self {
 
     {
         var tokenizer = try Self.init(" /a\\(bc[some_character_class]/g //foo", .{});
-        tokenizer.assume_bslash_starts_regex = true; // '/' is now interpreted as regex literal start marker.
         try t.expectEqual(Token.Tag.whitespace, (try tokenizer.next()).tag);
-        try t.expectEqual(Token.Tag.regex_literal, (try tokenizer.next()).tag);
-        try t.expectEqual(Token.Tag.whitespace, (try tokenizer.next()).tag);
-        try t.expectEqual(Token.Tag.comment, (try tokenizer.next()).tag);
-        try t.expectEqual(Token.Tag.eof, (try tokenizer.next()).tag);
-    }
 
-    {
-        var tokenizer = try Self.init(" /a\\(bc[some_character_class]/g //foo", .{});
-        tokenizer.assume_bslash_starts_regex = true; // '/' is now interpreted as regex literal start marker.
-        try t.expectEqual(Token.Tag.whitespace, (try tokenizer.next()).tag);
-        try t.expectEqual(Token.Tag.regex_literal, (try tokenizer.next()).tag);
+        // by default  '/' is interpreted as a division operator.
+        const div_token = try tokenizer.next();
+        try t.expectEqual(.@"/", div_token.tag);
+
+        // Then it can be re-scanned as a regex literal.
+        const regex_token = try tokenizer.reScanRegexLiteral(&div_token);
+        try t.expectEqual(.regex_literal, regex_token.tag);
+
         try t.expectEqual(Token.Tag.whitespace, (try tokenizer.next()).tag);
         try t.expectEqual(Token.Tag.comment, (try tokenizer.next()).tag);
         try t.expectEqual(Token.Tag.eof, (try tokenizer.next()).tag);
@@ -1897,9 +1900,10 @@ test Self {
         var tokenizer = try Self.init("`hello ${'world'}`", .{});
         try t.expectEqual(.template_literal_part, (try tokenizer.next()).tag);
         try t.expectEqual(.string_literal, (try tokenizer.next()).tag);
-        tokenizer.assume_rbrace_is_template_part = true;
-        try t.expectEqual(.template_literal_part, (try tokenizer.next()).tag);
-        tokenizer.assume_rbrace_is_template_part = false;
+        const rb_token = try tokenizer.next();
+        try t.expectEqual(.@"}", rb_token.tag);
+        const template_part = try tokenizer.reScanTemplatePart(&rb_token);
+        try t.expectEqual(.template_literal_part, template_part.tag);
         try t.expectEqual(.eof, (try tokenizer.next()).tag);
     }
 }

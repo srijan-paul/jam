@@ -2846,8 +2846,6 @@ fn next(self: *Self) Error!TokenWithId {
 }
 
 /// Consume the next JSX token from the lexer, skipping all comments and whitespaces.
-///
-/// [is_inside_jsx_tags]: Whether we are currently inside JSX tags (i.e. between '<' and '>').
 fn nextJsx(self: *Self) Error!TokenWithId {
     var next_token = try self.tokenizer.nextJsxChild();
     while (next_token.tag == .comment or next_token.tag == .whitespace) {
@@ -2858,19 +2856,49 @@ fn nextJsx(self: *Self) Error!TokenWithId {
     return self.advanceToToken(next_token);
 }
 
+/// Discard the '/' or '/=' token that was just scanned,
+/// and re-tokenize it as a regex literal.
+///
+/// Mutates `self.current` and `self.tokens`
+fn reScanRegexLiteral(self: *Self) Error!void {
+    const token = &self.current.token;
+    assert(token.tag == .@"/" or token.tag == .@"/=");
+
+    const regex_token = try self.tokenizer.reScanRegexLiteral(token);
+    assert(regex_token.tag == .regex_literal);
+
+    self.tokens.items[@intFromEnum(self.current.id)] = regex_token;
+    self.current.token = regex_token;
+}
+
+/// Discard the '}' token that was just scanned, and replace it
+/// with a re-tokenized `.template_literal_part` token.
+///
+/// Mutates `self.current` and `self.tokens`
+fn reScanTemplatePart(self: *Self) Error!void {
+    const cur = &self.current.token;
+    assert(cur.tag == .@"}");
+
+    const template_part = try self.tokenizer.reScanTemplatePart(cur);
+    assert(template_part.tag == .template_literal_part);
+
+    // replate the '}' token in the buffer with the template part token
+    self.tokens.items[@intFromEnum(self.current.id)] = template_part;
+    self.current.token = template_part;
+}
+
 /// Set [next_token] as the current token, and update `self.current`, and `self.prev_token_line`
-/// Returns the newly saved token along with its ID.
+/// Returns the old value of `self.current`.
 fn advanceToToken(self: *Self, next_token: Token) error{OutOfMemory}!TokenWithId {
     try self.saveToken(next_token);
 
-    const current = self.current.token;
-    const current_id = self.current.id;
+    const prev = self.current;
 
     self.current.token = next_token;
     self.current.id = @enumFromInt(self.tokens.items.len - 1);
-    self.prev_token_line = current.line;
+    self.prev_token_line = prev.token.line;
 
-    return TokenWithId{ .token = current, .id = current_id };
+    return prev;
 }
 
 /// Intialize `self.current` by consuming the first token.
@@ -4285,25 +4313,23 @@ fn completeComputedMemberExpression(self: *Self, object: Node.Index) Error!Node.
 }
 
 fn primaryExpression(self: *Self) Error!Node.Index {
-    // If we're currently at a '/' or '/=' token,
-    // we probably have mistaken a regex literal's opening '/' for an operator.
-    // We'll rewind the tokenizer and try to parse a regex literal instead.
     const cur = &self.current.token;
     if (cur.tag == .@"/" or cur.tag == .@"/=") {
-        // TODO: separate this re-lexing out into a separate function.
-        // Go back to the beginning of '/'
-        self.tokenizer.rewind(cur.start, cur.line);
-        self.tokenizer.assume_bslash_starts_regex = true;
+        // If we're currently at a '/' or '/=' token,
+        // we probably have mistaken a regex literal's opening '/' for an operator.
+        // We'll rewind the tokenizer and try to parse a regex literal instead.
+        try self.reScanRegexLiteral();
+        assert(self.current.token.tag == .regex_literal);
 
-        // re-tokenize the regex literal
-        self.current.token = try self.tokenizer.next();
-        self.current.id = @enumFromInt(self.tokens.items.len);
-        try self.saveToken(self.current.token);
-
-        self.tokenizer.assume_bslash_starts_regex = false;
+        const regex_token = try self.next();
+        return self.addNode(
+            .{ .regex_literal = regex_token.id },
+            regex_token.id,
+            regex_token.id,
+        );
+    } else if (cur.tag == .template_literal_part) {
+        return self.templateLiteral();
     }
-
-    if (cur.tag == .template_literal_part) return self.templateLiteral();
 
     switch (cur.tag) {
         .kw_class => return self.classExpression(),
@@ -4399,6 +4425,11 @@ fn jsxFragmentOrElement(self: *Self) Error!Node.Index {
     return self.jsxElement(lt_token.id);
 }
 
+/// JSXElement:
+///     JSXOpeningElement JSXChildren? JSXClosingElement
+///     JSXSelfClosingElement
+///
+/// https://facebook.github.io/jsx/#prod-JSXElement
 fn jsxElement(self: *Self, lt_token: Token.Index) Error!Node.Index {
     const opening_element = try self.jsxOpeningElement(lt_token);
     const children: Node.Index = blk: {
@@ -4990,20 +5021,16 @@ fn templateLiteral(self: *Self) Error!Node.Index {
         // parse an interpolation expression.
         try self.scratch.append(try self.expression());
 
-        // The most recently processed (but unconsumed) token should be a '}'.
-        // We want to rewind back one character, and make the tokenizer treat the '}'
-        // as a part of a template literal.
-        self.tokenizer.rewind(self.current.token.start, self.current.token.line);
-        self.tokenizer.assume_rbrace_is_template_part = true;
+        // After parsing the interpolated expression,
+        // the current token should be a '}'. Now, we re-scan starting
+        // from '}' to the next '${', or the end of the template literal.
+        if (self.current.token.tag != .@"}") {
+            try self.emitBadTokenDiagnostic("'}}' after template expression", &self.current.token);
+            return Error.UnexpectedToken;
+        }
 
-        // TODO: separate this re-lexing out into its own function.
-        self.current.token = try self.tokenizer.next();
-        try self.saveToken(self.current.token);
-        self.current.id = @enumFromInt(self.tokens.items.len - 1);
-
-        self.tokenizer.assume_rbrace_is_template_part = false;
-
-        template_token = try self.expect(.template_literal_part);
+        try self.reScanTemplatePart();
+        template_token = try self.next();
 
         // Now, parse the template part that follows
         try self.scratch.append(try self.addNode(
