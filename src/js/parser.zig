@@ -105,10 +105,16 @@ const ParseError = error{
     WithInStrictMode,
     /// Attempt to delete a local variable in strict mode.
     IllegalDeleteInStrictMode,
+    /// Number with a leading '0' in strict mode
+    IllegalStrictModeNumber,
+    /// Legacy octal number in strict mode.
+    IllegalStrictModeOctal,
     /// Invalid expression or pattern inside '(...)'
     InvalidExpressionInsideParens,
     JsxExpectedTagName,
     JsxExpectedGt,
+    /// Saw a '<' in non-jsx source
+    LAngleWithoutJsx,
 
     TypeScriptNotImplemented,
     // The parser instance has already been used
@@ -2509,6 +2515,8 @@ fn errorMessage(err: ParseError) []const u8 {
         ParseError.UnexpectedPattern => "Expected expression, found binding pattern",
         ParseError.RestElementNotLast => "Rest element must be the last element in a destructuring pattern",
         ParseError.IllegalDeleteInStrictMode => "Cannot delete a variable in strict mode",
+        ParseError.IllegalStrictModeNumber => "Numbers with a leading '0' are not allowed in strict mode",
+        ParseError.IllegalStrictModeOctal => "Legacy octal numbers are not allowed in strict mode",
         ParseError.IllegalFatArrow => "'=>' must appear immediately after arrow function parameters",
         ParseError.IllegalNewline => "Unexpected newline",
         ParseError.InvalidCoalesceExpression => "Logical operators cannot be mixed with the nullish coalescing operator",
@@ -2533,6 +2541,7 @@ fn errorMessage(err: ParseError) []const u8 {
         ParseError.RestElementNotLastInParams => "Rest element must be the last item in a function parameter list",
         ParseError.JsxExpectedTagName => "Expected a tag name after '<' in JSX code",
         ParseError.JsxExpectedGt => "Expected a '>' to close the JSX opening tag",
+        ParseError.LAngleWithoutJsx => "Found a '<' in non-JSX source code",
     };
 }
 
@@ -3852,13 +3861,6 @@ fn awaitExpression(self: *Self) Error!Node.Index {
     }, await_token.id, end_pos);
 }
 
-/// The ECMASCript262 standard describes a syntax directed operation
-/// called `AssignmentTargetType`, which determines if a given expression
-/// is "SIMPLE", a.k.a, valid in contexts like the operand of `<expr>++`.
-fn isExprSimple(self: *Self) Error!Node.Index {
-    _ = self;
-}
-
 fn updateExpression(self: *Self) Error!Node.Index {
     const token = self.peek();
     if (token.tag == .@"++" or token.tag == .@"--") {
@@ -4411,13 +4413,7 @@ fn primaryExpression(self: *Self) Error!Node.Index {
                 self.current_destructure_kind.setNoAssignOrDestruct();
                 return jsx_expr;
             } else {
-                try self.emitDiagnosticOnToken(
-                    self.current.token,
-                    "Unexpected '<' in expression",
-                    .{},
-                );
-
-                return Error.UnexpectedToken;
+                return self.errorOnToken(self.current.token, ParseError.LAngleWithoutJsx);
             }
         },
         else => {},
@@ -4476,21 +4472,10 @@ fn jsxElement(self: *Self, lt_token: Token.Index) Error!Node.Index {
     const opening_element_name = try self.jsxElementName();
     const opening_element_attrs = try self.jsxAttributes();
     if (self.isAtToken(.@"/")) {
-        _ = try self.next(); // eat '/'
-        const gt_token = if (self.jsx_nesting_depth > 1)
-            try self.expectJsxRAngleForOpeningTag()
-        else
-            try self.expect(.@">");
-
-        return self.addNode(
-            .{
-                .jsx_self_closing_element = .{
-                    .name = opening_element_name,
-                    .attributes = opening_element_attrs,
-                },
-            },
+        return self.jsxSelfClosingElement(
             lt_token,
-            gt_token.id,
+            opening_element_name,
+            opening_element_attrs,
         );
     }
 
@@ -4530,8 +4515,36 @@ fn jsxElement(self: *Self, lt_token: Token.Index) Error!Node.Index {
     }, lt_token, end_token);
 }
 
+/// JSXSelfClosingElement:
+///     '<' JSXElementName JSXAttributes? '/' '>'
+fn jsxSelfClosingElement(
+    self: *Self,
+    lt_token: Token.Index,
+    name: Node.Index,
+    attributes: ast.SubRange,
+) Error!Node.Index {
+    const slash_token = try self.nextToken(); // eat '/'
+    assert(slash_token.tag == .@"/");
+
+    const gt_token = if (self.jsx_nesting_depth > 1)
+        try self.expectJsxRAngleForOpeningTag()
+    else
+        try self.expect(.@">");
+
+    return self.addNode(
+        .{
+            .jsx_self_closing_element = .{
+                .name = name,
+                .attributes = attributes,
+            },
+        },
+        lt_token,
+        gt_token.id,
+    );
+}
+
 /// JSXOpeningElement:
-///     < JSXElementName JSXAttributes? >
+///     '<' JSXElementName JSXAttributes? '>'
 fn jsxOpeningElement(
     self: *Self,
     lt_token: Token.Index,
@@ -4906,6 +4919,8 @@ fn jsxExpression(self: *Self) Error!Node.Index {
     return self.addNode(.{ .jsx_expression = expr }, lbrace.id, rbrace.id);
 }
 
+/// Assuming the current token is a regular identifier or keyword, continue parsing it
+/// as a JSXIdentifier (that allows '-' characters).
 fn continueJsxIdentifier(self: *Self) Error!TokenWithId {
     assert(self.current.token.tag.isIdentifier() or self.current.token.tag.isKeyword());
 
@@ -4929,21 +4944,11 @@ fn parseLiteral(self: *Self, token: TokenWithId) Error!Node.Index {
     const token_tag = token.token.tag;
     if (self.context.strict and token_tag.isNumericLiteral()) {
         if (token_tag == .legacy_octal_literal) {
-            try self.emitDiagnostic(
-                token.token.startCoord(self.source),
-                "Legacy octal numbers are not allowed in strict mode",
-                .{},
-            );
-            return Error.UnexpectedToken;
+            return self.errorOnToken(token.token, ParseError.IllegalStrictModeOctal);
         }
 
         if (!self.isValidStrictModeNumber(&token.token)) {
-            try self.emitDiagnostic(
-                token.token.startCoord(self.source),
-                "Numbers with leading '0' are not allowed in strict mode",
-                .{},
-            );
-            return Error.UnexpectedToken;
+            return self.errorOnToken(token.token, ParseError.IllegalStrictModeNumber);
         }
 
         self.current_destructure_kind.setNoAssignOrDestruct();
@@ -5951,6 +5956,7 @@ fn classElementName(self: *Self) Error!Node.Index {
             _ = try self.expectToken(.@"]");
             return expr;
         },
+        // TODO: use the literal mask
         .string_literal,
         .decimal_literal,
         .octal_literal,
