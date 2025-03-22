@@ -24,21 +24,7 @@
               "type": "StaticBlock",
               "start": 25,
               "end": 49,
-              "body": [],
-              "innerComments": [
-                {
-                  "type": "CommentBlock",
-                  "value": " 3 ",
-                  "start": 32,
-                  "end": 39
-                },
-                {
-                  "type": "CommentBlock",
-                  "value": " 4 ",
-                  "start": 41,
-                  "end": 48
-                }
-              ]
+              "body": []
             }
           ]
         }

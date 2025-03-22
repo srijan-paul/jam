@@ -51,15 +51,7 @@
                   "type": "BlockStatement",
                   "start": 80,
                   "end": 91,
-                  "body": [],
-                  "innerComments": [
-                    {
-                      "type": "CommentBlock",
-                      "value": " 9 ",
-                      "start": 82,
-                      "end": 89
-                    }
-                  ]
+                  "body": []
                 },
                 "arrow": false
               }
@@ -118,15 +110,7 @@
                   "type": "BlockStatement",
                   "start": 187,
                   "end": 198,
-                  "body": [],
-                  "innerComments": [
-                    {
-                      "type": "CommentBlock",
-                      "value": " 8 ",
-                      "start": 189,
-                      "end": 196
-                    }
-                  ]
+                  "body": []
                 },
                 "arrow": false
               },

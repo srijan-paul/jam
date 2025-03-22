@@ -1,0 +1,39 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 14,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 14,
+      "expression": {
+        "type": "BinaryExpression",
+        "start": 0,
+        "end": 13,
+        "operator": "<",
+        "left": {
+          "type": "JSXSelfClosingElement",
+          "start": 1,
+          "end": 8,
+          "name": {
+            "type": "JSXIdentifier",
+            "start": 2,
+            "end": 5,
+            "name": "div"
+          },
+          "attributes": [],
+          "selfClosing": true
+        },
+        "right": {
+          "type": "Identifier",
+          "start": 12,
+          "end": 13,
+          "name": "x"
+        }
+      }
+    }
+  ]
+}

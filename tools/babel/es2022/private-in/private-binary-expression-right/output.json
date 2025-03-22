@@ -1,3 +1,3 @@
 {
-  "error": "SyntaxError: Missing semicolon. (2:9)"
+  "error": "SyntaxError: Private names are only allowed in property accesses (`obj.#x`) or in `in` expressions (`#x in obj`). (4:8)"
 }

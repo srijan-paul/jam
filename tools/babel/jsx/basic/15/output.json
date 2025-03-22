@@ -1,0 +1,88 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 15,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 15,
+      "expression": {
+        "type": "JSXElement",
+        "start": 0,
+        "end": 15,
+        "openingElement": {
+          "type": "JSXOpeningElement",
+          "start": 0,
+          "end": 7,
+          "name": {
+            "type": "JSXMemberExpression",
+            "start": 1,
+            "end": 6,
+            "object": {
+              "type": "JSXMemberExpression",
+              "start": 1,
+              "end": 4,
+              "object": {
+                "type": "JSXIdentifier",
+                "start": 1,
+                "end": 2,
+                "name": "a"
+              },
+              "property": {
+                "type": "JSXIdentifier",
+                "start": 3,
+                "end": 4,
+                "name": "b"
+              }
+            },
+            "property": {
+              "type": "JSXIdentifier",
+              "start": 5,
+              "end": 6,
+              "name": "c"
+            }
+          },
+          "attributes": [],
+          "selfClosing": false
+        },
+        "closingElement": {
+          "type": "JSXClosingElement",
+          "start": 7,
+          "end": 15,
+          "name": {
+            "type": "JSXMemberExpression",
+            "start": 9,
+            "end": 14,
+            "object": {
+              "type": "JSXMemberExpression",
+              "start": 9,
+              "end": 12,
+              "object": {
+                "type": "JSXIdentifier",
+                "start": 9,
+                "end": 10,
+                "name": "a"
+              },
+              "property": {
+                "type": "JSXIdentifier",
+                "start": 11,
+                "end": 12,
+                "name": "b"
+              }
+            },
+            "property": {
+              "type": "JSXIdentifier",
+              "start": 13,
+              "end": 14,
+              "name": "c"
+            }
+          }
+        },
+        "children": []
+      }
+    }
+  ]
+}

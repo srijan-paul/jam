@@ -4473,7 +4473,33 @@ fn jsxFragmentOrElement(self: *Self) Error!Node.Index {
 ///
 /// https://facebook.github.io/jsx/#prod-JSXElement
 fn jsxElement(self: *Self, lt_token: Token.Index) Error!Node.Index {
-    const opening_element = try self.jsxOpeningElement(lt_token);
+    const opening_element_name = try self.jsxElementName();
+    const opening_element_attrs = try self.jsxAttributes();
+    if (self.isAtToken(.@"/")) {
+        _ = try self.next(); // eat '/'
+        const gt_token = if (self.jsx_nesting_depth > 1)
+            try self.expectJsxRAngleForOpeningTag()
+        else
+            try self.expect(.@">");
+
+        return self.addNode(
+            .{
+                .jsx_self_closing_element = .{
+                    .name = opening_element_name,
+                    .attributes = opening_element_attrs,
+                },
+            },
+            lt_token,
+            gt_token.id,
+        );
+    }
+
+    const opening_element = try self.jsxOpeningElement(
+        lt_token,
+        opening_element_name,
+        opening_element_attrs,
+    );
+
     const children: Node.Index = blk: {
         const prev_scratch_len = self.scratch.items.len;
         defer self.scratch.items.len = prev_scratch_len;
@@ -4506,12 +4532,14 @@ fn jsxElement(self: *Self, lt_token: Token.Index) Error!Node.Index {
 
 /// JSXOpeningElement:
 ///     < JSXElementName JSXAttributes? >
-fn jsxOpeningElement(self: *Self, lt_token: Token.Index) Error!Node.Index {
-    const name = try self.jsxElementName();
-    const attrs = try self.jsxAttributes();
+fn jsxOpeningElement(
+    self: *Self,
+    lt_token: Token.Index,
+    name: Node.Index,
+    attrs: ast.SubRange,
+) Error!Node.Index {
     // Consume the current '>' token, and lex the remaining as JSX text.
     const gt_token = try self.expectJsxRAngleForOpeningTag();
-
     return self.addNode(
         .{
             .jsx_opening_element = ast.JsxOpeningElement{
@@ -4645,12 +4673,15 @@ fn jsxAttributeValue(self: *Self) Error!Node.Index {
 /// https://facebook.github.io/jsx/#prod-JSXElementName
 fn jsxElementName(self: *Self) Error!Node.Index {
     var name = try self.parseJsxIdentifierReference();
-    while (true) {
-        switch (self.current.token.tag) {
-            .@"." => name = try self.parseJsxMemberExpression(name),
-            .@":" => name = try self.parseJsxNamespacedName(name),
-            else => break,
+
+    if (self.current.token.tag == .@".") {
+        name = try self.parseJsxMemberExpression(name);
+        while (self.current.token.tag == .@".") {
+            name = try self.parseJsxMemberExpression(name);
         }
+        return name;
+    } else if (self.current.token.tag == .@":") {
+        return try self.parseJsxNamespacedName(name);
     }
 
     return name;
@@ -4726,12 +4757,12 @@ fn parseJsxMemberExpression(self: *Self, jsx_identifier: Node.Index) Error!Node.
 
 /// JSXNamespacedName :
 ///     JSXIdentifier ':' JSXIdentifier
-fn parseJsxNamespacedName(self: *Self, jsx_identifier: Node.Index) Error!Node.Index {
-    const jsx_identifier_tag = self.nodeTag(jsx_identifier);
-    assert(jsx_identifier_tag == .jsx_identifier or jsx_identifier_tag == .jsx_identifier_reference);
+fn parseJsxNamespacedName(self: *Self, namespace: Node.Index) Error!Node.Index {
+    const namespace_tag = self.nodeTag(namespace);
+    assert(namespace_tag == .jsx_identifier or namespace_tag == .jsx_identifier_reference);
     assert(self.current.token.tag == .@":");
 
-    const start_token = self.nodes.items(.start)[@intFromEnum(jsx_identifier)];
+    const start_token = self.nodes.items(.start)[@intFromEnum(namespace)];
     _ = try self.next(); // eat ':'
 
     const name_token = try self.parseJsxIdentifierToken();
@@ -4744,7 +4775,7 @@ fn parseJsxNamespacedName(self: *Self, jsx_identifier: Node.Index) Error!Node.In
     const end_token = name_token.id;
     return self.addNode(.{
         .jsx_namespaced_name = .{
-            .namespace = jsx_identifier,
+            .namespace = namespace,
             .name = name,
         },
     }, start_token, end_token);
@@ -4866,7 +4897,11 @@ fn jsxExpression(self: *Self) Error!Node.Index {
         );
     }
 
-    const expr = try self.assignExpressionNoPattern();
+    const expr = if (!self.isAtToken(.@"}"))
+        try self.assignExpressionNoPattern()
+    else
+        Node.Index.empty;
+
     const rbrace = try self.expectJsx(.@"}");
     return self.addNode(.{ .jsx_expression = expr }, lbrace.id, rbrace.id);
 }

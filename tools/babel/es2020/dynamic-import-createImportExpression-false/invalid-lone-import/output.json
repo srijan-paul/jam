@@ -1,3 +1,3 @@
 {
-  "error": "SyntaxError: Missing semicolon. (2:9)"
+  "error": "SyntaxError: `import` can only be used in `import()` or `import.meta`. (1:1)"
 }

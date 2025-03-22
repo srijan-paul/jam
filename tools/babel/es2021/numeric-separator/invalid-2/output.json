@@ -1,3 +1,3 @@
 {
-  "error": "SyntaxError: Missing semicolon. (2:9)"
+  "error": "SyntaxError: A numeric separator is only allowed between two digits. (1:3)"
 }

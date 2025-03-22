@@ -196,6 +196,7 @@ pub fn jamToEstreeTag(node: ast.NodeData) []const u8 {
         .jsx_attribute => "JSXAttribute",
         .jsx_spread_attribute => "JSXSpreadAttribute",
         .jsx_opening_element => "JSXOpeningElement",
+        .jsx_self_closing_element => "JSXSelfClosingElement",
         .jsx_closing_element => "JSXClosingElement",
         .jsx_element => "JSXElement",
         .jsx_member_expression => "JSXMemberExpression",
@@ -881,12 +882,16 @@ fn nodeToEsTree(
             try o.put("children", children);
         },
 
-        .jsx_opening_element => |payload| {
+        .jsx_opening_element,
+        .jsx_self_closing_element,
+        => |payload| {
             const name = try nodeToEsTree(t, al, payload.name, opts);
             const attributes = try subRangeToJsonArray(al, t, payload.attributes, opts);
 
             try o.put("name", name);
             try o.put("attributes", attributes);
+            const is_self_closing = meta.activeTag(node.data) == .jsx_self_closing_element;
+            try o.put("selfClosing", JValue{ .bool = is_self_closing });
         },
 
         .jsx_closing_element => |payload| {

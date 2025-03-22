@@ -1,0 +1,38 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 23,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 22,
+      "expression": {
+        "type": "JSXFragment",
+        "start": 0,
+        "end": 22,
+        "openingFragment": {
+          "type": "JSXOpeningFragment",
+          "start": 0,
+          "end": 2
+        },
+        "closingFragment": {
+          "type": "JSXClosingFragment",
+          "start": 19,
+          "end": 22
+        },
+        "children": [
+          {
+            "type": "JSXText",
+            "start": 2,
+            "end": 19,
+            "value": "Hi, I'm a string!",
+            "raw": "Hi, I'm a string!"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -55,15 +55,7 @@
                 "body": []
               },
               "arrow": false
-            },
-            "innerComments": [
-              {
-                "type": "CommentBlock",
-                "value": " 2 ",
-                "start": 24,
-                "end": 31
-              }
-            ]
+            }
           }
         ]
       }
@@ -110,15 +102,7 @@
                   "body": []
                 },
                 "arrow": false
-              },
-              "innerComments": [
-                {
-                  "type": "CommentBlock",
-                  "value": " 1 ",
-                  "start": 109,
-                  "end": 116
-                }
-              ]
+              }
             }
           ]
         }

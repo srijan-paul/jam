@@ -1,0 +1,27 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 5,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 5,
+      "expression": {
+        "type": "JSXSelfClosingElement",
+        "start": 0,
+        "end": 5,
+        "name": {
+          "type": "JSXIdentifier",
+          "start": 1,
+          "end": 2,
+          "name": "a"
+        },
+        "attributes": [],
+        "selfClosing": true
+      }
+    }
+  ]
+}

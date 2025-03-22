@@ -285,6 +285,10 @@ pub fn Traverser(TControl: type) type {
                     try self.visit(element.name, node_id);
                     try self.subRange(element.attributes, node_id);
                 },
+                .jsx_self_closing_element => |element| {
+                    try self.visit(element.name, node_id);
+                    try self.subRange(element.attributes, node_id);
+                },
                 .jsx_closing_element => |element| try self.visit(element.name, node_id),
 
                 .jsx_member_expression => |member| {

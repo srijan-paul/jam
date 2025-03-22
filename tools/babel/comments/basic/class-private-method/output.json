@@ -55,15 +55,7 @@
                   "type": "BlockStatement",
                   "start": 81,
                   "end": 92,
-                  "body": [],
-                  "innerComments": [
-                    {
-                      "type": "CommentBlock",
-                      "value": " 9 ",
-                      "start": 83,
-                      "end": 90
-                    }
-                  ]
+                  "body": []
                 },
                 "arrow": false
               },

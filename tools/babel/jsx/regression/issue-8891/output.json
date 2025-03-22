@@ -1,0 +1,330 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 154,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 153,
+      "expression": {
+        "type": "JSXFragment",
+        "start": 0,
+        "end": 153,
+        "openingFragment": {
+          "type": "JSXOpeningFragment",
+          "start": 0,
+          "end": 2
+        },
+        "closingFragment": {
+          "type": "JSXClosingFragment",
+          "start": 150,
+          "end": 153
+        },
+        "children": [
+          {
+            "type": "JSXText",
+            "start": 2,
+            "end": 3,
+            "value": "\n",
+            "raw": "\n"
+          },
+          {
+            "type": "JSXElement",
+            "start": 3,
+            "end": 41,
+            "openingElement": {
+              "type": "JSXOpeningElement",
+              "start": 3,
+              "end": 41,
+              "name": {
+                "type": "JSXIdentifier",
+                "start": 4,
+                "end": 10,
+                "name": "Select"
+              },
+              "attributes": [
+                {
+                  "type": "JSXAttribute",
+                  "start": 11,
+                  "end": 38,
+                  "name": {
+                    "type": "JSXIdentifier",
+                    "start": 11,
+                    "end": 15,
+                    "name": "prop"
+                  },
+                  "value": {
+                    "type": "JSXExpressionContainer",
+                    "start": 16,
+                    "end": 38,
+                    "expression": {
+                      "type": "ObjectExpression",
+                      "start": 17,
+                      "end": 37,
+                      "properties": [
+                        {
+                          "type": "Property",
+                          "start": 19,
+                          "end": 35,
+                          "method": false,
+                          "key": {
+                            "type": "Identifier",
+                            "start": 19,
+                            "end": 27,
+                            "name": "function"
+                          },
+                          "computed": false,
+                          "shorthand": false,
+                          "value": {
+                            "type": "Literal",
+                            "start": 29,
+                            "end": 35,
+                            "value": "test",
+                            "raw": "'test'"
+                          },
+                          "kind": "init"
+                        }
+                      ]
+                    }
+                  }
+                }
+              ],
+              "selfClosing": true
+            },
+            "closingElement": null,
+            "children": []
+          },
+          {
+            "type": "JSXText",
+            "start": 41,
+            "end": 42,
+            "value": "\n",
+            "raw": "\n"
+          },
+          {
+            "type": "JSXElement",
+            "start": 42,
+            "end": 77,
+            "openingElement": {
+              "type": "JSXOpeningElement",
+              "start": 42,
+              "end": 77,
+              "name": {
+                "type": "JSXIdentifier",
+                "start": 43,
+                "end": 49,
+                "name": "Select"
+              },
+              "attributes": [
+                {
+                  "type": "JSXAttribute",
+                  "start": 50,
+                  "end": 74,
+                  "name": {
+                    "type": "JSXIdentifier",
+                    "start": 50,
+                    "end": 54,
+                    "name": "prop"
+                  },
+                  "value": {
+                    "type": "JSXExpressionContainer",
+                    "start": 55,
+                    "end": 74,
+                    "expression": {
+                      "type": "ObjectExpression",
+                      "start": 56,
+                      "end": 73,
+                      "properties": [
+                        {
+                          "type": "Property",
+                          "start": 58,
+                          "end": 71,
+                          "method": false,
+                          "key": {
+                            "type": "Identifier",
+                            "start": 58,
+                            "end": 63,
+                            "name": "class"
+                          },
+                          "computed": false,
+                          "shorthand": false,
+                          "value": {
+                            "type": "Literal",
+                            "start": 65,
+                            "end": 71,
+                            "value": "test",
+                            "raw": "'test'"
+                          },
+                          "kind": "init"
+                        }
+                      ]
+                    }
+                  }
+                }
+              ],
+              "selfClosing": true
+            },
+            "closingElement": null,
+            "children": []
+          },
+          {
+            "type": "JSXText",
+            "start": 77,
+            "end": 78,
+            "value": "\n",
+            "raw": "\n"
+          },
+          {
+            "type": "JSXElement",
+            "start": 78,
+            "end": 114,
+            "openingElement": {
+              "type": "JSXOpeningElement",
+              "start": 78,
+              "end": 114,
+              "name": {
+                "type": "JSXIdentifier",
+                "start": 79,
+                "end": 85,
+                "name": "Select"
+              },
+              "attributes": [
+                {
+                  "type": "JSXAttribute",
+                  "start": 86,
+                  "end": 111,
+                  "name": {
+                    "type": "JSXIdentifier",
+                    "start": 86,
+                    "end": 90,
+                    "name": "prop"
+                  },
+                  "value": {
+                    "type": "JSXExpressionContainer",
+                    "start": 91,
+                    "end": 111,
+                    "expression": {
+                      "type": "ObjectExpression",
+                      "start": 92,
+                      "end": 110,
+                      "properties": [
+                        {
+                          "type": "Property",
+                          "start": 94,
+                          "end": 108,
+                          "method": false,
+                          "key": {
+                            "type": "Identifier",
+                            "start": 94,
+                            "end": 100,
+                            "name": "delete"
+                          },
+                          "computed": false,
+                          "shorthand": false,
+                          "value": {
+                            "type": "Literal",
+                            "start": 102,
+                            "end": 108,
+                            "value": "test",
+                            "raw": "'test'"
+                          },
+                          "kind": "init"
+                        }
+                      ]
+                    }
+                  }
+                }
+              ],
+              "selfClosing": true
+            },
+            "closingElement": null,
+            "children": []
+          },
+          {
+            "type": "JSXText",
+            "start": 114,
+            "end": 115,
+            "value": "\n",
+            "raw": "\n"
+          },
+          {
+            "type": "JSXElement",
+            "start": 115,
+            "end": 149,
+            "openingElement": {
+              "type": "JSXOpeningElement",
+              "start": 115,
+              "end": 149,
+              "name": {
+                "type": "JSXIdentifier",
+                "start": 116,
+                "end": 122,
+                "name": "Select"
+              },
+              "attributes": [
+                {
+                  "type": "JSXAttribute",
+                  "start": 123,
+                  "end": 146,
+                  "name": {
+                    "type": "JSXIdentifier",
+                    "start": 123,
+                    "end": 127,
+                    "name": "prop"
+                  },
+                  "value": {
+                    "type": "JSXExpressionContainer",
+                    "start": 128,
+                    "end": 146,
+                    "expression": {
+                      "type": "ObjectExpression",
+                      "start": 129,
+                      "end": 145,
+                      "properties": [
+                        {
+                          "type": "Property",
+                          "start": 131,
+                          "end": 143,
+                          "method": false,
+                          "key": {
+                            "type": "Identifier",
+                            "start": 131,
+                            "end": 135,
+                            "name": "enum"
+                          },
+                          "computed": false,
+                          "shorthand": false,
+                          "value": {
+                            "type": "Literal",
+                            "start": 137,
+                            "end": 143,
+                            "value": "test",
+                            "raw": "'test'"
+                          },
+                          "kind": "init"
+                        }
+                      ]
+                    }
+                  }
+                }
+              ],
+              "selfClosing": true
+            },
+            "closingElement": null,
+            "children": []
+          },
+          {
+            "type": "JSXText",
+            "start": 149,
+            "end": 150,
+            "value": "\n",
+            "raw": "\n"
+          }
+        ]
+      }
+    }
+  ]
+}

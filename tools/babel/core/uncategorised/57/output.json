@@ -4,13 +4,5 @@
   "end": 17,
   "sourceType": "script",
   "interpreter": null,
-  "body": [],
-  "innerComments": [
-    {
-      "type": "CommentLine",
-      "value": " Hello, world!",
-      "start": 0,
-      "end": 16
-    }
-  ]
+  "body": []
 }

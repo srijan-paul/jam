@@ -1,0 +1,52 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 113,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 112,
+      "expression": {
+        "type": "JSXElement",
+        "start": 0,
+        "end": 112,
+        "openingElement": {
+          "type": "JSXOpeningElement",
+          "start": 0,
+          "end": 3,
+          "name": {
+            "type": "JSXIdentifier",
+            "start": 1,
+            "end": 2,
+            "name": "a"
+          },
+          "attributes": [],
+          "selfClosing": false
+        },
+        "closingElement": {
+          "type": "JSXClosingElement",
+          "start": 108,
+          "end": 112,
+          "name": {
+            "type": "JSXIdentifier",
+            "start": 110,
+            "end": 111,
+            "name": "a"
+          }
+        },
+        "children": [
+          {
+            "type": "JSXText",
+            "start": 3,
+            "end": 108,
+            "value": "\n    Ӓ\n    ઼\n    Ӓ\n    ઼\n    \u0000\n",
+            "raw": "\n    &#1234;\n    &#xABC;\n    &#00000000000000000000001234;\n    &#x0000000000000000000000ABC;\n    &#0000;\n"
+          }
+        ]
+      }
+    }
+  ]
+}

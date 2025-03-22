@@ -29,15 +29,7 @@
         "type": "BlockStatement",
         "start": 72,
         "end": 83,
-        "body": [],
-        "innerComments": [
-          {
-            "type": "CommentBlock",
-            "value": " 8 ",
-            "start": 74,
-            "end": 81
-          }
-        ]
+        "body": []
       }
     },
     {
@@ -68,15 +60,7 @@
           "type": "BlockStatement",
           "start": 165,
           "end": 176,
-          "body": [],
-          "innerComments": [
-            {
-              "type": "CommentBlock",
-              "value": " 8 ",
-              "start": 167,
-              "end": 174
-            }
-          ]
+          "body": []
         },
         "arrow": false
       }

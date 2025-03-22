@@ -1,0 +1,33 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 18,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 17,
+      "expression": {
+        "type": "BinaryExpression",
+        "start": 0,
+        "end": 17,
+        "operator": "<",
+        "left": {
+          "type": "Literal",
+          "start": 0,
+          "end": 12,
+          "value": "use strict",
+          "raw": "\"use strict\""
+        },
+        "right": {
+          "type": "Identifier",
+          "start": 14,
+          "end": 17,
+          "name": "div"
+        }
+      }
+    }
+  ]
+}

@@ -42,38 +42,14 @@
           "type": "BlockStatement",
           "start": 103,
           "end": 113,
-          "body": [],
-          "innerComments": [
-            {
-              "type": "CommentBlock",
-              "value": "12",
-              "start": 105,
-              "end": 111
-            }
-          ]
-        },
-        "innerComments": [
-          {
-            "type": "CommentBlock",
-            "value": "8",
-            "start": 71,
-            "end": 76
-          }
-        ]
+          "body": []
+        }
       },
       "finalizer": {
         "type": "BlockStatement",
         "start": 136,
         "end": 146,
-        "body": [],
-        "innerComments": [
-          {
-            "type": "CommentBlock",
-            "value": "15",
-            "start": 138,
-            "end": 144
-          }
-        ]
+        "body": []
       }
     }
   ]

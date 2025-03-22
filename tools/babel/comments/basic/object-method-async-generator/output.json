@@ -53,14 +53,6 @@
                 },
                 "arrow": false
               },
-              "innerComments": [
-                {
-                  "type": "CommentBlock",
-                  "value": " 2 ",
-                  "start": 17,
-                  "end": 24
-                }
-              ],
               "shorthand": false
             }
           ]
@@ -99,14 +91,6 @@
                   },
                   "arrow": false
                 },
-                "innerComments": [
-                  {
-                    "type": "CommentBlock",
-                    "value": " 1 ",
-                    "start": 97,
-                    "end": 104
-                  }
-                ],
                 "shorthand": false
               }
             ]

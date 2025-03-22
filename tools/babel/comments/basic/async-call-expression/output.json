@@ -20,14 +20,6 @@
           "name": "async"
         },
         "arguments": [],
-        "innerComments": [
-          {
-            "type": "CommentBlock",
-            "value": " 2 ",
-            "start": 15,
-            "end": 22
-          }
-        ],
         "optional": false
       }
     }

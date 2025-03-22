@@ -20,6 +20,7 @@ function removeAstTrivia(ast) {
         delete ast['range']
         delete ast['trailingComments']
         delete ast['leadingComments']
+        delete ast['innerComments']
 
         // Jam does not parse regular expressions in source,
         // and doesn't plan to. They're only validated as per the
@@ -31,6 +32,12 @@ function removeAstTrivia(ast) {
         // the type already says whether its a declaration or expression.
         if (ast.type === "FunctionDeclaration")
             delete ast['expression']
+
+        if (ast.type == 'JSXExpressionContainer') {
+           if (ast.expression.type == 'JSXEmptyExpression') {
+                ast.expression = null;
+           }
+        }
 
         if (ast.type === "FunctionExpression") {
             delete ast['expression']
@@ -82,6 +89,7 @@ for (const subdir of subdirs) {
         const parentDir = path.dirname(jsFile)
         const optionsFile = path.join(parentDir, "options.json")
         let options = { plugins: ["estree"] };
+        if (subdir === "jsx") options.plugins.push("jsx")
         if (fs.existsSync(optionsFile)) {
             options = JSON.parse(fs.readFileSync(optionsFile, { encoding: "utf8" }))
             if (Array.isArray(options.plugins) && !options.plugins.includes("estree")) {
@@ -97,9 +105,14 @@ for (const subdir of subdirs) {
         } catch (error) {
             ast = { error: error.toString() }
         }
-        const astJson = JSON.stringify(ast.program, (_, v) => typeof v === 'bigint' ? v.toString() : v, 2)
-        if (typeof astJson !== "string") continue
 
+        if (Array.isArray(ast.errors) && ast.errors.length > 0) {
+            ast = { error: ast.errors.map(e => e.toString()).join("\n") }
+        } else if (ast.error) {
+            ast = { error: ast.error }
+        }
+
+        const astJson = JSON.stringify(ast.program ??  ast, (_, v) => typeof v === 'bigint' ? v.toString() : v, 2)
         const astFile = path.join(parentDir, "output.json")
         fs.writeFileSync(astFile, astJson, { encoding: "utf8" })
     }

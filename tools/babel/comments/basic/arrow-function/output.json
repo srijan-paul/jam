@@ -23,15 +23,7 @@
           "start": 9,
           "end": 10,
           "name": "x"
-        },
-        "innerComments": [
-          {
-            "type": "CommentBlock",
-            "value": "1",
-            "start": 1,
-            "end": 6
-          }
-        ]
+        }
       }
     },
     {
@@ -59,15 +51,7 @@
           "start": 48,
           "end": 50,
           "body": []
-        },
-        "innerComments": [
-          {
-            "type": "CommentBlock",
-            "value": "4",
-            "start": 33,
-            "end": 38
-          }
-        ]
+        }
       }
     }
   ]

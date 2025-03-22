@@ -18,24 +18,8 @@
           "type": "BlockStatement",
           "start": 28,
           "end": 37,
-          "body": [],
-          "innerComments": [
-            {
-              "type": "CommentBlock",
-              "value": " 4 ",
-              "start": 29,
-              "end": 36
-            }
-          ]
-        },
-        "innerComments": [
-          {
-            "type": "CommentBlock",
-            "value": " 2 ",
-            "start": 12,
-            "end": 19
-          }
-        ]
+          "body": []
+        }
       }
     }
   ]

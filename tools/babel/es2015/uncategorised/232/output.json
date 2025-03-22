@@ -1,3 +1,3 @@
 {
-  "error": "SyntaxError: Missing semicolon. (2:9)"
+  "error": "SyntaxError: Unexpected keyword 'default'. (1:6)"
 }

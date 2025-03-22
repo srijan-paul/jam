@@ -4,19 +4,5 @@
   "end": 17,
   "sourceType": "script",
   "interpreter": null,
-  "body": [],
-  "innerComments": [
-    {
-      "type": "CommentBlock",
-      "value": "",
-      "start": 0,
-      "end": 4
-    },
-    {
-      "type": "CommentLine",
-      "value": " comment",
-      "start": 5,
-      "end": 16
-    }
-  ]
+  "body": []
 }

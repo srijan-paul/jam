@@ -97,8 +97,15 @@ const tests_to_run = [_][]const u8{
 };
 
 fn runTest(al: Allocator, d: std.fs.Dir, key: []const u8, filename: []const u8, out: *json.ObjectMap) !ParseResult {
+    // std.debug.print("{s}\n", .{key});
     // Read the expected json output
-    const expected_json = try d.readFileAlloc(al, "output.json", std.math.maxInt(u32));
+    const expected_json = d.readFileAlloc(al, "output.json", std.math.maxInt(u32)) catch |e| {
+        if (e == std.fs.File.OpenError.FileNotFound) {
+            std.debug.panic("No output.json file found for {s}", .{key});
+        }
+
+        return e;
+    };
     const expected = try json.parseFromSlice(json.Value, al, expected_json, .{});
     defer expected.deinit();
 
@@ -279,9 +286,7 @@ pub fn main() !void {
         var results_file = try std.fs.cwd().createFile(results_file_path, .{});
         defer results_file.close();
         try results_file.writeAll(results_json);
-    }
-
-    if (maybe_compare_filepath) |compare_filepath| {
+    } else if (maybe_compare_filepath) |compare_filepath| {
         const cwd = std.fs.cwd();
         const original_results_json = try cwd.readFileAlloc(
             al,
@@ -298,5 +303,8 @@ pub fn main() !void {
 
         compareTestResults(existing_results.value, results);
         std.debug.print("No regressions found. All tests are passing\n", .{});
+    } else {
+        var io = std.io.getStdOut().writer();
+        _ = try io.write(results_json);
     }
 }

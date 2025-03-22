@@ -15,21 +15,7 @@
         "end": 9,
         "name": "c"
       },
-      "cases": [],
-      "innerComments": [
-        {
-          "type": "CommentBlock",
-          "value": "1",
-          "start": 10,
-          "end": 15
-        },
-        {
-          "type": "CommentBlock",
-          "value": "2",
-          "start": 18,
-          "end": 23
-        }
-      ]
+      "cases": []
     }
   ]
 }

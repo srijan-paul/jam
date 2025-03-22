@@ -23,15 +23,7 @@
         "start": 33,
         "end": 35,
         "body": []
-      },
-      "innerComments": [
-        {
-          "type": "CommentBlock",
-          "value": " 2 ",
-          "start": 12,
-          "end": 19
-        }
-      ]
+      }
     }
   ]
 }

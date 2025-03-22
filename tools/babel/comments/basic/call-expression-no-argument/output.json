@@ -20,14 +20,6 @@
           "name": "foo"
         },
         "arguments": [],
-        "innerComments": [
-          {
-            "type": "CommentBlock",
-            "value": " 2 ",
-            "start": 13,
-            "end": 20
-          }
-        ],
         "optional": false
       }
     }

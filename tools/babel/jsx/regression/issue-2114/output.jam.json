@@ -1,0 +1,63 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 52,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 51,
+      "expression": {
+        "type": "JSXElement",
+        "start": 0,
+        "end": 50,
+        "openingElement": {
+          "type": "JSXOpeningElement",
+          "start": 0,
+          "end": 44,
+          "name": {
+            "type": "JSXIdentifier",
+            "start": 1,
+            "end": 4,
+            "name": "div"
+          },
+          "attributes": [
+            {
+              "type": "JSXAttribute",
+              "start": 5,
+              "end": 43,
+              "name": {
+                "type": "JSXIdentifier",
+                "start": 5,
+                "end": 12,
+                "name": "pattern"
+              },
+              "value": {
+                "type": "Literal",
+                "start": 13,
+                "end": 43,
+                "value": "^([\u0000\u0000\u0000]+\u0000)*[\u0000\u0000\u0000]+\u0000?$",
+                "raw": "\"^([\\w\\.\\-]+\\s)*[\\w\\.\\-]+\\s?$\""
+              }
+            }
+          ],
+          "selfClosing": false
+        },
+        "closingElement": {
+          "type": "JSXClosingElement",
+          "start": 44,
+          "end": 50,
+          "name": {
+            "type": "JSXIdentifier",
+            "start": 46,
+            "end": 49,
+            "name": "div"
+          }
+        },
+        "children": []
+      }
+    }
+  ]
+}

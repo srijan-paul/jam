@@ -1,0 +1,112 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 63,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 62,
+      "expression": {
+        "type": "JSXFragment",
+        "start": 0,
+        "end": 62,
+        "openingFragment": {
+          "type": "JSXOpeningFragment",
+          "start": 0,
+          "end": 30
+        },
+        "closingFragment": {
+          "type": "JSXClosingFragment",
+          "start": 59,
+          "end": 62
+        },
+        "children": [
+          {
+            "type": "JSXText",
+            "start": 30,
+            "end": 33,
+            "value": "\n  ",
+            "raw": "\n  "
+          },
+          {
+            "type": "JSXElement",
+            "start": 33,
+            "end": 44,
+            "openingElement": {
+              "type": "JSXOpeningElement",
+              "start": 33,
+              "end": 38,
+              "name": {
+                "type": "JSXIdentifier",
+                "start": 34,
+                "end": 37,
+                "name": "div"
+              },
+              "attributes": [],
+              "selfClosing": false
+            },
+            "closingElement": {
+              "type": "JSXClosingElement",
+              "start": 38,
+              "end": 44,
+              "name": {
+                "type": "JSXIdentifier",
+                "start": 40,
+                "end": 43,
+                "name": "div"
+              }
+            },
+            "children": []
+          },
+          {
+            "type": "JSXText",
+            "start": 44,
+            "end": 47,
+            "value": "\n  ",
+            "raw": "\n  "
+          },
+          {
+            "type": "JSXElement",
+            "start": 47,
+            "end": 58,
+            "openingElement": {
+              "type": "JSXOpeningElement",
+              "start": 47,
+              "end": 52,
+              "name": {
+                "type": "JSXIdentifier",
+                "start": 48,
+                "end": 51,
+                "name": "div"
+              },
+              "attributes": [],
+              "selfClosing": false
+            },
+            "closingElement": {
+              "type": "JSXClosingElement",
+              "start": 52,
+              "end": 58,
+              "name": {
+                "type": "JSXIdentifier",
+                "start": 54,
+                "end": 57,
+                "name": "div"
+              }
+            },
+            "children": []
+          },
+          {
+            "type": "JSXText",
+            "start": 58,
+            "end": 59,
+            "value": "\n",
+            "raw": "\n"
+          }
+        ]
+      }
+    }
+  ]
+}

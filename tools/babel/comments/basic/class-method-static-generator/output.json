@@ -44,34 +44,10 @@
                   "type": "BlockStatement",
                   "start": 78,
                   "end": 89,
-                  "body": [],
-                  "innerComments": [
-                    {
-                      "type": "CommentBlock",
-                      "value": " 8 ",
-                      "start": 80,
-                      "end": 87
-                    }
-                  ]
+                  "body": []
                 },
-                "innerComments": [
-                  {
-                    "type": "CommentBlock",
-                    "value": " 6 ",
-                    "start": 61,
-                    "end": 68
-                  }
-                ],
                 "arrow": false
-              },
-              "innerComments": [
-                {
-                  "type": "CommentBlock",
-                  "value": " 3 ",
-                  "start": 32,
-                  "end": 39
-                }
-              ]
+              }
             }
           ]
         }

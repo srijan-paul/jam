@@ -832,6 +832,8 @@ pub const NodeData = union(enum(u8)) {
     jsx_opening_element: JsxOpeningElement,
     /// A closing JSX element like '</Foo>'
     jsx_closing_element: JsxClosingElement,
+    /// A self-closing JSX element like '<Foo />'
+    jsx_self_closing_element: JsxOpeningElement,
     jsx_attribute: JsxAttribute,
     /// Non-javascript text inside a JSX element.
     jsx_text: Token.Index,

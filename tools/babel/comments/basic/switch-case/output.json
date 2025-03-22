@@ -51,15 +51,7 @@
             "start": 150,
             "end": 166,
             "consequent": [],
-            "test": null,
-            "innerComments": [
-              {
-                "type": "CommentBlock",
-                "value": "13",
-                "start": 158,
-                "end": 164
-              }
-            ]
+            "test": null
           },
           {
             "type": "SwitchCase",
@@ -70,15 +62,7 @@
                 "type": "BlockStatement",
                 "start": 212,
                 "end": 222,
-                "body": [],
-                "innerComments": [
-                  {
-                    "type": "CommentBlock",
-                    "value": "18",
-                    "start": 214,
-                    "end": 220
-                  }
-                ]
+                "body": []
               }
             ],
             "test": {
@@ -88,20 +72,6 @@
               "value": false,
               "raw": "false"
             }
-          }
-        ],
-        "innerComments": [
-          {
-            "type": "CommentBlock",
-            "value": "2",
-            "start": 32,
-            "end": 37
-          },
-          {
-            "type": "CommentBlock",
-            "value": "5",
-            "start": 60,
-            "end": 65
           }
         ]
       },

@@ -50,15 +50,7 @@
           "type": "ClassBody",
           "start": 75,
           "end": 86,
-          "body": [],
-          "innerComments": [
-            {
-              "type": "CommentBlock",
-              "value": " 7 ",
-              "start": 77,
-              "end": 84
-            }
-          ]
+          "body": []
         }
       }
     },
@@ -100,25 +92,9 @@
           "type": "ClassBody",
           "start": 177,
           "end": 188,
-          "body": [],
-          "innerComments": [
-            {
-              "type": "CommentBlock",
-              "value": " G ",
-              "start": 179,
-              "end": 186
-            }
-          ]
+          "body": []
         }
-      },
-      "innerComments": [
-        {
-          "type": "CommentBlock",
-          "value": " B ",
-          "start": 111,
-          "end": 118
-        }
-      ]
+      }
     }
   ]
 }

@@ -1,3 +1,3 @@
 {
-  "error": "SyntaxError: Missing semicolon. (2:9)"
+  "error": "SyntaxError: Private name #priv is not defined. (1:15)"
 }

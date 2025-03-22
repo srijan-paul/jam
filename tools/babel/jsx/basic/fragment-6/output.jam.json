@@ -1,0 +1,86 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 60,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 59,
+      "expression": {
+        "type": "JSXFragment",
+        "start": 0,
+        "end": 59,
+        "children": [
+          {
+            "type": "JSXElement",
+            "start": 2,
+            "end": 23,
+            "openingElement": {
+              "type": "JSXOpeningElement",
+              "start": 2,
+              "end": 7,
+              "name": {
+                "type": "JSXIdentifier",
+                "start": 3,
+                "end": 6,
+                "name": "div"
+              },
+              "attributes": [],
+              "selfClosing": false
+            },
+            "closingElement": {
+              "type": "JSXClosingElement",
+              "start": 17,
+              "end": 23,
+              "name": {
+                "type": "JSXIdentifier",
+                "start": 19,
+                "end": 22,
+                "name": "div"
+              }
+            },
+            "children": [
+              {
+                "type": "JSXText",
+                "start": 7,
+                "end": 17,
+                "value": "JSXElement"
+              }
+            ]
+          },
+          {
+            "type": "JSXText",
+            "start": 23,
+            "end": 30,
+            "value": "JSXText"
+          },
+          {
+            "type": "JSXExpressionContainer",
+            "start": 30,
+            "end": 56,
+            "expression": {
+              "type": "Literal",
+              "start": 31,
+              "end": 55,
+              "value": "JSXExpressionContainer",
+              "raw": "'JSXExpressionContainer'"
+            }
+          }
+        ],
+        "opening": {
+          "type": "JSXOpeningFragment",
+          "start": 0,
+          "end": 2
+        },
+        "closing": {
+          "type": "JSXClosingFragment",
+          "start": 56,
+          "end": 59
+        }
+      }
+    }
+  ]
+}

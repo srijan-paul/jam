@@ -384,6 +384,9 @@ pub fn jsxOpeningElement(_: *Self, _: *const ast.NodeData) Doc.Id {
 pub fn jsxClosingElement(_: *Self, _: *const ast.NodeData) Doc.Id {
     unreachable;
 }
+pub fn jsxSelfClosingElement(_: *Self, _: *const ast.NodeData) Doc.Id {
+    unreachable;
+}
 pub fn jsxElement(_: *Self, _: *const ast.NodeData) Doc.Id {
     unreachable;
 }

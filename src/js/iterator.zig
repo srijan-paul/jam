@@ -584,6 +584,7 @@ pub fn enqueueChildren(self: *Self, node_id: Node.Index) Allocator.Error!void {
         .jsx_children => |pl| try self.visitSubRange(&pl, node_id),
         .jsx_opening_element => |pl| try self.visitJsxOpeningElement(&pl, node_id),
         .jsx_closing_element => |pl| try self.visitJsxClosingElement(&pl, node_id),
+        .jsx_self_closing_element => |pl| try self.visitJsxOpeningElement(&pl, node_id),
         .jsx_attribute => |pl| try self.visitJsxAttribute(&pl, node_id),
         .jsx_text => {}, // leaf (token)
         .jsx_expression => |child_id| try self.pushNode(child_id, node_id),

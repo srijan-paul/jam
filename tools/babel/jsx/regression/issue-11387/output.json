@@ -1,0 +1,139 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 70,
+  "sourceType": "script",
+  "interpreter": null,
+  "body": [
+    {
+      "type": "ExpressionStatement",
+      "start": 0,
+      "end": 69,
+      "expression": {
+        "type": "JSXElement",
+        "start": 0,
+        "end": 69,
+        "openingElement": {
+          "type": "JSXOpeningElement",
+          "start": 0,
+          "end": 5,
+          "name": {
+            "type": "JSXIdentifier",
+            "start": 1,
+            "end": 4,
+            "name": "div"
+          },
+          "attributes": [],
+          "selfClosing": false
+        },
+        "closingElement": {
+          "type": "JSXClosingElement",
+          "start": 63,
+          "end": 69,
+          "name": {
+            "type": "JSXIdentifier",
+            "start": 65,
+            "end": 68,
+            "name": "div"
+          }
+        },
+        "children": [
+          {
+            "type": "JSXExpressionContainer",
+            "start": 5,
+            "end": 63,
+            "expression": {
+              "type": "SequenceExpression",
+              "start": 7,
+              "end": 61,
+              "expressions": [
+                {
+                  "type": "ChainExpression",
+                  "start": 7,
+                  "end": 18,
+                  "expression": {
+                    "type": "MemberExpression",
+                    "start": 7,
+                    "end": 18,
+                    "object": {
+                      "type": "ThisExpression",
+                      "start": 7,
+                      "end": 11
+                    },
+                    "computed": false,
+                    "property": {
+                      "type": "Identifier",
+                      "start": 13,
+                      "end": 18,
+                      "name": "class"
+                    },
+                    "optional": true
+                  }
+                },
+                {
+                  "type": "MemberExpression",
+                  "start": 20,
+                  "end": 30,
+                  "object": {
+                    "type": "ThisExpression",
+                    "start": 20,
+                    "end": 24
+                  },
+                  "computed": false,
+                  "property": {
+                    "type": "Identifier",
+                    "start": 25,
+                    "end": 30,
+                    "name": "class"
+                  },
+                  "optional": false
+                },
+                {
+                  "type": "ChainExpression",
+                  "start": 32,
+                  "end": 46,
+                  "expression": {
+                    "type": "MemberExpression",
+                    "start": 32,
+                    "end": 46,
+                    "object": {
+                      "type": "ThisExpression",
+                      "start": 32,
+                      "end": 36
+                    },
+                    "computed": false,
+                    "property": {
+                      "type": "Identifier",
+                      "start": 38,
+                      "end": 46,
+                      "name": "function"
+                    },
+                    "optional": true
+                  }
+                },
+                {
+                  "type": "MemberExpression",
+                  "start": 48,
+                  "end": 61,
+                  "object": {
+                    "type": "ThisExpression",
+                    "start": 48,
+                    "end": 52
+                  },
+                  "computed": false,
+                  "property": {
+                    "type": "Identifier",
+                    "start": 53,
+                    "end": 61,
+                    "name": "function"
+                  },
+                  "optional": false
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
