@@ -108,6 +108,7 @@ const ParseError = error{
     /// Invalid expression or pattern inside '(...)'
     InvalidExpressionInsideParens,
     JsxExpectedTagName,
+    JsxExpectedGt,
 
     TypeScriptNotImplemented,
     // The parser instance has already been used
@@ -2531,6 +2532,7 @@ fn errorMessage(err: ParseError) []const u8 {
         ParseError.InvalidExpressionInsideParens => "Invalid expression or pattern inside (...)",
         ParseError.RestElementNotLastInParams => "Rest element must be the last item in a function parameter list",
         ParseError.JsxExpectedTagName => "Expected a tag name after '<' in JSX code",
+        ParseError.JsxExpectedGt => "Expected a '>' to close the JSX opening tag",
     };
 }
 
@@ -2775,6 +2777,24 @@ fn expectJsx(self: *Self, tag: Token.Tag) Error!TokenWithId {
     }
 }
 
+/// Expect a '>' token to close a JSX opening tag.
+fn expectJsxRAngleForOpeningTag(self: *Self) Error!TokenWithId {
+    if (self.current.token.tag == .@">") {
+        return try self.nextJsx();
+    }
+
+    switch (self.current.token.tag) {
+        .@">>", .@">>>", .@">=", .@">>=", .@">>>=" => {
+            self.reScanJsxGt(); // re-lex '>>=' as '>'...
+            return try self.nextJsx();
+        },
+
+        else => {
+            return self.errorOnToken(self.current.token, ParseError.JsxExpectedGt);
+        },
+    }
+}
+
 /// Emit a parse error if the current token does not match `tag`.
 fn expectToken(self: *Self, tag: Token.Tag) Error!Token {
     if (self.current.token.tag == tag) {
@@ -2885,6 +2905,23 @@ fn reScanTemplatePart(self: *Self) Error!void {
     // replate the '}' token in the buffer with the template part token
     self.tokens.items[@intFromEnum(self.current.id)] = template_part;
     self.current.token = template_part;
+}
+
+/// Re tokenize the current '>>', '>>>', '>=', '>>=', or '>>>=' token
+/// as a single '>' token that closes a JSX opening tag.
+fn reScanJsxGt(self: *Self) void {
+    const cur = &self.current.token;
+    assert(switch (cur.tag) {
+        .@">=", .@">>=", .@">>>=", .@">>", .@">>>" => true,
+        else => false,
+    });
+
+    const jsx_gt = self.tokenizer.reScanJsxGt(cur);
+    assert(jsx_gt.tag == .@">");
+
+    // replate the '>>=' etc. token in the buffer with the template part token
+    self.tokens.items[@intFromEnum(self.current.id)] = jsx_gt;
+    self.current.token = jsx_gt;
 }
 
 /// Set [next_token] as the current token, and update `self.current`, and `self.prev_token_line`
@@ -4414,15 +4451,20 @@ fn primaryExpression(self: *Self) Error!Node.Index {
 ///     JSXElement
 ///     JSXFragment
 fn jsxFragmentOrElement(self: *Self) Error!Node.Index {
+    assert(self.current.token.tag == .@"<");
+
     self.jsx_nesting_depth += 1;
     defer self.jsx_nesting_depth -= 1;
 
-    const lt_token = try self.next();
-    if (self.isAtToken(.@">")) {
-        return self.jsxFragment(lt_token.id);
-    }
-
-    return self.jsxElement(lt_token.id);
+    const lt_token = try self.next(); // eat '<'
+    return switch (self.current.token.tag) {
+        .@">" => self.jsxFragment(lt_token.id),
+        .@">>", .@">=", .@">>=", .@">>>=", .@">>>" => blk: {
+            self.reScanJsxGt();
+            break :blk self.jsxFragment(lt_token.id);
+        },
+        else => self.jsxElement(lt_token.id),
+    };
 }
 
 /// JSXElement:
@@ -4468,7 +4510,7 @@ fn jsxOpeningElement(self: *Self, lt_token: Token.Index) Error!Node.Index {
     const name = try self.jsxElementName();
     const attrs = try self.jsxAttributes();
     // Consume the current '>' token, and lex the remaining as JSX text.
-    const gt_token = try self.expectJsx(.@">");
+    const gt_token = try self.expectJsxRAngleForOpeningTag();
 
     return self.addNode(
         .{
@@ -4489,7 +4531,7 @@ fn jsxClosingElement(self: *Self) Error!Node.Index {
     _ = try self.expect(.@"/");
     const name = try self.jsxElementName();
     const gt_token = if (self.jsx_nesting_depth > 1)
-        try self.expectJsx(.@">")
+        try self.expectJsxRAngleForOpeningTag()
     else
         try self.expect(.@">");
 
@@ -4507,7 +4549,7 @@ fn jsxAttributes(self: *Self) Error!ast.SubRange {
     const prev_scratch_len = self.scratch.items.len;
     defer self.scratch.items.len = prev_scratch_len;
 
-    while (self.current.token.tag != .@">") {
+    while (self.current.token.tag.is(TokenMask.IsJsxAttributeStart)) {
         if (self.isAtToken(.@"{")) {
             try self.scratch.append(try self.jsxSpreadAttribute());
         } else {
@@ -4723,7 +4765,7 @@ fn jsxFragment(self: *Self, opening_lt: Token.Index) Error!Node.Index {
     _ = try self.expectToken(.@"/");
     const closing_gt = try if (self.jsx_nesting_depth > 1)
         // If nested inside another JSX element, lex the part after '>' as JSX text or '<' or '{'
-        self.expectJsx(.@">")
+        self.expectJsxRAngleForOpeningTag()
     else
         // If this is a top-level JSX tag, lex the part after '>' as a regular JS token.
         self.expect(.@">");

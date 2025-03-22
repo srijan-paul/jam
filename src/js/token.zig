@@ -13,13 +13,12 @@ pub const Mask = struct {
 
     pub const IsAssignOp: u32 = 1 << 15;
     pub const IsBinaryOp: u32 = 1 << 16;
-    pub const IsExpressionStart: u32 = 1 << 17;
-    pub const IsUnaryOp: u32 = 1 << 18 | IsExpressionStart;
+    pub const IsUnaryOp: u32 = 1 << 17;
 
-    pub const IsNumericLiteral: u32 = 1 << 19;
-    pub const IsIdentifier: u32 = 1 << 20;
-    pub const IsLogicalOp: u32 = 1 << 21; // || and &&
-    pub const IsCoalesceOp: u32 = 1 << 22; // ??
+    pub const IsNumericLiteral: u32 = 1 << 18;
+    pub const IsIdentifier: u32 = 1 << 19;
+    pub const IsLogicalOp: u32 = 1 << 20; // || and &&
+    pub const IsJsxAttributeStart: u32 = 1 << 21;
 
     /// For binary operators (token.tag & Mask.IsBinaryOp != 0),
     /// bits 8-11 store the precedence of the token.
@@ -37,11 +36,11 @@ pub const JsTokenTag = enum(u32) {
     // TODO(@injuly): should there be a separate tag for whitespaces that include newlines?
     whitespace = 2,
 
-    identifier = 3 | Mask.IsIdentifier,
+    identifier = 3 | Mask.IsIdentifier | Mask.IsJsxAttributeStart,
     /// An identifier that is contains non-ASCII characters.
     /// This is a separate token kind because it allows us to have fewer allocations
     /// in some places in the parser.
-    non_ascii_identifier = 4 | Mask.IsIdentifier,
+    non_ascii_identifier = 4 | Mask.IsIdentifier | Mask.IsJsxAttributeStart,
     private_identifier = 5 | Mask.IsIdentifier,
     /// A private identifier that contains non-ASCII characters.
     /// See: non_ascii_identifier
@@ -67,7 +66,7 @@ pub const JsTokenTag = enum(u32) {
 
     @"\"" = 19,
     @"'" = 20,
-    @"{" = 21,
+    @"{" = 21 | Mask.IsJsxAttributeStart,
     @"}" = 22,
     @"(" = 23,
     @")" = 24,
@@ -200,7 +199,7 @@ pub const JsTokenTag = enum(u32) {
     kw_of = 146 | Mask.ContextualKeyword,
 
     jsx_text = 147,
-    jsx_identifier = 148,
+    jsx_identifier = 148 | Mask.IsJsxAttributeStart,
 
     eof = 149,
 

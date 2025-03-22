@@ -142,6 +142,29 @@ pub fn reScanTemplatePart(self: *Self, rbrace_token: *const Token) Error!Token {
     return self.templateAfterInterpolation();
 }
 
+/// When scanning the opening tag of a JSX fragment or element, a '>' token might
+/// be mistaken for a '>>=' or '>>' in cases like: `<div>>=</div>`.
+///
+/// In such cases, the parser should call this function to
+/// re-scan the ">>" or ">>=" token as a single ">" token.
+pub fn reScanJsxGt(self: *Self, token: *const Token) Token {
+    assert(token.tag == .@">>" or
+        token.tag == .@">>>" or
+        token.tag == .@">=" or
+        token.tag == .@">>=" or
+        token.tag == .@">>>=");
+
+    self.rewind(token.start, token.line);
+    self.index += 1; // eat the '>'
+
+    return Token{
+        .tag = .@">",
+        .start = token.start,
+        .len = 1,
+        .line = token.line,
+    };
+}
+
 /// Returns the next token that starts a JSX child.
 /// The token returned is one of: '<', '{', or JSX text.
 /// To tokenize JS expressions inside JSX (e.g: prop values), the 'next' function should be used instead.

@@ -93,6 +93,7 @@ const tests_to_run = [_][]const u8{
     "estree",
     "esprima",
     "comments",
+    "jsx",
 };
 
 fn runTest(al: Allocator, d: std.fs.Dir, key: []const u8, filename: []const u8, out: *json.ObjectMap) !ParseResult {
