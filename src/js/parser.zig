@@ -66,6 +66,8 @@ const ParseError = error{
     MissingArrow,
     /// Setter must have exactly one parameter
     InvalidSetter,
+    /// Setter cannot have rest parameters
+    InvalidSetterRestParam,
     /// Getter must have no parameters
     InvalidGetter,
     /// {x=1, x: 5} is neither a valid object literal nor a valid assignment pattern.
@@ -1566,14 +1568,7 @@ fn forLoopIterator(self: *Self) Error!struct { ForLoopKind, ast.Node.Index } {
         .@";" => {
             // parse <Expression> ; <Expression> ; <Expression>
             if (self.current_destructure_kind.must_destruct) {
-                const expr_start = self.nodes.items(.start)[@intFromEnum(expr)];
-                try self.emitDiagnostic(
-                    self.getToken(expr_start).startCoord(self.source),
-                    "Unexpected pattern",
-                    .{},
-                );
-
-                return Error.UnexpectedPattern;
+                return self.errorOnNode(expr, ParseError.UnexpectedPattern);
             }
 
             const iterator = try self.completeBasicLoopIterator(expr, lpar.id);
@@ -1583,13 +1578,7 @@ fn forLoopIterator(self: *Self) Error!struct { ForLoopKind, ast.Node.Index } {
         .kw_of, .kw_in => {
             // parse <Expression> <in/of> <Expression>
             if (!self.current_destructure_kind.can_be_assigned_to) {
-                try self.emitDiagnostic(
-                    // TODO: use the expression's start coordinate instead, use util.offsets
-                    self.current.token.startCoord(self.source),
-                    "left hand side of for-loop must be a name or assignment pattern",
-                    .{},
-                );
-                return Error.InvalidLoopLhs;
+                return self.errorOnNode(expr, ParseError.InvalidLoopLhs);
             }
 
             if (self.isAtToken(.kw_of) and lhs_starts_with_let) {
@@ -2386,12 +2375,7 @@ fn returnStatement(self: *Self) Error!Node.Index {
     if (!self.context.@"return") {
         // todo: maybe we should just emit a diagnostic here and continue parsing?
         // that way we can catch more parse errors than just this.
-        try self.emitDiagnostic(
-            return_kw.token.startCoord(self.source),
-            "Return statement is not allowed outside of a function",
-            .{},
-        );
-        return Error.IllegalReturn;
+        return self.errorOnToken(return_kw.token, ParseError.IllegalReturn);
     }
 
     if (self.current.token.line != return_kw.token.line or
@@ -2503,6 +2487,7 @@ fn errorMessage(err: ParseError) []const u8 {
         ParseError.IllegalContinue => "'continue' is not allowed outside switch statements",
         ParseError.IllegalAwait => "'await' expressions are not allowed outside async functions",
         ParseError.InvalidSetter => "Setter functions must have exactly one parameter",
+        ParseError.InvalidSetterRestParam => "Setter functions cannot have reset parameters",
         ParseError.InvalidGetter => "Getter functions must have no parameters",
         ParseError.InvalidLoopLhs => "left hand side of for-loop must be a name or assignment pattern",
         ParseError.MissingInitializerInConst => "Missing initializer in const declaration",
@@ -6011,6 +5996,7 @@ fn parseMethodBody(
 /// Verify the number of parameters in a getter or setter.
 /// Emit a diagnostic, then return an error if the number is invalid.
 /// A Getter must have exaclty 0 parameters, and a setter only one.
+/// Additionally, a setter cannot have rest parameters.
 fn checkGetterOrSetterParams(
     self: *Self,
     func_expr: Node.Index,
@@ -6022,33 +6008,19 @@ fn checkGetterOrSetterParams(
     const n_params = func.getParameterCount(self.tree orelse unreachable);
 
     if (kind == .get and n_params != 0) {
-        try self.emitDiagnostic(
-            self.current.token.startCoord(self.source),
-            "A 'get' accessor should have no parameter, but got {d}",
-            .{n_params},
-        );
-        return Error.InvalidGetter;
+        // TODO: emit error and keep parsing
+        return self.errorOnNode(func_expr, ParseError.InvalidGetter);
     }
 
     if (kind == .set) {
         if (n_params != 1) {
-            try self.emitDiagnostic(
-                self.current.token.startCoord(self.source),
-                "A 'set' accessor should have exaclty one parameters, but got {d}",
-                .{n_params},
-            );
-            return Error.InvalidSetter;
+            return self.errorOnNode(func_expr, ParseError.InvalidSetter);
         }
 
         // SAFETY: `self.tree` cannot be null here.
         const param = func.getParameterSlice(self.tree orelse unreachable)[0];
         if (self.nodeTag(param) == .rest_element) {
-            try self.emitDiagnostic(
-                self.nodeStartCoord(param),
-                "A 'set' accessor cannot have a rest parameter",
-                .{},
-            );
-            return Error.InvalidSetter;
+            return self.errorOnNode(param, ParseError.InvalidSetterRestParam);
         }
     }
 }
