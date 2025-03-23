@@ -42,7 +42,8 @@
             "type": "JSXText",
             "start": 5,
             "end": 10,
-            "value": "/text"
+            "value": "/text",
+            "raw": "/text"
           }
         ]
       }

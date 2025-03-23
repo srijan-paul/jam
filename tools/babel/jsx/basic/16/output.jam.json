@@ -15,17 +15,24 @@
         "end": 13,
         "operator": "<",
         "left": {
-          "type": "JSXSelfClosingElement",
+          "type": "JSXElement",
           "start": 1,
           "end": 8,
-          "name": {
-            "type": "JSXIdentifier",
-            "start": 2,
-            "end": 5,
-            "name": "div"
+          "openingElement": {
+            "type": "JSXOpeningElement",
+            "start": 1,
+            "end": 8,
+            "name": {
+              "type": "JSXIdentifier",
+              "start": 2,
+              "end": 5,
+              "name": "div"
+            },
+            "attributes": [],
+            "selfClosing": true
           },
-          "attributes": [],
-          "selfClosing": true
+          "closingElement": null,
+          "children": []
         },
         "right": {
           "type": "Identifier",

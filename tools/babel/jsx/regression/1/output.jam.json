@@ -42,7 +42,8 @@
             "type": "JSXText",
             "start": 3,
             "end": 7,
-            "value": "foo "
+            "value": "foo ",
+            "raw": "foo "
           },
           {
             "type": "JSXElement",
@@ -96,7 +97,8 @@
                 "type": "JSXText",
                 "start": 22,
                 "end": 26,
-                "value": " bar"
+                "value": " bar",
+                "raw": " bar"
               }
             ]
           },
@@ -104,7 +106,8 @@
             "type": "JSXText",
             "start": 30,
             "end": 34,
-            "value": " baz"
+            "value": " baz",
+            "raw": " baz"
           }
         ]
       }

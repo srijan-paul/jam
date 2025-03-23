@@ -4894,17 +4894,11 @@ fn jsxExpression(self: *Self) Error!Node.Index {
     const lbrace = try self.next();
 
     if (self.isAtToken(.@"...")) {
-        const spread_token = try self.next();
+        _ = try self.next(); // eat "..."
         const expr = try self.assignExpressionNoPattern();
-        const jsx_spread_expr = try self.addNode(
-            .{ .jsx_spread_child = expr },
-            spread_token.id,
-            self.nodes.items(.end)[@intFromEnum(expr)],
-        );
-
         const rbrace = try self.expectJsx(.@"}");
         return self.addNode(
-            .{ .jsx_expression = jsx_spread_expr },
+            .{ .jsx_spread_child = expr },
             lbrace.id,
             rbrace.id,
         );

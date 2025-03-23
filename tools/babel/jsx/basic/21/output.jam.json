@@ -54,22 +54,18 @@
             "type": "JSXText",
             "start": 12,
             "end": 13,
-            "value": " "
+            "value": " ",
+            "raw": " "
           },
           {
-            "type": "JSXExpressionContainer",
+            "type": "JSXSpreadChild",
             "start": 13,
             "end": 26,
             "expression": {
-              "type": "JSXSpreadChild",
-              "start": 14,
+              "type": "Identifier",
+              "start": 17,
               "end": 25,
-              "expression": {
-                "type": "Identifier",
-                "start": 17,
-                "end": 25,
-                "name": "children"
-              }
+              "name": "children"
             }
           },
           {
@@ -84,19 +80,14 @@
             }
           },
           {
-            "type": "JSXExpressionContainer",
+            "type": "JSXSpreadChild",
             "start": 29,
             "end": 35,
             "expression": {
-              "type": "JSXSpreadChild",
-              "start": 30,
+              "type": "Identifier",
+              "start": 33,
               "end": 34,
-              "expression": {
-                "type": "Identifier",
-                "start": 33,
-                "end": 34,
-                "name": "b"
-              }
+              "name": "b"
             }
           }
         ]

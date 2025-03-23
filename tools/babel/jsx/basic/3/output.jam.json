@@ -72,7 +72,8 @@
             "type": "JSXText",
             "start": 15,
             "end": 16,
-            "value": " "
+            "value": " ",
+            "raw": " "
           },
           {
             "type": "JSXExpressionContainer",
@@ -89,7 +90,8 @@
             "type": "JSXText",
             "start": 23,
             "end": 24,
-            "value": " "
+            "value": " ",
+            "raw": " "
           },
           {
             "type": "JSXElement",
@@ -121,17 +123,24 @@
             },
             "children": [
               {
-                "type": "JSXSelfClosingElement",
+                "type": "JSXElement",
                 "start": 27,
                 "end": 32,
-                "name": {
-                  "type": "JSXIdentifier",
-                  "start": 28,
-                  "end": 29,
-                  "name": "c"
+                "openingElement": {
+                  "type": "JSXOpeningElement",
+                  "start": 27,
+                  "end": 32,
+                  "name": {
+                    "type": "JSXIdentifier",
+                    "start": 28,
+                    "end": 29,
+                    "name": "c"
+                  },
+                  "attributes": [],
+                  "selfClosing": true
                 },
-                "attributes": [],
-                "selfClosing": true
+                "closingElement": null,
+                "children": []
               }
             ]
           }

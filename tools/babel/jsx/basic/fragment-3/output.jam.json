@@ -13,12 +13,23 @@
         "type": "JSXFragment",
         "start": 0,
         "end": 50,
+        "openingFragment": {
+          "type": "JSXOpeningFragment",
+          "start": 0,
+          "end": 3
+        },
+        "closingFragment": {
+          "type": "JSXClosingFragment",
+          "start": 47,
+          "end": 50
+        },
         "children": [
           {
             "type": "JSXText",
             "start": 3,
             "end": 6,
-            "value": "\n  "
+            "value": "\n  ",
+            "raw": "\n  "
           },
           {
             "type": "JSXElement",
@@ -53,7 +64,8 @@
                 "type": "JSXText",
                 "start": 12,
                 "end": 22,
-                "value": "\n    hi\n  "
+                "value": "\n    hi\n  ",
+                "raw": "\n    hi\n  "
               }
             ]
           },
@@ -61,7 +73,8 @@
             "type": "JSXText",
             "start": 29,
             "end": 32,
-            "value": "\n  "
+            "value": "\n  ",
+            "raw": "\n  "
           },
           {
             "type": "JSXElement",
@@ -96,7 +109,8 @@
                 "type": "JSXText",
                 "start": 37,
                 "end": 40,
-                "value": "bye"
+                "value": "bye",
+                "raw": "bye"
               }
             ]
           },
@@ -104,19 +118,10 @@
             "type": "JSXText",
             "start": 46,
             "end": 47,
-            "value": "\n"
+            "value": "\n",
+            "raw": "\n"
           }
-        ],
-        "opening": {
-          "type": "JSXOpeningFragment",
-          "start": 0,
-          "end": 3
-        },
-        "closing": {
-          "type": "JSXClosingFragment",
-          "start": 47,
-          "end": 50
-        }
+        ]
       }
     }
   ]

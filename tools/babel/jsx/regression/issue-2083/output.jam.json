@@ -21,30 +21,44 @@
           "raw": "true"
         },
         "consequent": {
-          "type": "JSXSelfClosingElement",
+          "type": "JSXElement",
           "start": 8,
           "end": 15,
-          "name": {
-            "type": "JSXIdentifier",
-            "start": 9,
-            "end": 12,
-            "name": "div"
+          "openingElement": {
+            "type": "JSXOpeningElement",
+            "start": 8,
+            "end": 15,
+            "name": {
+              "type": "JSXIdentifier",
+              "start": 9,
+              "end": 12,
+              "name": "div"
+            },
+            "attributes": [],
+            "selfClosing": true
           },
-          "attributes": [],
-          "selfClosing": true
+          "closingElement": null,
+          "children": []
         },
         "alternate": {
-          "type": "JSXSelfClosingElement",
+          "type": "JSXElement",
           "start": 19,
           "end": 26,
-          "name": {
-            "type": "JSXIdentifier",
-            "start": 20,
-            "end": 23,
-            "name": "div"
+          "openingElement": {
+            "type": "JSXOpeningElement",
+            "start": 19,
+            "end": 26,
+            "name": {
+              "type": "JSXIdentifier",
+              "start": 20,
+              "end": 23,
+              "name": "div"
+            },
+            "attributes": [],
+            "selfClosing": true
           },
-          "attributes": [],
-          "selfClosing": true
+          "closingElement": null,
+          "children": []
         }
       }
     }

@@ -13,82 +13,87 @@
         "type": "JSXFragment",
         "start": 0,
         "end": 49,
+        "openingFragment": {
+          "type": "JSXOpeningFragment",
+          "start": 0,
+          "end": 2
+        },
+        "closingFragment": {
+          "type": "JSXClosingFragment",
+          "start": 46,
+          "end": 49
+        },
         "children": [
           {
             "type": "JSXText",
             "start": 2,
             "end": 5,
-            "value": "\n  "
+            "value": "\n  ",
+            "raw": "\n  "
           },
           {
             "type": "JSXFragment",
             "start": 5,
             "end": 45,
+            "openingFragment": {
+              "type": "JSXOpeningFragment",
+              "start": 5,
+              "end": 7
+            },
+            "closingFragment": {
+              "type": "JSXClosingFragment",
+              "start": 42,
+              "end": 45
+            },
             "children": [
               {
                 "type": "JSXText",
                 "start": 7,
                 "end": 12,
-                "value": "\n    "
+                "value": "\n    ",
+                "raw": "\n    "
               },
               {
                 "type": "JSXFragment",
                 "start": 12,
                 "end": 39,
+                "openingFragment": {
+                  "type": "JSXOpeningFragment",
+                  "start": 12,
+                  "end": 14
+                },
+                "closingFragment": {
+                  "type": "JSXClosingFragment",
+                  "start": 36,
+                  "end": 39
+                },
                 "children": [
                   {
                     "type": "JSXText",
                     "start": 14,
                     "end": 36,
-                    "value": "\n      super deep\n    "
+                    "value": "\n      super deep\n    ",
+                    "raw": "\n      super deep\n    "
                   }
-                ],
-                "opening": {
-                  "type": "JSXOpeningFragment",
-                  "start": 12,
-                  "end": 14
-                },
-                "closing": {
-                  "type": "JSXClosingFragment",
-                  "start": 36,
-                  "end": 39
-                }
+                ]
               },
               {
                 "type": "JSXText",
                 "start": 39,
                 "end": 42,
-                "value": "\n  "
+                "value": "\n  ",
+                "raw": "\n  "
               }
-            ],
-            "opening": {
-              "type": "JSXOpeningFragment",
-              "start": 5,
-              "end": 7
-            },
-            "closing": {
-              "type": "JSXClosingFragment",
-              "start": 42,
-              "end": 45
-            }
+            ]
           },
           {
             "type": "JSXText",
             "start": 45,
             "end": 46,
-            "value": "\n"
+            "value": "\n",
+            "raw": "\n"
           }
-        ],
-        "opening": {
-          "type": "JSXOpeningFragment",
-          "start": 0,
-          "end": 2
-        },
-        "closing": {
-          "type": "JSXClosingFragment",
-          "start": 46,
-          "end": 49
-        }
+        ]
       }
     }
   ]

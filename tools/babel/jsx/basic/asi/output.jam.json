@@ -48,17 +48,24 @@
             "start": 25,
             "end": 32,
             "expression": {
-              "type": "JSXSelfClosingElement",
+              "type": "JSXElement",
               "start": 25,
               "end": 32,
-              "name": {
-                "type": "JSXIdentifier",
-                "start": 26,
-                "end": 29,
-                "name": "div"
+              "openingElement": {
+                "type": "JSXOpeningElement",
+                "start": 25,
+                "end": 32,
+                "name": {
+                  "type": "JSXIdentifier",
+                  "start": 26,
+                  "end": 29,
+                  "name": "div"
+                },
+                "attributes": [],
+                "selfClosing": true
               },
-              "attributes": [],
-              "selfClosing": true
+              "closingElement": null,
+              "children": []
             }
           }
         ]

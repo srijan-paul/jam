@@ -39,23 +39,31 @@
         },
         "children": [
           {
-            "type": "JSXSelfClosingElement",
+            "type": "JSXElement",
             "start": 5,
             "end": 11,
-            "name": {
-              "type": "JSXIdentifier",
-              "start": 6,
-              "end": 8,
-              "name": "br"
+            "openingElement": {
+              "type": "JSXOpeningElement",
+              "start": 5,
+              "end": 11,
+              "name": {
+                "type": "JSXIdentifier",
+                "start": 6,
+                "end": 8,
+                "name": "br"
+              },
+              "attributes": [],
+              "selfClosing": true
             },
-            "attributes": [],
-            "selfClosing": true
+            "closingElement": null,
+            "children": []
           },
           {
             "type": "JSXText",
             "start": 11,
             "end": 35,
-            "value": "7x invalid-js-identifier"
+            "value": "7x invalid-js-identifier",
+            "raw": "7x invalid-js-identifier"
           }
         ]
       }

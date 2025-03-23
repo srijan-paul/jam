@@ -8,6 +8,7 @@ const ast = @import("ast.zig");
 const util = @import("util");
 
 const meta = std.meta;
+const assert = std.debug.assert;
 
 const Node = ast.Node;
 const Tree = ast.Tree;
@@ -26,6 +27,7 @@ pub const EstreeJsonOpts = struct {
     /// emits an "optional": false field to Call/Member expressions
     /// that are not optional (i.e no .? or .?()).
     optional_chain_flag: bool = false,
+    babel_estree_compat: bool = false,
 };
 
 /// Options to use for ESTree conversion when the output has to be
@@ -34,6 +36,7 @@ pub const BabelEstreeOptions = EstreeJsonOpts{
     .interpreter = true,
     .source_type = true,
     .optional_chain_flag = true,
+    .babel_estree_compat = true,
 };
 
 fn subRangeToJsonArray(
@@ -321,7 +324,7 @@ fn nodeToEsTree(
 
         .export_from_declaration => |payload| {
             const source = try nodeToEsTree(t, al, payload.source, opts);
-            std.debug.assert(meta.activeTag(source) == .object);
+            assert(meta.activeTag(source) == .object);
 
             try o.put("source", source);
             if (payload.specifiers.asSlice(t).len > 0) {
@@ -804,9 +807,6 @@ fn nodeToEsTree(
         },
 
         .jsx_fragment => |fragment| {
-            const children_json = try subRangeToJsonArray(al, t, fragment.children, opts);
-            try o.put("children", children_json);
-
             const tags = fragment.getOpenAndCloseTags(t);
 
             const open_fragment = blk: {
@@ -835,8 +835,11 @@ fn nodeToEsTree(
                 break :blk JValue{ .object = obj };
             };
 
-            try o.put("opening", open_fragment);
-            try o.put("closing", close_fragment);
+            try o.put("openingFragment", open_fragment);
+            try o.put("closingFragment", close_fragment);
+
+            const children_json = try subRangeToJsonArray(al, t, fragment.children, opts);
+            try o.put("children", children_json);
         },
 
         .jsx_namespaced_name => |payload| {
@@ -882,16 +885,26 @@ fn nodeToEsTree(
             try o.put("children", children);
         },
 
-        .jsx_opening_element,
-        .jsx_self_closing_element,
-        => |payload| {
-            const name = try nodeToEsTree(t, al, payload.name, opts);
-            const attributes = try subRangeToJsonArray(al, t, payload.attributes, opts);
+        .jsx_opening_element => try jsxOpeningOrSelfClosingElement(al, t, &o, node.data, opts),
+        .jsx_self_closing_element => {
+            // In Babel's ESTree output, we get a JSXElement node that has an opening element
+            // but no closing element. Whereas most other tools just give you a "JSXSelfClosingElement"
+            // object.
+            if (opts.babel_estree_compat) {
+                try o.put("type", JValue{ .string = "JSXElement" });
 
-            try o.put("name", name);
-            try o.put("attributes", attributes);
-            const is_self_closing = meta.activeTag(node.data) == .jsx_self_closing_element;
-            try o.put("selfClosing", JValue{ .bool = is_self_closing });
+                var opening_el_json = std.json.ObjectMap.init(al);
+                try opening_el_json.put("type", JValue{ .string = "JSXOpeningElement" });
+                try opening_el_json.put("start", o.get("start").?);
+                try opening_el_json.put("end", o.get("end").?);
+
+                try jsxOpeningOrSelfClosingElement(al, t, &opening_el_json, node.data, opts);
+                try o.put("openingElement", JValue{ .object = opening_el_json });
+                try o.put("closingElement", JNull);
+                try o.put("children", JValue{ .array = std.json.Array.init(al) });
+            } else {
+                try jsxOpeningOrSelfClosingElement(al, t, &o, node.data, opts);
+            }
         },
 
         .jsx_closing_element => |payload| {
@@ -910,8 +923,11 @@ fn nodeToEsTree(
         },
 
         .jsx_text => |token_id| {
-            const value = t.getTokenSlice(token_id);
-            try o.put("value", JValue{ .string = value });
+            const raw = t.getTokenSlice(token_id);
+            try o.put("value", JValue{
+                .string = try processEscapes(al, raw),
+            });
+            try o.put("raw", JValue{ .string = raw });
         },
 
         // this should be unreachable
@@ -928,6 +944,33 @@ fn nodeToEsTree(
     }
 
     return JValue{ .object = o };
+}
+
+/// Convert a JSX Opening or Self closing element into ESTree JSON.
+/// Populates the [json_object] passed as an argument.
+fn jsxOpeningOrSelfClosingElement(
+    al: std.mem.Allocator,
+    t: *const ast.Tree,
+    /// The JSON object to write to
+    json_object: *std.json.ObjectMap,
+    node: ast.NodeData,
+    opts: EstreeJsonOpts,
+) !void {
+    assert(meta.activeTag(node) == .jsx_opening_element or
+        meta.activeTag(node) == .jsx_self_closing_element);
+
+    const is_self_closing = meta.activeTag(node) == .jsx_self_closing_element;
+    const pl = if (is_self_closing)
+        node.jsx_self_closing_element
+    else
+        node.jsx_opening_element;
+
+    const name = try nodeToEsTree(t, al, pl.name, opts);
+    const attributes = try subRangeToJsonArray(al, t, pl.attributes, opts);
+
+    try json_object.put("name", name);
+    try json_object.put("attributes", attributes);
+    try json_object.put("selfClosing", JValue{ .bool = is_self_closing });
 }
 
 const EstreeJson = struct {

@@ -10,51 +10,58 @@
       "start": 0,
       "end": 11,
       "expression": {
-        "type": "JSXSelfClosingElement",
+        "type": "JSXElement",
         "start": 0,
         "end": 11,
-        "name": {
-          "type": "JSXNamespacedName",
-          "start": 1,
-          "end": 4,
-          "namespace": {
-            "type": "JSXIdentifier",
-            "start": 1,
-            "end": 2,
-            "name": "n"
-          },
+        "openingElement": {
+          "type": "JSXOpeningElement",
+          "start": 0,
+          "end": 11,
           "name": {
-            "type": "JSXIdentifier",
-            "start": 3,
+            "type": "JSXNamespacedName",
+            "start": 1,
             "end": 4,
-            "name": "a"
-          }
-        },
-        "attributes": [
-          {
-            "type": "JSXAttribute",
-            "start": 5,
-            "end": 8,
+            "namespace": {
+              "type": "JSXIdentifier",
+              "start": 1,
+              "end": 2,
+              "name": "n"
+            },
             "name": {
-              "type": "JSXNamespacedName",
+              "type": "JSXIdentifier",
+              "start": 3,
+              "end": 4,
+              "name": "a"
+            }
+          },
+          "attributes": [
+            {
+              "type": "JSXAttribute",
               "start": 5,
               "end": 8,
-              "namespace": {
-                "type": "JSXIdentifier",
-                "start": 5,
-                "end": 6,
-                "name": "n"
-              },
               "name": {
-                "type": "JSXIdentifier",
-                "start": 7,
+                "type": "JSXNamespacedName",
+                "start": 5,
                 "end": 8,
-                "name": "v"
+                "namespace": {
+                  "type": "JSXIdentifier",
+                  "start": 5,
+                  "end": 6,
+                  "name": "n"
+                },
+                "name": {
+                  "type": "JSXIdentifier",
+                  "start": 7,
+                  "end": 8,
+                  "name": "v"
+                }
               }
             }
-          }
-        ],
-        "selfClosing": true
+          ],
+          "selfClosing": true
+        },
+        "closingElement": null,
+        "children": []
       }
     }
   ]

@@ -13,17 +13,17 @@
         "type": "JSXFragment",
         "start": 0,
         "end": 5,
-        "children": [],
-        "opening": {
+        "openingFragment": {
           "type": "JSXOpeningFragment",
           "start": 0,
           "end": 2
         },
-        "closing": {
+        "closingFragment": {
           "type": "JSXClosingFragment",
           "start": 2,
           "end": 5
-        }
+        },
+        "children": []
       }
     }
   ]

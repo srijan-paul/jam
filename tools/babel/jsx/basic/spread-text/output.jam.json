@@ -39,26 +39,22 @@
         },
         "children": [
           {
-            "type": "JSXExpressionContainer",
+            "type": "JSXSpreadChild",
             "start": 3,
             "end": 11,
             "expression": {
-              "type": "JSXSpreadChild",
-              "start": 5,
+              "type": "Identifier",
+              "start": 8,
               "end": 9,
-              "expression": {
-                "type": "Identifier",
-                "start": 8,
-                "end": 9,
-                "name": "b"
-              }
+              "name": "b"
             }
           },
           {
             "type": "JSXText",
             "start": 11,
             "end": 12,
-            "value": "c"
+            "value": "c",
+            "raw": "c"
           }
         ]
       }
