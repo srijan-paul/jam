@@ -64,6 +64,45 @@ fn makeKwTagArray() [js_keywords.len]Token.Tag {
     return tags;
 }
 
+/// Returns a struct containing helpers for SIMD tokenizing, *if* the current target
+/// supports SIMD instructions.
+pub fn SimdContext() ?type {
+    const simd = std.simd;
+    if (simd.suggestVectorLength(u8)) |BlockSize_| {
+        return struct {
+            /// Size of a []u8 block that should be loaded into a SIMD register at once.
+            pub const BlockSize = BlockSize_ / 4;
+            /// Vector(u8, BlockSize) type.
+            pub const TBlock = @Vector(BlockSize, u8);
+            const All0s: TBlock = @splat('0');
+            const All9s: TBlock = @splat('9');
+            const Alla: TBlock = @splat('a');
+            const Allz: TBlock = @splat('z');
+            const AllUnderscore: TBlock = @splat('_');
+            const AllDollarSign: TBlock = @splat('$');
+
+            const All32s: TBlock = @splat(32);
+
+            /// Return a block where a bit is set if the corresponding byte is a valid identifier character.
+            pub fn isIdBlock(block: TBlock) TBlock {
+                // Check if in ranges: '0'-'9', 'A'-'Z', 'a'-'z', or equals '_' or '$'
+                const is_alphanumeric =
+                    // Is between '0' and '9'
+                    (@as(TBlock, @intFromBool(block >= All0s)) &
+                        @as(TBlock, @intFromBool(block <= All9s))) |
+                    // Is between 'A' and 'Z' or between 'a' and 'z'
+                    (@as(TBlock, @intFromBool((block | All32s) >= Alla)) &
+                        @as(TBlock, @intFromBool((block | All32s) <= Allz)));
+
+                return is_alphanumeric |
+                    @as(TBlock, @intFromBool(block == AllUnderscore)) |
+                    @as(TBlock, @intFromBool(block == AllDollarSign));
+            }
+        };
+    }
+    return null;
+}
+
 /// Source string to tokenize.
 source: []const u8,
 /// Byte offset into `source`
@@ -1088,9 +1127,7 @@ fn matchIdentifierTail(self: *Self, first_char_kind: IdCharKind) Error!Token.Tag
     // in one loop. This is the "hot" path, as most identifiers will be normal ascii.
     if (first_char_kind == .ascii) {
         @branchHint(.likely);
-        while (!self.eof() and
-            isAsciiIdentifierContt(self.source[self.index])) : (self.index += 1)
-        {}
+        self.matchAsciiIdentifierChars();
     }
 
     // Then, eat the rest of the identifier name which may contain
@@ -1102,6 +1139,37 @@ fn matchIdentifierTail(self: *Self, first_char_kind: IdCharKind) Error!Token.Tag
     }
 
     return token_kind;
+}
+
+/// Consume all ASCII characters that can appear in an identifier.
+inline fn matchAsciiIdentifierChars(self: *Self) void {
+    var i = self.index;
+    if (SimdContext()) |Simd| {
+        // When possible, vectorize this part to check multiple ASCII characters at once.
+        while (i + Simd.BlockSize < self.source.len) : (i += Simd.BlockSize) {
+            const block: Simd.TBlock = self.source[i..][0..Simd.BlockSize].*;
+            const id_mask_result = Simd.isIdBlock(block);
+            if (std.simd.firstIndexOfValue(id_mask_result, 0)) |j| {
+                // j is the index of first NON identifier character
+                i += j;
+                self.index = i;
+                return;
+            }
+        }
+    } else {
+        return self.matchAsciiIdentifierCharsRegular();
+    }
+
+    // If we reach here, we have less than Simd.BlockSize characters left.
+    while (i < self.source.len and isAsciiIdentifierContt(self.source[i])) : (i += 1) {}
+    self.index = i;
+}
+
+/// Non-vectorized version of `matchAsciiIdentifierChars`
+inline fn matchAsciiIdentifierCharsRegular(self: *Self) void {
+    while (!self.eof() and
+        isAsciiIdentifierContt(self.source[self.index])) : (self.index += 1)
+    {}
 }
 
 /// Assuming the current character is a '\',
