@@ -29,57 +29,22 @@ pub const Error = error{
     MalformedIdentifier,
 };
 
-// zig fmt: off
-pub const js_keywords = [_][]const u8{
-  "await", "break",  "case",  "catch",
-  "class", "const",  "continue", "debugger",
-  "default",  "delete", "do", "else", "enum",
-  "export", "extends", "false", "finally",
-  "for", "function", "if", "import", "in",
-  "instanceof", "let", "new", "null", "return",
-  "super", "switch", "this", "throw", "true",
-  "try", "typeof", "var", "void", "while",
-  "with", "yield", "async", "of", "static",
-  "constructor", "extends", "as", "from",
-};
-// zig fmt: on
-
-pub const all_kw_tags: [js_keywords.len]Token.Tag = makeKwTagArray();
-fn makeKwTagArray() [js_keywords.len]Token.Tag {
-    @setEvalBranchQuota(10_000);
-
-    var tags: [js_keywords.len]Token.Tag = undefined;
-    const enum_tags = std.meta.tags(Token.Tag);
-    for (0.., js_keywords) |i, kw| {
-        for (enum_tags) |tag| {
-            const tagname = @tagName(tag);
-            if (tagname.len < 3) continue;
-            if (std.mem.eql(u8, tagname[3..], kw)) {
-                tags[i] = tag;
-                break;
-            }
-        }
-    }
-
-    return tags;
-}
-
 /// Returns a struct containing helpers for SIMD tokenizing, *if* the current target
 /// supports SIMD instructions.
 pub fn SimdContext() ?type {
     const simd = std.simd;
-    if (simd.suggestVectorLength(u8)) |BlockSize_| {
+    if (simd.suggestVectorLength(u8)) |VectorLen| {
         return struct {
             /// Size of a []u8 block that should be loaded into a SIMD register at once.
-            pub const BlockSize = BlockSize_ / 4;
-            /// Vector(u8, BlockSize) type.
-            pub const TBlock = @Vector(BlockSize, u8);
-            const All0s: TBlock = @splat('0');
-            const All9s: TBlock = @splat('9');
-            const Alla: TBlock = @splat('a');
-            const Allz: TBlock = @splat('z');
-            const AllUnderscore: TBlock = @splat('_');
-            const AllDollarSign: TBlock = @splat('$');
+            pub const block_size = @min(VectorLen, 16);
+            /// Vector(u8, block_size) type.
+            pub const TBlock = @Vector(block_size, u8);
+            const all_0s: TBlock = @splat('0');
+            const all_9s: TBlock = @splat('9');
+            const all_as: TBlock = @splat('a');
+            const all_zs: TBlock = @splat('z');
+            const all_underscores: TBlock = @splat('_');
+            const all_dollar_signs: TBlock = @splat('$');
 
             const All32s: TBlock = @splat(32);
 
@@ -88,15 +53,15 @@ pub fn SimdContext() ?type {
                 // Check if in ranges: '0'-'9', 'A'-'Z', 'a'-'z', or equals '_' or '$'
                 const is_alphanumeric =
                     // Is between '0' and '9'
-                    (@as(TBlock, @intFromBool(block >= All0s)) &
-                        @as(TBlock, @intFromBool(block <= All9s))) |
+                    (@as(TBlock, @intFromBool(block >= all_0s)) &
+                        @as(TBlock, @intFromBool(block <= all_9s))) |
                     // Is between 'A' and 'Z' or between 'a' and 'z'
-                    (@as(TBlock, @intFromBool((block | All32s) >= Alla)) &
-                        @as(TBlock, @intFromBool((block | All32s) <= Allz)));
+                    (@as(TBlock, @intFromBool((block | All32s) >= all_as)) &
+                        @as(TBlock, @intFromBool((block | All32s) <= all_zs)));
 
                 return is_alphanumeric |
-                    @as(TBlock, @intFromBool(block == AllUnderscore)) |
-                    @as(TBlock, @intFromBool(block == AllDollarSign));
+                    @as(TBlock, @intFromBool(block == all_underscores)) |
+                    @as(TBlock, @intFromBool(block == all_dollar_signs));
             }
         };
     }
@@ -135,6 +100,7 @@ config: parser.Config,
 is_trivial_line: bool = true,
 
 pub fn init(source: []const u8, config: parser.Config) Error!Self {
+    // TODO: do not pre-validate UTF-8 like this.
     if (!std.unicode.utf8ValidateSlice(source))
         return Error.InvalidUtf8;
 
@@ -1083,24 +1049,15 @@ fn identifier(self: *Self) Error!Token {
         return Error.MalformedIdentifier;
     }
 
-    const token_tag = try self.matchIdentifierTail(start_char_kind);
+    var token_tag = try self.matchIdentifierTail(start_char_kind);
     const len = self.index - start;
 
     // TODO: ensure its not an escaped keyword.
     // To do this well, add a 'escaped_code_point' member in the IdCharKind
     // enum.
     const id_str = str[0..len];
-    if (token_tag == .identifier and len >= 2 and len <= 12) {
-        for (0.., js_keywords) |i, kw| {
-            if (std.mem.eql(u8, id_str, kw)) {
-                return Token{
-                    .start = start,
-                    .len = @intCast(len),
-                    .tag = all_kw_tags[i],
-                    .line = self.line,
-                };
-            }
-        }
+    if (token_tag == .identifier and len >= 2 and len <= 11) {
+        token_tag = kwOrIdentifierTag(id_str);
     }
 
     return Token{
@@ -1109,6 +1066,168 @@ fn identifier(self: *Self) Error!Token {
         .tag = token_tag,
         .line = self.line,
     };
+}
+
+/// Get the 'tag' associated with a keyword or identifier.
+/// For identifiers lexemes, just return .identifier, for keywords,
+/// return the tag for the specific keyword
+fn kwOrIdentifierTag(lexeme: []const u8) Token.Tag {
+    // This massive switch statement is actually faster than comparing the lexeme against all keywords.
+    // There is a measurable difference in large files.
+    // For instance, in the 'typescript.js' bundle, this gave us a 2ms speedup (85 -> 83ms).
+    //
+    // An alternative approach is to use a (very cheap) perfect hash function and the 'pext' instruction
+    // (on architectures where it is supported) as described here:
+    // http://0x80.pl/notesen/2023-04-30-lookup-in-strings.html
+
+    // List of all JS keywords sorted by length, for my reference:
+    //  2: "as", "do", "if", "in", "of",
+    //  3: "for", "let", "new", "try", "var",
+    //  4: "case", "else", "enum", "this", "true", "void", "with", "null", "from",
+    //  5: "await", "break", "catch", "class", "const", "false", "super", "throw", "while", "yield", "async",
+    //  6: "import", "return", "switch", "typeof", "delete", "export", "static",
+    //  7: "default", "extends", "finally",
+    //  8: "continue", "function", "debugger",
+    //  10: "instanceof",
+    //  11: "constructor",
+
+    switch (lexeme.len) {
+        2 => {
+            switch (lexeme[1]) {
+                'f' => {
+                    switch (lexeme[0]) {
+                        'i' => return .kw_if,
+                        'o' => return .kw_of,
+                        else => return .identifier,
+                    }
+                },
+                'n' => if (lexeme[0] == 'i') return .kw_in,
+                'o' => if (lexeme[0] == 'd') return .kw_do,
+                's' => if (lexeme[0] == 'a') return .kw_as,
+                else => return .identifier,
+            }
+        },
+        3 => {
+            //"for", "let", "new", "try", "var",
+            switch (lexeme[0]) {
+                'f' => if (lexeme[1] == 'o' and lexeme[2] == 'r') return .kw_for,
+                'l' => if (lexeme[1] == 'e' and lexeme[2] == 't') return .kw_let,
+                'n' => if (lexeme[1] == 'e' and lexeme[2] == 'w') return .kw_new,
+                't' => if (lexeme[1] == 'r' and lexeme[2] == 'y') return .kw_try,
+                'v' => if (lexeme[1] == 'a' and lexeme[2] == 'r') return .kw_var,
+                else => return .identifier,
+            }
+
+            return .identifier;
+        },
+
+        4 => {
+            // "case", "else", "enum", "this", "true", "void", "with", "null", "from"
+            switch (lexeme[1]) {
+                'a' => {
+                    if (lexeme[0] == 'c' and lexeme[2] == 's' and lexeme[3] == 'e') return .kw_case;
+                },
+
+                'l' => {
+                    if (lexeme[0] == 'e' and lexeme[2] == 's' and lexeme[3] == 'e') return .kw_else;
+                },
+
+                'n' => {
+                    if (lexeme[0] == 'e' and lexeme[2] == 'u' and lexeme[3] == 'm') return .kw_enum;
+                },
+
+                'h' => {
+                    if (lexeme[0] == 't' and lexeme[2] == 'i' and lexeme[3] == 's') return .kw_this;
+                },
+
+                'r' => {
+                    if (std.mem.eql(u8, lexeme, "true")) return .kw_true;
+                    if (std.mem.eql(u8, lexeme, "from")) return .kw_from;
+                },
+
+                'o' => {
+                    if (lexeme[0] == 'v' and lexeme[2] == 'i' and lexeme[3] == 'd') return .kw_void;
+                },
+
+                'i' => {
+                    if (lexeme[0] == 'w' and lexeme[2] == 't' and lexeme[3] == 'h') return .kw_with;
+                },
+
+                'u' => {
+                    if (lexeme[0] == 'n' and lexeme[2] == 'l' and lexeme[3] == 'l') return .kw_null;
+                },
+
+                else => return .identifier,
+            }
+            return .identifier;
+        },
+
+        5 => {
+            //  "async", await", "break", "catch", "class", "const", "false", "super", "throw", "while", "yield",
+            switch (lexeme[2]) {
+                'a' => {
+                    if (std.mem.eql(u8, lexeme, "await")) return .kw_await;
+                    if (std.mem.eql(u8, lexeme, "class")) return .kw_class;
+                },
+
+                'e' => {
+                    if (std.mem.eql(u8, lexeme, "break")) return .kw_break;
+                    if (std.mem.eql(u8, lexeme, "yield")) return .kw_yield;
+                },
+
+                'p' => if (std.mem.eql(u8, lexeme, "super")) return .kw_super,
+                'r' => if (std.mem.eql(u8, lexeme, "throw")) return .kw_throw,
+                't' => if (std.mem.eql(u8, lexeme, "catch")) return .kw_catch,
+                'n' => if (std.mem.eql(u8, lexeme, "const")) return .kw_const,
+                'l' => if (std.mem.eql(u8, lexeme, "false")) return .kw_false,
+                'i' => if (std.mem.eql(u8, lexeme, "while")) return .kw_while,
+                'y' => if (std.mem.eql(u8, lexeme, "async")) return .kw_async,
+                else => return .identifier,
+            }
+
+            return .identifier;
+        },
+
+        6 => {
+            //  "import", "return", "switch", "typeof", "delete", "export",  "static",
+            switch (lexeme[0]) {
+                'i' => if (std.mem.eql(u8, lexeme, "import")) return .kw_import,
+                'r' => if (std.mem.eql(u8, lexeme, "return")) return .kw_return,
+                's' => {
+                    if (std.mem.eql(u8, lexeme, "switch")) return .kw_switch;
+                    if (std.mem.eql(u8, lexeme, "static")) return .kw_static;
+                },
+                't' => if (std.mem.eql(u8, lexeme, "typeof")) return .kw_typeof,
+                'd' => if (std.mem.eql(u8, lexeme, "delete")) return .kw_delete,
+                'e' => if (std.mem.eql(u8, lexeme, "export")) return .kw_export,
+                'f' => if (std.mem.eql(u8, lexeme, "finally")) return .kw_finally,
+                else => return .identifier,
+            }
+        },
+
+        7 => {
+            switch (lexeme[0]) {
+                'd' => if (std.mem.eql(u8, lexeme, "default")) return .kw_default,
+                'e' => if (std.mem.eql(u8, lexeme, "extends")) return .kw_extends,
+                'f' => if (std.mem.eql(u8, lexeme, "finally")) return .kw_finally,
+                else => return .identifier,
+            }
+        },
+        8 => {
+            // "continue", "function", "debugger",
+            switch (lexeme[0]) {
+                'c' => if (std.mem.eql(u8, lexeme, "continue")) return .kw_continue,
+                'f' => if (std.mem.eql(u8, lexeme, "function")) return .kw_function,
+                'd' => if (std.mem.eql(u8, lexeme, "debugger")) return .kw_debugger,
+                else => return .identifier,
+            }
+        },
+        10 => if (std.mem.eql(u8, lexeme, "instanceof")) return .kw_instanceof,
+        11 => if (std.mem.eql(u8, lexeme, "constructor")) return .kw_constructor,
+        else => return .identifier,
+    }
+
+    return .identifier;
 }
 
 /// After the first character of an identifier has been consumed, this function
@@ -1146,8 +1265,8 @@ inline fn matchAsciiIdentifierChars(self: *Self) void {
     var i = self.index;
     if (SimdContext()) |Simd| {
         // When possible, vectorize this part to check multiple ASCII characters at once.
-        while (i + Simd.BlockSize < self.source.len) : (i += Simd.BlockSize) {
-            const block: Simd.TBlock = self.source[i..][0..Simd.BlockSize].*;
+        while (i + Simd.block_size < self.source.len) : (i += Simd.block_size) {
+            const block: Simd.TBlock = self.source[i..][0..Simd.block_size].*;
             const id_mask_result = Simd.isIdBlock(block);
             if (std.simd.firstIndexOfValue(id_mask_result, 0)) |j| {
                 // j is the index of first NON identifier character
@@ -1160,7 +1279,7 @@ inline fn matchAsciiIdentifierChars(self: *Self) void {
         return self.matchAsciiIdentifierCharsRegular();
     }
 
-    // If we reach here, we have less than Simd.BlockSize characters left.
+    // If we reach here, we have less than Simd.block_size characters left.
     while (i < self.source.len and isAsciiIdentifierContt(self.source[i])) : (i += 1) {}
     self.index = i;
 }
