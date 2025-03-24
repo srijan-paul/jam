@@ -2,4 +2,5 @@
 zig-out
 todo.txt
 node_modules
+benchmark/typescript.js
 

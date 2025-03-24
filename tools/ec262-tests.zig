@@ -351,23 +351,50 @@ pub fn compareTestResults(
 ) !bool {
     var passing = true;
 
-    const old_pass_rate: f64 = if (std.meta.activeTag(old_result.pass_percent) == .float)
-        old_result.pass_percent.float
-    else
-        @floatFromInt(old_result.pass_percent.integer);
-    const new_pass_rate: f64 = try std.fmt.parseFloat(f64, new_result.pass_percent.number_string);
+    {
+        const old_pass_rate: f64 = if (std.meta.activeTag(old_result.pass_percent) == .float)
+            old_result.pass_percent.float
+        else
+            @floatFromInt(old_result.pass_percent.integer);
+        const new_pass_rate: f64 = try std.fmt.parseFloat(f64, new_result.pass_percent.number_string);
 
-    if (new_pass_rate < old_pass_rate) {
-        passing = false;
-        std.log.err("Passing tests dropped from {d}% to {d}%", .{
-            old_pass_rate,
-            new_pass_rate,
-        });
-    } else if (old_pass_rate > new_pass_rate) {
-        std.log.err("Passing test score went up from {d}% to {d}%!", .{
-            old_pass_rate,
-            new_pass_rate,
-        });
+        if (new_pass_rate < old_pass_rate) {
+            passing = false;
+            std.log.err("Passing tests dropped from {d}% to {d}%", .{
+                old_pass_rate,
+                new_pass_rate,
+            });
+        } else if (old_pass_rate > new_pass_rate) {
+            std.log.err("Passing test score went up from {d}% to {d}%!", .{
+                old_pass_rate,
+                new_pass_rate,
+            });
+        }
+    }
+
+    {
+        const old_malformed_pass_rate: f64 = if (std.meta.activeTag(old_result.malformed_pass_percent) == .float)
+            old_result.malformed_pass_percent.float
+        else
+            @floatFromInt(old_result.malformed_pass_percent.integer);
+
+        const new_malformed_pass_rate: f64 = try std.fmt.parseFloat(
+            f64,
+            new_result.malformed_pass_percent.number_string,
+        );
+
+        if (new_malformed_pass_rate < old_malformed_pass_rate) {
+            passing = false;
+            std.log.err("Malformed files passing tests dropped from {d}% to {d}%", .{
+                old_malformed_pass_rate,
+                new_malformed_pass_rate,
+            });
+        } else {
+            std.log.err("Malformed files passing test score went up from {d}% to {d}%!", .{
+                old_malformed_pass_rate,
+                new_malformed_pass_rate,
+            });
+        }
     }
 
     const old_file_results = old_result.test_cases.object;

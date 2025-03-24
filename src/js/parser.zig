@@ -2607,6 +2607,7 @@ fn eatSemiAsi(self: *Self) Error!?Token.Index {
 /// Returns whether a token with the tag `tag` can start a variable declarator
 /// ({, or [, or an identifier).
 fn isDeclaratorStart(self: *Self, tag: Token.Tag) bool {
+    // TODO: can use TokenMask bitmasks for the first part and short-circuit in most cases
     return tag == .@"[" or tag == .@"{" or
         tag.isIdentifier() or self.isKeywordIdentifier(tag);
 }
@@ -3028,6 +3029,19 @@ fn completeSequenceExpr(self: *Self, first_expr: Node.Index) Error!Node.Index {
 /// A `BindingPattern` or `BindingIdentifier`.
 /// Used on the left-hand-side of a variable declarator.
 fn bindingIdentifierOrPattern(self: *Self) Error!Node.Index {
+    // start with the assumption that we're parsing a valid, destruct-able
+    // binding pattern. If we encounter any invalid nodes, like "{ a: 2 }",
+    // we will bail later.
+    self.current_destructure_kind = .{
+        .must_destruct = false,
+        .can_be_assigned_to = true,
+        .can_destruct = true,
+        .is_simple_expression = true,
+    };
+
+    const old_destruct_kind = self.current_destructure_kind;
+    defer self.current_destructure_kind = old_destruct_kind;
+
     const token: *const Token = &self.current.token;
     switch (token.tag) {
         .@"{" => return self.objectBindingPattern(),
@@ -3586,6 +3600,7 @@ fn destructuredIdentifierProperty(self: *Self) Error!Node.Index {
     if (!(key_token.token.tag.isIdentifier() or
         self.isKeywordIdentifier(key_token.token.tag)))
     {
+        // TODO: use 'self.errorOnToken'
         try self.emitDiagnosticOnToken(
             key_token.token,
             "Unexpected '{s}' in destructuring pattern",

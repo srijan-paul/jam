@@ -195,6 +195,26 @@ pub fn build(b: *std.Build) !void {
         }
     }
 
+    // Command to benchmark the parser
+    {
+        const bench_parser = b.addExecutable(.{
+            .name = "bench-parser",
+            .root_source_file = b.path("benchmark/bench-parser.zig"),
+            .target = target,
+            .optimize = std.builtin.OptimizeMode.ReleaseFast,
+        });
+
+        bench_parser.root_module.addImport("js", jam_js_module);
+        const bench_cmd = b.addRunArtifact(bench_parser);
+        const bench_step = b.step("bench-parser", "Run parser benchmarks");
+        bench_step.dependOn(&bench_cmd.step);
+
+        // forward all CLI arguments from build.zig to the test runner.
+        if (b.args) |args| {
+            bench_cmd.addArgs(args);
+        }
+    }
+
     const run_cmd = b.addRunArtifact(exe);
     run_cmd.step.dependOn(b.getInstallStep());
 
