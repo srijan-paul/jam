@@ -21,9 +21,9 @@ Jam is a JavaScript parser, linter, formatter, printer and vulnerability scanner
 - Phase 1:
     - [x] A fast, 100% Spec compliant JavaScript parser.
     - [x] Port [ESLint scope](https://github.com/eslint/js/tree/main/packages/eslint-scope) to Zig
+    - [x] JSX parsing.
     - [ ] Semantic analysis: Control Flow Graphs (**WIP**).
-    - [ ] JSX support (**WIP**)
-    - [ ] TypeScript support in the parser.
+    - [ ] TypeScript parsing (**WIP**).
     - [ ] Runtime for a linter, with Zig plugin support.
     - [ ] Formatter with a **language agnostic backend**.
 - Alpha release
