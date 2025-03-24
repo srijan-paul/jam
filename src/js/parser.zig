@@ -6183,7 +6183,6 @@ fn parseFunctionBody(
     defer self.context = ctx;
     self.context.@"return" = true;
 
-    // TODO: make the body a statement list.
     const is_strict, const body = try self.functionBody();
     const end_pos = self.nodeSpan(body).end;
 

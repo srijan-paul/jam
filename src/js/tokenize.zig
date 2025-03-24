@@ -1051,7 +1051,7 @@ fn identifier(self: *Self) Error!Token {
     // To do this well, add a 'escaped_code_point' member in the IdCharKind
     // enum.
     const id_str = str[0..len];
-    if (len >= 2 and len <= 12) {
+    if (token_tag == .identifier and len >= 2 and len <= 12) {
         for (0.., js_keywords) |i, kw| {
             if (std.mem.eql(u8, id_str, kw)) {
                 return Token{
@@ -1636,7 +1636,7 @@ fn whiteSpaces(self: *Self) Error!Token {
                 continue;
             }
 
-            // <ZWNSBP>, and all UTF-8 code-points
+            // <ZWNBSP>, and all UTF-8 code-points
             // with the property 'White_Space=yes'
             if (isMultiByteSpace(cp.value)) {
                 self.index += cp.len;
@@ -1927,6 +1927,12 @@ test Self {
         try t.expectEqual(.@"}", rb_token.tag);
         const template_part = try tokenizer.reScanTemplatePart(&rb_token);
         try t.expectEqual(.template_literal_part, template_part.tag);
+        try t.expectEqual(.eof, (try tokenizer.next()).tag);
+    }
+
+    {
+        var tokenizer = try Self.init("   \n   \n  ", .{});
+        try t.expectEqual(.whitespace, (try tokenizer.next()).tag);
         try t.expectEqual(.eof, (try tokenizer.next()).tag);
     }
 }
