@@ -39,29 +39,40 @@ pub fn SimdContext() ?type {
             pub const block_size = @min(VectorLen, 16);
             /// Vector(u8, block_size) type.
             pub const TBlock = @Vector(block_size, u8);
-            const all_0s: TBlock = @splat('0');
-            const all_9s: TBlock = @splat('9');
+            const all_ascii0s: TBlock = @splat('0');
+            const all_ascii9s: TBlock = @splat('9');
             const all_as: TBlock = @splat('a');
             const all_zs: TBlock = @splat('z');
             const all_underscores: TBlock = @splat('_');
             const all_dollar_signs: TBlock = @splat('$');
-
-            const All32s: TBlock = @splat(32);
+            const all_32s: TBlock = @splat(32);
+            const all_ascii_mask: TBlock = @splat(128);
+            const all_stars: TBlock = @splat('*');
+            const all_fslashes: TBlock = @splat('/');
+            const all_lfs: TBlock = @splat('\n');
+            const all_crs: TBlock = @splat('\r');
+            const all_0s: TBlock = @splat(0);
 
             /// Return a block where a bit is set if the corresponding byte is a valid identifier character.
             pub fn isIdBlock(block: TBlock) TBlock {
                 // Check if in ranges: '0'-'9', 'A'-'Z', 'a'-'z', or equals '_' or '$'
                 const is_alphanumeric =
                     // Is between '0' and '9'
-                    (@as(TBlock, @intFromBool(block >= all_0s)) &
-                        @as(TBlock, @intFromBool(block <= all_9s))) |
+                    (@as(TBlock, @intFromBool(block >= all_ascii0s)) &
+                        @as(TBlock, @intFromBool(block <= all_ascii9s))) |
                     // Is between 'A' and 'Z' or between 'a' and 'z'
-                    (@as(TBlock, @intFromBool((block | All32s) >= all_as)) &
-                        @as(TBlock, @intFromBool((block | All32s) <= all_zs)));
+                    (@as(TBlock, @intFromBool((block | all_32s) >= all_as)) &
+                        @as(TBlock, @intFromBool((block | all_32s) <= all_zs)));
 
                 return is_alphanumeric |
                     @as(TBlock, @intFromBool(block == all_underscores)) |
                     @as(TBlock, @intFromBool(block == all_dollar_signs));
+            }
+
+            ///  Return `true` if any u8 in [block] is a non ASCII character
+            pub fn blockHasNonAsciiChars(block: TBlock) bool {
+                const masked: TBlock = block & all_ascii_mask;
+                return @reduce(.Or, masked) > 0;
             }
         };
     }
@@ -438,16 +449,16 @@ fn isNewline(ch: u21) bool {
 /// If the '/' does not start a comment at all, return null.
 fn comment(self: *Self) Error!?Token {
     const start = self.index;
-    const start_line = self.index;
+    const start_line = self.line;
 
     const str = self.source[start..];
     if (str.len < 2) return null;
     if (std.mem.startsWith(u8, str, "//")) {
         // https://262.ecma-international.org/15.0/index.html#prod-SingleLineComment
-        try self.consumeSingleLineCommentChars();
+        try self.matchSingleLineCommentChars();
     } else if (std.mem.startsWith(u8, str, "/*")) {
         // https://262.ecma-international.org/15.0/index.html#prod-MultiLineComment
-        try self.consumeMultiLineCommentChars();
+        try self.matchMultiLineCommentChars();
     } else {
         return null;
     }
@@ -461,7 +472,7 @@ fn comment(self: *Self) Error!?Token {
         if ((self.line > start_line or self.is_trivial_line) and std.mem.startsWith(u8, remaining, "-->")) {
             self.index += ws_len; // consume whitespaces
             self.index += 3; // consume "-->"
-            try self.consumeSingleLineCommentChars();
+            try self.matchSingleLineCommentChars();
             return .{
                 .start = start,
                 .len = self.index - start,
@@ -511,7 +522,7 @@ fn singleLineHtmlCommentOpen(self: *Self) Error!?Token {
 
     if (std.mem.startsWith(u8, self.source[self.index..], "<!--")) {
         self.index += 4;
-        try self.consumeSingleLineCommentChars();
+        try self.matchSingleLineCommentChars();
         return .{
             .start = start,
             .len = self.index - start,
@@ -536,7 +547,7 @@ fn singleLineHtmlCommentClose(self: *Self) Error!?Token {
     if (std.mem.startsWith(u8, self.source[self.index..], "-->")) {
         const start = self.index;
         self.index += 3;
-        try self.consumeSingleLineCommentChars();
+        try self.matchSingleLineCommentChars();
         return .{
             .start = start,
             .len = self.index - start,
@@ -549,7 +560,11 @@ fn singleLineHtmlCommentClose(self: *Self) Error!?Token {
 }
 
 /// Consume all characters until a newline or EOF is seen.
-fn consumeSingleLineCommentChars(self: *Self) Error!void {
+fn matchSingleLineCommentChars(self: *Self) Error!void {
+    if (self.matchSingleLineCommentAsciiCharsSimd()) {
+        return;
+    }
+
     while (!self.eof()) {
         const byte = self.source[self.index];
         if (std.ascii.isAscii(byte)) {
@@ -570,9 +585,63 @@ fn consumeSingleLineCommentChars(self: *Self) Error!void {
     }
 }
 
+fn matchSingleLineCommentAsciiCharsSimd(self: *Self) bool {
+    var i = self.index;
+
+    if (SimdContext()) |Simd| {
+        // When possible, vectorize this part to check multiple ASCII characters at once.
+        while (i + Simd.block_size < self.source.len) : (i += Simd.block_size) {
+            const block: Simd.TBlock = self.source[i..][0..Simd.block_size].*;
+            if (Simd.blockHasNonAsciiChars(block)) {
+                self.index = i;
+                // caller should continue lexing the rest of this comment
+                return false;
+            }
+
+            const masked_crs = block == Simd.all_crs;
+            const masked_lfs = block == Simd.all_lfs;
+            const maybe_lf_index = std.simd.firstTrue(masked_lfs);
+
+            if (std.simd.firstTrue(masked_crs)) |first_cr_index| {
+                if (maybe_lf_index) |first_lf_index| {
+                    if (first_cr_index + 1 == first_lf_index or
+                        first_lf_index < first_cr_index)
+                    {
+                        // comment ends with '\r\n'
+                        self.bumpLine();
+                        self.index = i + first_lf_index + 1;
+                        return true;
+                    }
+                }
+
+                // comment ends with '\r'
+                self.index = i + first_cr_index + 1;
+                self.bumpLine();
+                return true;
+            }
+
+            if (maybe_lf_index) |first_lf_index| {
+                // comment ends with '\n'
+                self.index = i + first_lf_index + 1;
+                self.bumpLine();
+                return true;
+            }
+        }
+    }
+
+    self.index = i;
+    return false;
+}
+
 /// Consume all source characters until EOF or a '*/' sequence is found.
 /// returns `Error.UnterminatedComment` on EOF.
-fn consumeMultiLineCommentChars(self: *Self) Error!void {
+fn matchMultiLineCommentChars(self: *Self) Error!void {
+    self.index += 2; // eat '/*'
+
+    if (try self.matchMultiLineCommentAsciiSimd()) {
+        return;
+    }
+
     while (!self.eof()) {
         const byte = self.source[self.index];
         if (std.ascii.isAscii(byte)) {
@@ -580,8 +649,13 @@ fn consumeMultiLineCommentChars(self: *Self) Error!void {
             if (byte == '*' and self.peekByte() == '/') {
                 self.index += 1; // eat the '/'
                 return;
-            } else if (isNewline(byte)) {
-                // TODO: what if its a /r/n?
+            } else if (byte == '\r') {
+                self.bumpLine();
+                if (self.peekByte() == '\n') {
+                    // \r\n
+                    self.index += 1;
+                }
+            } else if (byte == '\n') {
                 self.bumpLine();
             }
         } else {
@@ -594,6 +668,112 @@ fn consumeMultiLineCommentChars(self: *Self) Error!void {
     }
 
     return Error.UnterminatedComment;
+}
+
+/// Assuming we're past the '/*' in a multi line comment, this function
+/// will eat all the ASCII characters in the comment (along with the ending */)
+/// using vectorized instructions.
+///
+/// Note: This function currently bails out if it encounters a non-ASCII character.
+/// The caller should continue lexing using scalar instructions when this happens.
+///
+/// returns `true` if it found the end of the comment, `false` otherwise.
+fn matchMultiLineCommentAsciiSimd(self: *Self) Error!bool {
+    var i = self.index;
+
+    if (SimdContext()) |Simd| {
+        // When possible, vectorize this part to check multiple ASCII characters at once.
+        while (i + Simd.block_size < self.source.len) : (i += Simd.block_size) {
+            const block: Simd.TBlock = self.source[i..][0..Simd.block_size].*;
+            if (Simd.blockHasNonAsciiChars(block)) {
+                // TODO: We should vectorize this too instead of straight up giving up...
+                // fallback to scalar mode.
+                break;
+            }
+
+            // Find the first index of '*' in this block that is followed by a '/'
+            const end_comment_index: ?u32 = blk: {
+                // 'F' '*' 'C' 'K' '!' '*' '/'
+                // 00  FF  00  00  00  FF  00  <- is_star
+                // 00  00  00  00  00  00  FF  <- is_fslash
+                // 00  00  00  00  00  FF  00  <- is_end_comment  (is_star & shift(is_flash, 1))
+                const is_star = ~(block ^ Simd.all_stars);
+                const is_fslash = ~(block ^ Simd.all_fslashes);
+                const is_end_comment = is_star & (std.simd.shiftElementsLeft(is_fslash, 1, 0));
+                if (std.simd.firstIndexOfValue(is_end_comment, 0xff)) |index| {
+                    break :blk index;
+                }
+
+                // If the last byte is '*', we need to check the next block.
+                // This is because the '*/' sequence might be split between two blocks.
+                if (block[Simd.block_size - 1] == '*') {
+                    if (i + Simd.block_size < self.source.len and
+                        self.source[i + Simd.block_size] == '/')
+                    {
+                        break :blk Simd.block_size - 1;
+                    }
+                }
+
+                break :blk null;
+            };
+
+            // Found a '*/'
+            if (end_comment_index) |star_index_in_block| {
+                // count all newlines between i and end_index
+                // TODO: can I vectorize this as well? Most likely yeah
+                var j: u32 = i;
+                var num_newlines: u32 = 0;
+                const star_index = i + star_index_in_block;
+                while (j != star_index) : (j += 1) {
+                    const byte = self.source[j];
+                    if (byte == '\r') {
+                        num_newlines += 1;
+                        // \r\n
+                        if (j + 1 < self.source.len and block[j + 1] == '\n') {
+                            j += 1;
+                        }
+                    } else if (byte == '\n') {
+                        num_newlines += 1;
+                    }
+                }
+
+                self.bumpLineBy(num_newlines);
+                self.index = star_index + 2; // current pos is one past index of '/'
+                return true;
+            }
+
+            const masked_crs = ~(block ^ Simd.all_crs);
+            const masked_lfs = ~(block ^ Simd.all_lfs);
+
+            // Check for a '\r\n', create a vector containing 0xff for every cr
+            // that is followed by an lf
+            // \r  \n  \n  'o' 'o' \r
+            // 00  FF  FF  00  00  00 <- masked_lfs
+            // FF  00  00  00  00  FF <- masked_crs
+            // FF  00  00  00  00  00 <- crlfs = masked_crs & shift(masked_lfs, 1)
+            const crlfs = masked_crs & std.simd.shiftElementsLeft(masked_lfs, 1, 0);
+
+            // count all '\n's that DO NOT appear immediately after a \r
+            const all_0xffs: Simd.TBlock = @splat(0xff);
+            const lone_lfs = @select(
+                u8,
+                std.simd.shiftElementsRight(crlfs, 1, 0) != all_0xffs,
+                masked_lfs,
+                Simd.all_0s,
+            );
+
+            const lone_crs = @select(u8, crlfs == all_0xffs, Simd.all_0s, masked_crs);
+
+            // count all '\r\n's, '\r's, and '\n's in this block.
+            const num_crs = std.simd.countElementsWithValue(lone_crs, 0xff);
+            const num_lfs = std.simd.countElementsWithValue(lone_lfs, 0xff);
+            const num_crlfs = std.simd.countElementsWithValue(crlfs, 0xff);
+            self.bumpLineBy(num_crs + num_lfs + num_crlfs);
+        }
+    }
+
+    self.index = i;
+    return false;
 }
 
 /// Consume a UTF-8 codepoint from the source string.
@@ -1763,6 +1943,11 @@ pub fn bumpLine(self: *Self) void {
     self.is_trivial_line = true;
 }
 
+pub fn bumpLineBy(self: *Self, n: u32) void {
+    self.line += n;
+    self.is_trivial_line = true;
+}
+
 /// Return the next u8 from the source string
 fn nextByte(self: *Self) Error!u8 {
     const byte = self.peekByte() orelse
@@ -2061,6 +2246,39 @@ test Self {
             comment_token.toByteSlice(tokenizer.source),
         );
         try t.expectEqual(2, tokenizer.line);
+    }
+
+    {
+        var tokenizer = try Self.init("/* this is a\r\nmultiline\r\r\ncomment */", .{});
+        const comment_token = try tokenizer.next();
+        try t.expectEqual(.comment, comment_token.tag);
+        try t.expectEqualDeep(
+            tokenizer.source,
+            comment_token.toByteSlice(tokenizer.source),
+        );
+        try t.expectEqual(3, tokenizer.line);
+    }
+
+    {
+        var tokenizer = try Self.init("/*\r\r\r\r\n\n\r\n*/", .{});
+        const comment_token = try tokenizer.next();
+        try t.expectEqual(.comment, comment_token.tag);
+        try t.expectEqualDeep(
+            tokenizer.source,
+            comment_token.toByteSlice(tokenizer.source),
+        );
+        try t.expectEqual(6, tokenizer.line);
+    }
+
+    {
+        var tokenizer = try Self.init("/*\r\r\r\r\n\n\r\n\r\n\r\r\r\r\n\n\r\r\r\r\r\r\r\n*/", .{});
+        const comment_token = try tokenizer.next();
+        try t.expectEqual(.comment, comment_token.tag);
+        try t.expectEqualDeep(
+            tokenizer.source,
+            comment_token.toByteSlice(tokenizer.source),
+        );
+        try t.expectEqual(19, tokenizer.line);
     }
 
     {
