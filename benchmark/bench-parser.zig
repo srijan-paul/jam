@@ -19,6 +19,43 @@ pub fn main() !void {
 
     const al = arena.allocator();
 
+    // parse cli flags
+    var args_iter = try std.process.argsWithAllocator(al);
+    defer args_iter.deinit();
+
+    var stderr = std.io.getStdErr();
+
+    var out_file_path: ?[]const u8 = null;
+
+    while (args_iter.next()) |arg| {
+        if (std.mem.eql(u8, arg, "--out")) {
+            out_file_path = args_iter.next() orelse {
+                try stderr.writeAll("--out needs a file path as argument\n");
+                std.process.exit(1);
+            };
+        } else if (std.mem.eql(u8, arg, "--compare")) {
+            const file_old: []const u8 = args_iter.next() orelse {
+                try stderr.writeAll("Usage: --compare <old_file_path> <new_file_path>\n");
+                std.process.exit(1);
+            };
+
+            const file_new: []const u8 = args_iter.next() orelse {
+                try stderr.writeAll("Usage: --compare <old_file_path> <new_file_path>\n");
+                std.process.exit(1);
+            };
+
+            const out = std.io.getStdErr();
+            try compareResults(
+                al,
+                file_old,
+                file_new,
+                out,
+            );
+
+            std.process.exit(0);
+        }
+    }
+
     var cwd = fs.cwd();
     defer cwd.close();
 
@@ -29,12 +66,15 @@ pub fn main() !void {
         try fs.path.join(al, &.{ "benchmark", "typescript.js" }),
     );
 
-    try benchmarkParser(
+    const avg_time_ms = try benchmarkParser(
         al,
         cwd,
         "typescript.js",
-        "parser-bench.json",
+        out_file_path,
     );
+
+    var io = std.io.getStdOut();
+    _ = try io.writeAll(try std.fmt.allocPrint(al, "{d}", .{avg_time_ms}));
 }
 
 /// Run the parser on the file present at [js_file_path],
@@ -46,8 +86,8 @@ fn benchmarkParser(
     allocator: std.mem.Allocator,
     cwd: fs.Dir,
     js_file_path: []const u8,
-    results_file_name: []const u8,
-) !void {
+    maybe_results_file_name: ?[]const u8,
+) !f64 {
     var dir = try cwd.openDir("benchmark", .{ .access_sub_paths = true });
     defer dir.close();
 
@@ -80,7 +120,6 @@ fn benchmarkParser(
     }
 
     const avg_time_ms = total_time_ms / @as(f64, @floatFromInt(num_runs));
-    std.log.info("time taken to parse '{s}': {d}ms\n", .{ js_file_path, avg_time_ms });
 
     // Create a JSON object and put the average time in there
     var result_obj = json.ObjectMap.init(allocator);
@@ -99,10 +138,16 @@ fn benchmarkParser(
     );
 
     // Serialize the JSON and write to results file
-    var result_file = try dir.createFile(results_file_name, .{ .truncate = true });
-    defer result_file.close();
+    if (maybe_results_file_name) |results_file_name| {
+        var result_file = if (results_file_name[0] == '/')
+            try fs.createFileAbsolute(results_file_name, .{ .truncate = true })
+        else
+            try cwd.createFile(results_file_name, .{ .truncate = true });
+        defer result_file.close();
 
-    try result_file.writeAll(result_json);
+        try result_file.writeAll(result_json);
+    }
+    return avg_time_ms;
 }
 
 /// Download the 'typescript.js' bundle from cludflare CDN, and plop it in the
@@ -155,4 +200,53 @@ fn downloadTypeScriptSource(
     }
 
     std.log.info("downloaded 'typescript.js' in {s}", .{dst_path});
+}
+
+const BenchmarkResult = struct {
+    average_run_time_ms: f64,
+};
+
+/// Compare two JSON encoded benchmark results and print a message
+/// to stdout indicating the difference in average run times.
+///
+/// Exit with status code 1 if the new parser is slower than the old one.
+fn compareResults(
+    allocator: std.mem.Allocator,
+    file_path_old: []const u8,
+    file_path_new: []const u8,
+    out: fs.File,
+) !void {
+    var cwd = fs.cwd();
+    defer cwd.close();
+
+    const f1_contents = try cwd.readFileAlloc(allocator, file_path_old, std.math.maxInt(u32));
+    const f2_contents = try cwd.readFileAlloc(allocator, file_path_new, std.math.maxInt(u32));
+
+    defer allocator.free(f1_contents);
+    defer allocator.free(f2_contents);
+
+    const result_old = try json.parseFromSlice(
+        BenchmarkResult,
+        allocator,
+        f1_contents,
+        .{},
+    );
+    const result_new = try json.parseFromSlice(
+        BenchmarkResult,
+        allocator,
+        f1_contents,
+        .{},
+    );
+
+    const difference = result_new.value.average_run_time_ms - result_old.value.average_run_time_ms;
+    const percent_difference = difference / result_old.value.average_run_time_ms * 100;
+
+    const message = try std.fmt.allocPrint(allocator, "New parser is {d:.2}% faster", .{percent_difference});
+    defer allocator.free(message);
+
+    try out.writeAll(message);
+
+    if (result_new.value.average_run_time_ms < result_old.value.average_run_time_ms) {
+        std.process.exit(1);
+    }
 }
