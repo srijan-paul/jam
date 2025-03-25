@@ -585,6 +585,10 @@ fn matchSingleLineCommentChars(self: *Self) Error!void {
     }
 }
 
+/// Use vectorized instructions to consume all ASCII characters in a single line comment.
+/// Returns 'true' if the whole single line comment was consumed, 'false' if it early exited
+/// because it encountered a non-ASCII character, or if it had remaining characters that wouldn't
+/// fully occupy a SIMD register.
 fn matchSingleLineCommentAsciiCharsSimd(self: *Self) bool {
     var i = self.index;
 

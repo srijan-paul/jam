@@ -2852,7 +2852,7 @@ fn expect2(self: *Self, tag1: Token.Tag, tag2: Token.Tag) Error!TokenWithId {
 /// and advances the pointer to the next token.
 fn next(self: *Self) Error!TokenWithId {
     var next_token = try self.tokenizer.next();
-    while (next_token.tag == .comment or next_token.tag == .whitespace) {
+    while (next_token.tag.is(TokenMask.Trivia)) {
         try self.saveToken(next_token);
         next_token = try self.tokenizer.next();
     }
@@ -2863,7 +2863,7 @@ fn next(self: *Self) Error!TokenWithId {
 /// Consume the next JSX token from the lexer, skipping all comments and whitespaces.
 fn nextJsx(self: *Self) Error!TokenWithId {
     var next_token = try self.tokenizer.nextJsxChild();
-    while (next_token.tag == .comment or next_token.tag == .whitespace) {
+    while (next_token.tag.is(TokenMask.Trivia)) {
         try self.saveToken(next_token);
         next_token = try self.tokenizer.nextJsxChild();
     }
@@ -2936,9 +2936,7 @@ fn advanceToToken(self: *Self, next_token: Token) error{OutOfMemory}!TokenWithId
 /// Intialize `self.current` by consuming the first token.
 fn startTokenizer(self: *Self) Error!void {
     var token = try self.tokenizer.next();
-    while (token.tag == .comment or
-        token.tag == .whitespace) : (token = try self.tokenizer.next())
-    {
+    while (token.tag.is(TokenMask.Trivia)) : (token = try self.tokenizer.next()) {
         try self.saveToken(token);
     }
 

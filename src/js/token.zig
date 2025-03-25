@@ -19,6 +19,7 @@ pub const Mask = struct {
     pub const IsIdentifier: u32 = 1 << 19;
     pub const IsLogicalOp: u32 = 1 << 20; // || and &&
     pub const IsJsxAttributeStart: u32 = 1 << 21;
+    pub const Trivia: u32 = 1 << 22;
 
     /// For binary operators (token.tag & Mask.IsBinaryOp != 0),
     /// bits 8-11 store the precedence of the token.
@@ -30,11 +31,11 @@ pub const JsTokenTag = enum(u32) {
 
     // both single and multiline comments
     // TODO(@injuly): should there be a separate tag for multi-line comments?
-    comment = 1,
+    comment = 1 | Mask.Trivia,
 
     // whitespaces and newlines
     // TODO(@injuly): should there be a separate tag for whitespaces that include newlines?
-    whitespace = 2,
+    whitespace = 2 | Mask.Trivia,
 
     identifier = 3 | Mask.IsIdentifier | Mask.IsJsxAttributeStart,
     /// An identifier that is contains non-ASCII characters.
@@ -203,7 +204,7 @@ pub const JsTokenTag = enum(u32) {
 
     eof = 149,
 
-    pub fn is(self: JsTokenTag, mask: u32) bool {
+    pub inline fn is(self: JsTokenTag, mask: u32) bool {
         const tag_u32: u32 = @intFromEnum(self);
         return tag_u32 & mask != 0;
     }
