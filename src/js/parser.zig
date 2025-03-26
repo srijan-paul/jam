@@ -344,10 +344,12 @@ pub fn init(
         .nodes = .{},
         .node_indices = try std.ArrayList(Node.Index).initCapacity(allocator, 32),
         .extras = try std.ArrayList(ast.ExtraData).initCapacity(allocator, 32),
-        .tokens = try std.ArrayList(Token).initCapacity(allocator, 256),
+        .tokens = try std.ArrayList(Token).initCapacity(allocator, 1024),
         .string_pool = try util.StringPool.init(allocator),
         .source_type = config.source_type,
     };
+
+    try parse_tree.nodes.ensureTotalCapacity(allocator, 512);
 
     var self = Self{
         .tokenizer = try Tokenizer.init(source, config),
@@ -2954,7 +2956,7 @@ inline fn nextToken(self: *Self) Error!Token {
 /// without consuming it, or advancing in the source.
 ///
 /// NOTE: The token returned by this function should only be used for
-/// inspection, and should not be added to the AST.
+/// inspection, and must not be added to the AST.
 fn lookAhead(self: *Self) Error!Token {
     const line = self.tokenizer.line;
     const index = self.tokenizer.index;

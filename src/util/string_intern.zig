@@ -12,95 +12,68 @@ pub const String = struct {
 
 allocator: std.mem.Allocator,
 
-/// A buffer containing all strings in the intern table.
-/// All strings are `String`s that index into this buffer.
-/// Only the `0..n_bytes_used` subslice of this buffer is valid.
-chars: []u8,
-/// The number of bytes used in `chars`.
-n_bytes_used: u32 = 0,
-/// Maps a string to its corresponding (start, end) span.
-index_of_str: std.StringHashMap(String),
-/// Stores the raw strings in the order they were inserted.
-/// We need this because `StringHashMap` does not own the strings,
-/// but expect the caller to keep the strings alive for the lifetime of the map.
-/// Whenever a new string is interned, we append it to this list.
-raw_strings: std.ArrayList([]const u8),
+/// A vector containing all bytes of each string in the intern table.
+str_bytes: std.ArrayListUnmanaged(u8),
+/// Set of strings that have been interned
+interned_strs_set: std.AutoHashMapUnmanaged(String, void),
 
 pub fn init(allocator: std.mem.Allocator) std.mem.Allocator.Error!Self {
-    return Self{
+    var self = Self{
         .allocator = allocator,
-        .index_of_str = std.StringHashMap(String).init(allocator),
-        .chars = try allocator.alloc(u8, 256),
-        .raw_strings = try std.ArrayList([]const u8).initCapacity(allocator, 128),
+        .str_bytes = try std.ArrayListUnmanaged(u8).initCapacity(allocator, 256),
+        .interned_strs_set = std.AutoHashMapUnmanaged(String, void).empty,
     };
+
+    try self.interned_strs_set.ensureTotalCapacity(allocator, 128);
+    return self;
 }
 
 pub fn deinit(self: *Self) void {
-    self.allocator.free(self.chars);
-    self.index_of_str.deinit();
-
-    for (self.raw_strings.items) |s|
-        self.allocator.free(s);
-    self.raw_strings.deinit();
-}
-
-fn ensureCapacity(self: *Self, n_bytes_wanted: u32) error{ OutOfMemory, Overflow }!void {
-    const n_remaining_bytes = self.chars.len - self.n_bytes_used;
-    if (n_remaining_bytes > n_bytes_wanted) return;
-
-    const n_chars: u32 = @intCast(self.chars.len);
-    const new_capacity = try std.math.ceilPowerOfTwo(u32, n_chars + n_bytes_wanted);
-    self.chars = try self.allocator.realloc(self.chars, new_capacity);
-}
-
-/// Copy [key] into the internal buffer, and return the span
-fn insertString(self: *Self, key: []const u8) error{ OutOfMemory, Overflow }!String {
-    try self.ensureCapacity(@intCast(key.len));
-    const string_start_index = self.n_bytes_used;
-
-    const dst = self.chars[self.n_bytes_used .. self.n_bytes_used + key.len];
-    @memcpy(dst, key);
-
-    self.n_bytes_used += @intCast(key.len);
-    const string_end_index = self.n_bytes_used;
-
-    return String{
-        .start = string_start_index,
-        .end = string_end_index,
-    };
-}
-
-/// Same as `getOrInsert`, but does not copy the key.
-/// Instead, the caller is responsible for keeping the key alive for as long as the intern table is alive.
-/// The key must not be modified after it is inserted into the intern table.
-pub fn getOrInsertNoOwn(self: *Self, string: []const u8) error{ OutOfMemory, Overflow }!String {
-    const gop = try self.index_of_str.getOrPut(string);
-    if (gop.found_existing) return gop.value_ptr.*;
-
-    const span = try self.insertString(string);
-    gop.value_ptr.* = span;
-    return span;
+    self.str_bytes.deinit(self.allocator);
+    self.interned_strs_set.deinit(self.allocator);
 }
 
 /// If `string` exists in the intern table, return the associated span.
 /// Otherwise, insert it and return the new span.
 pub fn getOrInsert(self: *Self, string: []const u8) error{ OutOfMemory, Overflow }!String {
-    const gop = try self.index_of_str.getOrPut(string);
-    if (gop.found_existing) return gop.value_ptr.*;
+    // Helper struct that defines functions for hasing and comparing strings.
+    // Used by the `AutoHashMap`'s `getOrPutAdapted` function.
+    const KeyCtx = struct {
+        bytes: []const u8,
+
+        pub fn hash(_: @This(), key: []const u8) u64 {
+            return std.hash.Wyhash.hash(0, key);
+        }
+
+        pub fn eql(this: @This(), bytes: []const u8, handle: String) bool {
+            return std.mem.eql(u8, bytes, this.bytes[handle.start..handle.end]);
+        }
+    };
+
+    const ctx = KeyCtx{ .bytes = self.str_bytes.items };
+    // Look for an existing string with the same bytes
+    const gop = try self.interned_strs_set.getOrPutAdapted(self.allocator, string, ctx);
+    if (gop.found_existing) return gop.key_ptr.*;
 
     // If the key isn't found, copy the key that was passed in.
-    const key = try self.allocator.dupe(u8, string);
-    try self.raw_strings.append(key);
-    gop.key_ptr.* = key;
+    const start: u32 = @intCast(self.str_bytes.items.len);
+    // TODO: we can avoid this `appendSlice` call for short strings
+    // if we store small strings inline in the `Handle`.
+    // Look into SSO (small string optimization) for ideas.
+    // See: libc++'s std::string and some rust implementations.
+    self.str_bytes.appendSlice(self.allocator, string) catch {
+        self.interned_strs_set.removeByPtr(gop.key_ptr);
+        return error.OutOfMemory;
+    };
 
-    const span = try self.insertString(key);
-    gop.value_ptr.* = span;
-
-    return span;
+    const end: u32 = @intCast(self.str_bytes.items.len);
+    const handle = String{ .start = start, .end = end };
+    gop.key_ptr.* = handle;
+    return handle;
 }
 
 pub fn toByteSlice(self: *const Self, string: String) []const u8 {
-    return self.chars[string.start..string.end];
+    return self.str_bytes.items[string.start..string.end];
 }
 
 const t = std.testing;
@@ -111,9 +84,6 @@ test {
     const span = try table.getOrInsert("hello");
     try t.expectEqual(0, span.start);
     try t.expectEqual(5, span.end);
-
-    try t.expectEqual(5, table.n_bytes_used);
-    try t.expectEqual(256, table.chars.len);
 
     const span2 = try table.getOrInsert("world");
     try t.expectEqual(5, span2.start);

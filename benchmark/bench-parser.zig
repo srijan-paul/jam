@@ -95,31 +95,24 @@ fn benchmarkParser(
     defer allocator.free(js_source);
 
     // Run the parser 100 times and measure the average time per run
-    var total_time_ms: f64 = 0;
     const num_runs: usize = 100;
+    var timer = try std.time.Timer.start();
     for (0..num_runs) |_| {
-        const start_ns = std.time.nanoTimestamp();
-        {
-            var parser = try js.Parser.init(std.heap.page_allocator, js_source, .{});
-            defer parser.deinit();
+        var parser = try js.Parser.init(std.heap.page_allocator, js_source, .{});
+        defer parser.deinit();
 
-            var parse_result = parser.parse() catch |e| {
-                for (parser.diagnostics.items) |d| {
-                    std.log.err("{d}:{d} {s}", .{ d.coord.line + 1, d.coord.column, d.message });
-                }
+        var parse_result = parser.parse() catch |e| {
+            for (parser.diagnostics.items) |d| {
+                std.log.err("{d}:{d} {s}", .{ d.coord.line + 1, d.coord.column, d.message });
+            }
+            return e;
+        };
 
-                return e;
-            };
-
-            defer parse_result.deinit();
-        }
-
-        const end_ns = std.time.nanoTimestamp();
-        total_time_ms += @as(f64, @floatFromInt(@as(u64, @intCast(end_ns - start_ns)))) /
-            @as(f64, @floatFromInt(std.time.ns_per_ms));
+        defer parse_result.deinit();
     }
 
-    const avg_time_ms = total_time_ms / @as(f64, @floatFromInt(num_runs));
+    const time_taken_ns: f64 = @floatFromInt(timer.read());
+    const avg_time_ms = (time_taken_ns / std.time.ns_per_ms) / @as(f64, @floatFromInt(num_runs));
 
     // Create a JSON object and put the average time in there
     var result_obj = json.ObjectMap.init(allocator);

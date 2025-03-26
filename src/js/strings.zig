@@ -43,9 +43,9 @@ pub fn stringValue(self: *Self, token: *const Token) error{ OutOfMemory, Overflo
     // If the string is entirely ASCII and has no escape codes,
     // we can just return the slice after interning it as is.
     // Non-ASCII identifiers are tagged with ".non_ascii_identifier"
-    if (token.tag == .identifier) {
+    if (token.tag == .identifier or token.tag.isKeyword()) {
         @branchHint(.likely);
-        return try self.string_pool.getOrInsertNoOwn(str);
+        return try self.string_pool.getOrInsert(str);
     }
 
     if (str.len > self.buf.len) {
