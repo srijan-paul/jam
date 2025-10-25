@@ -1,9 +1,7 @@
 # Jam
 
-A high-performance JavaScript toolchain + analyzer built from the ground up.
+A high-performance JavaScript parser and semantic analyzer built from the ground up.
 **Work in progress!**
-
-Jam is a JavaScript parser, linter, formatter, printer and vulnerability scanner.
 
 ## Goals
 
