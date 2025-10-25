@@ -39,7 +39,7 @@ I've tried to keep the development process hassle-free.
 You need only a Zig compiler (and optionally an environment variable) to get going.
 
 If you still face any issues, feel free to open an issue
-or reach out to me on discord (`@injuly.`), [twitter](https://x.com/ptrCast), or [e-mail](mailto:srijan@injuly.in).
+or reach out to me on discord (`@in.july`), [twitter](https://x.com/ptrCast), or [e-mail](mailto:srijan@injuly.in).
 I usually respond within a day.
 
 > **NOTE:** If you're willing to contribute, It's a good idea to copy the contents of ./pre-commit to 
@@ -53,6 +53,7 @@ to seamlessly switch between multiple zig versions, I recommend using [zvm](http
 2. Clone this project into your development machine.
 3. Run `zig build run -- <path-to-file.js>` to see a parsed AST for the given file.
 4. Run `zig build test` to run the unit tests.
+5. Run `zig build bench-parser` to run the parser benchmarks.
 
 ### Checking ECMAScript conformance
 

@@ -23,33 +23,29 @@ pub fn main() !void {
     var args_iter = try std.process.argsWithAllocator(al);
     defer args_iter.deinit();
 
-    var stderr = std.io.getStdErr();
-
     var out_file_path: ?[]const u8 = null;
 
     while (args_iter.next()) |arg| {
         if (std.mem.eql(u8, arg, "--out")) {
             out_file_path = args_iter.next() orelse {
-                try stderr.writeAll("--out needs a file path as argument\n");
+                _ = std.posix.write(std.posix.STDERR_FILENO, "--out needs a file path as argument\n") catch {};
                 std.process.exit(1);
             };
         } else if (std.mem.eql(u8, arg, "--compare")) {
             const file_old: []const u8 = args_iter.next() orelse {
-                try stderr.writeAll("Usage: --compare <old_file_path> <new_file_path>\n");
+                _ = std.posix.write(std.posix.STDERR_FILENO, "Usage: --compare <old_file_path> <new_file_path>\n") catch {};
                 std.process.exit(1);
             };
 
             const file_new: []const u8 = args_iter.next() orelse {
-                try stderr.writeAll("Usage: --compare <old_file_path> <new_file_path>\n");
+                _ = std.posix.write(std.posix.STDERR_FILENO, "Usage: --compare <old_file_path> <new_file_path>\n") catch {};
                 std.process.exit(1);
             };
 
-            const out = std.io.getStdErr();
             try compareResults(
                 al,
                 file_old,
                 file_new,
-                out,
             );
 
             std.process.exit(0);
@@ -73,8 +69,8 @@ pub fn main() !void {
         out_file_path,
     );
 
-    var io = std.io.getStdOut();
-    _ = try io.writeAll(try std.fmt.allocPrint(al, "{d}", .{avg_time_ms}));
+    const output = try std.fmt.allocPrint(al, "{d}", .{avg_time_ms});
+    _ = try std.posix.write(std.posix.STDOUT_FILENO, output);
 }
 
 /// Run the parser on the file present at [js_file_path],
@@ -91,7 +87,7 @@ fn benchmarkParser(
     var dir = try cwd.openDir("benchmark", .{ .access_sub_paths = true });
     defer dir.close();
 
-    const js_source = try dir.readFileAlloc(allocator, js_file_path, std.math.maxInt(u32));
+    const js_source = try dir.readFileAlloc(js_file_path, allocator, std.Io.Limit.limited(std.math.maxInt(u32)));
     defer allocator.free(js_source);
 
     // Run the parser 100 times and measure the average time per run
@@ -124,7 +120,7 @@ fn benchmarkParser(
         json.Value{ .number_string = avg_time_ms_str },
     );
 
-    const result_json = try json.stringifyAlloc(
+    const result_json = try json.Stringify.valueAlloc(
         allocator,
         json.Value{ .object = result_obj },
         .{ .whitespace = .indent_2 },
@@ -162,34 +158,23 @@ fn downloadTypeScriptSource(
     var client = std.http.Client{ .allocator = allocator };
     defer client.deinit();
 
-    const uri = try std.Uri.parse("https://cdnjs.cloudflare.com/ajax/libs/typescript/5.8.2/typescript.js");
-
-    var hd_buf: [2048]u8 = undefined;
-    var req = try std.http.Client.open(&client, .GET, uri, .{
-        .redirect_behavior = .unhandled,
-        .keep_alive = false,
-        .server_header_buffer = &hd_buf,
-    });
-
-    defer req.deinit();
-
     std.log.info("Downloading 'typescript.js'...", .{});
-    try req.send();
-    try req.finish();
-
-    try req.wait();
 
     const out_file = try cwd.createFile(dst_path, .{});
     defer out_file.close();
 
-    const fwriter = out_file.writer();
-    const req_reader = req.reader();
+    var write_buf: [8192]u8 = undefined;
+    var file_writer = out_file.writer(&write_buf);
 
-    var buf = [_]u8{0} ** 1024;
-    while (true) {
-        const n_bytes = try req_reader.read(&buf);
-        if (n_bytes == 0) break;
-        std.debug.assert(try fwriter.write(buf[0..n_bytes]) == n_bytes);
+    const result = try client.fetch(.{
+        .location = .{ .url = "https://cdnjs.cloudflare.com/ajax/libs/typescript/5.8.2/typescript.js" },
+        .method = .GET,
+        .response_writer = &file_writer.interface,
+    });
+
+    if (result.status != .ok) {
+        std.log.err("Failed to download typescript.js: HTTP {d}", .{@intFromEnum(result.status)});
+        return error.DownloadFailed;
     }
 
     std.log.info("downloaded 'typescript.js' in {s}", .{dst_path});
@@ -207,13 +192,12 @@ fn compareResults(
     allocator: std.mem.Allocator,
     file_path_old: []const u8,
     file_path_new: []const u8,
-    out: fs.File,
 ) !void {
     var cwd = fs.cwd();
     defer cwd.close();
 
-    const f1_contents = try cwd.readFileAlloc(allocator, file_path_old, std.math.maxInt(u32));
-    const f2_contents = try cwd.readFileAlloc(allocator, file_path_new, std.math.maxInt(u32));
+    const f1_contents = try cwd.readFileAlloc(file_path_old, allocator, std.Io.Limit.limited(std.math.maxInt(u32)));
+    const f2_contents = try cwd.readFileAlloc(file_path_new, allocator, std.Io.Limit.limited(std.math.maxInt(u32)));
 
     defer allocator.free(f1_contents);
     defer allocator.free(f2_contents);
@@ -234,10 +218,10 @@ fn compareResults(
     const difference = result_new.value.average_run_time_ms - result_old.value.average_run_time_ms;
     const percent_difference = difference / result_old.value.average_run_time_ms * 100;
 
-    const message = try std.fmt.allocPrint(allocator, "New parser is {d:.2}% faster", .{percent_difference});
+    const message = try std.fmt.allocPrint(allocator, "New parser is {d:.2}% faster\n", .{percent_difference});
     defer allocator.free(message);
 
-    try out.writeAll(message);
+    _ = try std.posix.write(std.posix.STDOUT_FILENO, message);
 
     if (result_new.value.average_run_time_ms < result_old.value.average_run_time_ms) {
         std.process.exit(1);
