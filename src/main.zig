@@ -10,9 +10,9 @@ fn jsFileToJsonAst(
     mode: js.Parser.SourceType,
 ) ![]const u8 {
     const source = std.fs.cwd().readFileAlloc(
-        allocator,
         file_name,
-        std.math.maxInt(u32),
+        allocator,
+        std.Io.Limit.limited(std.math.maxInt(u32)),
     ) catch |err| {
         std.log.err("failed to read file: {s}\n", .{file_name});
         return err;
@@ -42,9 +42,9 @@ fn jsFileToJsonAst(
 /// The returned slice is owned by the caller.
 fn cssFileToJsonAst(allocator: std.mem.Allocator, file_name: []const u8) ![]const u8 {
     const source = std.fs.cwd().readFileAlloc(
-        allocator,
         file_name,
-        std.math.maxInt(u32),
+        allocator,
+        std.Io.Limit.limited(std.math.maxInt(u32)),
     ) catch |err| {
         std.log.err("failed to read file: {s}\n", .{file_name});
         return err;
@@ -108,8 +108,5 @@ pub fn main() !void {
 
     defer allocator.free(pretty_ast_str);
 
-    const io = std.io.getStdOut();
-    defer io.close();
-
-    try io.writeAll(pretty_ast_str);
+    _ = try std.posix.write(std.posix.STDOUT_FILENO, pretty_ast_str);
 }

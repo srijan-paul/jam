@@ -41,31 +41,39 @@ pub fn init(arena: *std.heap.ArenaAllocator, source: []const u8) Error!Self {
         // TODO: store leading comments as trivia.
     }
 
+    var nodes: std.ArrayList(ast.Node) = .{};
+    try nodes.ensureTotalCapacity(al, 128);
+    var node_refs: std.ArrayList(ast.Node.Index) = .{};
+    try node_refs.ensureTotalCapacity(al, 8);
+    var tokens: std.ArrayList(Token) = .{};
+    try tokens.ensureTotalCapacity(al, 128);
+
     return Self{
         .arena = arena,
         .allocator = al,
         .source = source,
         .tokenizer = tokenizer,
         .diagnostics = DiagnosticsBuilder.init(al),
-        .nodes = try std.ArrayList(ast.Node).initCapacity(al, 128),
-        .node_refs = try std.ArrayList(ast.Node.Index).initCapacity(al, 8),
-        .tokens = try std.ArrayList(Token).initCapacity(al, 128),
+        .nodes = nodes,
+        .node_refs = node_refs,
+        .tokens = tokens,
         .current_token = first_token,
     };
 }
 
 pub fn deinit(self: *Self) void {
-    self.nodes.deinit();
+    self.nodes.deinit(self.allocator);
     self.diagnostics.deinit();
 
     self.arena.deinit();
 }
 
 pub fn parse(self: *Self) Error!ast.Node.Index {
-    var rules = try std.ArrayList(ast.Node.Index).initCapacity(self.allocator, 8);
+    var rules: std.ArrayList(ast.Node.Index) = .{};
+    try rules.ensureTotalCapacity(self.allocator, 8);
     while (self.current_token.tag() != .eof) {
         const rule_index = try parseRule(self);
-        try rules.append(rule_index);
+        try rules.append(self.allocator, rule_index);
     }
 
     const rule_nodes = try self.newSubRange(rules.items);
@@ -87,7 +95,7 @@ pub fn addNode(
     start: u32,
     end: u32,
 ) std.mem.Allocator.Error!ast.Node.Index {
-    try self.nodes.append(.{
+    try self.nodes.append(self.allocator, .{
         .data = node,
         .start = start,
         .end = end,
@@ -100,7 +108,7 @@ pub fn addNode(
 /// Advance in the token stream, save the next token to the list of tokens and return its index.
 pub fn saveToken(self: *Self, token: Token) Error!Token.Index {
     const index = self.tokens.items.len;
-    try self.tokens.append(token);
+    try self.tokens.append(self.allocator, token);
     return @enumFromInt(index);
 }
 
@@ -144,7 +152,7 @@ pub fn newSubRange(
     nodes: []ast.Node.Index,
 ) std.mem.Allocator.Error!ast.SubRange {
     const from: u32 = @intCast(self.node_refs.items.len);
-    try self.node_refs.appendSlice(nodes);
+    try self.node_refs.appendSlice(self.allocator, nodes);
     const to: u32 = @intCast(self.node_refs.items.len);
 
     return ast.SubRange{ .start = from, .end = to };

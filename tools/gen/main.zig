@@ -266,7 +266,7 @@ fn parseAstZigSource(allocator: Allocator) !zig.Ast {
     const ast_file_path = "src/js/ast.zig";
 
     var dir = std.fs.cwd();
-    const ast_source = try dir.readFileAlloc(allocator, ast_file_path, std.math.maxInt(usize));
+    const ast_source = try dir.readFileAlloc(ast_file_path, allocator, std.Io.Limit.limited(std.math.maxInt(usize)));
     const ast_source_z = try allocator.dupeZ(u8, ast_source);
 
     return try zig.Ast.parse(allocator, ast_source_z, .zig);

@@ -121,7 +121,7 @@ fn testOnPassingFile(
     pass_explicit_dir: *std.fs.Dir,
     file_name: []const u8,
 ) !ParseResult {
-    const source = try pass_dir.readFileAlloc(allocator, file_name, std.math.maxInt(u32));
+    const source = try pass_dir.readFileAlloc(file_name, allocator, std.Io.Limit.limited(std.math.maxInt(u32)));
     defer allocator.free(source);
 
     const source_type: js.Parser.SourceType =
@@ -145,9 +145,9 @@ fn testOnPassingFile(
     defer result.deinit();
 
     const source_explicit = try pass_explicit_dir.readFileAlloc(
-        allocator,
         file_name,
-        std.math.maxInt(u32),
+        allocator,
+        std.Io.Limit.limited(std.math.maxInt(u32)),
     );
     defer allocator.free(source_explicit);
 
@@ -199,7 +199,7 @@ fn testOnMalformedFile(
     fail_dir: *std.fs.Dir,
     file_name: []const u8,
 ) !ParseResult {
-    const source = try fail_dir.readFileAlloc(allocator, file_name, std.math.maxInt(u32));
+    const source = try fail_dir.readFileAlloc(file_name, allocator, std.Io.Limit.limited(std.math.maxInt(u32)));
     defer allocator.free(source);
 
     const source_type: js.Parser.SourceType =
@@ -232,9 +232,9 @@ fn testOnMalformedFile(
 /// Read an existing `tools/results.json` file.
 pub fn readResultsFile(allocator: std.mem.Allocator, results_file_path: []const u8) !std.json.Parsed(TestResult) {
     const previous_results_str = try std.fs.cwd().readFileAlloc(
-        allocator,
         results_file_path,
-        std.math.maxInt(u32),
+        allocator,
+        std.Io.Limit.limited(std.math.maxInt(u32)),
     );
 
     const parsed = try std.json.parseFromSlice(
@@ -252,9 +252,7 @@ pub fn readResultsFile(allocator: std.mem.Allocator, results_file_path: []const 
 pub fn runValidSyntaxTests(al: std.mem.Allocator) !TestResult {
     const tests_dir = std.process.getEnvVarOwned(al, "JAM_TESTS_262_DIR") catch |e| {
         if (e == error.EnvironmentVariableNotFound) {
-            var stderr = std.io.getStdErr();
-            defer stderr.close();
-            _ = try stderr.write("env var 'JAM_TESTS_262_DIR' not set\n");
+            _ = std.posix.write(std.posix.STDERR_FILENO, "env var 'JAM_TESTS_262_DIR' not set\n") catch {};
             std.process.exit(1);
         }
 
@@ -466,10 +464,10 @@ pub fn main() !void {
         std.process.exit(if (is_passing) 0 else 1);
     }
 
-    const s = try std.json.stringifyAlloc(
+    const s = try std.json.Stringify.valueAlloc(
         al,
         test_results,
         .{ .whitespace = .indent_2 },
     );
-    _ = try std.io.getStdOut().write(s);
+    _ = try std.posix.write(std.posix.STDOUT_FILENO, s);
 }

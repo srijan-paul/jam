@@ -14,8 +14,8 @@ pub fn parseRule(p: *Parser) Parser.Error!ast.Node.Index {
 pub fn qualifiedRule(p: *Parser) Parser.Error!ast.Node.Index {
     // TODO: handle empty preludes.
     const start_pos = p.current_token.start;
-    var selector_list =
-        try std.ArrayList(ast.Node.Index).initCapacity(p.allocator, 4);
+    var selector_list: std.ArrayList(ast.Node.Index) = .{};
+    try selector_list.ensureTotalCapacity(p.allocator, 4);
 
     const body = blk: {
         while (p.current_token.tag() != .eof) {
@@ -23,7 +23,7 @@ pub fn qualifiedRule(p: *Parser) Parser.Error!ast.Node.Index {
                 .@"}" => unreachable, // TODO: parse error here
                 .@"{" => break :blk try block.parseBlock(p),
                 else => {
-                    try selector_list.append(try parseComponent(p));
+                    try selector_list.append(p.allocator, try parseComponent(p));
                 },
             }
         }

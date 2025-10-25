@@ -5,8 +5,8 @@
     .fingerprint = 0xf5e4d0e7ae4f08d5,
     .dependencies = .{
         .unicode_id = .{
-            .url = "https://codeberg.org/injuly/unicode-id/archive/d56c5ed310058463cf6587a62a9febc595efc5e7.tar.gz",
-            .hash = "unicode_id-0.0.1-MsAuU0yBAQA-Wqv13y7g9rSLkmVWJSwy2Ke9BxsOmq0c",
+            .url = "https://codeberg.org/injuly/unicode-id/archive/1c98900cfc60a1a5336d4d91e55ee350d4e5114a.tar.gz",
+            .hash = "unicode_id-0.0.1-u-LDL-yCAQDIRl7z5q2EZmVoUP_DgimhNRwxAiPBLTwl",
         },
     },
 

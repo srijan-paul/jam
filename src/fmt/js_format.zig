@@ -14,15 +14,17 @@ docs: std.ArrayList(Doc),
 tree: *const ast.Tree,
 
 pub fn init(allocator: Allocator, tree: *const ast.Tree) Allocator.Error!Self {
+    var docs: std.ArrayList(Doc) = .{};
+    try docs.ensureTotalCapacity(allocator, 256);
     return Self{
         .allocator = allocator,
-        .docs = try std.ArrayList(Doc).initCapacity(allocator, 256),
+        .docs = docs,
         .tree = tree,
     };
 }
 
 pub fn deinit(self: *Self) void {
-    self.docs.deinit();
+    self.docs.deinit(self.allocator);
 }
 
 // At comptime, initialize a table that maps a node tag to

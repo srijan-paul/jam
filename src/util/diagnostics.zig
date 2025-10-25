@@ -13,7 +13,7 @@ allocator: std.mem.Allocator,
 diagnostics: std.ArrayList(Diagnostic),
 
 pub fn init(allocator: std.mem.Allocator) Self {
-    const diagnostics = std.ArrayList(Diagnostic).init(allocator);
+    const diagnostics: std.ArrayList(Diagnostic) = .{};
     return Self{
         .allocator = allocator,
         .diagnostics = diagnostics,
@@ -21,7 +21,7 @@ pub fn init(allocator: std.mem.Allocator) Self {
 }
 
 pub fn deinit(self: *Self) void {
-    self.diagnostics.deinit();
+    self.diagnostics.deinit(self.allocator);
 }
 
 /// Get the list of diagnostics.
@@ -37,7 +37,7 @@ pub fn emit(
     fmt_args: anytype,
 ) std.mem.Allocator.Error!void {
     const message = try std.fmt.allocPrint(self.allocator, fmt, fmt_args);
-    try self.diagnostics.append(Diagnostic{
+    try self.diagnostics.append(self.allocator, Diagnostic{
         .coord = coord,
         .message = message,
     });

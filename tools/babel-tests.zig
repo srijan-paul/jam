@@ -99,7 +99,7 @@ const tests_to_run = [_][]const u8{
 fn runTest(al: Allocator, d: std.fs.Dir, key: []const u8, filename: []const u8, out: *json.ObjectMap) !ParseResult {
     // std.debug.print("{s}\n", .{key});
     // Read the expected json output
-    const expected_json = d.readFileAlloc(al, "output.json", std.math.maxInt(u32)) catch |e| {
+    const expected_json = d.readFileAlloc("output.json", al, std.Io.Limit.limited(std.math.maxInt(u32))) catch |e| {
         if (e == std.fs.File.OpenError.FileNotFound) {
             std.debug.panic("No output.json file found for {s}", .{key});
         }
@@ -110,7 +110,7 @@ fn runTest(al: Allocator, d: std.fs.Dir, key: []const u8, filename: []const u8, 
     defer expected.deinit();
 
     const babel_config: json.Value = blk: {
-        if (d.readFileAlloc(al, "options.json", std.math.maxInt(u32))) |json_src| {
+        if (d.readFileAlloc("options.json", al, std.Io.Limit.limited(std.math.maxInt(u32)))) |json_src| {
             break :blk (try json.parseFromSlice(json.Value, al, json_src, .{})).value;
         } else |_| {
             break :blk json.Value{ .object = json.ObjectMap.init(al) };
@@ -139,7 +139,7 @@ fn runTest(al: Allocator, d: std.fs.Dir, key: []const u8, filename: []const u8, 
         expected.value.object.contains("error");
 
     // Parse the file
-    const source = try d.readFileAlloc(al, filename, std.math.maxInt(u32));
+    const source = try d.readFileAlloc(filename, al, std.Io.Limit.limited(std.math.maxInt(u32)));
 
     var parser = Parser.init(al, source, parser_config) catch
         return if (should_error) .pass else .fail_with_error;
@@ -161,7 +161,7 @@ fn runTest(al: Allocator, d: std.fs.Dir, key: []const u8, filename: []const u8, 
 
     // write the stringified output to a `output.jam.json`
     {
-        const estree_json_str = try std.json.stringifyAlloc(al, estree_json.tree, .{
+        const estree_json_str = try std.json.Stringify.valueAlloc(al, estree_json.tree, .{
             .whitespace = .indent_2,
             .emit_null_optional_fields = false,
         });
@@ -275,7 +275,7 @@ pub fn main() !void {
 
     const results_map = try runTests(al, babel_tests_dir);
     const results = json.Value{ .object = results_map };
-    const results_json = try json.stringifyAlloc(
+    const results_json = try json.Stringify.valueAlloc(
         al,
         results,
         .{ .whitespace = .indent_2 },
@@ -289,9 +289,9 @@ pub fn main() !void {
     } else if (maybe_compare_filepath) |compare_filepath| {
         const cwd = std.fs.cwd();
         const original_results_json = try cwd.readFileAlloc(
-            al,
             compare_filepath,
-            std.math.maxInt(u32),
+            al,
+            std.Io.Limit.limited(std.math.maxInt(u32)),
         );
 
         const existing_results = try std.json.parseFromSlice(
@@ -304,7 +304,7 @@ pub fn main() !void {
         compareTestResults(existing_results.value, results);
         std.debug.print("No regressions found. All tests are passing\n", .{});
     } else {
-        var io = std.io.getStdOut().writer();
-        _ = try io.write(results_json);
+        // Write to stdout
+        _ = try std.posix.write(std.posix.STDOUT_FILENO, results_json);
     }
 }

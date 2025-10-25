@@ -99,16 +99,16 @@ const SimpleDoc = union(enum) {
     line: u32,
     /// Convert this simple document to a text format, then append it to the
     /// given array-list.
-    pub fn write(self: SimpleDoc, out: std.ArrayList(u8)) Allocator.Error!void {
+    pub fn write(self: SimpleDoc, allocator: Allocator, out: *std.ArrayList(u8)) Allocator.Error!void {
         switch (self) {
             .nil => {},
-            .space => try out.append(' '),
+            .space => try out.append(allocator, ' '),
             .line => |n| {
-                try out.ensureUnusedCapacity(n + 1);
+                try out.ensureUnusedCapacity(allocator, n + 1);
                 try out.appendAssumeCapacity('\n');
                 for (0..n) |_| try out.appendAssumeCapacity(' ');
             },
-            .text => |txt| try out.appendSlice(txt),
+            .text => |txt| try out.appendSlice(allocator, txt),
         }
     }
 };

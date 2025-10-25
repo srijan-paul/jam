@@ -100,10 +100,10 @@ pub const Tree = struct {
 
     pub fn deinit(self: *Tree) void {
         self.nodes.deinit(self.allocator);
-        self.tokens.deinit();
-        self.extras.deinit();
+        self.tokens.deinit(self.allocator);
+        self.extras.deinit(self.allocator);
         self.string_pool.deinit();
-        self.node_indices.deinit();
+        self.node_indices.deinit(self.allocator);
     }
 };
 

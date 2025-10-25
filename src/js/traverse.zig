@@ -360,12 +360,12 @@ const TestCtrl = struct {
     pub fn init() TestCtrl {
         return .{
             .allocator = t.allocator,
-            .visited = std.ArrayList(NodeKind).init(t.allocator),
+            .visited = .{},
         };
     }
 
     pub fn deinit(self: *TestCtrl) void {
-        self.visited.deinit();
+        self.visited.deinit(self.allocator);
     }
 
     pub fn onEnter(
@@ -374,7 +374,7 @@ const TestCtrl = struct {
         pl: ast.NodeData,
         _: ?ast.Node.Index,
     ) !void {
-        try self.visited.append(std.meta.activeTag(pl));
+        try self.visited.append(self.allocator, std.meta.activeTag(pl));
     }
 };
 

@@ -733,7 +733,7 @@ fn matchMultiLineCommentAsciiSimd(self: *Self) Error!bool {
                     if (byte == '\r') {
                         num_newlines += 1;
                         // \r\n
-                        if (j + 1 < self.source.len and block[j + 1] == '\n') {
+                        if (j + 1 < self.source.len and self.source[j + 1] == '\n') {
                             j += 1;
                         }
                     } else if (byte == '\n') {

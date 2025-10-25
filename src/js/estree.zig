@@ -64,8 +64,8 @@ fn processEscapes(allocator: std.mem.Allocator, str: []const u8) error{
     BadEscapeSequence,
 }![]const u8 {
     var iter = std.unicode.Utf8Iterator{ .bytes = str, .i = 0 };
-    var buf = std.ArrayList(u8).init(allocator);
-    defer buf.deinit();
+    var buf: std.ArrayList(u8) = .{};
+    defer buf.deinit(allocator);
 
     while (iter.i < str.len) {
         if (str[iter.i] == '\\') {
@@ -83,17 +83,17 @@ fn processEscapes(allocator: std.mem.Allocator, str: []const u8) error{
             var cp_slice: [4]u8 = undefined;
             const cp_len = std.unicode.utf8Encode(parsed_cp.codepoint, &cp_slice) catch
                 return error.InvalidCodePoint;
-            try buf.appendSlice(cp_slice[0..cp_len]);
+            try buf.appendSlice(allocator, cp_slice[0..cp_len]);
 
             continue;
         }
 
         const cp_slice = iter.nextCodepointSlice() orelse
             unreachable; // already validated UTF-8 during tokenization
-        try buf.appendSlice(cp_slice);
+        try buf.appendSlice(allocator, cp_slice);
     }
 
-    return buf.toOwnedSlice();
+    return buf.toOwnedSlice(allocator);
 }
 
 pub fn jamToEstreeTag(node: ast.NodeData) []const u8 {
@@ -1010,7 +1010,7 @@ pub fn toJsonString(
     const estree_json = try toJsonObject(allocator, t, options);
     defer estree_json.deinit();
 
-    return try std.json.stringifyAlloc(allocator, estree_json.tree, .{
+    return try std.json.Stringify.valueAlloc(allocator, estree_json.tree, .{
         .whitespace = .indent_2,
         .emit_null_optional_fields = false,
     });
