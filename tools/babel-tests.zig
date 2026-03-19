@@ -96,11 +96,11 @@ const tests_to_run = [_][]const u8{
     "jsx",
 };
 
-fn runTest(al: Allocator, d: std.fs.Dir, key: []const u8, filename: []const u8, out: *json.ObjectMap) !ParseResult {
+fn runTest(io: std.Io, al: Allocator, d: std.Io.Dir, key: []const u8, filename: []const u8, out: *json.ObjectMap) !ParseResult {
     // std.debug.print("{s}\n", .{key});
     // Read the expected json output
-    const expected_json = d.readFileAlloc("output.json", al, std.Io.Limit.limited(std.math.maxInt(u32))) catch |e| {
-        if (e == std.fs.File.OpenError.FileNotFound) {
+    const expected_json = d.readFileAlloc(io, "output.json", al, std.Io.Limit.limited(std.math.maxInt(u32))) catch |e| {
+        if (e == std.Io.File.OpenError.FileNotFound) {
             std.debug.panic("No output.json file found for {s}", .{key});
         }
 
@@ -110,7 +110,7 @@ fn runTest(al: Allocator, d: std.fs.Dir, key: []const u8, filename: []const u8, 
     defer expected.deinit();
 
     const babel_config: json.Value = blk: {
-        if (d.readFileAlloc("options.json", al, std.Io.Limit.limited(std.math.maxInt(u32)))) |json_src| {
+        if (d.readFileAlloc(io, "options.json", al, std.Io.Limit.limited(std.math.maxInt(u32)))) |json_src| {
             break :blk (try json.parseFromSlice(json.Value, al, json_src, .{})).value;
         } else |_| {
             break :blk json.Value{ .object = json.ObjectMap.init(al) };
@@ -139,7 +139,7 @@ fn runTest(al: Allocator, d: std.fs.Dir, key: []const u8, filename: []const u8, 
         expected.value.object.contains("error");
 
     // Parse the file
-    const source = try d.readFileAlloc(filename, al, std.Io.Limit.limited(std.math.maxInt(u32)));
+    const source = try d.readFileAlloc(io, filename, al, std.Io.Limit.limited(std.math.maxInt(u32)));
 
     var parser = Parser.init(al, source, parser_config) catch
         return if (should_error) .pass else .fail_with_error;
@@ -167,7 +167,7 @@ fn runTest(al: Allocator, d: std.fs.Dir, key: []const u8, filename: []const u8, 
         });
         defer al.free(estree_json_str);
 
-        try d.writeFile(.{
+        try d.writeFile(io, .{
             .sub_path = "output.jam.json",
             .data = estree_json_str,
             .flags = .{},
@@ -184,20 +184,21 @@ fn runTest(al: Allocator, d: std.fs.Dir, key: []const u8, filename: []const u8, 
     return test_result;
 }
 
-fn runTests(al: Allocator, babel_tests_dir: []const u8) !json.ObjectMap {
+fn runTests(io: std.Io, al: Allocator, babel_tests_dir: []const u8) !json.ObjectMap {
     var result_map = json.ObjectMap.init(al);
-    var tests_dir = try std.fs.cwd().openDir(babel_tests_dir, .{});
-    defer tests_dir.close();
+    var cwd = std.Io.Dir.cwd();
+    var tests_dir = try cwd.openDir(io, babel_tests_dir, .{});
+    defer tests_dir.close(io);
 
     var num_passed: f64 = 0;
     var num_tests: f64 = 0;
 
     for (tests_to_run) |subdir_path| {
-        var d = try tests_dir.openDir(subdir_path, .{ .iterate = true });
-        defer d.close();
+        var d = try tests_dir.openDir(io, subdir_path, .{ .iterate = true });
+        defer d.close(io);
 
         var it = try d.walk(al);
-        while (try it.next()) |entry| {
+        while (try it.next(io)) |entry| {
             if (entry.kind != .file) continue;
             const ext = std.fs.path.extension(entry.path);
             if (!std.mem.eql(u8, ext, ".js")) continue;
@@ -205,7 +206,7 @@ fn runTests(al: Allocator, babel_tests_dir: []const u8) !json.ObjectMap {
             // For every .js file, parse and compare ASTs with babel
             const parent_dir_path = std.fs.path.dirname(entry.path) orelse continue;
             const key = try std.fs.path.join(al, &.{ subdir_path, parent_dir_path });
-            const result = try runTest(al, entry.dir, key, entry.basename, &result_map);
+            const result = try runTest(io, al, entry.dir, key, entry.basename, &result_map);
             num_tests += 1.0;
             if (result == .pass) num_passed += 1.0;
         }
@@ -247,17 +248,17 @@ fn compareTestResults(old_result: json.Value, new_result: json.Value) void {
     }
 }
 
-pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer std.debug.assert(gpa.deinit() == .ok);
-    const gp_allocator = gpa.allocator();
+pub fn main(init: std.process.Init) !void {
+    const io = init.io;
+    const gpa = init.gpa;
 
-    var arena = std.heap.ArenaAllocator.init(gp_allocator);
+    var arena = std.heap.ArenaAllocator.init(gpa);
     defer arena.deinit();
     const al = arena.allocator();
 
     var maybe_compare_filepath: ?[]const u8 = null;
-    var args_iter = std.process.args();
+    var args_iter = try init.minimal.args.iterateAllocator(al);
+    _ = args_iter.skip(); // skip program name
 
     var write_results: bool = false;
     while (args_iter.next()) |arg| {
@@ -273,7 +274,7 @@ pub fn main() !void {
 
     const babel_tests_dir = try std.fs.path.join(al, &.{ "tools", "babel" });
 
-    const results_map = try runTests(al, babel_tests_dir);
+    const results_map = try runTests(io, al, babel_tests_dir);
     const results = json.Value{ .object = results_map };
     const results_json = try json.Stringify.valueAlloc(
         al,
@@ -283,12 +284,14 @@ pub fn main() !void {
 
     if (write_results) {
         const results_file_path = try std.fs.path.join(al, &.{ "tools", "babel-results.json" });
-        var results_file = try std.fs.cwd().createFile(results_file_path, .{});
-        defer results_file.close();
-        try results_file.writeAll(results_json);
+        const cwd = std.Io.Dir.cwd();
+        const results_file = try cwd.createFile(io, results_file_path, .{});
+        defer results_file.close(io);
+        try results_file.writeStreamingAll(io, results_json);
     } else if (maybe_compare_filepath) |compare_filepath| {
-        const cwd = std.fs.cwd();
+        const cwd = std.Io.Dir.cwd();
         const original_results_json = try cwd.readFileAlloc(
+            io,
             compare_filepath,
             al,
             std.Io.Limit.limited(std.math.maxInt(u32)),
@@ -304,7 +307,6 @@ pub fn main() !void {
         compareTestResults(existing_results.value, results);
         std.debug.print("No regressions found. All tests are passing\n", .{});
     } else {
-        // Write to stdout
-        _ = try std.posix.write(std.posix.STDOUT_FILENO, results_json);
+        try std.Io.File.stdout().writeStreamingAll(io, results_json);
     }
 }

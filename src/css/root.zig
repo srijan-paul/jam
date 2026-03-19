@@ -4,5 +4,5 @@ pub const ast = @import("./ast.zig");
 
 test {
     const std = @import("std");
-    std.testing.refAllDeclsRecursive(@This());
+    std.testing.refAllDecls(@This());
 }

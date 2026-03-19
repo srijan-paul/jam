@@ -116,12 +116,13 @@ const fail_exceptions = [_][]const u8{
 /// For a given file name, check whether `pass/<file>` and `pass-explicit/<file>`
 /// have the same parse trees.
 fn testOnPassingFile(
+    io: std.Io,
     allocator: std.mem.Allocator,
-    pass_dir: *std.fs.Dir,
-    pass_explicit_dir: *std.fs.Dir,
+    pass_dir: *std.Io.Dir,
+    pass_explicit_dir: *std.Io.Dir,
     file_name: []const u8,
 ) !ParseResult {
-    const source = try pass_dir.readFileAlloc(file_name, allocator, std.Io.Limit.limited(std.math.maxInt(u32)));
+    const source = try pass_dir.readFileAlloc(io, file_name, allocator, std.Io.Limit.limited(std.math.maxInt(u32)));
     defer allocator.free(source);
 
     const source_type: js.Parser.SourceType =
@@ -145,6 +146,7 @@ fn testOnPassingFile(
     defer result.deinit();
 
     const source_explicit = try pass_explicit_dir.readFileAlloc(
+        io,
         file_name,
         allocator,
         std.Io.Limit.limited(std.math.maxInt(u32)),
@@ -195,11 +197,12 @@ fn testOnPassingFile(
 /// Run the parser on a file that has a syntax error, then ensure
 /// that the parser exits with an error.
 fn testOnMalformedFile(
+    io: std.Io,
     allocator: std.mem.Allocator,
-    fail_dir: *std.fs.Dir,
+    fail_dir: *std.Io.Dir,
     file_name: []const u8,
 ) !ParseResult {
-    const source = try fail_dir.readFileAlloc(file_name, allocator, std.Io.Limit.limited(std.math.maxInt(u32)));
+    const source = try fail_dir.readFileAlloc(io, file_name, allocator, std.Io.Limit.limited(std.math.maxInt(u32)));
     defer allocator.free(source);
 
     const source_type: js.Parser.SourceType =
@@ -230,8 +233,10 @@ fn testOnMalformedFile(
 }
 
 /// Read an existing `tools/results.json` file.
-pub fn readResultsFile(allocator: std.mem.Allocator, results_file_path: []const u8) !std.json.Parsed(TestResult) {
-    const previous_results_str = try std.fs.cwd().readFileAlloc(
+pub fn readResultsFile(io: std.Io, allocator: std.mem.Allocator, results_file_path: []const u8) !std.json.Parsed(TestResult) {
+    const cwd = std.Io.Dir.cwd();
+    const previous_results_str = try cwd.readFileAlloc(
+        io,
         results_file_path,
         allocator,
         std.Io.Limit.limited(std.math.maxInt(u32)),
@@ -249,27 +254,25 @@ pub fn readResultsFile(allocator: std.mem.Allocator, results_file_path: []const 
 /// Runs the JS parser on all files in `pass` and `pass-explicit` directories,
 /// compares the ASTs for every file `<file>.js` in `pass/<file>.js` and `pass-explicit/<file>.js`.
 /// Returns a TestResult containing all comparison results.
-pub fn runValidSyntaxTests(al: std.mem.Allocator) !TestResult {
-    const tests_dir = std.process.getEnvVarOwned(al, "JAM_TESTS_262_DIR") catch |e| {
-        if (e == error.EnvironmentVariableNotFound) {
-            _ = std.posix.write(std.posix.STDERR_FILENO, "env var 'JAM_TESTS_262_DIR' not set\n") catch {};
-            std.process.exit(1);
-        }
-
-        return e;
+pub fn runValidSyntaxTests(io: std.Io, al: std.mem.Allocator, environ_map: *const std.process.Environ.Map) !TestResult {
+    const tests_dir = environ_map.get("JAM_TESTS_262_DIR") orelse {
+        try std.Io.File.stderr().writeStreamingAll(io, "env var 'JAM_TESTS_262_DIR' not set\n");
+        std.process.exit(1);
     };
+    const tests_dir_owned = try al.dupe(u8, tests_dir);
+    defer al.free(tests_dir_owned);
 
-    var d = try std.fs.openDirAbsolute(tests_dir, .{ .iterate = true });
-    defer d.close();
+    var d = try std.Io.Dir.openDirAbsolute(io, tests_dir_owned, .{ .iterate = true });
+    defer d.close(io);
 
-    var pass_dir = try d.openDir("pass", .{ .iterate = true });
-    defer pass_dir.close();
+    var pass_dir = try d.openDir(io, "pass", .{ .iterate = true });
+    defer pass_dir.close(io);
 
-    var pass_explicit_dir = try d.openDir("pass-explicit", .{ .iterate = true });
-    defer pass_explicit_dir.close();
+    var pass_explicit_dir = try d.openDir(io, "pass-explicit", .{ .iterate = true });
+    defer pass_explicit_dir.close(io);
 
-    var fail_dir = try d.openDir("fail", .{ .iterate = true });
-    defer fail_dir.close();
+    var fail_dir = try d.openDir(io, "fail", .{ .iterate = true });
+    defer fail_dir.close(io);
 
     var pass_dir_iter = pass_explicit_dir.iterate();
     var fail_dir_iter = fail_dir.iterate();
@@ -281,11 +284,12 @@ pub fn runValidSyntaxTests(al: std.mem.Allocator) !TestResult {
     var n_ast_no_match: usize = 0;
 
     var test_cases = std.json.ObjectMap.init(al);
-    while (try pass_dir_iter.next()) |entry| {
+    while (try pass_dir_iter.next(io)) |entry| {
         if (entry.kind != .file) continue;
 
         n_good_files += 1.0;
         const result = testOnPassingFile(
+            io,
             al,
             &pass_dir,
             &pass_explicit_dir,
@@ -305,10 +309,10 @@ pub fn runValidSyntaxTests(al: std.mem.Allocator) !TestResult {
     var n_malformed_pass: f64 = 0.0;
     var n_malformed_fail: f64 = 0.0;
     var n_malformed_files: f64 = 0.0;
-    while (try fail_dir_iter.next()) |entry| {
+    while (try fail_dir_iter.next(io)) |entry| {
         if (entry.kind != .file) continue;
         n_malformed_files += 1.0;
-        const result = try testOnMalformedFile(al, &fail_dir, entry.name);
+        const result = try testOnMalformedFile(io, al, &fail_dir, entry.name);
         switch (result) {
             .pass => n_malformed_pass += 1.0,
             else => n_malformed_fail += 1.0,
@@ -424,20 +428,15 @@ pub fn compareTestResults(
     return passing;
 }
 
-pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    const allocator = gpa.allocator();
-    defer std.debug.assert(gpa.deinit() == .ok);
+pub fn main(init: std.process.Init) !void {
+    const allocator = init.gpa;
+    const io = init.io;
 
-    var arena = std.heap.ArenaAllocator.init(allocator);
-    const al = arena.allocator();
-    defer arena.deinit();
+    var args = std.process.Args.Iterator.init(init.minimal.args);
+    _ = args.next();
 
     // Run the current parser on all the files in `pass` and `pass-explicit`, then prepare results.
-    const test_results = try runValidSyntaxTests(al);
-
-    var args = std.process.args();
-    _ = args.next();
+    const test_results = try runValidSyntaxTests(io, allocator, init.environ_map);
 
     // When the `--compare` flag is passed, compare the new test results
     // with an existing `results.json` (in CI, its from the main branch),
@@ -457,7 +456,7 @@ pub fn main() !void {
     };
 
     if (existing_results_file_path) |results_json_path| {
-        const old_results_parsed = try readResultsFile(al, results_json_path);
+        const old_results_parsed = try readResultsFile(io, allocator, results_json_path);
         defer old_results_parsed.deinit();
         const old_results = old_results_parsed.value;
         const is_passing = try compareTestResults(&test_results, &old_results);
@@ -465,9 +464,10 @@ pub fn main() !void {
     }
 
     const s = try std.json.Stringify.valueAlloc(
-        al,
+        allocator,
         test_results,
         .{ .whitespace = .indent_2 },
     );
-    _ = try std.posix.write(std.posix.STDOUT_FILENO, s);
+    defer allocator.free(s);
+    try std.Io.File.stdout().writeStreamingAll(io, s);
 }

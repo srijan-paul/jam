@@ -5,6 +5,6 @@ pub const fmt = @import("./fmt/root.zig");
 test {
     const std = @import("std");
     const util = @import("util");
-    std.testing.refAllDeclsRecursive(@This());
-    std.testing.refAllDeclsRecursive(util);
+    std.testing.refAllDecls(@This());
+    std.testing.refAllDecls(util);
 }

@@ -6487,8 +6487,9 @@ const t = std.testing;
 
 const estree = @import("./estree.zig");
 
-fn runTestOnFile(tests_dir: std.fs.Dir, file_path: []const u8) !void {
+fn runTestOnFile(tests_dir: std.Io.Dir, file_path: []const u8) !void {
     const source_code = try tests_dir.readFileAlloc(
+        std.testing.io_instance.io(),
         file_path,
         t.allocator,
         std.Io.Limit.limited(std.math.maxInt(u32)),
@@ -6530,6 +6531,7 @@ fn runTestOnFile(tests_dir: std.fs.Dir, file_path: []const u8) !void {
     defer t.allocator.free(json_file_path);
 
     const expected_ast_json = tests_dir.readFileAlloc(
+        std.testing.io_instance.io(),
         json_file_path,
         t.allocator,
         std.Io.Limit.limited(std.math.maxInt(u32)),
@@ -6546,25 +6548,25 @@ fn runTestOnFile(tests_dir: std.fs.Dir, file_path: []const u8) !void {
 }
 
 test parse {
-    var root_dir = std.fs.cwd();
+    var root_dir = std.Io.Dir.cwd();
 
     const tests_dir_path = try std.fs.path.join(t.allocator, &.{ "src", "js", "test-files", "parser" });
     defer t.allocator.free(tests_dir_path);
 
-    var tests_dir = try root_dir.openDir(tests_dir_path, .{ .iterate = true });
-    defer tests_dir.close();
+    var tests_dir = try root_dir.openDir(std.testing.io_instance.io(), tests_dir_path, .{ .iterate = true });
+    defer tests_dir.close(std.testing.io_instance.io());
 
     var iter = tests_dir.iterate();
-    while (try iter.next()) |entry| {
+    while (try iter.next(std.testing.io_instance.io())) |entry| {
         if (entry.kind != .directory) {
             continue;
         }
 
-        var dir = try tests_dir.openDir(entry.name, .{ .iterate = true });
-        defer dir.close();
+        var dir = try tests_dir.openDir(std.testing.io_instance.io(), entry.name, .{ .iterate = true });
+        defer dir.close(std.testing.io_instance.io());
 
         var d_iter = dir.iterate();
-        while (try d_iter.next()) |test_case_entry| {
+        while (try d_iter.next(std.testing.io_instance.io())) |test_case_entry| {
             assert(test_case_entry.kind == .file);
             if (!std.mem.endsWith(u8, test_case_entry.name, ".js")) continue;
             runTestOnFile(dir, test_case_entry.name) catch |err| {

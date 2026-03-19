@@ -5,15 +5,13 @@ const css = @import("css");
 /// Parse a javascript file and return a stringified JSON representation of the AST.
 /// The returned slice is owned by the caller.
 fn jsFileToJsonAst(
+    io: std.Io,
     allocator: std.mem.Allocator,
     file_name: []const u8,
     mode: js.Parser.SourceType,
 ) ![]const u8 {
-    const source = std.fs.cwd().readFileAlloc(
-        file_name,
-        allocator,
-        std.Io.Limit.limited(std.math.maxInt(u32)),
-    ) catch |err| {
+    const cwd = std.Io.Dir.cwd();
+    const source = cwd.readFileAlloc(io, file_name, allocator, std.Io.Limit.limited(std.math.maxInt(u32))) catch |err| {
         std.log.err("failed to read file: {s}\n", .{file_name});
         return err;
     };
@@ -40,12 +38,13 @@ fn jsFileToJsonAst(
 
 /// Parse a javascript file and return a stringified JSON representation of the AST.
 /// The returned slice is owned by the caller.
-fn cssFileToJsonAst(allocator: std.mem.Allocator, file_name: []const u8) ![]const u8 {
-    const source = std.fs.cwd().readFileAlloc(
-        file_name,
-        allocator,
-        std.Io.Limit.limited(std.math.maxInt(u32)),
-    ) catch |err| {
+fn cssFileToJsonAst(
+    io: std.Io,
+    allocator: std.mem.Allocator,
+    file_name: []const u8,
+) ![]const u8 {
+    const cwd = std.Io.Dir.cwd();
+    const source = cwd.readFileAlloc(io, file_name, allocator, std.Io.Limit.limited(std.math.maxInt(u32))) catch |err| {
         std.log.err("failed to read file: {s}\n", .{file_name});
         return err;
     };
@@ -71,12 +70,10 @@ fn cssFileToJsonAst(allocator: std.mem.Allocator, file_name: []const u8) ![]cons
     return try css.ast.toJsonString(allocator, &parser, node_idx);
 }
 
-pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    const allocator = gpa.allocator();
-    defer std.debug.assert(gpa.deinit() == .ok);
+pub fn main(init: std.process.Init) !void {
+    const allocator = init.gpa;
 
-    var args = std.process.args();
+    var args = std.process.Args.Iterator.init(init.minimal.args);
     var js_parse_mode: js.Parser.SourceType = .script;
     const file_name = blk: {
         _ = args.next(); // skip the program name
@@ -98,9 +95,9 @@ pub fn main() !void {
             std.mem.eql(u8, file_ext, ".cjs") or
             std.mem.eql(u8, file_ext, ".jsx"))
         {
-            break :blk try jsFileToJsonAst(allocator, file_name, js_parse_mode);
+            break :blk try jsFileToJsonAst(init.io, allocator, file_name, js_parse_mode);
         } else if (std.mem.eql(u8, file_ext, ".css")) {
-            break :blk try cssFileToJsonAst(allocator, file_name);
+            break :blk try cssFileToJsonAst(init.io, allocator, file_name);
         }
         std.log.err("Unknown file extension {s}\n", .{file_ext});
         return error.BadFileExtension;
@@ -108,5 +105,5 @@ pub fn main() !void {
 
     defer allocator.free(pretty_ast_str);
 
-    _ = try std.posix.write(std.posix.STDOUT_FILENO, pretty_ast_str);
+    try std.Io.File.stdout().writeStreamingAll(init.io, pretty_ast_str);
 }

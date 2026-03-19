@@ -61,7 +61,7 @@ pub fn indexOfCh2(str: []const u8, start_index: usize, chr1: u8, chr2: u8) ?usiz
 }
 
 test {
-    std.testing.refAllDeclsRecursive(@This());
+    std.testing.refAllDecls(@This());
 
     {
         const strs = [_][]const u8{

@@ -10,6 +10,6 @@ test {
     const util = @import("util");
     const std = @import("std");
 
-    std.testing.refAllDeclsRecursive(@This());
-    std.testing.refAllDeclsRecursive(util);
+    std.testing.refAllDecls(@This());
+    std.testing.refAllDecls(util);
 }

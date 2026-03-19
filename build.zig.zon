@@ -1,7 +1,7 @@
 .{
     .name = .jam,
     .version = "0.0.0",
-    .minimum_zig_version = "0.13.0",
+    .minimum_zig_version = "0.16.0",
     .fingerprint = 0xf5e4d0e7ae4f08d5,
     .dependencies = .{
         .unicode_id = .{
