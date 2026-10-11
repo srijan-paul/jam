@@ -10,7 +10,10 @@ pub fn build(b: *std.Build) !void {
         module: *std.Build.Module,
     };
 
-    const unicode_id = b.dependency("unicode_id", .{});
+    const unicode_id = b.dependency("unicode_id", .{
+        .target = target,
+        .optimize = optimize,
+    });
     const deps = [_]Dep{
         .{
             .name = "unicode-id",
@@ -207,6 +210,25 @@ pub fn build(b: *std.Build) !void {
         ast_gen_step.dependOn(&ast_gen_cmd.step);
 
         ast_gen_cmd.addPassthruArgs();
+    }
+
+    // Command to benchmark tokenizer vs parser phases separately
+    {
+        const bench_phases_module = b.createModule(.{
+            .root_source_file = b.path("benchmark/bench-phases.zig"),
+            .target = target,
+            .optimize = std.lang.Optimize.fast,
+        });
+        bench_phases_module.addImport("js", jam_js_module);
+
+        const bench_phases = b.addExecutable(.{
+            .name = "bench-phases",
+            .root_module = bench_phases_module,
+        });
+
+        const bench_phases_cmd = b.addRunArtifact(bench_phases);
+        const bench_phases_step = b.step("bench-phases", "Benchmark tokenizer vs parser phases");
+        bench_phases_step.dependOn(&bench_phases_cmd.step);
     }
 
     // Command to benchmark the parser

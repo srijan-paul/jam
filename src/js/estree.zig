@@ -228,9 +228,16 @@ fn nodeToEsTree(
     const tag = jamToEstreeTag(node.data);
     try o.put(al, "type", JValue{ .string = tag });
     if (opts.start_end_locs) {
-        try o.put(al, "start", JValue{ .integer = @intCast(t.getToken(node.start).start) });
-        const end_token = t.getToken(node.end);
-        try o.put(al, "end", JValue{ .integer = @intCast(end_token.start + end_token.len) });
+        if (node.data == .program) {
+            // The Program node spans the entire source, including leading and
+            // trailing whitespace and comments (matches @babel/parser).
+            try o.put(al, "start", JValue{ .integer = 0 });
+            try o.put(al, "end", JValue{ .integer = @intCast(t.source.len) });
+        } else {
+            try o.put(al, "start", JValue{ .integer = @intCast(t.getToken(node.start).start) });
+            const end_token = t.getToken(node.end);
+            try o.put(al, "end", JValue{ .integer = @intCast(end_token.start + end_token.len) });
+        }
     }
 
     switch (node.data) {

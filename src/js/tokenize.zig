@@ -130,6 +130,130 @@ pub fn next(self: *Self) Error!Token {
     return token;
 }
 
+/// Like `next`, but whitespace between tokens is consumed here.
+/// Comments are still returned as tokens.
+///
+/// Whitespace runs occur once per token gap, so consuming them here
+/// keeps each gap to a single tokenizer dispatch.
+pub fn nextSkippingWhitespace(self: *Self) Error!Token {
+    // Fused fast path: skip ascii whitespace and scan the common token
+    // shapes (plain identifiers and keywords) in one pass, without going
+    // through the full `consumeToken` dispatch.
+    while (self.index < self.source.len) {
+        switch (self.source[self.index]) {
+            ' ', '\t' => self.index += 1,
+            '\r' => {
+                self.index += 1;
+                if (self.index < self.source.len and self.source[self.index] == '\n') {
+                    self.index += 1;
+                }
+                self.bumpLine();
+            },
+            '\n' => {
+                self.index += 1;
+                self.bumpLine();
+            },
+            else => break,
+        }
+    }
+
+    if (self.tryFastToken()) |token| {
+        self.is_trivial_line = false;
+        return token;
+    }
+
+    const token = try @call(.always_inline, consumeToken, .{self});
+    self.is_trivial_line = self.is_trivial_line and
+        (token.tag == .comment or token.tag == .whitespace);
+
+    if (token.tag != .whitespace) return token;
+
+    // Whitespace that the fused path skips only when ascii
+    // (e.g. U+2028, U+00A0): consume it, then keep going.
+    return self.nextSkippingWhitespace();
+}
+
+/// Scan one of the common token shapes inline:
+/// - plain ascii identifiers / keywords
+/// Returns null (without consuming input) for everything else.
+inline fn tryFastToken(self: *Self) ?Token {
+    if (self.index >= self.source.len) return null;
+    const start = self.index;
+    const byte = self.source[start];
+
+    if ((byte >= 'a' and byte <= 'z') or
+        (byte >= 'A' and byte <= 'Z') or
+        byte == '_' or byte == '$')
+    {
+        // scan start + tail in one pass; the start byte is itself
+        // an identifier character.
+        self.matchAsciiIdentifierChars();
+
+        if (self.index < self.source.len) {
+            const next_byte = self.source[self.index];
+            if (next_byte == '\\' or next_byte >= 0x80) {
+                // escaped or non-ascii continuation: defer to `identifier()`,
+                // which handles `.non_ascii_identifier` tags.
+                self.index = start;
+                return null;
+            }
+        }
+
+        const len = self.index - start;
+        const tag: Token.Tag = if (len >= 2 and len <= 11)
+            kwOrIdentifierTag(self.source[start..self.index])
+        else
+            .identifier;
+
+        return Token{
+            .tag = tag,
+            .start = @intCast(start),
+            .len = @intCast(len),
+            .line = self.line,
+        };
+    }
+
+    // single-byte punctuators that no multi-char operator starts with
+    const punct_tag: ?Token.Tag = switch (byte) {
+        '(' => .@"(",
+        ')' => .@")",
+        '[' => .@"[",
+        ']' => .@"]",
+        '{' => .@"{",
+        '}' => .@"}",
+        ',' => .@",",
+        ';' => .@";",
+        ':' => .@":",
+        else => null,
+    };
+    if (punct_tag) |tag| {
+        self.index += 1;
+        return Token{
+            .tag = tag,
+            .start = @intCast(start),
+            .len = 1,
+            .line = self.line,
+        };
+    }
+
+    // '.' is the member-access punctuator unless followed by a digit
+    // (`.5`) or another '.' (`...`)
+    if (byte == '.' and (self.index + 1 >= self.source.len or blk: {
+        const c1 = self.source[self.index + 1];
+        break :blk c1 != '.' and (c1 < '0' or c1 > '9');
+    })) {
+        self.index += 1;
+        return Token{
+            .tag = .@".",
+            .start = @intCast(start),
+            .len = 1,
+            .line = self.line,
+        };
+    }
+
+    return null;
+}
+
 /// Regex literals can be ambiguous with "/" or "/=" from the tokenizer's perspective,
 /// as "/a/g" can mean either ['/', 'a', '/', 'g'], or ['/a/g' (regex) ].
 ///
@@ -379,11 +503,15 @@ fn consumeToken(self: *Self) Error!Token {
         '#' => return try self.privateIdentifier(),
         '0'...'9' => return self.numericLiteral(),
         '.' => {
-            if (self.numericLiteral()) |tok| {
-                return tok;
-            } else |_| {
-                return self.dot();
+            // a digit after '.' starts a numeric literal (`.5`);
+            // every other '.' is the member-access punctuator, the common case
+            const next_is_digit = self.index + 1 < self.source.len and
+                self.source[self.index + 1] >= '0' and
+                self.source[self.index + 1] <= '9';
+            if (next_is_digit) {
+                return self.numericLiteral();
             }
+            return self.dot();
         },
         else => return (try self.checkNonAsciiWhitespace()) orelse self.identifier(),
     }

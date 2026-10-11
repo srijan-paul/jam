@@ -351,6 +351,22 @@ pub fn init(
 
     try parse_tree.nodes.ensureTotalCapacity(allocator, 512);
 
+    // Pre-reserve the big lists based on source size.
+    // Growing these by doubling inside an arena is expensive: each growth
+    // copies the whole list AND leaks the old buffer until arena deinit,
+    // roughly doubling both memmove traffic and peak memory.
+    if (source.len > 4096) {
+        // Observed on typescript.js (9 MB): 1.35M stored tokens (comments +
+        // significant, ~6.7 bytes/token), 1.06M nodes (~8.5 bytes/node),
+        // 323K node indices (~28 bytes/index).
+        const est_tokens = source.len / 6;
+        const est_nodes = source.len / 8;
+        const est_node_indices = source.len / 28;
+        try parse_tree.tokens.ensureTotalCapacity(allocator, est_tokens);
+        try parse_tree.nodes.ensureTotalCapacity(allocator, est_nodes);
+        try parse_tree.node_indices.ensureTotalCapacity(allocator, est_node_indices);
+    }
+
     var self = Self{
         .tokenizer = try Tokenizer.init(source, config),
         // SAFETY: initialized below in the call to `self.startTokenizer()`
@@ -1154,6 +1170,7 @@ fn classHeritage(self: *Self) Error!Node.Index {
 }
 
 fn classBody(self: *Self) Error!ast.SubRange {
+
     // class bodies are always parsed in strict mode.
     const ctx = self.contextEnterStrictMode(true);
     defer self.contextExitStrictMode(ctx);
@@ -2281,7 +2298,7 @@ fn emptyStatement(self: *Self) Error!Node.Index {
 }
 
 /// ExpressionStatement: Expression ';'
-fn expressionStatement(self: *Self) Error!Node.Index {
+inline fn expressionStatement(self: *Self) Error!Node.Index {
     const expr = try self.expression();
     const expr_node = self.getNode(expr);
 
@@ -2854,10 +2871,11 @@ fn expect2(self: *Self, tag1: Token.Tag, tag2: Token.Tag) Error!TokenWithId {
 /// Returns the CURRENT token which was consumed in the previous call to 'next',
 /// and advances the pointer to the next token.
 fn next(self: *Self) Error!TokenWithId {
-    var next_token = try self.tokenizer.next();
-    while (next_token.tag.is(TokenMask.Trivia)) {
+    var next_token = try self.tokenizer.nextSkippingWhitespace();
+    while (next_token.tag == .comment) {
+        // store comment tokens; the program node and JSX positions anchor to them
         try self.saveToken(next_token);
-        next_token = try self.tokenizer.next();
+        next_token = try self.tokenizer.nextSkippingWhitespace();
     }
 
     return self.advanceToToken(next_token);
@@ -2938,8 +2956,9 @@ fn advanceToToken(self: *Self, next_token: Token) error{OutOfMemory}!TokenWithId
 
 /// Intialize `self.current` by consuming the first token.
 fn startTokenizer(self: *Self) Error!void {
-    var token = try self.tokenizer.next();
-    while (token.tag.is(TokenMask.Trivia)) : (token = try self.tokenizer.next()) {
+    var token = try self.tokenizer.nextSkippingWhitespace();
+    while (token.tag == .comment) : (token = try self.tokenizer.nextSkippingWhitespace()) {
+        // trivia handling mirrors `next`: store comments, skip whitespace.
         try self.saveToken(token);
     }
 
@@ -2962,10 +2981,8 @@ fn lookAhead(self: *Self) Error!Token {
     const line = self.tokenizer.line;
     const index = self.tokenizer.index;
 
-    var next_token = try self.tokenizer.next();
-    while (next_token.tag == .comment or
-        next_token.tag == .whitespace) : (next_token = try self.tokenizer.next())
-    {}
+    var next_token = try self.tokenizer.nextSkippingWhitespace();
+    while (next_token.tag == .comment) : (next_token = try self.tokenizer.nextSkippingWhitespace()) {}
 
     // restore the tokenizer state.
     self.tokenizer.rewind(index, line);
@@ -2987,7 +3004,7 @@ fn isAtToken(self: *Self, tag: Token.Tag) bool {
 
 // Expression : AssignmentExpression
 //            | Expression, AssignmentExpression
-fn expression(self: *Self) Error!Node.Index {
+inline fn expression(self: *Self) Error!Node.Index {
     const expr = try self.assignmentExpression();
     if (self.current_destructure_kind.must_destruct) {
         try self.emitBadDestructureDiagnostic(expr);
@@ -3185,6 +3202,7 @@ fn reinterpretAsPattern(self: *Self, node_id: Node.Index) void {
 /// ```
 /// To parse an expression that *must* be a valid R-Value, use `assignExpressionNoPattern`.
 fn assignmentExpression(self: *Self) Error!Node.Index {
+
     // Start with the assumption that we're parsing a valid destructurable expression.
     // Subsequent parsing functions will update this to refect the actual destructure-kind
     // of `lhs`.
@@ -3255,7 +3273,7 @@ fn assignmentExpression(self: *Self) Error!Node.Index {
 
 /// Parse an assignment expression, and ensure that its not a pattern
 /// that must be destructured (e.g: `{x=1}`).
-fn assignExpressionNoPattern(self: *Self) Error!Node.Index {
+inline fn assignExpressionNoPattern(self: *Self) Error!Node.Index {
     const expr = try self.assignmentExpression();
     if (self.current_destructure_kind.must_destruct) {
         const expr_start = self.nodes.items(.start)[@backingInt(expr)];
@@ -3276,7 +3294,7 @@ fn assignExpressionNoPattern(self: *Self) Error!Node.Index {
     return expr;
 }
 
-fn binaryExpression(self: *Self) Error!Node.Index {
+inline fn binaryExpression(self: *Self) Error!Node.Index {
     const lhs = try self.exponentExpression();
     const cur_token = self.current.token;
     if (cur_token.tag.is(TokenMask.IsBinaryOp))
@@ -3335,7 +3353,7 @@ fn completeBinaryExpression(
     return expr;
 }
 
-fn yieldOrConditionalExpression(self: *Self) Error!Node.Index {
+inline fn yieldOrConditionalExpression(self: *Self) Error!Node.Index {
     if (!(self.current.token.tag == .kw_yield and self.context.is_yield_reserved)) {
         return self.conditionalExpression();
     }
@@ -3392,7 +3410,7 @@ fn yieldExpression(self: *Self) Error!Node.Index {
 /// ConditionalExpression:
 ///     ShortCircuitExpression
 ///     ShortCircuitExpression '?' AssignmentExpression ':' AssignmentExpression
-fn conditionalExpression(self: *Self) Error!Node.Index {
+inline fn conditionalExpression(self: *Self) Error!Node.Index {
     const test_expr = try self.binaryExpression();
 
     if (!self.isAtToken(.@"?")) return test_expr;
@@ -3825,12 +3843,63 @@ fn unaryExpression(self: *Self) Error!Node.Index {
                 },
             }, op.id, expr_end);
         },
+
+        // prefix update expression
+        .@"++",
+        .@"--",
+        => {
+            const op_token = try self.next();
+            const expr = try self.unaryExpression();
+
+            const is_operand_simple = self.current_destructure_kind.is_simple_expression;
+            if (!is_operand_simple) {
+                return self.errorOnToken(op_token.token, ParseError.InvalidUpdateOperand);
+            }
+
+            const expr_end_pos = self.nodes.items(.end)[@backingInt(expr)];
+            self.current_destructure_kind.setNoAssignOrDestruct();
+
+            return self.addNode(.{
+                .update_expr = ast.UnaryPayload{
+                    .operand = expr,
+                    .operator = op_token.id,
+                },
+            }, op_token.id, expr_end_pos);
+        },
+
         else => {
             if (self.isAtToken(.kw_await) and self.context.is_await_reserved) {
                 return self.awaitExpression();
             }
 
-            return self.updateExpression();
+            // postfix update: parse the LHS, then check for a trailing
+            // ++/-- on the same line as the expression start.
+            const expr_start_line = self.peek().line;
+
+            const expr = try self.lhsExpression();
+            const is_operand_simple = self.current_destructure_kind.is_simple_expression;
+
+            const cur_token = self.current.token;
+            if ((cur_token.tag == .@"++" or cur_token.tag == .@"--") and
+                cur_token.line == expr_start_line)
+            {
+                if (!is_operand_simple) {
+                    try self.emitDiagnosticOnToken(cur_token, "Invalid operand for update expression", .{});
+                    return Error.UnexpectedToken;
+                }
+
+                self.current_destructure_kind.setNoAssignOrDestruct();
+                const op_token = try self.next();
+                const expr_start_pos = self.nodes.items(.start)[@backingInt(expr)];
+                return self.addNode(.{
+                    .post_unary_expr = .{
+                        .operand = expr,
+                        .operator = op_token.id,
+                    },
+                }, expr_start_pos, op_token.id);
+            }
+
+            return expr;
         },
     }
 }
@@ -3862,58 +3931,16 @@ fn awaitExpression(self: *Self) Error!Node.Index {
     }, await_token.id, end_pos);
 }
 
-fn updateExpression(self: *Self) Error!Node.Index {
-    const token = self.peek();
-    if (token.tag == .@"++" or token.tag == .@"--") {
-        const op_token = try self.next();
-        const expr = try self.unaryExpression();
+fn superExpression(self: *Self) Error!Node.Index {
+    const super_token = try self.nextToken();
+    // TODO: check if we're in a surrounding class.
+    assert(super_token.tag == .kw_super);
 
-        const is_operand_simple = self.current_destructure_kind.is_simple_expression;
-        if (!is_operand_simple) {
-            return self.errorOnToken(op_token.token, ParseError.InvalidUpdateOperand);
-        }
-
-        const expr_end_pos = self.nodes.items(.end)[@backingInt(expr)];
-        self.current_destructure_kind.setNoAssignOrDestruct();
-
-        return self.addNode(.{
-            .update_expr = ast.UnaryPayload{
-                .operand = expr,
-                .operator = op_token.id,
-            },
-        }, op_token.id, expr_end_pos);
-    }
-
-    // post increment / decrement
-    const expr_start_line = self.peek().line;
-
-    const expr = try self.lhsExpression();
-    const is_operand_simple = self.current_destructure_kind.is_simple_expression;
-
-    const cur_token = self.current.token;
-    if ((cur_token.tag == .@"++" or cur_token.tag == .@"--") and
-        cur_token.line == expr_start_line)
-    {
-        if (!is_operand_simple) {
-            try self.emitDiagnosticOnToken(cur_token, "Invalid operand for update expression", .{});
-            return Error.UnexpectedToken;
-        }
-
-        self.current_destructure_kind.setNoAssignOrDestruct();
-        const op_token = try self.next();
-        const expr_start_pos = self.nodes.items(.start)[@backingInt(expr)];
-        return self.addNode(.{
-            .post_unary_expr = .{
-                .operand = expr,
-                .operator = op_token.id,
-            },
-        }, expr_start_pos, op_token.id);
-    }
-
-    return expr;
+    const super_args, const start, const end = try self.parseArgs();
+    return self.addNode(.{ .super_call_expr = super_args }, start, end);
 }
 
-fn lhsExpression(self: *Self) Error!Node.Index {
+inline fn lhsExpression(self: *Self) Error!Node.Index {
     self.current_destructure_kind.is_simple_expression = true;
 
     var lhs_expr = try self.memberExpression();
@@ -3926,15 +3953,6 @@ fn lhsExpression(self: *Self) Error!Node.Index {
         lhs_expr = try self.optionalExpression(lhs_expr);
     }
     return lhs_expr;
-}
-
-fn superExpression(self: *Self) Error!Node.Index {
-    const super_token = try self.nextToken();
-    // TODO: check if we're in a surrounding class.
-    assert(super_token.tag == .kw_super);
-
-    const super_args, const start, const end = try self.parseArgs();
-    return self.addNode(.{ .super_call_expr = super_args }, start, end);
 }
 
 /// Parse a 'new' expression if 'current_token' is 'new',
@@ -5490,11 +5508,10 @@ fn completeArrowParamsOrGroupingExpr(
         return self.addNode(.{ .parenthesized_expr = expr }, lparen_id, rparen.id);
     }
 
-    // TODO: use scratch space here
-    var nodes: std.ArrayList(Node.Index) = .empty;
-    defer nodes.deinit(self.allocator);
+    const prev_scratch_len = self.scratch.items.len;
+    defer self.scratch.items.len = prev_scratch_len;
 
-    _ = try nodes.append(self.allocator, first_expr);
+    try self.scratch.append(self.allocator, first_expr);
 
     var has_trailing_comma = false;
 
@@ -5512,7 +5529,7 @@ fn completeArrowParamsOrGroupingExpr(
         if (self.isAtToken(.@"...")) {
             if (destructure_kind.can_destruct) {
                 const rest_elem = try self.bindingRestElement();
-                try nodes.append(self.allocator, rest_elem);
+                try self.scratch.append(self.allocator, rest_elem);
 
                 if (!self.isAtToken(.@")"))
                     try self.restParamNotLastError(&self.current.token);
@@ -5537,7 +5554,7 @@ fn completeArrowParamsOrGroupingExpr(
             );
             return Error.InvalidObject;
         }
-        try nodes.append(self.allocator, rhs);
+        try self.scratch.append(self.allocator, rhs);
     }
 
     const rparen = try self.expect(.@")");
@@ -5554,11 +5571,12 @@ fn completeArrowParamsOrGroupingExpr(
             return Error.InvalidArrowParameters;
         }
 
-        for (nodes.items) |node| {
+        const params = self.scratch.items[prev_scratch_len..];
+        for (params) |node| {
             self.reinterpretAsBindingPattern(node);
         }
 
-        const params_range = try self.addSubRange(nodes.items);
+        const params_range = try self.addSubRange(params);
         const parameters = try self.addNode(
             .{ .parameters = params_range },
             lparen_id,
@@ -5583,7 +5601,8 @@ fn completeArrowParamsOrGroupingExpr(
     // (Pattern, Pattern) cannot be assigned to or destructured,
     // However, (Identifier) can be assigned to (but not destructured)
     // So, `(a) = 1` is valid, `(a = 1) = 2` is not and neither are `((a)) => 1` and `var (a) = 1`
-    if (nodes.items.len > 1 or self.isValidAssignTargetInParens(nodes.items[0])) {
+    const items = self.scratch.items[prev_scratch_len..];
+    if (items.len > 1 or self.isValidAssignTargetInParens(items[0])) {
         self.current_destructure_kind.setNoAssignOrDestruct();
     } else {
         self.current_destructure_kind.can_destruct = false;
@@ -5600,8 +5619,8 @@ fn completeArrowParamsOrGroupingExpr(
 
     // A single expression inside parentheses.
     // E.g: (5 * a)
-    if (nodes.items.len == 1) {
-        const expr = nodes.items[0];
+    if (items.len == 1) {
+        const expr = items[0];
         if (!self.config.preserve_parens) return expr;
         return self.addNode(.{ .parenthesized_expr = expr }, lparen_id, rparen.id);
     }
@@ -5610,11 +5629,11 @@ fn completeArrowParamsOrGroupingExpr(
     // E.g: (a, b, c + 1)
     // range of a sequence_expr = [start_pos(first_expr), end_pos(last_expr)]
     const slice = self.nodes.slice();
-    const last_expr = nodes.items[nodes.items.len - 1];
+    const last_expr = items[items.len - 1];
     const start_pos = slice.items(.start)[@backingInt(first_expr)];
     const end_pos = slice.items(.end)[@backingInt(last_expr)];
 
-    const sub_exprs = try self.addSubRange(nodes.items);
+    const sub_exprs = try self.addSubRange(items);
     const sequence_expr = try self.addNode(.{ .sequence_expr = sub_exprs }, start_pos, end_pos);
     if (!self.config.preserve_parens) return sequence_expr;
     return self.addNode(.{ .parenthesized_expr = sequence_expr }, lparen_id, rparen.id);
@@ -6450,6 +6469,7 @@ fn args(self: *Self) Error!Node.Index {
 
 /// Parse arguments for a function call, then return it alongside the start and end locations.
 fn parseArgs(self: *Self) Error!struct { ast.SubRange, Token.Index, Token.Index } {
+
     // The "+In" grammar attribute.
     // This is to allow things like `for (f(a in b) in c)`
     const old_ctx = self.context;
