@@ -1165,7 +1165,7 @@ fn classExpression(self: *Self) Error!Node.Index {
 
 fn classHeritage(self: *Self) Error!Node.Index {
     _ = try self.expectToken(.kw_extends);
-    const super_class = try self.lhsExpression();
+    const super_class = try self.parseLhsExpression();
     return super_class;
 }
 
@@ -3202,6 +3202,10 @@ fn reinterpretAsPattern(self: *Self, node_id: Node.Index) void {
 /// ```
 /// To parse an expression that *must* be a valid R-Value, use `assignExpressionNoPattern`.
 fn assignmentExpression(self: *Self) Error!Node.Index {
+    // `yield` expressions can only start an assignment expression.
+    if (self.current.token.tag == .kw_yield and self.context.is_yield_reserved) {
+        return self.yieldExpression();
+    }
 
     // Start with the assumption that we're parsing a valid destructurable expression.
     // Subsequent parsing functions will update this to refect the actual destructure-kind
@@ -3212,63 +3216,135 @@ fn assignmentExpression(self: *Self) Error!Node.Index {
         .must_destruct = false,
     };
 
-    const lhs = try yieldOrConditionalExpression(self);
-    if (!self.current.token.tag.isAssignmentOperator()) {
-        if (self.current.token.tag == .@"=>") {
-            return self.completeArrowFunction(lhs);
-        } else {
-            const lhs_tag = self.nodeTag(lhs);
-            assert(lhs_tag != .parameters);
+    var left = try self.parsePostfixExpression();
+
+    while (true) {
+        const tag = self.current.token.tag;
+
+        // arrow function: '(a, b) => ...' or 'x => ...'
+        if (tag == .@"=>") {
+            return self.completeArrowFunction(left);
         }
-        return lhs;
+
+        if (tag.isAssignmentOperator()) {
+            if (!self.current_destructure_kind.can_be_assigned_to) {
+                try self.emitDiagnostic(
+                    self.current.token.startCoord(self.source),
+                    "Invalid assignment target",
+                    .{},
+                );
+                return Error.InvalidAssignmentTarget;
+            }
+
+            self.reinterpretAsPattern(left);
+
+            const op_token = try self.next(); // eat assignment operator
+            if (op_token.token.tag != .@"=" and !self.current_destructure_kind.is_simple_expression) {
+                try self.emitDiagnosticOnToken(
+                    op_token.token,
+                    "Invalid target for '{s}'. Did you mean to use '=' instead?",
+                    .{op_token.token.toByteSlice(self.source)},
+                );
+                return Error.InvalidAssignmentTarget;
+            }
+
+            const rhs = try self.assignExpressionNoPattern();
+            const start = self.nodes.items(.start)[@backingInt(left)];
+            const end = self.nodes.items(.end)[@backingInt(rhs)];
+
+            // An assignment expression is a valid destructuring target.
+            // `[x = 1] = [2]` is valid.
+            // assignment patterns inside object literals are handled separately
+            // in `Parser.identifierProperty`
+            self.current_destructure_kind = .{
+                .can_destruct = op_token.token.tag == .@"=",
+                .can_be_assigned_to = op_token.token.tag == .@"=",
+                .must_destruct = false,
+            };
+
+            return self.addNode(
+                .{
+                    .assignment_expr = .{
+                        .lhs = left,
+                        .rhs = rhs,
+                        .operator = op_token.id,
+                    },
+                },
+                start,
+                end,
+            );
+        }
+
+        // right-associative exponentiation: 'a ** b ** c' is 'a ** (b ** c)'
+        if (tag == .@"**") {
+            const op_token = try self.next();
+            const rhs = try self.parseExponentExpression();
+
+            const nodes = self.nodes.slice();
+            const start_pos = nodes.items(.start)[@backingInt(left)];
+            const end_pos = nodes.items(.end)[@backingInt(rhs)];
+
+            left = try self.addNode(
+                .{
+                    .binary_expr = ast.BinaryPayload{
+                        .lhs = left,
+                        .rhs = rhs,
+                        .operator = op_token.id,
+                    },
+                },
+                start_pos,
+                end_pos,
+            );
+            continue;
+        }
+
+        // binary and logical operators; consumes the whole chain
+        if (tag.is(TokenMask.IsBinaryOp)) {
+            // `in` is not allowed when parsing the LHS of for-loop
+            // iterators ([~In] context); leave it for the caller.
+            if (tag == .kw_in and !self.context.in) break;
+            left = try self.completeBinaryExpression(left, tag, 0);
+            continue;
+        }
+
+        // conditional expression
+        if (tag == .@"?") {
+            self.current_destructure_kind.setNoAssignOrDestruct();
+
+            _ = try self.nextToken(); // eat '?'
+            const true_expr = try self.assignExpressionNoPattern();
+            _ = try self.expectToken(.@":");
+
+            // [+In] grammar parameter
+            const context = self.context;
+            self.context.in = true;
+            const false_expr = try self.assignExpressionNoPattern();
+            self.context = context;
+
+            const nodes = self.nodes.slice();
+            const start_pos = nodes.items(.start)[@backingInt(left)];
+            const end_pos = nodes.items(.end)[@backingInt(false_expr)];
+
+            left = try self.addNode(
+                .{
+                    .conditional_expr = .{
+                        .condition = left,
+                        .consequent = true_expr,
+                        .alternate = false_expr,
+                    },
+                },
+                start_pos,
+                end_pos,
+            );
+            continue;
+        }
+
+        break;
     }
 
-    if (!self.current_destructure_kind.can_be_assigned_to) {
-        try self.emitDiagnostic(
-            self.current.token.startCoord(self.source),
-            "Invalid assignment target",
-            .{},
-        );
-        return Error.InvalidAssignmentTarget;
-    }
-
-    self.reinterpretAsPattern(lhs);
-
-    const op_token = try self.next(); // eat assignment operator
-    if (op_token.token.tag != .@"=" and !self.current_destructure_kind.is_simple_expression) {
-        try self.emitDiagnosticOnToken(
-            op_token.token,
-            "Invalid target for '{s}'. Did you mean to use '=' instead?",
-            .{op_token.token.toByteSlice(self.source)},
-        );
-        return Error.InvalidAssignmentTarget;
-    }
-
-    const rhs = try self.assignExpressionNoPattern();
-    const start = self.nodes.items(.start)[@backingInt(lhs)];
-    const end = self.nodes.items(.end)[@backingInt(rhs)];
-
-    // An assignment expression is a valid destructuring target.
-    // `[x = 1] = [2]` is valid.
-    // assignment patterns inside object literals are handled separately
-    // in `Parser.identifierProperty`
-    self.current_destructure_kind = .{
-        .can_destruct = op_token.token.tag == .@"=",
-        .can_be_assigned_to = op_token.token.tag == .@"=",
-        .must_destruct = false,
-    };
-
-    return self.addNode(
-        .{
-            .assignment_expr = .{
-                .lhs = lhs,
-                .rhs = rhs,
-                .operator = op_token.id,
-            },
-        },
-        start,
-        end,
-    );
+    const lhs_tag = self.nodeTag(left);
+    assert(lhs_tag != .parameters);
+    return left;
 }
 
 /// Parse an assignment expression, and ensure that its not a pattern
@@ -3292,15 +3368,6 @@ inline fn assignExpressionNoPattern(self: *Self) Error!Node.Index {
     }
 
     return expr;
-}
-
-inline fn binaryExpression(self: *Self) Error!Node.Index {
-    const lhs = try self.exponentExpression();
-    const cur_token = self.current.token;
-    if (cur_token.tag.is(TokenMask.IsBinaryOp))
-        return self.completeBinaryExpression(lhs, cur_token.tag, 0);
-
-    return lhs;
 }
 
 /// Parse a binary expression with the given precedence, where the left-hand side
@@ -3330,11 +3397,11 @@ fn completeBinaryExpression(
             return self.errorOnToken(current_op.token, ParseError.InvalidCoalesceExpression);
         }
 
-        const rhs_start_expr = try self.exponentExpression();
+        const rhs_start_expr = try self.parseExponentExpression();
         // Parse the right-hand side of the binary expression.
         // 2 + 3 * 4 + 5
         //   ^---------  At this point, we parse `3` as `rhs_start`,
-        //               then the next call to `binaryExpression` parses
+        //               then the next call to `completeBinaryExpression` parses
         //               `3 * 4` as `rhs` (that's as far as we can go with the current precedence),
         //                and then we return to this loop to parse `5` as the remainder.
         const rhs = try self.completeBinaryExpression(
@@ -3351,14 +3418,6 @@ fn completeBinaryExpression(
     }
 
     return expr;
-}
-
-inline fn yieldOrConditionalExpression(self: *Self) Error!Node.Index {
-    if (!(self.current.token.tag == .kw_yield and self.context.is_yield_reserved)) {
-        return self.conditionalExpression();
-    }
-
-    return self.yieldExpression();
 }
 
 fn yieldExpression(self: *Self) Error!Node.Index {
@@ -3410,40 +3469,6 @@ fn yieldExpression(self: *Self) Error!Node.Index {
 /// ConditionalExpression:
 ///     ShortCircuitExpression
 ///     ShortCircuitExpression '?' AssignmentExpression ':' AssignmentExpression
-inline fn conditionalExpression(self: *Self) Error!Node.Index {
-    const test_expr = try self.binaryExpression();
-
-    if (!self.isAtToken(.@"?")) return test_expr;
-
-    self.current_destructure_kind.setNoAssignOrDestruct();
-
-    _ = try self.nextToken(); // eat '?'
-    const true_expr = try self.assignExpressionNoPattern();
-    _ = try self.expectToken(.@":");
-
-    // [+In] grammar parameter
-    const context = self.context;
-    self.context.in = true;
-    const false_expr = try self.assignExpressionNoPattern();
-    self.context = context;
-
-    const nodes = self.nodes.slice();
-    const start_pos = nodes.items(.start)[@backingInt(test_expr)];
-    const end_pos = nodes.items(.end)[@backingInt(false_expr)];
-
-    return try self.addNode(
-        .{
-            .conditional_expr = .{
-                .condition = test_expr,
-                .consequent = true_expr,
-                .alternate = false_expr,
-            },
-        },
-        start_pos,
-        end_pos,
-    );
-}
-
 /// BindingPattern:
 ///     ArrayBindingPattern
 ///     ObjectBindingPattern
@@ -3781,35 +3806,37 @@ fn singleNameBinding(self: *Self) Error!Node.Index {
 
 // TODO: this isn't 100% spec compliant right now, but that's an easy
 // fix really.
-fn exponentExpression(self: *Self) Error!Node.Index {
-    const lhs = try self.unaryExpression();
-    if (self.current.token.tag == .@"**") {
-        const op_token = try self.next();
-        const rhs = try self.exponentExpression();
+/// Parse an ExponentExpression: a unary-level operand, optionally
+/// followed by a right-associative '**' chain.
+fn parseExponentExpression(self: *Self) Error!Node.Index {
+    const lhs = try self.parsePostfixExpression();
+    if (self.current.token.tag != .@"**") return lhs;
 
-        const nodes = self.nodes.slice();
-        const start_pos = nodes.items(.start)[@backingInt(lhs)];
-        const end_pos = nodes.items(.end)[@backingInt(rhs)];
+    const op_token = try self.next();
+    const rhs = try self.parseExponentExpression();
 
-        return self.addNode(
-            .{
-                .binary_expr = ast.BinaryPayload{
-                    .lhs = lhs,
-                    .rhs = rhs,
-                    .operator = op_token.id,
-                },
+    const nodes = self.nodes.slice();
+    const start_pos = nodes.items(.start)[@backingInt(lhs)];
+    const end_pos = nodes.items(.end)[@backingInt(rhs)];
+
+    return self.addNode(
+        .{
+            .binary_expr = ast.BinaryPayload{
+                .lhs = lhs,
+                .rhs = rhs,
+                .operator = op_token.id,
             },
-            start_pos,
-            end_pos,
-        );
-    }
-
-    return lhs;
+        },
+        start_pos,
+        end_pos,
+    );
 }
 
-fn unaryExpression(self: *Self) Error!Node.Index {
-    const token = self.peek();
-    switch (token.tag) {
+/// Parse a unary-level operand: an optional prefix operator (unary,
+/// prefix update, await) applied to a member/call chain, optionally
+/// followed by a postfix '++'/'--'.
+fn parsePostfixExpression(self: *Self) Error!Node.Index {
+    switch (self.current.token.tag) {
         .kw_delete,
         .kw_typeof,
         .kw_void,
@@ -3818,8 +3845,10 @@ fn unaryExpression(self: *Self) Error!Node.Index {
         .@"~",
         .@"!",
         => {
+            // prefix unary operator; its operand includes the full
+            // member/call chain ('-a.b' is '-(a.b)').
             const op = try self.next();
-            const expr = try self.unaryExpression();
+            const expr = try self.parsePostfixExpression();
 
             // Ensure that "delete Identifier" is not used in
             // strict mode code.
@@ -3849,7 +3878,7 @@ fn unaryExpression(self: *Self) Error!Node.Index {
         .@"--",
         => {
             const op_token = try self.next();
-            const expr = try self.unaryExpression();
+            const expr = try self.parsePostfixExpression();
 
             const is_operand_simple = self.current_destructure_kind.is_simple_expression;
             if (!is_operand_simple) {
@@ -3867,41 +3896,141 @@ fn unaryExpression(self: *Self) Error!Node.Index {
             }, op_token.id, expr_end_pos);
         },
 
-        else => {
-            if (self.isAtToken(.kw_await) and self.context.is_await_reserved) {
-                return self.awaitExpression();
-            }
-
-            // postfix update: parse the LHS, then check for a trailing
-            // ++/-- on the same line as the expression start.
-            const expr_start_line = self.peek().line;
-
-            const expr = try self.lhsExpression();
-            const is_operand_simple = self.current_destructure_kind.is_simple_expression;
-
-            const cur_token = self.current.token;
-            if ((cur_token.tag == .@"++" or cur_token.tag == .@"--") and
-                cur_token.line == expr_start_line)
-            {
-                if (!is_operand_simple) {
-                    try self.emitDiagnosticOnToken(cur_token, "Invalid operand for update expression", .{});
-                    return Error.UnexpectedToken;
-                }
-
-                self.current_destructure_kind.setNoAssignOrDestruct();
-                const op_token = try self.next();
-                const expr_start_pos = self.nodes.items(.start)[@backingInt(expr)];
-                return self.addNode(.{
-                    .post_unary_expr = .{
-                        .operand = expr,
-                        .operator = op_token.id,
-                    },
-                }, expr_start_pos, op_token.id);
-            }
-
-            return expr;
+        .kw_await => if (self.context.is_await_reserved) {
+            return self.awaitExpression();
         },
+
+        else => {},
     }
+
+    const expr_start_line = self.current.token.line;
+    const expr = try self.parseLhsExpression();
+
+    // postfix update: only valid on the same line as the expression start
+    const cur_token = self.current.token;
+    if ((cur_token.tag == .@"++" or cur_token.tag == .@"--") and
+        cur_token.line == expr_start_line)
+    {
+        if (!self.current_destructure_kind.is_simple_expression) {
+            try self.emitDiagnosticOnToken(cur_token, "Invalid operand for update expression", .{});
+            return Error.UnexpectedToken;
+        }
+
+        self.current_destructure_kind.setNoAssignOrDestruct();
+        const op_token = try self.next();
+        const expr_start_pos = self.nodes.items(.start)[@backingInt(expr)];
+        return self.addNode(.{
+            .post_unary_expr = .{
+                .operand = expr,
+                .operator = op_token.id,
+            },
+        }, expr_start_pos, op_token.id);
+    }
+
+    return expr;
+}
+
+/// Parse a LeftHandSideExpression: a prefix expression followed by the
+/// member/call/optional chain. Unary operators are NOT allowed at this
+/// level (used for class heritage and rest elements).
+inline fn parseLhsExpression(self: *Self) Error!Node.Index {
+    self.current_destructure_kind.is_simple_expression = true;
+
+    var lhs_expr = try self.parsePrefixExpression();
+    lhs_expr = try self.parsePostfixChain(lhs_expr, true);
+
+    if (self.isAtToken(.@"?.")) {
+        self.current_destructure_kind.is_simple_expression = false;
+        lhs_expr = try self.optionalExpression(lhs_expr);
+    }
+
+    return lhs_expr;
+}
+
+/// Parse a primary-level expression: plain identifiers (the common case),
+/// keyword-led expressions ('new', 'import.meta', 'super'), and everything
+/// in `primaryExpression`.
+inline fn parsePrefixExpression(self: *Self) Error!Node.Index {
+    const tag = self.current.token.tag;
+
+    if (tag == .identifier) {
+        @branchHint(.likely);
+        const look_ahead = try self.lookAhead();
+        if (look_ahead.tag == .@"=>") {
+            // arrow function starting with an identifier, like
+            // 'x => 1'.
+            return self.identifierArrowParameter();
+        }
+        const name_token = try self.next();
+        return self.identifierReference(name_token.id);
+    }
+
+    if (tag == .kw_new) return self.newTargetOrExpression();
+    if (tag == .kw_import) return self.importMetaOrCall();
+    if (tag == .kw_super) return self.superPropertyOrCall();
+
+    return self.primaryExpression();
+}
+
+/// Parse the member accesses, calls, computed members and tagged templates
+/// chained on [object].
+/// When [allow_calls] is false, '(' ends the chain: the callee of a 'new'
+/// expression is a MemberExpression, its arguments are parsed by the caller.
+fn parsePostfixChain(self: *Self, object: Node.Index, allow_calls: bool) Error!Node.Index {
+    var expr = object;
+    var first_call = true;
+    var destruct_kind = self.current_destructure_kind;
+
+    while (self.current.token.tag != .eof) {
+        switch (self.current.token.tag) {
+            .@"(" => {
+                if (!allow_calls) break;
+                if (first_call) {
+                    // CoverCallAndAsyncArrowHead: 'async(x)' may turn out
+                    // to be the head of an async arrow function.
+                    expr = try self.coverCallAndAsyncArrowHead(expr);
+                    destruct_kind = self.current_destructure_kind;
+                } else {
+                    expr = try self.completeCallExpression(expr);
+                    destruct_kind.setNoAssignOrDestruct();
+                }
+            },
+            .@"[" => {
+                expr = try self.completeComputedMemberExpression(expr);
+                destruct_kind.can_destruct = false;
+                destruct_kind.can_be_assigned_to = true;
+                destruct_kind.is_simple_expression = true;
+            },
+            .@"." => {
+                expr = try self.completeMemberExpression(expr);
+                destruct_kind.can_destruct = false;
+                destruct_kind.can_be_assigned_to = true;
+                destruct_kind.is_simple_expression = true;
+            },
+            .template_literal_part => {
+                expr = try self.completeTaggedTemplate(expr);
+                destruct_kind.setNoAssignOrDestruct();
+            },
+            else => break,
+        }
+        first_call = false;
+    }
+
+    self.current_destructure_kind = destruct_kind;
+    return expr;
+}
+
+/// Parse a MemberExpression: a prefix expression followed by member
+/// accesses, computed members and tagged templates (no calls).
+/// Used for the callee of 'new' expressions.
+fn parseMemberExpression(self: *Self) Error!Node.Index {
+    const member_expr = switch (self.current.token.tag) {
+        .kw_new => try self.newTargetOrExpression(),
+        .kw_import => try self.importMetaOrCall(),
+        .kw_super => try self.superPropertyOrCall(),
+        else => try self.parsePrefixExpression(),
+    };
+    return self.parsePostfixChain(member_expr, false);
 }
 
 /// Parse an await expression when `self.current.token`
@@ -3919,7 +4048,7 @@ fn awaitExpression(self: *Self) Error!Node.Index {
         return Error.IllegalAwait;
     }
 
-    const operand = try self.unaryExpression();
+    const operand = try self.parsePostfixExpression();
     const end_pos = self.nodes.items(.end)[@backingInt(operand)];
 
     self.current_destructure_kind.setNoAssignOrDestruct();
@@ -3940,21 +4069,6 @@ fn superExpression(self: *Self) Error!Node.Index {
     return self.addNode(.{ .super_call_expr = super_args }, start, end);
 }
 
-inline fn lhsExpression(self: *Self) Error!Node.Index {
-    self.current_destructure_kind.is_simple_expression = true;
-
-    var lhs_expr = try self.memberExpression();
-    if (try self.tryCallExpression(lhs_expr)) |call_expr| {
-        lhs_expr = call_expr;
-    }
-
-    if (self.isAtToken(.@"?.")) {
-        self.current_destructure_kind.is_simple_expression = false;
-        lhs_expr = try self.optionalExpression(lhs_expr);
-    }
-    return lhs_expr;
-}
-
 /// Parse a 'new' expression if 'current_token' is 'new',
 /// otherwise return `null`.
 fn tryNewExpression(self: *Self) Error!?Node.Index {
@@ -3966,7 +4080,7 @@ fn tryNewExpression(self: *Self) Error!?Node.Index {
 }
 
 fn completeNewExpression(self: *Self, new_token_id: Token.Index) Error!Node.Index {
-    const expr = try self.memberExpression();
+    const expr = try self.parseMemberExpression();
     const expr_end_pos = self.nodes.items(.end)[@backingInt(expr)];
 
     const arguments = if (self.isAtToken(.@"("))
@@ -3984,49 +4098,6 @@ fn completeNewExpression(self: *Self, new_token_id: Token.Index) Error!Node.Inde
             .arguments = arguments,
         },
     }, new_token_id, expr_end_pos);
-}
-
-/// Try parsing a call expression. If the input is malformed, return a `Error`,
-/// If no call expression was found, return `null`,
-/// Otherwise, return the index of the call expression node.
-/// NOTE: The call expression grammar might seem a little odd, because it
-/// also has productions that parse member expressions:
-/// https://262.ecma-international.org/15.0/index.html#prod-CallExpression
-fn tryCallExpression(self: *Self, callee: Node.Index) Error!?Node.Index {
-    if (self.current.token.tag != .@"(") return null;
-
-    var call_expr = try self.coverCallAndAsyncArrowHead(callee);
-
-    var destruct_kind = self.current_destructure_kind;
-    var cur_token = self.peek();
-    while (cur_token.tag != .eof) : (cur_token = self.peek()) {
-        switch (cur_token.tag) {
-            .@"(" => {
-                call_expr = try self.completeCallExpression(call_expr);
-                destruct_kind.setNoAssignOrDestruct();
-            },
-            .@"[" => {
-                call_expr = try self.completeComputedMemberExpression(call_expr);
-                destruct_kind.can_destruct = false;
-                destruct_kind.can_be_assigned_to = true;
-                destruct_kind.is_simple_expression = true;
-            },
-            .@"." => {
-                call_expr = try self.completeMemberExpression(call_expr);
-                destruct_kind.can_destruct = false;
-                destruct_kind.can_be_assigned_to = true;
-                destruct_kind.is_simple_expression = true;
-            },
-            .template_literal_part => {
-                call_expr = try self.completeTaggedTemplate(call_expr);
-                destruct_kind.setNoAssignOrDestruct();
-            },
-            else => break,
-        }
-    }
-
-    self.current_destructure_kind = destruct_kind;
-    return call_expr;
 }
 
 /// When we're at the '(' token, parse the arguments and return a complete call expression
@@ -4162,26 +4233,6 @@ fn optionalChain(self: *Self, object: Node.Index) Error!Node.Index {
             return Error.UnexpectedToken;
         },
     }
-}
-
-fn memberExpression(self: *Self) Error!Node.Index {
-    var member_expr = switch (self.current.token.tag) {
-        .kw_new => try self.newTargetOrExpression(),
-        .kw_import => try self.importMetaOrCall(),
-        .kw_super => try self.superPropertyOrCall(),
-        else => try self.primaryExpression(),
-    };
-
-    var token = self.current.token;
-    while (token.tag != .eof) : (token = self.peek()) {
-        switch (token.tag) {
-            .@"." => member_expr = try self.completeMemberExpression(member_expr),
-            .@"[" => member_expr = try self.completeComputedMemberExpression(member_expr),
-            .template_literal_part => member_expr = try self.completeTaggedTemplate(member_expr),
-            else => return member_expr,
-        }
-    }
-    return member_expr;
 }
 
 /// A `new.target` meta property, or a regular NewExpression
@@ -5463,7 +5514,7 @@ fn spreadElement(self: *Self) Error!Node.Index {
 fn restElement(self: *Self) Error!Node.Index {
     const dotdotdot = try self.next();
     assert(dotdotdot.token.tag == .@"...");
-    const rest_arg = try self.lhsExpression();
+    const rest_arg = try self.parseLhsExpression();
 
     if (!self.current_destructure_kind.can_be_assigned_to) {
         return self.errorOnNode(rest_arg, ParseError.InvalidRestOperand);
