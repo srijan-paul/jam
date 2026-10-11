@@ -176,13 +176,13 @@ fn testOnPassingFile(
             // ({ "a": 1 }) and ({ a: 1 }) should be considered equal.
             // But my AST represents them differently. Honestly, that is OK.
             if (n1.tag() == .identifier and n2.tag() == .string_literal) {
-                const n1_src = result.tree.nodeToByteSlice(@enumFromInt(i));
-                const n2_src = result2.tree.nodeToByteSlice(@enumFromInt(i));
+                const n1_src = result.tree.nodeToByteSlice(@fromBackingInt(@intCast(i)));
+                const n2_src = result2.tree.nodeToByteSlice(@fromBackingInt(@intCast(i)));
                 if (std.mem.eql(u8, n1_src, n2_src[1 .. n2_src.len - 1]))
                     continue;
             } else if (n2.tag() == .identifier and n1.tag() == .string_literal) {
-                const n2_src = result2.tree.nodeToByteSlice(@enumFromInt(i));
-                const n1_src = result.tree.nodeToByteSlice(@enumFromInt(i));
+                const n2_src = result2.tree.nodeToByteSlice(@fromBackingInt(@intCast(i)));
+                const n1_src = result.tree.nodeToByteSlice(@fromBackingInt(@intCast(i)));
                 if (std.mem.eql(u8, n2_src, n1_src[1 .. n1_src.len - 1]))
                     continue;
             }
@@ -283,7 +283,7 @@ pub fn runValidSyntaxTests(io: std.Io, al: std.mem.Allocator, environ_map: *cons
 
     var n_ast_no_match: usize = 0;
 
-    var test_cases = std.json.ObjectMap.init(al);
+    var test_cases = std.json.ObjectMap.empty;
     while (try pass_dir_iter.next(io)) |entry| {
         if (entry.kind != .file) continue;
 
@@ -303,7 +303,7 @@ pub fn runValidSyntaxTests(io: std.Io, al: std.mem.Allocator, environ_map: *cons
         }
 
         const name = try al.dupe(u8, entry.name);
-        try test_cases.put(name, .{ .string = @tagName(result) });
+        try test_cases.put(al, name, .{ .string = @tagName(result) });
     }
 
     var n_malformed_pass: f64 = 0.0;
@@ -319,7 +319,7 @@ pub fn runValidSyntaxTests(io: std.Io, al: std.mem.Allocator, environ_map: *cons
         }
 
         const name = try al.dupe(u8, entry.name);
-        try test_cases.put(name, .{ .string = @tagName(result) });
+        try test_cases.put(al, name, .{ .string = @tagName(result) });
     }
 
     const fail_rate = ((n_fail + @as(f64, @floatFromInt(n_ast_no_match))) / n_good_files) * 100.0;

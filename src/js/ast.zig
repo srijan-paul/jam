@@ -33,40 +33,40 @@ pub const Tree = struct {
 
     /// Obtain all the data for a single AST Node.
     pub fn getNode(self: *const Tree, index: Node.Index) Node {
-        return self.nodes.get(@intFromEnum(index));
+        return self.nodes.get(@backingInt(index));
     }
 
     pub fn getStartTokenId(self: *const Tree, index: Node.Index) Token.Index {
-        return self.nodes.items(.start)[@intFromEnum(index)];
+        return self.nodes.items(.start)[@backingInt(index)];
     }
 
     pub fn getEndTokenId(self: *const Tree, index: Node.Index) Token.Index {
-        return self.nodes.items(.end)[@intFromEnum(index)];
+        return self.nodes.items(.end)[@backingInt(index)];
     }
 
     pub fn nodeData(self: *const Tree, index: Node.Index) *const NodeData {
-        return &self.nodes.items(.data)[@intFromEnum(index)];
+        return &self.nodes.items(.data)[@backingInt(index)];
     }
 
     // TODO: add a getTokenPtr
     /// Get a token by its index (Token.Index)
     pub fn getToken(self: *const Tree, index: Token.Index) *const Token {
-        return &self.tokens.items[@intFromEnum(index)];
+        return &self.tokens.items[@backingInt(index)];
     }
 
     /// Returns the string slice for a token by its ID
     pub fn getTokenSlice(self: *const Tree, id: Token.Index) []const u8 {
-        return self.tokens.items[@intFromEnum(id)].toByteSlice(self.source);
+        return self.tokens.items[@backingInt(id)].toByteSlice(self.source);
     }
 
     /// Returns the tag representing the type of a token.
     pub fn getTokenKind(self: *const Tree, id: Token.Index) Token.Tag {
-        return self.tokens.items[@intFromEnum(id)].tag;
+        return self.tokens.items[@backingInt(id)].tag;
     }
 
     /// Get the extra data of a node from its ExtraData.Index
     pub fn getExtraData(self: *const Tree, index: ExtraData.Index) ExtraData {
-        return self.extras.items[@intFromEnum(index)];
+        return self.extras.items[@backingInt(index)];
     }
 
     /// Get a slice of nodes from an ast.SubRange.
@@ -75,23 +75,23 @@ pub const Tree = struct {
         from_: SubRange.Index,
         to_: SubRange.Index,
     ) []const Node.Index {
-        const from: usize = @intFromEnum(from_);
-        const to: usize = @intFromEnum(to_);
+        const from: usize = @backingInt(from_);
+        const to: usize = @backingInt(to_);
         return self.node_indices.items[from..to];
     }
 
     pub fn tag(self: *const Tree, node_id: Node.Index) meta.Tag(NodeData) {
         // TODO: optimize using a cached self.nodes.slice().
         return meta.activeTag(
-            self.nodes.items(.data)[@intFromEnum(node_id)],
+            self.nodes.items(.data)[@backingInt(node_id)],
         );
     }
 
     /// Get the source text for a node as a byte slice.
     pub fn nodeToByteSlice(self: *const Tree, node_id: Node.Index) []const u8 {
         // TODO: use a cached nodes.slice instead of .start and .end
-        const start = self.nodes.items(.start)[@intFromEnum(node_id)];
-        const end = self.nodes.items(.end)[@intFromEnum(node_id)];
+        const start = self.nodes.items(.start)[@backingInt(node_id)];
+        const end = self.nodes.items(.end)[@backingInt(node_id)];
 
         const start_byte = self.getToken(start).start;
         const end_byte = start_byte + self.getToken(end).len;
@@ -156,8 +156,8 @@ pub const SubRange = struct {
 
     /// Return a slice of `Node.Index`es that represents the sub-range.
     pub fn asSlice(self: *const SubRange, tree: *const Tree) []const Node.Index {
-        const from: usize = @intFromEnum(self.from);
-        const to: usize = @intFromEnum(self.to);
+        const from: usize = @backingInt(self.from);
+        const to: usize = @backingInt(self.to);
         return tree.node_indices.items[from..to];
     }
 };
@@ -256,8 +256,8 @@ pub const Function = struct {
         const params_node = tree.getNode(self.parameters);
         const maybe_params_range = params_node.data.parameters;
         if (maybe_params_range) |params_range| {
-            const to: usize = @intFromEnum(params_range.to);
-            const from: usize = @intFromEnum(params_range.from);
+            const to: usize = @backingInt(params_range.to);
+            const from: usize = @backingInt(params_range.from);
             return to - from;
         }
         return 0;
@@ -857,7 +857,9 @@ pub const NodeData = union(enum(u8)) {
     none,
 
     comptime {
-        assert(@bitSizeOf(NodeData) <= 128);
+        // NodeData holds a tag plus payloads of at most 128 bits;
+        // 24 bytes accounts for the tag byte and padding.
+        assert(@sizeOf(NodeData) <= 24);
     }
 };
 
@@ -885,26 +887,26 @@ pub const JsxFragmentTags = struct {
     pub fn getOpening(self: JsxFragmentTags, t: *const Tree) Opening {
         // skip any comments or whitespace tokens between the '<' and closing '>'
         var opening_gt_token: u32 = self.opening_lt_token.asU32() + 1;
-        while (t.getTokenKind(@enumFromInt(opening_gt_token)) != .@">") : (opening_gt_token += 1) {}
+        while (t.getTokenKind(@fromBackingInt(@intCast(opening_gt_token))) != .@">") : (opening_gt_token += 1) {}
 
         return Opening{
             .lt = self.opening_lt_token,
-            .gt = @enumFromInt(opening_gt_token),
+            .gt = @fromBackingInt(@intCast(opening_gt_token)),
         };
     }
 
     /// Get the "<", "/" and ">" tokens that close the JSX fragment
     pub fn getClosing(self: JsxFragmentTags, t: *const Tree) Closing {
         var slash_token: u32 = self.closing_lt_token.asU32() + 1;
-        while (t.getTokenKind(@enumFromInt(slash_token)) != .@"/") : (slash_token += 1) {}
+        while (t.getTokenKind(@fromBackingInt(@intCast(slash_token))) != .@"/") : (slash_token += 1) {}
 
         var closing_gt_token: u32 = slash_token + 1;
-        while (t.getTokenKind(@enumFromInt(closing_gt_token)) != .@">") : (closing_gt_token += 1) {}
+        while (t.getTokenKind(@fromBackingInt(@intCast(closing_gt_token))) != .@">") : (closing_gt_token += 1) {}
 
         return Closing{
             .lt = self.closing_lt_token,
-            .gt = @enumFromInt(closing_gt_token),
-            .slash = @enumFromInt(slash_token),
+            .gt = @fromBackingInt(@intCast(closing_gt_token)),
+            .slash = @fromBackingInt(@intCast(slash_token)),
         };
     }
 };
@@ -968,6 +970,7 @@ pub const Node = struct {
     }
 
     comptime {
-        assert(@bitSizeOf(Node) <= 196);
+        // data (<= 24 bytes) + start & end token indices (4 bytes each).
+        assert(@sizeOf(Node) <= 32);
     }
 };

@@ -35,7 +35,7 @@ pub fn Token(TagType: type) type {
 
             /// Get the token index as a u32.
             pub inline fn asU32(self: Index) u32 {
-                return @intFromEnum(self);
+                return @backingInt(self);
             }
         };
         pub const Tag = TagType;

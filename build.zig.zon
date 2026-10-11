@@ -1,12 +1,12 @@
 .{
     .name = .jam,
     .version = "0.0.0",
-    .minimum_zig_version = "0.16.0",
+    .minimum_zig_version = "0.18.0-dev",
     .fingerprint = 0xf5e4d0e7ae4f08d5,
     .dependencies = .{
         .unicode_id = .{
-            .url = "https://codeberg.org/injuly/unicode-id/archive/1c98900cfc60a1a5336d4d91e55ee350d4e5114a.tar.gz",
-            .hash = "unicode_id-0.0.1-u-LDL-yCAQDIRl7z5q2EZmVoUP_DgimhNRwxAiPBLTwl",
+            .url = "https://codeberg.org/injuly/unicode-id/archive/8ed68e1.tar.gz",
+            .hash = "unicode_id-0.0.1-u-LDL0WFAQCWjpHZojJB1Nxj39uHnzpn5hYi9eIO9L27",
         },
     },
 

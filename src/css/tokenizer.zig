@@ -107,7 +107,7 @@ string_pool: StringPool,
 /// Create a new tokenizer
 pub fn init(allocator: std.mem.Allocator, source: []const u8) error{ InvalidUtf8, OutOfMemory }!Self {
     if (!std.unicode.utf8ValidateSlice(source)) {
-        return Error.InvalidUtf8;
+        return error.InvalidUtf8;
     }
 
     return Self{

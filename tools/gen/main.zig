@@ -147,7 +147,7 @@ fn generateNodeIterator(io: std.Io, allocator: Allocator, types: *const TypesInA
     );
 
     for (NodeData.ast.members) |mem| {
-        const member = ast.nodes.get(@intFromEnum(mem));
+        const member = ast.nodes.get(@backingInt(mem));
         if (member.tag != .container_field_init) continue;
         const field_name_token = member.main_token;
         const type_expr, _ = ast.nodeData(mem).node_and_opt_node;
@@ -181,7 +181,7 @@ fn generateCaseArm(
 ) !void {
     const ast = types.ast;
     const field_name = ast.tokenSlice(field_name_token);
-    const type_ann_node = ast.nodes.get(@intFromEnum(type_ann_node_id));
+    const type_ann_node = ast.nodes.get(@backingInt(type_ann_node_id));
 
     if (type_ann_node.tag == .optional_type) {
         if (is_optional_type) {
@@ -200,7 +200,7 @@ fn generateCaseArm(
         );
     } else if (type_ann_node.tag == .field_access) {
         const lhs_node, const rhs_token = ast.nodeData(type_ann_node_id).node_and_token;
-        const field_lhs = ast.nodes.get(@intFromEnum(lhs_node));
+        const field_lhs = ast.nodes.get(@backingInt(lhs_node));
         const property_name = ast.tokenSlice(rhs_token);
         assert(std.mem.eql(u8, property_name, "Index"));
         assert(field_lhs.tag == .identifier);
@@ -278,9 +278,10 @@ fn parseAstZigSource(io: std.Io, allocator: Allocator) !struct { zig.Ast, []u8 }
     const ast_source = try dir.readFileAlloc(io, ast_file_path, allocator, std.Io.Limit.limited(std.math.maxInt(usize)));
     defer allocator.free(ast_source);
 
-    const ast_source_z = try allocator.dupeZ(u8, ast_source);
+    const ast_source_z: [:0]u8 = try allocator.allocSentinel(u8, ast_source.len, 0);
+    @memcpy(ast_source_z, ast_source);
 
-    const ast = try zig.Ast.parse(allocator, ast_source_z, .zig);
+    const ast = try zig.Ast.parse(allocator, ast_source_z, .{});
     return .{ ast, ast_source_z };
 }
 
@@ -292,7 +293,7 @@ fn collectTypeNodesFromAst(allocator: Allocator, ast: zig.Ast) !TypesInAst {
     var struct_decls = std.StringHashMap(Ast.Node.Index).init(allocator);
 
     for (root_decls) |decl| {
-        const node = ast.nodes.get(@intFromEnum(decl));
+        const node = ast.nodes.get(@backingInt(decl));
         if (node.tag != .simple_var_decl) continue;
         // print("simple var decl: {s}\n", .{ast.getNodeSource(decl)});
 
@@ -302,15 +303,15 @@ fn collectTypeNodesFromAst(allocator: Allocator, ast: zig.Ast) !TypesInAst {
         const name_token = ast.tokens.get(name_token_index);
         assert(name_token.tag == .identifier);
 
-        if (@intFromEnum(var_decl.ast.init_node) == 0) continue;
+        if (@backingInt(var_decl.ast.init_node) == 0) continue;
 
         const name = ast.tokenSlice(name_token_index);
         if (std.mem.eql(u8, name, "Node")) continue;
 
-        const init = ast.nodes.get(@intFromEnum(var_decl.ast.init_node));
+        const init = ast.nodes.get(@backingInt(var_decl.ast.init_node));
         if (init.tag == .tagged_union_enum_tag) {
             assert(std.mem.eql(u8, name, "NodeData"));
-            node_data_tagged_union = ast.taggedUnionEnumTag(@enumFromInt(@intFromEnum(var_decl.ast.init_node)));
+            node_data_tagged_union = ast.taggedUnionEnumTag(@fromBackingInt(@intCast(@backingInt(var_decl.ast.init_node))));
             continue;
         }
 
@@ -320,7 +321,7 @@ fn collectTypeNodesFromAst(allocator: Allocator, ast: zig.Ast) !TypesInAst {
             .container_decl_two_trailing,
             .container_decl_trailing,
             => {
-                try struct_decls.put(name, @enumFromInt(@intFromEnum(var_decl.ast.init_node)));
+                try struct_decls.put(name, @fromBackingInt(@intCast(@backingInt(var_decl.ast.init_node))));
             },
             else => {},
         }
@@ -360,7 +361,7 @@ fn generateStmtForFieldAccessAnn(
     const ast = types.ast;
     assert(ty_ann_node.tag == .field_access);
     const lhs_node, const rhs_token = ast.nodeData(ty_ann_node_idx).node_and_token;
-    const field_access_lhs = ast.nodes.get(@intFromEnum(lhs_node));
+    const field_access_lhs = ast.nodes.get(@backingInt(lhs_node));
     const property_name = ast.tokenSlice(rhs_token);
     assert(std.mem.eql(u8, property_name, "Index"));
     assert(field_access_lhs.tag == .identifier);
@@ -404,7 +405,7 @@ fn generateStmtForAnn(
     maybe_param_name: ?[]const u8,
 ) !void {
     const ast = types.ast;
-    const type_ann_node = ast.nodes.get(@intFromEnum(type_ann_node_idx));
+    const type_ann_node = ast.nodes.get(@backingInt(type_ann_node_idx));
 
     if (type_ann_node.tag == .field_access) {
         try generateStmtForFieldAccessAnn(
@@ -432,7 +433,7 @@ fn generateStmtForAnn(
             allocator,
             w,
             types,
-            @enumFromInt(@intFromEnum(actual_type_idx)),
+            @fromBackingInt(@intCast(@backingInt(actual_type_idx))),
             field_name,
             "_pl",
         );
@@ -524,7 +525,7 @@ fn generateVisitFn(
 
     std.mem.reverse(Ast.Node.Index, members); // for correct traversal order.
     for (members) |member_id| {
-        const member_node = ast.nodes.get(@intFromEnum(member_id));
+        const member_node = ast.nodes.get(@backingInt(member_id));
         if (member_node.tag != .container_field_init) {
             continue;
         }
@@ -532,7 +533,7 @@ fn generateVisitFn(
         const field_name_token = member_node.main_token;
         const field_name = ast.tokenSlice(field_name_token);
         const type_expr, _ = ast.nodeData(member_id).node_and_opt_node;
-        if (@intFromEnum(type_expr) == 0) continue;
+        if (@backingInt(type_expr) == 0) continue;
 
         try generateStmtForAnn(
             io,
@@ -568,10 +569,10 @@ fn isPayloadTypeLeaf(
 ) bool {
     const ast = types.ast;
     for (type_node.ast.members) |member_id| {
-        const member = ast.nodes.get(@intFromEnum(member_id));
+        const member = ast.nodes.get(@backingInt(member_id));
         if (member.tag != .container_field_init) continue;
         const type_expr, _ = ast.nodeData(member_id).node_and_opt_node;
-        const type_ann_node = ast.nodes.get(@intFromEnum(type_expr));
+        const type_ann_node = ast.nodes.get(@backingInt(type_expr));
         if (type_ann_node.tag == .identifier) {
             if (std.mem.eql(u8, ast.tokenSlice(type_ann_node.main_token), "SubRange")) {
                 return false;
@@ -586,7 +587,7 @@ fn isPayloadTypeLeaf(
             }
         } else if (type_ann_node.tag == .optional_type) {
             const actual_type_idx = ast.nodeData(type_expr).node;
-            const actual_type = ast.nodes.get(@intFromEnum(actual_type_idx));
+            const actual_type = ast.nodes.get(@backingInt(actual_type_idx));
             if (actual_type.tag == .identifier) {
                 const type_name = ast.tokenSlice(actual_type.main_token);
                 if (std.mem.eql(u8, type_name, "SubRange")) {
@@ -603,7 +604,7 @@ fn isPayloadTypeLeaf(
             }
         } else if (type_ann_node.tag == .field_access) {
             const lhs_node, const rhs_token = ast.nodeData(type_expr).node_and_token;
-            const field_lhs = ast.nodes.get(@intFromEnum(lhs_node));
+            const field_lhs = ast.nodes.get(@backingInt(lhs_node));
             const property_name = ast.tokenSlice(rhs_token);
             assert(std.mem.eql(u8, property_name, "Index"));
             assert(field_lhs.tag == .identifier);

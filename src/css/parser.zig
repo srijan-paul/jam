@@ -41,11 +41,11 @@ pub fn init(arena: *std.heap.ArenaAllocator, source: []const u8) Error!Self {
         // TODO: store leading comments as trivia.
     }
 
-    var nodes: std.ArrayList(ast.Node) = .{};
+    var nodes: std.ArrayList(ast.Node) = .empty;
     try nodes.ensureTotalCapacity(al, 128);
-    var node_refs: std.ArrayList(ast.Node.Index) = .{};
+    var node_refs: std.ArrayList(ast.Node.Index) = .empty;
     try node_refs.ensureTotalCapacity(al, 8);
-    var tokens: std.ArrayList(Token) = .{};
+    var tokens: std.ArrayList(Token) = .empty;
     try tokens.ensureTotalCapacity(al, 128);
 
     return Self{
@@ -69,7 +69,7 @@ pub fn deinit(self: *Self) void {
 }
 
 pub fn parse(self: *Self) Error!ast.Node.Index {
-    var rules: std.ArrayList(ast.Node.Index) = .{};
+    var rules: std.ArrayList(ast.Node.Index) = .empty;
     try rules.ensureTotalCapacity(self.allocator, 8);
     while (self.current_token.tag() != .eof) {
         const rule_index = try parseRule(self);
@@ -85,7 +85,7 @@ pub fn parse(self: *Self) Error!ast.Node.Index {
 }
 
 pub fn getNode(self: *const Self, index: ast.Node.Index) ast.Node {
-    return self.nodes.items[@intFromEnum(index)];
+    return self.nodes.items[@backingInt(index)];
 }
 
 /// Add a new node to the list of nodes and return its index.
@@ -102,14 +102,14 @@ pub fn addNode(
     });
 
     const len: u32 = @intCast(self.nodes.items.len - 1);
-    return @enumFromInt(len);
+    return @fromBackingInt(@intCast(len));
 }
 
 /// Advance in the token stream, save the next token to the list of tokens and return its index.
 pub fn saveToken(self: *Self, token: Token) Error!Token.Index {
     const index = self.tokens.items.len;
     try self.tokens.append(self.allocator, token);
-    return @enumFromInt(index);
+    return @fromBackingInt(@intCast(index));
 }
 
 /// Consume the next token from the lexer, skipping all comments.
@@ -142,7 +142,7 @@ pub fn subRangeAsSlice(self: *const Self, range: ast.SubRange) []ast.Node.Index 
 
 /// Get the token at the given index.
 pub fn getToken(self: *const Self, t: Token.Index) Token {
-    return self.tokens.items[@intFromEnum(t)];
+    return self.tokens.items[@backingInt(t)];
 }
 
 // TODO: improve this doc comment.

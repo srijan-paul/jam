@@ -205,32 +205,32 @@ pub const JsTokenTag = enum(u32) {
     eof = 149,
 
     pub inline fn is(self: JsTokenTag, mask: u32) bool {
-        const tag_u32: u32 = @intFromEnum(self);
+        const tag_u32: u32 = @backingInt(self);
         return tag_u32 & mask != 0;
     }
 
     pub fn precedence(self: JsTokenTag) u32 {
-        const tag_u32: u32 = @intFromEnum(self);
+        const tag_u32: u32 = @backingInt(self);
         return (tag_u32 & Mask.PrecEnd) >> Mask.PrecShift;
     }
 
     pub fn isContextualKeyword(self: JsTokenTag) bool {
-        const tag_u32: u32 = @intFromEnum(self);
+        const tag_u32: u32 = @backingInt(self);
         return tag_u32 & Mask.ContextualKeyword == Mask.ContextualKeyword;
     }
 
     pub inline fn isNumericLiteral(self: JsTokenTag) bool {
-        const tag_u32: u32 = @intFromEnum(self);
+        const tag_u32: u32 = @backingInt(self);
         return tag_u32 & Mask.IsNumericLiteral != 0;
     }
 
     pub fn isStrictModeKeyword(self: JsTokenTag) bool {
-        const tag_u32: u32 = @intFromEnum(self);
+        const tag_u32: u32 = @backingInt(self);
         return tag_u32 & Mask.StrictModeKeyword == Mask.StrictModeKeyword;
     }
 
     pub fn isKeyword(self: JsTokenTag) bool {
-        const tag_u32: u32 = @intFromEnum(self);
+        const tag_u32: u32 = @backingInt(self);
         return tag_u32 & Mask.IsKeyword != 0;
     }
 
@@ -241,22 +241,22 @@ pub const JsTokenTag = enum(u32) {
     }
 
     pub inline fn isIdentifier(self: JsTokenTag) bool {
-        return @intFromEnum(self) & Mask.IsIdentifier != 0;
+        return @backingInt(self) & Mask.IsIdentifier != 0;
     }
 
     pub inline fn isAssignmentOperator(self: JsTokenTag) bool {
-        const tag_u32: u32 = @intFromEnum(self);
+        const tag_u32: u32 = @backingInt(self);
         return tag_u32 & Mask.IsAssignOp != 0;
     }
 
     pub inline fn isLogicalOperator(self: JsTokenTag) bool {
-        const tag_u32: u32 = @intFromEnum(self);
+        const tag_u32: u32 = @backingInt(self);
         return tag_u32 & Mask.IsLogicalOp != 0;
     }
 
     comptime {
         const std = @import("std");
-        std.debug.assert(std.meta.fields(JsTokenTag).len < std.math.maxInt(u8));
+        std.debug.assert(@typeInfo(JsTokenTag).@"enum".field_names.len < std.math.maxInt(u8));
     }
 };
 

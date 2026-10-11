@@ -50,6 +50,12 @@ pub const ParseResult = extern struct {
 
 pub export const ParseResultSize: u32 = @sizeOf(ParseResult);
 
+/// NOTE: exported consts don't read correctly from wasm globals
+/// on current zig master; use this function instead.
+pub export fn parseResultSize() u32 {
+    return @sizeOf(ParseResult);
+}
+
 /// Null-terminate a slice of bytes
 /// This modifies the slice in-place
 fn nullTerminate(source: []u8) std.mem.Allocator.Error![:0]u8 {
@@ -67,7 +73,8 @@ fn parseJsImpl(source: []const u8, source_type: root.Parser.SourceType) !ParseRe
     var result = parser.parse() catch |err| {
         if (parser.diagnostics.items.len > 0) {
             const diagnostic = parser.diagnostics.items[0];
-            const error_message = try wasm_allocator.dupeZ(u8, diagnostic.message);
+            const error_message: [:0]u8 = try wasm_allocator.allocSentinel(u8, diagnostic.message.len, 0);
+            @memcpy(error_message, diagnostic.message);
 
             return ParseResult{
                 .ok = false,
@@ -115,6 +122,12 @@ pub const ResultWasm = extern struct {
 };
 
 pub export const ResultWasmSize: u32 = @sizeOf(ResultWasm);
+
+/// NOTE: exported consts don't read correctly from wasm globals
+/// on current zig master; use this function instead.
+pub export fn resultWasmSize() u32 {
+    return @sizeOf(ResultWasm);
+}
 
 pub export fn parseModule(source_bytes: [*]const u8, len: u32) ResultWasm {
     const source: []const u8 = source_bytes[0..len];

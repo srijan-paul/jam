@@ -82,8 +82,8 @@ fn visitSubRange(
     range: *const ast.SubRange,
     parent_id: ?Node.Index,
 ) Allocator.Error!void {
-    const from: usize = @intFromEnum(range.from);
-    const to: usize = @intFromEnum(range.to);
+    const from: usize = @backingInt(range.from);
+    const to: usize = @backingInt(range.to);
 
     if (from == to) return;
 
@@ -491,7 +491,7 @@ fn visitSwitchStatement(
     try self.pushNode(data.discriminant, node_id);
 }
 pub fn enqueueChildren(self: *Self, node_id: Node.Index) Allocator.Error!void {
-    const node_pl = &self.node_pls[@intFromEnum(node_id)];
+    const node_pl = &self.node_pls[@backingInt(node_id)];
     switch (node_pl.*) {
         .program => |maybe_pl| if (maybe_pl) |pl| try self.visitSubRange(&pl, node_id),
         .assignment_expr => |pl| try self.visitBinaryPayload(&pl, node_id),

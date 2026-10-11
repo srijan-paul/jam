@@ -13,7 +13,7 @@ allocator: std.mem.Allocator,
 diagnostics: std.ArrayList(Diagnostic),
 
 pub fn init(allocator: std.mem.Allocator) Self {
-    const diagnostics: std.ArrayList(Diagnostic) = .{};
+    const diagnostics: std.ArrayList(Diagnostic) = .empty;
     return Self{
         .allocator = allocator,
         .diagnostics = diagnostics,

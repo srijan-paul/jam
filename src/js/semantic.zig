@@ -68,7 +68,7 @@ pub const Variable = struct {
 
         /// Whether the declaration is hoisted to the nearest function scope
         pub inline fn isHoisted(self: Kind) bool {
-            return @intFromEnum(self) & IsHoistedMask != 0;
+            return @backingInt(self) & IsHoistedMask != 0;
         }
 
         comptime {
@@ -315,7 +315,7 @@ pub fn onEnter(
     node: ast.NodeData,
     parent_id: ?ast.Node.Index,
 ) !void {
-    self.parent_of_node[@intFromEnum(node_id)] = parent_id;
+    self.parent_of_node[@backingInt(node_id)] = parent_id;
 
     switch (node) {
         .function_expr, .function_declaration => {

@@ -14,7 +14,7 @@ pub fn parseRule(p: *Parser) Parser.Error!ast.Node.Index {
 pub fn qualifiedRule(p: *Parser) Parser.Error!ast.Node.Index {
     // TODO: handle empty preludes.
     const start_pos = p.current_token.start;
-    var selector_list: std.ArrayList(ast.Node.Index) = .{};
+    var selector_list: std.ArrayList(ast.Node.Index) = .empty;
     try selector_list.ensureTotalCapacity(p.allocator, 4);
 
     const body = blk: {

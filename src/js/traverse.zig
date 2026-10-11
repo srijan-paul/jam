@@ -360,7 +360,7 @@ const TestCtrl = struct {
     pub fn init() TestCtrl {
         return .{
             .allocator = t.allocator,
-            .visited = .{},
+            .visited = .empty,
         };
     }
 

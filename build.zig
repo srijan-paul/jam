@@ -1,10 +1,6 @@
 const std = @import("std");
 
 pub fn build(b: *std.Build) !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    const allocator = gpa.allocator();
-    defer _ = gpa.deinit();
-
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
@@ -13,15 +9,14 @@ pub fn build(b: *std.Build) !void {
         name: []const u8,
         module: *std.Build.Module,
     };
-    var deps: std.ArrayList(Dep) = .{};
-    defer deps.deinit(allocator);
 
     const unicode_id = b.dependency("unicode_id", .{});
-    const unicode_id_dep = Dep{
-        .name = "unicode-id",
-        .module = unicode_id.module("unicode-id"),
+    const deps = [_]Dep{
+        .{
+            .name = "unicode-id",
+            .module = unicode_id.module("unicode-id"),
+        },
     };
-    try deps.appendSlice(allocator, &.{unicode_id_dep});
 
     const util_module = b.addModule("util", .{
         .root_source_file = b.path("src/util/root.zig"),
@@ -73,7 +68,7 @@ pub fn build(b: *std.Build) !void {
         });
         js_wasm_module.addImport("util", util_module);
         js_wasm_module.addImport("syntax", jam_syntax_module);
-        js_wasm_module.addImport(unicode_id_dep.name, unicode_id_dep.module);
+        js_wasm_module.addImport(deps[0].name, deps[0].module);
 
         const js_wasm = b.addExecutable(.{
             .name = "jam_js",
@@ -169,10 +164,7 @@ pub fn build(b: *std.Build) !void {
         const test_runner_step = b.step("test-262", "Run the tc39/test-262-parser-tests test suite");
         test_runner_step.dependOn(&tests_262_cmd.step);
 
-        // forward all CLI arguments from build.zig to the test runner.
-        if (b.args) |args| {
-            tests_262_cmd.addArgs(args);
-        }
+        tests_262_cmd.addPassthruArgs();
     }
 
     // Command to run the @babel/parser test suite
@@ -194,10 +186,7 @@ pub fn build(b: *std.Build) !void {
         const test_runner_step = b.step("test-babel", "Run the @babel/parser test suite");
         test_runner_step.dependOn(&test_babel_cmd.step);
 
-        // forward all CLI arguments from build.zig to the test runner.
-        if (b.args) |args| {
-            test_babel_cmd.addArgs(args);
-        }
+        test_babel_cmd.addPassthruArgs();
     }
 
     // Command to generate traversal code from the js AST definition
@@ -217,10 +206,7 @@ pub fn build(b: *std.Build) !void {
         const ast_gen_step = b.step("astgen", "Generate traversal code from the js AST definition");
         ast_gen_step.dependOn(&ast_gen_cmd.step);
 
-        // forward all CLI arguments from build.zig to the test runner.
-        if (b.args) |args| {
-            ast_gen_cmd.addArgs(args);
-        }
+        ast_gen_cmd.addPassthruArgs();
     }
 
     // Command to benchmark the parser
@@ -228,7 +214,7 @@ pub fn build(b: *std.Build) !void {
         const bench_parser_module = b.createModule(.{
             .root_source_file = b.path("benchmark/bench-parser.zig"),
             .target = target,
-            .optimize = std.builtin.OptimizeMode.ReleaseFast,
+            .optimize = std.lang.Optimize.fast,
         });
         bench_parser_module.addImport("js", jam_js_module);
 
@@ -241,18 +227,13 @@ pub fn build(b: *std.Build) !void {
         const bench_step = b.step("bench-parser", "Run parser benchmarks");
         bench_step.dependOn(&bench_cmd.step);
 
-        // forward all CLI arguments from build.zig to the test runner.
-        if (b.args) |args| {
-            bench_cmd.addArgs(args);
-        }
+        bench_cmd.addPassthruArgs();
     }
 
     const run_cmd = b.addRunArtifact(exe);
     run_cmd.step.dependOn(b.getInstallStep());
 
-    if (b.args) |args| {
-        run_cmd.addArgs(args);
-    }
+    run_cmd.addPassthruArgs();
 
     const run_step = b.step("run", "Run the app");
     run_step.dependOn(&run_cmd.step);
@@ -306,7 +287,7 @@ pub fn build(b: *std.Build) !void {
     exe_module.addImport("css", jam_css_module);
     exe_module.addImport("syntax", jam_syntax_module);
 
-    for (deps.items) |dep| {
+    for (deps) |dep| {
         jam_js_module.addImport(dep.name, dep.module);
         jam_css_module.addImport(dep.name, dep.module);
 

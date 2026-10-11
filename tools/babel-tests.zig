@@ -113,7 +113,7 @@ fn runTest(io: std.Io, al: Allocator, d: std.Io.Dir, key: []const u8, filename: 
         if (d.readFileAlloc(io, "options.json", al, std.Io.Limit.limited(std.math.maxInt(u32)))) |json_src| {
             break :blk (try json.parseFromSlice(json.Value, al, json_src, .{})).value;
         } else |_| {
-            break :blk json.Value{ .object = json.ObjectMap.init(al) };
+            break :blk json.Value{ .object = json.ObjectMap.empty };
         }
     };
 
@@ -180,12 +180,12 @@ fn runTest(io: std.Io, al: Allocator, d: std.Io.Dir, key: []const u8, filename: 
     else
         .fail_with_ast_mismatch;
 
-    try out.put(key, json.Value{ .string = @tagName(test_result) });
+    try out.put(al, key, json.Value{ .string = @tagName(test_result) });
     return test_result;
 }
 
 fn runTests(io: std.Io, al: Allocator, babel_tests_dir: []const u8) !json.ObjectMap {
-    var result_map = json.ObjectMap.init(al);
+    var result_map = json.ObjectMap.empty;
     var cwd = std.Io.Dir.cwd();
     var tests_dir = try cwd.openDir(io, babel_tests_dir, .{});
     defer tests_dir.close(io);
@@ -215,9 +215,9 @@ fn runTests(io: std.Io, al: Allocator, babel_tests_dir: []const u8) !json.Object
     const coverage = (num_passed / num_tests) * 100.0;
     const coverage_str = try std.fmt.allocPrint(al, "{d:.5}%", .{coverage});
 
-    var out = json.ObjectMap.init(al);
-    try out.put("coverage", json.Value{ .string = coverage_str });
-    try out.put("cases", json.Value{ .object = result_map });
+    var out = json.ObjectMap.empty;
+    try out.put(al, "coverage", json.Value{ .string = coverage_str });
+    try out.put(al, "cases", json.Value{ .object = result_map });
     return out;
 }
 

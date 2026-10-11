@@ -14,7 +14,7 @@ docs: std.ArrayList(Doc),
 tree: *const ast.Tree,
 
 pub fn init(allocator: Allocator, tree: *const ast.Tree) Allocator.Error!Self {
-    var docs: std.ArrayList(Doc) = .{};
+    var docs: std.ArrayList(Doc) = .empty;
     try docs.ensureTotalCapacity(allocator, 256);
     return Self{
         .allocator = allocator,
@@ -74,7 +74,7 @@ const visitor_of_node: [node_kinds.len]*const VisitorFn = blk: {
         }
 
         const func = @field(Self, camel_case_name);
-        visitors[@intFromEnum(tag)] = &func;
+        visitors[@backingInt(tag)] = &func;
     }
 
     break :blk visitors;
@@ -82,7 +82,7 @@ const visitor_of_node: [node_kinds.len]*const VisitorFn = blk: {
 
 fn visit(self: *Self, node_id: ast.Node.Index) Doc.Id {
     const data = self.tree.nodeData(node_id);
-    const visitFn = visitor_of_node[@intFromEnum(std.meta.activeTag(data.*))];
+    const visitFn = visitor_of_node[@backingInt(std.meta.activeTag(data.*))];
     return visitFn(self, data);
 }
 
@@ -92,7 +92,7 @@ fn format(self: *Self) void {
 }
 
 pub fn program(_: *Self, _: *const ast.NodeData) Doc.Id {
-    return @enumFromInt(42);
+    return @fromBackingInt(@intCast(42));
 }
 pub fn assignmentExpr(_: *Self, _: *const ast.NodeData) Doc.Id {
     unreachable;
