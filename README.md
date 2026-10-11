@@ -1,35 +1,12 @@
 # Jam
 
-A high-performance JavaScript parser and semantic analyzer built from the ground up.
-**Work in progress!**
+Jam is the world's fastest JavaScript parser and reference-resolver.
+It outperforms Oxc, Biome(*), SWC, Babel, ESPree, Acorn, Kataw, Esprima, and all others in both
+parsing speed and memory usage, while being fully spec-compliant.
 
-## Goals
+(*) Technically, Biome produces a CST, so its not apples-to-apples.
 
-- Competitive in performance with existing tools. 
-- Support JS, JSX, and TypeScript out of the box.
-    - And the `<script>` part of VueJS code.
-- Single, small binary.
-- Support data flow analysis and call-graphs with an accessible API. 
-- Expose a capable parsing and scope resolution, such that a bundler, minifier, etc., can be built on top of it.
-- API to write lint rules with zig.
-- Custom JavaScript plugins.
-
-## Roadmap
-
-- Phase 1:
-    - [x] A fast, 100% Spec compliant JavaScript parser.
-    - [x] Port [ESLint scope](https://github.com/eslint/js/tree/main/packages/eslint-scope) to Zig
-    - [x] JSX parsing.
-    - [ ] Semantic analysis: Control Flow Graphs (**WIP**).
-    - [ ] TypeScript parsing (**WIP**).
-    - [ ] Runtime for a linter, with Zig plugin support.
-    - [ ] Formatter with a **language agnostic backend**.
-- Alpha release
-    - [ ] Simple linter with all the base rules from ESLint.
-    - [ ] A prototype for the jam formatter
-- Beta release
-    - [ ] Data flow analysis and taint checking
-
+TypeScript support is planned, but not yet implemented.
 
 ## Local development
 
