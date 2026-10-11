@@ -105,7 +105,6 @@ pub fn jamToEstreeTag(node: ast.NodeData) []const u8 {
         .computed_member_expr => "MemberExpression",
         .tagged_template_expr => "TaggedTemplateExpression",
         .meta_property => "MetaProperty",
-        .arguments => "Arguments",
         .new_expr => "NewExpression",
         .call_expr => "CallExpression",
         .super_call_expr => "CallExpression",
@@ -234,9 +233,8 @@ fn nodeToEsTree(
             try o.put(al, "start", JValue{ .integer = 0 });
             try o.put(al, "end", JValue{ .integer = @intCast(t.source.len) });
         } else {
-            try o.put(al, "start", JValue{ .integer = @intCast(t.getToken(node.start).start) });
-            const end_token = t.getToken(node.end);
-            try o.put(al, "end", JValue{ .integer = @intCast(end_token.start + end_token.len) });
+            try o.put(al, "start", JValue{ .integer = node.start });
+            try o.put(al, "end", JValue{ .integer = node.end });
         }
     }
 
@@ -246,8 +244,7 @@ fn nodeToEsTree(
         => |payload| {
             const lhs = try nodeToEsTree(t, al, payload.lhs, opts);
             const rhs = try nodeToEsTree(t, al, payload.rhs, opts);
-            const token = t.tokens.items[(@backingInt(payload.operator))];
-            const operator = token.toByteSlice(t.source);
+            const operator = payload.operator.lexeme();
 
             try o.put(al, "operator", JValue{ .string = operator });
             try o.put(al, "left", lhs);
@@ -260,7 +257,7 @@ fn nodeToEsTree(
         .jsx_identifier,
         .jsx_identifier_reference,
         => |tok_id| {
-            const name = t.getToken(tok_id).toByteSlice(t.source);
+            const name = tok_id.slice(t.source);
             const escapedName = try processEscapes(al, name);
             try o.put(al, "name", JValue{ .string = escapedName });
         },
@@ -285,32 +282,28 @@ fn nodeToEsTree(
             try o.put(al, "elements", elements);
         },
 
-        .string_literal => |token_id| {
-            const token = t.getToken(token_id);
-            const raw = token.toByteSlice(t.source);
+        .string_literal => |token_span| {
+            const raw = token_span.slice(t.source);
             try o.put(al, "value", JValue{
                 .string = try processEscapes(al, raw[1 .. raw.len - 1]),
             });
             try o.put(al, "raw", JValue{ .string = raw });
         },
 
-        .null_literal => |token_id| {
-            const token = t.getToken(token_id);
-            const raw = token.toByteSlice(t.source);
+        .null_literal => |token_span| {
+            const raw = token_span.slice(t.source);
             try o.put(al, "value", JNull);
             try o.put(al, "raw", JValue{ .string = raw });
         },
 
         .boolean_literal => |b| {
-            const token = t.getToken(b.token);
-            const raw = token.toByteSlice(t.source);
+            const raw = b.token.slice(t.source);
             try o.put(al, "value", JValue{ .bool = b.value });
             try o.put(al, "raw", JValue{ .string = raw });
         },
 
         .number_literal => |num| {
-            const token = t.getToken(num.token);
-            const raw = token.toByteSlice(t.source);
+            const raw = num.token.slice(t.source);
             const value = num.value(t);
             if (value == @trunc(value))
                 try o.put(al, "value", JValue{ .number_string = raw })
@@ -320,9 +313,8 @@ fn nodeToEsTree(
             try o.put(al, "raw", JValue{ .string = raw });
         },
 
-        .regex_literal => |token_id| {
-            const token = t.getToken(token_id);
-            const raw = token.toByteSlice(t.source);
+        .regex_literal => |token_span| {
+            const raw = token_span.slice(t.source);
             try o.put(al, "raw", JValue{ .string = raw });
             // In babel's ESTree output, a regex literal's value is an empty object
             // when JSON serialized
@@ -375,8 +367,10 @@ fn nodeToEsTree(
 
         .call_expr => |payload| {
             const callee = try nodeToEsTree(t, al, payload.callee, opts);
-            const arguments = payload.arguments.get(t).arguments;
-            const args = try subRangeToJsonArray(al, t, arguments, opts);
+            const args = if (payload.arguments) |range|
+                try subRangeToJsonArray(al, t, range, opts)
+            else
+                JValue{ .array = std.json.Array.init(al) };
             try o.put(al, "callee", callee);
             try o.put(al, "arguments", args);
 
@@ -386,9 +380,8 @@ fn nodeToEsTree(
 
         .new_expr => |payload| {
             const callee = try nodeToEsTree(t, al, payload.callee, opts);
-            if (payload.arguments) |args| {
-                const args_range = t.getNode(args).data.arguments;
-                const args_val = try subRangeToJsonArray(al, t, args_range, opts);
+            if (payload.arguments) |range| {
+                const args_val = try subRangeToJsonArray(al, t, range, opts);
                 try o.put(al, "arguments", args_val);
             } else {
                 try o.put(al, "arguments", JValue{ .array = std.json.Array.init(al) });
@@ -411,9 +404,8 @@ fn nodeToEsTree(
         .post_unary_expr,
         .update_expr,
         => |payload| {
-            const operator = t.tokens.items[(@backingInt(payload.operator))];
             const arg = try nodeToEsTree(t, al, payload.operand, opts);
-            const operator_str = operator.toByteSlice(t.source);
+            const operator_str = payload.operator.lexeme();
             try o.put(al, "operator", JValue{ .string = operator_str });
             const is_prefix = std.meta.activeTag(node.data) != .post_unary_expr;
             try o.put(al, "prefix", JValue{ .bool = is_prefix });
@@ -736,7 +728,7 @@ fn nodeToEsTree(
         },
 
         .template_element => |token_id| {
-            const value = t.getToken(token_id).toByteSlice(t.source);
+            const value = token_id.slice(t.source);
             try o.put(al, "value", JValue{ .string = value });
             const is_tail = value[0] == '{';
             try o.put(al, "tail", JValue{ .bool = is_tail });
@@ -822,9 +814,8 @@ fn nodeToEsTree(
 
                 const open = tags.getOpening(t);
                 if (opts.start_end_locs) {
-                    const gt_token = t.getToken(open.gt);
-                    try obj.put(al, "start", JValue{ .integer = t.getToken(open.lt).start });
-                    try obj.put(al, "end", JValue{ .integer = gt_token.start + gt_token.len });
+                    try obj.put(al, "start", JValue{ .integer = open.lt.start });
+                    try obj.put(al, "end", JValue{ .integer = open.gt.end });
                 }
                 break :blk JValue{ .object = obj };
             };
@@ -835,9 +826,8 @@ fn nodeToEsTree(
 
                 const close = tags.getClosing(t);
                 if (opts.start_end_locs) {
-                    const gt_token = t.getToken(close.gt);
-                    try obj.put(al, "start", JValue{ .integer = t.getToken(close.lt).start });
-                    try obj.put(al, "end", JValue{ .integer = gt_token.start + gt_token.len });
+                    try obj.put(al, "start", JValue{ .integer = close.lt.start });
+                    try obj.put(al, "end", JValue{ .integer = close.gt.end });
                 }
                 break :blk JValue{ .object = obj };
             };
@@ -930,7 +920,7 @@ fn nodeToEsTree(
         },
 
         .jsx_text => |token_id| {
-            const raw = t.getTokenSlice(token_id);
+            const raw = token_id.slice(t.source);
             try o.put(al, "value", JValue{
                 .string = try processEscapes(al, raw),
             });
@@ -940,7 +930,6 @@ fn nodeToEsTree(
         // this should be unreachable
         .parameters,
         .none,
-        .arguments,
         .parenthesized_expr,
         .class_meta,
         .function_meta,

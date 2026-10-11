@@ -52,6 +52,7 @@ pub fn SimdContext() ?type {
             const all_lfs: TBlock = @splat('\n');
             const all_crs: TBlock = @splat('\r');
             const all_0s: TBlock = @splat(0);
+            const all_spaces: TBlock = @splat(' ');
 
             /// Return a block where a bit is set if the corresponding byte is a valid identifier character.
             pub fn isIdBlock(block: TBlock) TBlock {
@@ -130,15 +131,14 @@ pub fn next(self: *Self) Error!Token {
     return token;
 }
 
-/// Like `next`, but whitespace between tokens is consumed here.
-/// Comments are still returned as tokens.
+/// Scan the next significant token directly into [out], consuming
+/// whitespace runs internally. Comments are also written to [out];
+/// callers that store them can loop on `out.tag == .comment`.
 ///
-/// Whitespace runs occur once per token gap, so consuming them here
-/// keeps each gap to a single tokenizer dispatch.
-pub fn nextSkippingWhitespace(self: *Self) Error!Token {
-    // Fused fast path: skip ascii whitespace and scan the common token
-    // shapes (plain identifiers and keywords) in one pass, without going
-    // through the full `consumeToken` dispatch.
+/// Writing into the caller's slot avoids passing token values through
+/// return-value plumbing on every call.
+pub fn nextSkippingWhitespaceInto(self: *Self, out: *Token) Error!void {
+    // Skip ascii whitespace runs, then scan the token.
     while (self.index < self.source.len) {
         switch (self.source[self.index]) {
             ' ', '\t' => self.index += 1,
@@ -148,36 +148,80 @@ pub fn nextSkippingWhitespace(self: *Self) Error!Token {
                     self.index += 1;
                 }
                 self.bumpLine();
+                self.skipIndentSpaces();
             },
             '\n' => {
                 self.index += 1;
                 self.bumpLine();
+                self.skipIndentSpaces();
             },
             else => break,
         }
     }
 
-    if (self.tryFastToken()) |token| {
+    if (self.tryFastToken(out)) {
         self.is_trivial_line = false;
-        return token;
+        return;
     }
 
     const token = try @call(.always_inline, consumeToken, .{self});
     self.is_trivial_line = self.is_trivial_line and
         (token.tag == .comment or token.tag == .whitespace);
 
-    if (token.tag != .whitespace) return token;
+    if (token.tag != .whitespace) {
+        out.* = token;
+        return;
+    }
 
     // Whitespace that the fused path skips only when ascii
     // (e.g. U+2028, U+00A0): consume it, then keep going.
-    return self.nextSkippingWhitespace();
+    return self.nextNonAsciiWhitespaceInto(out);
+}
+
+/// Cold tail of `nextSkippingWhitespaceInto`: the token produced by the
+/// full dispatch was non-ascii whitespace.
+fn nextNonAsciiWhitespaceInto(self: *Self, out: *Token) Error!void {
+    var token: Token = undefined;
+    while (true) {
+        token = try self.next();
+        if (token.tag != .whitespace) break;
+    }
+    out.* = token;
+}
+
+/// Like `next`, but whitespace between tokens is consumed here.
+/// Comments are still returned as tokens.
+///
+/// Whitespace runs occur once per token gap, so consuming them here
+/// keeps each gap to a single tokenizer dispatch.
+pub fn nextSkippingWhitespace(self: *Self) Error!Token {
+    var token: Token = undefined;
+    try self.nextSkippingWhitespaceInto(&token);
+    return token;
+}
+
+/// Skip the run of spaces that starts a new line (indentation),
+/// 16 bytes at a time.
+inline fn skipIndentSpaces(self: *Self) void {
+    if (SimdContext()) |Simd| {
+        var i = self.index;
+        while (i + Simd.block_size <= self.source.len) : (i += Simd.block_size) {
+            const block: Simd.TBlock = self.source[i..][0..Simd.block_size].*;
+            if (std.simd.firstTrue(block != Simd.all_spaces)) |j| {
+                self.index = i + j;
+                return;
+            }
+        }
+        self.index = i;
+    }
+    while (self.index < self.source.len and self.source[self.index] == ' ') self.index += 1;
 }
 
 /// Scan one of the common token shapes inline:
 /// - plain ascii identifiers / keywords
 /// Returns null (without consuming input) for everything else.
-inline fn tryFastToken(self: *Self) ?Token {
-    if (self.index >= self.source.len) return null;
+inline fn tryFastToken(self: *Self, out: *Token) bool {
+    if (self.index >= self.source.len) return false;
     const start = self.index;
     const byte = self.source[start];
 
@@ -195,7 +239,7 @@ inline fn tryFastToken(self: *Self) ?Token {
                 // escaped or non-ascii continuation: defer to `identifier()`,
                 // which handles `.non_ascii_identifier` tags.
                 self.index = start;
-                return null;
+                return false;
             }
         }
 
@@ -205,35 +249,170 @@ inline fn tryFastToken(self: *Self) ?Token {
         else
             .identifier;
 
-        return Token{
+        out.* = .{
             .tag = tag,
             .start = @intCast(start),
             .len = @intCast(len),
             .line = self.line,
         };
+        return true;
+    }
+
+    // plain decimal integers: '123'
+    if (byte >= '1' and byte <= '9') {
+        var i = self.index + 1;
+        while (i < self.source.len and self.source[i] >= '0' and self.source[i] <= '9') i += 1;
+
+        // bail to `numericLiteral` for anything that is not a plain
+        // integer: '0x'/'0b'/'0o' prefixes, legacy octal, '.', 'e'/'E'
+        // exponents, bigint 'n', numeric separators '_' and malformed
+        // lexemes like '123abc'.
+        var is_plain = i >= self.source.len;
+        if (!is_plain) {
+            const after = self.source[i];
+            is_plain =
+                (after < '0' or after > '9') and
+                (after < 'a' or after > 'z') and
+                (after < 'A' or after > 'Z') and
+                after != '.' and after != '_' and after != '$' and after != '\\';
+        }
+        if (is_plain) {
+            self.index = i;
+            out.* = .{
+                .tag = .decimal_literal,
+                .start = @intCast(start),
+                .len = @intCast(i - start),
+                .line = self.line,
+            };
+            return true;
+        }
+        return false;
     }
 
     // single-byte punctuators that no multi-char operator starts with
-    const punct_tag: ?Token.Tag = switch (byte) {
-        '(' => .@"(",
-        ')' => .@")",
-        '[' => .@"[",
-        ']' => .@"]",
-        '{' => .@"{",
-        '}' => .@"}",
-        ',' => .@",",
-        ';' => .@";",
-        ':' => .@":",
-        else => null,
-    };
-    if (punct_tag) |tag| {
-        self.index += 1;
-        return Token{
-            .tag = tag,
-            .start = @intCast(start),
-            .len = 1,
-            .line = self.line,
+    {
+        const punct_tag: ?Token.Tag = switch (byte) {
+            '(' => .@"(",
+            ')' => .@")",
+            '[' => .@"[",
+            ']' => .@"]",
+            '{' => .@"{",
+            '}' => .@"}",
+            ',' => .@",",
+            ';' => .@";",
+            ':' => .@":",
+            '~' => .@"~",
+            else => null,
         };
+        if (punct_tag) |tag| {
+            self.index += 1;
+            out.* = .{ .tag = tag, .start = @intCast(start), .len = 1, .line = self.line };
+            return true;
+        }
+    }
+
+    const n = self.source.len;
+
+    // '=' family: '=', '==', '===', '=>'
+    if (byte == '=') {
+        if (self.index + 1 < n) {
+            const b1 = self.source[self.index + 1];
+            if (b1 == '>') {
+                self.index += 2;
+                out.* = .{ .tag = .@"=>", .start = @intCast(start), .len = 2, .line = self.line };
+                return true;
+            }
+            if (b1 == '=') {
+                if (self.index + 2 < n and self.source[self.index + 2] == '=') {
+                    self.index += 3;
+                    out.* = .{ .tag = .@"===", .start = @intCast(start), .len = 3, .line = self.line };
+                } else {
+                    self.index += 2;
+                    out.* = .{ .tag = .@"==", .start = @intCast(start), .len = 2, .line = self.line };
+                }
+                return true;
+            }
+        }
+        self.index += 1;
+        out.* = .{ .tag = .@"=", .start = @intCast(start), .len = 1, .line = self.line };
+        return true;
+    }
+
+    // operator families: '+', '-', '<', '>', '!', '&', '|', '^', '?'.
+    // '-' and '<' may start script-mode HTML comments ('-->', '<!--'),
+    // which only the full dispatch implements; scripts defer those bytes.
+    if (self.is_parsing_module or (byte != '-' and byte != '<')) {
+        const Op = struct { t: Token.Tag, len: u8 };
+        const b1: u8 = if (self.index + 1 < n) self.source[self.index + 1] else 0;
+        const b2: u8 = if (self.index + 2 < n) self.source[self.index + 2] else 0;
+        const b3: u8 = if (self.index + 3 < n) self.source[self.index + 3] else 0;
+
+        const tag: ?Op = switch (byte) {
+            '+', '-' => if (b1 == '=')
+                .{ .t = if (byte == '+') .@"+=" else .@"-=", .len = 2 }
+            else if (b1 == byte)
+                .{ .t = if (byte == '+') .@"++" else .@"--", .len = 2 }
+            else
+                .{ .t = if (byte == '+') .@"+" else .@"-", .len = 1 },
+
+            '<' => if (b1 == '<')
+                (if (b2 == '=') Op{ .t = .@"<<=", .len = 3 } else Op{ .t = .@"<<", .len = 2 })
+            else if (b1 == '=')
+                Op{ .t = .@"<=", .len = 2 }
+            else
+                Op{ .t = .@"<", .len = 1 },
+
+            '>' => if (b1 == '>')
+                (if (b2 == '>')
+                    (if (b3 == '=') Op{ .t = .@">>>=", .len = 4 } else Op{ .t = .@">>>", .len = 3 })
+                else if (b2 == '=')
+                    Op{ .t = .@">>=", .len = 3 }
+                else
+                    Op{ .t = .@">>", .len = 2 })
+            else if (b1 == '=')
+                Op{ .t = .@">=", .len = 2 }
+            else
+                Op{ .t = .@">", .len = 1 },
+
+            '!' => if (b1 == '=')
+                (if (b2 == '=') Op{ .t = .@"!==", .len = 3 } else Op{ .t = .@"!=", .len = 2 })
+            else
+                Op{ .t = .@"!", .len = 1 },
+
+            '&' => if (b1 == '&')
+                (if (b2 == '=') Op{ .t = .@"&&=", .len = 3 } else Op{ .t = .@"&&", .len = 2 })
+            else if (b1 == '=')
+                Op{ .t = .@"&=", .len = 2 }
+            else
+                Op{ .t = .@"&", .len = 1 },
+
+            '|' => if (b1 == '|')
+                (if (b2 == '=') Op{ .t = .@"||=", .len = 3 } else Op{ .t = .@"||", .len = 2 })
+            else if (b1 == '=')
+                Op{ .t = .@"|=", .len = 2 }
+            else
+                Op{ .t = .@"|", .len = 1 },
+
+            '^' => if (b1 == '=')
+                Op{ .t = .@"^=", .len = 2 }
+            else
+                Op{ .t = .@"^", .len = 1 },
+
+            '?' => if (b1 == '.')
+                Op{ .t = .@"?.", .len = 2 }
+            else if (b1 == '?')
+                (if (b2 == '=') Op{ .t = .@"??=", .len = 3 } else Op{ .t = .@"??", .len = 2 })
+            else
+                Op{ .t = .@"?", .len = 1 },
+
+            else => null,
+        };
+
+        if (tag) |op| {
+            self.index += op.len;
+            out.* = .{ .tag = op.t, .start = @intCast(start), .len = op.len, .line = self.line };
+            return true;
+        }
     }
 
     // '.' is the member-access punctuator unless followed by a digit
@@ -243,15 +422,16 @@ inline fn tryFastToken(self: *Self) ?Token {
         break :blk c1 != '.' and (c1 < '0' or c1 > '9');
     })) {
         self.index += 1;
-        return Token{
+        out.* = .{
             .tag = .@".",
             .start = @intCast(start),
             .len = 1,
             .line = self.line,
         };
+        return true;
     }
 
-    return null;
+    return false;
 }
 
 /// Regex literals can be ambiguous with "/" or "/=" from the tokenizer's perspective,
@@ -504,7 +684,7 @@ fn consumeToken(self: *Self) Error!Token {
         '0'...'9' => return self.numericLiteral(),
         '.' => {
             // a digit after '.' starts a numeric literal (`.5`);
-            // every other '.' is the member-access punctuator, the common case
+            // otherwise '.' is the member-access punctuator
             const next_is_digit = self.index + 1 < self.source.len and
                 self.source[self.index + 1] >= '0' and
                 self.source[self.index + 1] <= '9';
@@ -1383,193 +1563,74 @@ fn identifier(self: *Self) Error!Token {
 /// Get the 'tag' associated with a keyword or identifier.
 /// For identifiers lexemes, just return .identifier, for keywords,
 /// return the tag for the specific keyword
-fn kwOrIdentifierTag(lexeme: []const u8) Token.Tag {
-    // This massive switch statement is actually faster than comparing the lexeme against all keywords.
-    // There is a measurable difference in large files.
-    // For instance, in the 'typescript.js' bundle, this gave us a 2ms speedup (85 -> 83ms).
-    //
-    // An alternative approach is to use a (very cheap) perfect hash function and the 'pext' instruction
-    // (on architectures where it is supported) as described here:
-    // http://0x80.pl/notesen/2023-04-30-lookup-in-strings.html
+/// A keyword lookup table, built at comptime from the `Token.Tag` enum.
+/// The hash is a perfect hash: comptime search picks multipliers so that
+/// every keyword lands in its own slot, so a lookup is one hash, one
+/// table load and one string compare.
+const KwEntry = struct {
+    lexeme: []const u8 = "",
+    tag: Token.Tag = .identifier,
+};
 
-    // List of all JS keywords sorted by length, for my reference:
-    //  2: "as", "do", "if", "in", "of",
-    //  3: "for", "let", "new", "try", "var",
-    //  4: "case", "else", "enum", "this", "true", "void", "with", "null", "from",
-    //  5: "await", "break", "catch", "class", "const", "false", "super", "throw", "while", "yield", "async",
-    //  6: "import", "return", "switch", "typeof", "delete", "export", "static",
-    //  7: "default", "extends", "finally",
-    //  8: "continue", "function", "debugger",
-    //  10: "instanceof",
-    //  11: "constructor",
+const KW_TABLE_BITS = 8;
+const KW_SIZE = 1 << KW_TABLE_BITS;
 
-    switch (lexeme.len) {
-        2 => {
-            switch (lexeme[1]) {
-                'f' => {
-                    switch (lexeme[0]) {
-                        'i' => return .kw_if,
-                        'o' => return .kw_of,
-                        else => return .identifier,
+const KW = blk: {
+    @setEvalBranchQuota(100_000_000);
+    const names = @typeInfo(Token.Tag).@"enum".field_names;
+    var list: [names.len]struct { lexeme: []const u8, tag: Token.Tag } = undefined;
+    var n: usize = 0;
+    for (names) |name| {
+        if (!std.mem.startsWith(u8, name, "kw_")) continue;
+        list[n] = .{ .lexeme = name[3..], .tag = @field(Token.Tag, name) };
+        n += 1;
+    }
+    const kws = list[0..n];
+
+    // hash inputs: length, first, second and last byte
+    for (0..512) |a| {
+        for (0..512) |b| {
+            for (0..512) |c| {
+                var used: [KW_SIZE]bool = @splat(false);
+                var ok = true;
+                for (kws) |kw| {
+                    const h = (kw.lexeme.len *% a +%
+                        kw.lexeme[0] *% b +%
+                        kw.lexeme[kw.lexeme.len - 1] *% c +%
+                        kw.lexeme[1]) & (KW_SIZE - 1);
+                    if (used[h]) {
+                        ok = false;
+                        break;
                     }
-                },
-                'n' => if (lexeme[0] == 'i') return .kw_in,
-                'o' => if (lexeme[0] == 'd') return .kw_do,
-                's' => if (lexeme[0] == 'a') return .kw_as,
-                else => return .identifier,
+                    used[h] = true;
+                }
+                if (!ok) continue;
+
+                var table: [KW_SIZE]KwEntry = @splat(.{});
+                for (kws) |kw| {
+                    const h = (kw.lexeme.len *% a +%
+                        kw.lexeme[0] *% b +%
+                        kw.lexeme[kw.lexeme.len - 1] *% c +%
+                        kw.lexeme[1]) & (KW_SIZE - 1);
+                    table[h] = .{ .lexeme = kw.lexeme, .tag = kw.tag };
+                }
+                break :blk .{ .a = a, .b = b, .c = c, .table = table };
             }
-        },
-        3 => {
-            //"for", "let", "new", "try", "var",
-            switch (lexeme[0]) {
-                'f' => if (lexeme[1] == 'o' and lexeme[2] == 'r') return .kw_for,
-                'l' => if (lexeme[1] == 'e' and lexeme[2] == 't') return .kw_let,
-                'n' => if (lexeme[1] == 'e' and lexeme[2] == 'w') return .kw_new,
-                't' => if (lexeme[1] == 'r' and lexeme[2] == 'y') return .kw_try,
-                'v' => if (lexeme[1] == 'a' and lexeme[2] == 'r') return .kw_var,
-                else => return .identifier,
-            }
-
-            return .identifier;
-        },
-
-        4 => {
-            // "case", "else", "enum", "this", "true", "void", "with", "null", "from"
-            switch (lexeme[1]) {
-                'a' => {
-                    if (lexeme[0] == 'c' and lexeme[2] == 's' and lexeme[3] == 'e') return .kw_case;
-                },
-
-                'l' => {
-                    if (lexeme[0] == 'e' and lexeme[2] == 's' and lexeme[3] == 'e') return .kw_else;
-                },
-
-                'n' => {
-                    if (lexeme[0] == 'e' and lexeme[2] == 'u' and lexeme[3] == 'm') return .kw_enum;
-                },
-
-                'h' => {
-                    if (lexeme[0] == 't' and lexeme[2] == 'i' and lexeme[3] == 's') return .kw_this;
-                },
-
-                'r' => {
-                    if (std.mem.eql(u8, lexeme, "true")) return .kw_true;
-                    if (std.mem.eql(u8, lexeme, "from")) return .kw_from;
-                },
-
-                'o' => {
-                    if (lexeme[0] == 'v' and lexeme[2] == 'i' and lexeme[3] == 'd') return .kw_void;
-                },
-
-                'i' => {
-                    if (lexeme[0] == 'w' and lexeme[2] == 't' and lexeme[3] == 'h') return .kw_with;
-                },
-
-                'u' => {
-                    if (lexeme[0] == 'n' and lexeme[2] == 'l' and lexeme[3] == 'l') return .kw_null;
-                },
-
-                else => return .identifier,
-            }
-            return .identifier;
-        },
-
-        5 => {
-            //  "async", await", "break", "catch", "class", "const", "false", "super", "throw", "while", "yield",
-            switch (lexeme[2]) {
-                'a' => {
-                    if (std.mem.eql(u8, lexeme, "await")) return .kw_await;
-                    if (std.mem.eql(u8, lexeme, "class")) return .kw_class;
-                },
-
-                'e' => {
-                    if (std.mem.eql(u8, lexeme, "break")) return .kw_break;
-                    if (std.mem.eql(u8, lexeme, "yield")) return .kw_yield;
-                },
-
-                'p' => if (std.mem.eql(u8, lexeme, "super")) return .kw_super,
-                'r' => if (std.mem.eql(u8, lexeme, "throw")) return .kw_throw,
-                't' => if (std.mem.eql(u8, lexeme, "catch")) return .kw_catch,
-                'n' => if (std.mem.eql(u8, lexeme, "const")) return .kw_const,
-                'l' => if (std.mem.eql(u8, lexeme, "false")) return .kw_false,
-                'i' => if (std.mem.eql(u8, lexeme, "while")) return .kw_while,
-                'y' => if (std.mem.eql(u8, lexeme, "async")) return .kw_async,
-                else => return .identifier,
-            }
-
-            return .identifier;
-        },
-
-        6 => {
-            //  "import", "return", "switch", "typeof", "delete", "export",  "static",
-            switch (lexeme[0]) {
-                'i' => if (std.mem.eql(u8, lexeme, "import")) return .kw_import,
-                'r' => if (std.mem.eql(u8, lexeme, "return")) return .kw_return,
-                's' => {
-                    if (std.mem.eql(u8, lexeme, "switch")) return .kw_switch;
-                    if (std.mem.eql(u8, lexeme, "static")) return .kw_static;
-                },
-                't' => if (std.mem.eql(u8, lexeme, "typeof")) return .kw_typeof,
-                'd' => if (std.mem.eql(u8, lexeme, "delete")) return .kw_delete,
-                'e' => if (std.mem.eql(u8, lexeme, "export")) return .kw_export,
-                'f' => if (std.mem.eql(u8, lexeme, "finally")) return .kw_finally,
-                else => return .identifier,
-            }
-        },
-
-        7 => {
-            switch (lexeme[0]) {
-                'd' => if (std.mem.eql(u8, lexeme, "default")) return .kw_default,
-                'e' => if (std.mem.eql(u8, lexeme, "extends")) return .kw_extends,
-                'f' => if (std.mem.eql(u8, lexeme, "finally")) return .kw_finally,
-                else => return .identifier,
-            }
-        },
-        8 => {
-            // "continue", "function", "debugger",
-            switch (lexeme[0]) {
-                'c' => if (std.mem.eql(u8, lexeme, "continue")) return .kw_continue,
-                'f' => if (std.mem.eql(u8, lexeme, "function")) return .kw_function,
-                'd' => if (std.mem.eql(u8, lexeme, "debugger")) return .kw_debugger,
-                else => return .identifier,
-            }
-        },
-        10 => if (std.mem.eql(u8, lexeme, "instanceof")) return .kw_instanceof,
-        11 => if (std.mem.eql(u8, lexeme, "constructor")) return .kw_constructor,
-        else => return .identifier,
+        }
     }
+    @compileError("no collision-free keyword hash found");
+};
 
+/// Get the keyword tag for an identifier lexeme (length 2..11),
+/// or `.identifier` when the lexeme is not a keyword.
+fn kwOrIdentifierTag(lexeme: []const u8) Token.Tag {
+    const entry = KW.table[
+        (lexeme.len *% KW.a +% lexeme[0] *% KW.b +% lexeme[lexeme.len - 1] *% KW.c +% lexeme[1]) & (KW_SIZE - 1)
+    ];
+    if (lexeme.len == entry.lexeme.len and std.mem.eql(u8, entry.lexeme, lexeme)) {
+        return entry.tag;
+    }
     return .identifier;
-}
-
-/// After the first character of an identifier has been consumed, this function
-/// eats the rest of the identifier lexeme.
-///
-/// [first_char_kind]: Kind of the first character (.ascii or .non_ascii).
-///
-/// Returns the token kind of the identifier.
-fn matchIdentifierTail(self: *Self, first_char_kind: IdCharKind) Error!Token.Tag {
-    var token_kind = if (first_char_kind == .ascii)
-        Token.Tag.identifier
-    else
-        Token.Tag.non_ascii_identifier;
-
-    // First, eat all the non-escaped ascii chars in the identifier name
-    // in one loop. This is the "hot" path, as most identifiers will be normal ascii.
-    if (first_char_kind == .ascii) {
-        @branchHint(.likely);
-        self.matchAsciiIdentifierChars();
-    }
-
-    // Then, eat the rest of the identifier name which may contain
-    // non-ascii characters and escape sequences.
-    if (!self.eof() and try self.matchIdentifierContt()) {
-        @branchHint(.cold);
-        token_kind = .non_ascii_identifier;
-        while (!self.eof() and try self.matchIdentifierContt()) {}
-    }
-
-    return token_kind;
 }
 
 /// Consume all ASCII characters that can appear in an identifier.
@@ -1601,6 +1662,30 @@ inline fn matchAsciiIdentifierCharsRegular(self: *Self) void {
     while (!self.eof() and
         isAsciiIdentifierContt(self.source[self.index])) : (self.index += 1)
     {}
+}
+
+fn matchIdentifierTail(self: *Self, first_char_kind: IdCharKind) Error!Token.Tag {
+    var token_kind = if (first_char_kind == .ascii)
+        Token.Tag.identifier
+    else
+        Token.Tag.non_ascii_identifier;
+
+    // First, eat all the non-escaped ascii chars in the identifier name
+    // in one loop. This is the "hot" path, as most identifiers will be normal ascii.
+    if (first_char_kind == .ascii) {
+        @branchHint(.likely);
+        self.matchAsciiIdentifierChars();
+    }
+
+    // Then, eat the rest of the identifier name which may contain
+    // non-ascii characters and escape sequences.
+    if (!self.eof() and try self.matchIdentifierContt()) {
+        @branchHint(.cold);
+        token_kind = .non_ascii_identifier;
+        while (!self.eof() and try self.matchIdentifierContt()) {}
+    }
+
+    return token_kind;
 }
 
 /// Assuming the current character is a '\',

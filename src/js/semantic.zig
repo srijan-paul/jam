@@ -324,9 +324,9 @@ pub fn onEnter(
         },
 
         .class_declaration => |class| {
-            if (class.nameTokenId(self.tree)) |name_id| {
+            if (class.nameSpan(self.tree)) |name_span| {
                 try self.registerDeclaration(
-                    self.tree.getToken(name_id),
+                    name_span.slice(self.tree.source),
                     .lexical_binding,
                     node_id,
                 );
@@ -376,10 +376,10 @@ pub fn onEnter(
 
             assert(self.binding_stack.items.len > 0);
             const curr_binding_ctx = self.binding_stack.getLast();
-            const name_token = self.tree.getToken(name_id);
+            const name_str = name_id.slice(self.tree.source);
 
             try self.registerDeclaration(
-                name_token,
+                name_str,
                 curr_binding_ctx.kind,
                 curr_binding_ctx.decl_node,
             );
@@ -401,7 +401,7 @@ pub fn onEnter(
             try self.binding_stack.append(self.allocator, params_ctx);
         },
         .identifier_reference => |token_id| {
-            const name = try self.strings.stringValue(self.tree.getToken(token_id));
+            const name = try self.strings.stringValue(token_id.slice(self.tree.source));
             if (self.current_scope.findVariable(name)) |variable| {
                 const reference = Reference{ .from = node_id, .to = variable };
                 try variable.scope.references.append(self.allocator, reference);
@@ -419,11 +419,11 @@ pub fn onEnter(
 /// Create a new variable in the current scope with the given name.
 fn registerDeclaration(
     self: *Self,
-    name_token: *const Token,
+    name: []const u8,
     binding_kind: Variable.Kind,
     def_node: ast.Node.Index,
 ) AnalysisError!void {
-    const name_str = try self.strings.stringValue(name_token);
+    const name_str = try self.strings.stringValue(name);
 
     // Var bindings are hoisted out to then nearest functon scope
     // TODO: instead of doing this loop every time, we should cache it

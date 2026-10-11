@@ -20,6 +20,10 @@ pub const Mask = struct {
     pub const IsLogicalOp: u32 = 1 << 20; // || and &&
     pub const IsJsxAttributeStart: u32 = 1 << 21;
     pub const Trivia: u32 = 1 << 22;
+    /// Set on tokens that continue an expression in
+    /// `assignmentExpression`'s infix loop: '=>', assignment operators,
+    /// '**', binary operators and '?'.
+    pub const IsInfix: u32 = 1 << 23;
 
     /// For binary operators (token.tag & Mask.IsBinaryOp != 0),
     /// bits 8-11 store the precedence of the token.
@@ -82,63 +86,63 @@ pub const JsTokenTag = enum(u32) {
     @"--" = 54,
 
     // Binary operators arranged in order of precedence (least binding to highest binding).
-    @"**" = 52,
-    @"??" = 67 | Mask.IsBinaryOp | (1 << Mask.PrecShift),
-    @"||" = 66 | Mask.IsBinaryOp | Mask.IsLogicalOp | (2 << Mask.PrecShift),
-    @"&&" = 65 | Mask.IsBinaryOp | Mask.IsLogicalOp | (3 << Mask.PrecShift),
-    @"|" = 61 | Mask.IsBinaryOp | (4 << Mask.PrecShift),
-    @"^" = 62 | Mask.IsBinaryOp | (5 << Mask.PrecShift),
-    @"&" = 60 | Mask.IsBinaryOp | (6 << Mask.PrecShift),
+    @"**" = 52 | Mask.IsInfix,
+    @"??" = 67 | Mask.IsInfix | Mask.IsBinaryOp | (1 << Mask.PrecShift),
+    @"||" = 66 | Mask.IsInfix | Mask.IsBinaryOp | Mask.IsLogicalOp | (2 << Mask.PrecShift),
+    @"&&" = 65 | Mask.IsInfix | Mask.IsBinaryOp | Mask.IsLogicalOp | (3 << Mask.PrecShift),
+    @"|" = 61 | Mask.IsInfix | Mask.IsBinaryOp | (4 << Mask.PrecShift),
+    @"^" = 62 | Mask.IsInfix | Mask.IsBinaryOp | (5 << Mask.PrecShift),
+    @"&" = 60 | Mask.IsInfix | Mask.IsBinaryOp | (6 << Mask.PrecShift),
 
-    @"==" = 38 | Mask.IsBinaryOp | (7 << Mask.PrecShift),
-    @"!=" = 39 | Mask.IsBinaryOp | (7 << Mask.PrecShift),
-    @"===" = 40 | Mask.IsBinaryOp | (7 << Mask.PrecShift),
-    @"!==" = 41 | Mask.IsBinaryOp | (7 << Mask.PrecShift),
+    @"==" = 38 | Mask.IsInfix | Mask.IsBinaryOp | (7 << Mask.PrecShift),
+    @"!=" = 39 | Mask.IsInfix | Mask.IsBinaryOp | (7 << Mask.PrecShift),
+    @"===" = 40 | Mask.IsInfix | Mask.IsBinaryOp | (7 << Mask.PrecShift),
+    @"!==" = 41 | Mask.IsInfix | Mask.IsBinaryOp | (7 << Mask.PrecShift),
 
-    kw_in = 91 | Mask.IsKeyword | Mask.IsBinaryOp | (8 << Mask.PrecShift),
-    kw_instanceof = 92 | Mask.IsKeyword | Mask.IsBinaryOp | (8 << Mask.PrecShift),
-    @"<" = 32 | Mask.IsBinaryOp | (8 << Mask.PrecShift),
-    @">" = 33 | Mask.IsBinaryOp | (8 << Mask.PrecShift),
-    @"<=" = 34 | Mask.IsBinaryOp | (8 << Mask.PrecShift),
-    @">=" = 35 | Mask.IsBinaryOp | (8 << Mask.PrecShift),
+    kw_in = 91 | Mask.IsInfix | Mask.IsKeyword | Mask.IsBinaryOp | (8 << Mask.PrecShift),
+    kw_instanceof = 92 | Mask.IsInfix | Mask.IsKeyword | Mask.IsBinaryOp | (8 << Mask.PrecShift),
+    @"<" = 32 | Mask.IsInfix | Mask.IsBinaryOp | (8 << Mask.PrecShift),
+    @">" = 33 | Mask.IsInfix | Mask.IsBinaryOp | (8 << Mask.PrecShift),
+    @"<=" = 34 | Mask.IsInfix | Mask.IsBinaryOp | (8 << Mask.PrecShift),
+    @">=" = 35 | Mask.IsInfix | Mask.IsBinaryOp | (8 << Mask.PrecShift),
 
-    @"<<" = 56 | Mask.IsBinaryOp | (9 << Mask.PrecShift),
-    @">>" = 57 | Mask.IsBinaryOp | (9 << Mask.PrecShift),
-    @">>>" = 58 | Mask.IsBinaryOp | (9 << Mask.PrecShift),
+    @"<<" = 56 | Mask.IsInfix | Mask.IsBinaryOp | (9 << Mask.PrecShift),
+    @">>" = 57 | Mask.IsInfix | Mask.IsBinaryOp | (9 << Mask.PrecShift),
+    @">>>" = 58 | Mask.IsInfix | Mask.IsBinaryOp | (9 << Mask.PrecShift),
 
-    @"+" = 44 | Mask.IsBinaryOp | (10 << Mask.PrecShift) | Mask.IsUnaryOp,
-    @"-" = 45 | Mask.IsBinaryOp | (10 << Mask.PrecShift) | Mask.IsUnaryOp,
+    @"+" = 44 | Mask.IsInfix | Mask.IsBinaryOp | (10 << Mask.PrecShift) | Mask.IsUnaryOp,
+    @"-" = 45 | Mask.IsInfix | Mask.IsBinaryOp | (10 << Mask.PrecShift) | Mask.IsUnaryOp,
 
-    @"*" = 48 | Mask.IsBinaryOp | (11 << Mask.PrecShift),
-    @"/" = 49 | Mask.IsBinaryOp | (11 << Mask.PrecShift),
-    @"%" = 50 | Mask.IsBinaryOp | (11 << Mask.PrecShift),
+    @"*" = 48 | Mask.IsInfix | Mask.IsBinaryOp | (11 << Mask.PrecShift),
+    @"/" = 49 | Mask.IsInfix | Mask.IsBinaryOp | (11 << Mask.PrecShift),
+    @"%" = 50 | Mask.IsInfix | Mask.IsBinaryOp | (11 << Mask.PrecShift),
 
     @"!" = 63 | Mask.IsUnaryOp,
     @"~" = 64 | Mask.IsUnaryOp,
 
     @"?." = 68,
-    @"?" = 69,
+    @"?" = 69 | Mask.IsInfix,
     @":" = 70,
 
     // assignment operators
-    @"=" = 71 | Mask.IsAssignOp,
-    @"%=" = 72 | Mask.IsAssignOp,
-    @"+=" = 73 | Mask.IsAssignOp,
-    @"*=" = 74 | Mask.IsAssignOp,
-    @"-=" = 75 | Mask.IsAssignOp,
-    @">>=" = 76 | Mask.IsAssignOp,
-    @">>>=" = 77 | Mask.IsAssignOp,
-    @"&=" = 78 | Mask.IsAssignOp,
-    @"|=" = 79 | Mask.IsAssignOp,
-    @"^=" = 80 | Mask.IsAssignOp,
-    @"&&=" = 81 | Mask.IsAssignOp,
-    @"||=" = 82 | Mask.IsAssignOp,
-    @"/=" = 83 | Mask.IsAssignOp,
-    @"??=" = 84 | Mask.IsAssignOp,
-    @"**=" = 85 | Mask.IsAssignOp,
-    @"<<=" = 86 | Mask.IsAssignOp,
+    @"=" = 71 | Mask.IsInfix | Mask.IsAssignOp,
+    @"%=" = 72 | Mask.IsInfix | Mask.IsAssignOp,
+    @"+=" = 73 | Mask.IsInfix | Mask.IsAssignOp,
+    @"*=" = 74 | Mask.IsInfix | Mask.IsAssignOp,
+    @"-=" = 75 | Mask.IsInfix | Mask.IsAssignOp,
+    @">>=" = 76 | Mask.IsInfix | Mask.IsAssignOp,
+    @">>>=" = 77 | Mask.IsInfix | Mask.IsAssignOp,
+    @"&=" = 78 | Mask.IsInfix | Mask.IsAssignOp,
+    @"|=" = 79 | Mask.IsInfix | Mask.IsAssignOp,
+    @"^=" = 80 | Mask.IsInfix | Mask.IsAssignOp,
+    @"&&=" = 81 | Mask.IsInfix | Mask.IsAssignOp,
+    @"||=" = 82 | Mask.IsInfix | Mask.IsAssignOp,
+    @"/=" = 83 | Mask.IsInfix | Mask.IsAssignOp,
+    @"??=" = 84 | Mask.IsInfix | Mask.IsAssignOp,
+    @"**=" = 85 | Mask.IsInfix | Mask.IsAssignOp,
+    @"<<=" = 86 | Mask.IsInfix | Mask.IsAssignOp,
 
-    @"=>" = 88,
+    @"=>" = 88 | Mask.IsInfix,
 
     // keywords.
     kw_true = 93 | Mask.IsKeyword,

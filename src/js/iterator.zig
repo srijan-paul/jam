@@ -262,7 +262,7 @@ fn visitNewExpr(
     node_id: Node.Index,
 ) Allocator.Error!void {
     if (data.arguments) |_pl|
-        try self.pushNode(_pl, node_id);
+        try self.visitSubRange(&_pl, node_id);
     try self.pushNode(data.callee, node_id);
 }
 
@@ -287,7 +287,8 @@ fn visitCallExpr(
     data: *const ast.CallExpr,
     node_id: Node.Index,
 ) Allocator.Error!void {
-    try self.pushNode(data.arguments, node_id);
+    if (data.arguments) |_pl|
+        try self.visitSubRange(&_pl, node_id);
     try self.pushNode(data.callee, node_id);
 }
 
@@ -500,11 +501,10 @@ pub fn enqueueChildren(self: *Self, node_id: Node.Index) Allocator.Error!void {
         .computed_member_expr => |pl| try self.visitComputedPropertyAccess(&pl, node_id),
         .tagged_template_expr => |pl| try self.visitTaggedTemplateExpression(&pl, node_id),
         .meta_property => |pl| try self.visitMetaProperty(&pl, node_id),
-        .arguments => |maybe_pl| if (maybe_pl) |pl| try self.visitSubRange(&pl, node_id),
         .new_expr => |pl| try self.visitNewExpr(&pl, node_id),
         .call_expr => |pl| try self.visitCallExpr(&pl, node_id),
         .super_call_expr => |maybe_pl| if (maybe_pl) |pl| try self.visitSubRange(&pl, node_id),
-        .super => {}, // leaf (token)
+        .super => {}, // leaf
         .optional_expr => |child_id| try self.pushNode(child_id, node_id),
         .function_expr => |pl| try self.visitFunction(&pl, node_id),
         .post_unary_expr => |pl| try self.visitUnaryPayload(&pl, node_id),
@@ -512,15 +512,15 @@ pub fn enqueueChildren(self: *Self, node_id: Node.Index) Allocator.Error!void {
         .await_expr => |pl| try self.visitUnaryPayload(&pl, node_id),
         .yield_expr => {}, // leaf
         .update_expr => |pl| try self.visitUnaryPayload(&pl, node_id),
-        .identifier => {}, // leaf (token)
-        .identifier_reference => {}, // leaf (token)
-        .binding_identifier => {}, // leaf (token)
-        .string_literal => {}, // leaf (token)
+        .identifier => {}, // leaf
+        .identifier_reference => {}, // leaf
+        .binding_identifier => {}, // leaf
+        .string_literal => {}, // leaf
         .number_literal => {}, // leaf
         .boolean_literal => {}, // leaf
-        .null_literal => {}, // leaf (token)
-        .regex_literal => {}, // leaf (token)
-        .this => {}, // leaf (token)
+        .null_literal => {}, // leaf
+        .regex_literal => {}, // leaf
+        .this => {}, // leaf
         .empty_array_item => {}, // leaf
         .array_literal => |maybe_pl| if (maybe_pl) |pl| try self.visitSubRange(&pl, node_id),
         .array_pattern => |maybe_pl| if (maybe_pl) |pl| try self.visitSubRange(&pl, node_id),
@@ -537,7 +537,7 @@ pub fn enqueueChildren(self: *Self, node_id: Node.Index) Allocator.Error!void {
         .parenthesized_expr => |child_id| try self.pushNode(child_id, node_id),
         .conditional_expr => |pl| try self.visitConditional(&pl, node_id),
         .template_literal => |pl| try self.visitSubRange(&pl, node_id),
-        .template_element => {}, // leaf (token)
+        .template_element => {}, // leaf
         .assignment_pattern => |pl| try self.visitBinaryPayload(&pl, node_id),
         .object_pattern => |maybe_pl| if (maybe_pl) |pl| try self.visitSubRange(&pl, node_id),
         .empty_statement => {}, // leaf
@@ -586,10 +586,10 @@ pub fn enqueueChildren(self: *Self, node_id: Node.Index) Allocator.Error!void {
         .jsx_closing_element => |pl| try self.visitJsxClosingElement(&pl, node_id),
         .jsx_self_closing_element => |pl| try self.visitJsxOpeningElement(&pl, node_id),
         .jsx_attribute => |pl| try self.visitJsxAttribute(&pl, node_id),
-        .jsx_text => {}, // leaf (token)
+        .jsx_text => {}, // leaf
         .jsx_expression => |child_id| try self.pushNode(child_id, node_id),
-        .jsx_identifier => {}, // leaf (token)
-        .jsx_identifier_reference => {}, // leaf (token)
+        .jsx_identifier => {}, // leaf
+        .jsx_identifier_reference => {}, // leaf
         .jsx_member_expression => |pl| try self.visitJsxMemberExpression(&pl, node_id),
         .jsx_namespaced_name => |pl| try self.visitJsxNamespacedName(&pl, node_id),
         .jsx_spread_child => |child_id| try self.pushNode(child_id, node_id),

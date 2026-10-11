@@ -440,11 +440,18 @@ fn generateStmtForAnn(
     } else if (type_ann_node.tag == .identifier) {
         const type_name = ast.tokenSlice(type_ann_node.main_token);
         if (std.mem.eql(u8, type_name, "SubRange")) {
-            const s = try std.fmt.allocPrint(
-                allocator,
-                "    try self.visitSubRange(&data.{s}, node_id);\n",
-                .{field_name},
-            );
+            const s = if (maybe_param_name) |param_name|
+                try std.fmt.allocPrint(
+                    allocator,
+                    "try self.visitSubRange(&{s}, node_id);\n",
+                    .{param_name},
+                )
+            else
+                try std.fmt.allocPrint(
+                    allocator,
+                    "    try self.visitSubRange(&data.{s}, node_id);\n",
+                    .{field_name},
+                );
             defer allocator.free(s);
 
             _ = try w.writeStreamingAll(io, s);
@@ -457,6 +464,9 @@ fn generateStmtForAnn(
             {
                 return;
             }
+
+            // an operator enum, not a node
+            if (std.mem.eql(u8, type_name, "Operator")) return;
 
             if (types.struct_decls.get(type_name)) |decl_id| {
                 var buffer: [2]Ast.Node.Index = undefined;

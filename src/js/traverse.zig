@@ -187,17 +187,15 @@ pub fn Traverser(TControl: type) type {
 
                 .call_expr => |call_pl| {
                     try self.visit(call_pl.callee, node_id);
-                    try self.visit(call_pl.arguments, node_id);
+                    if (call_pl.arguments) |args| try self.subRange(args, node_id);
                 },
 
                 .new_expr => |call_pl| {
                     try self.visit(call_pl.callee, node_id);
-                    if (call_pl.arguments) |args|
-                        try self.visit(args, node_id);
+                    if (call_pl.arguments) |args| try self.subRange(args, node_id);
                 },
 
                 .super_call_expr => |super_pl| try self.subRange(super_pl, node_id),
-                .arguments => |args| try self.subRange(args, node_id),
 
                 .meta_property => |meta_pl| {
                     try self.visit(meta_pl.meta, node_id);

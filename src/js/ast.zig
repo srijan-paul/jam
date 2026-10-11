@@ -7,6 +7,17 @@ const meta = std.meta;
 const assert = std.debug.assert;
 const String = util.StringPool.String;
 
+/// A half-open byte range into the source text.
+pub const Span = struct {
+    start: u32,
+    /// exclusive end offset
+    end: u32,
+
+    pub fn slice(self: Span, source: []const u8) []const u8 {
+        return source[self.start..self.end];
+    }
+};
+
 /// Represents a parse tree.
 /// Nodes are stored in a flat array, and reference each other using indices.
 pub const Tree = struct {
@@ -18,6 +29,9 @@ pub const Tree = struct {
     source_type: Parser.SourceType,
     /// A flat list that stores all nodes in the AST.
     nodes: std.MultiArrayList(Node),
+    /// Every significant token (plus comments) in source order.
+    /// Populated only when the parser is configured with `tokens = true`;
+    /// nothing in the tree references this list, nodes carry byte spans.
     tokens: std.ArrayList(Token),
     /// Extra information for some nodes.
     /// referenced using indicies (see: `ExtraData.Index`)
@@ -34,14 +48,6 @@ pub const Tree = struct {
     /// Obtain all the data for a single AST Node.
     pub fn getNode(self: *const Tree, index: Node.Index) Node {
         return self.nodes.get(@backingInt(index));
-    }
-
-    pub fn getStartTokenId(self: *const Tree, index: Node.Index) Token.Index {
-        return self.nodes.items(.start)[@backingInt(index)];
-    }
-
-    pub fn getEndTokenId(self: *const Tree, index: Node.Index) Token.Index {
-        return self.nodes.items(.end)[@backingInt(index)];
     }
 
     pub fn nodeData(self: *const Tree, index: Node.Index) *const NodeData {
@@ -87,15 +93,18 @@ pub const Tree = struct {
         );
     }
 
+    /// Get the byte span of a node.
+    pub fn spanOf(self: *const Tree, node_id: Node.Index) Span {
+        return .{
+            .start = self.nodes.items(.start)[@backingInt(node_id)],
+            .end = self.nodes.items(.end)[@backingInt(node_id)],
+        };
+    }
+
     /// Get the source text for a node as a byte slice.
     pub fn nodeToByteSlice(self: *const Tree, node_id: Node.Index) []const u8 {
-        // TODO: use a cached nodes.slice instead of .start and .end
-        const start = self.nodes.items(.start)[@backingInt(node_id)];
-        const end = self.nodes.items(.end)[@backingInt(node_id)];
-
-        const start_byte = self.getToken(start).start;
-        const end_byte = start_byte + self.getToken(end).len;
-        return self.source[start_byte..end_byte];
+        const span = self.spanOf(node_id);
+        return self.source[span.start..span.end];
     }
 
     pub fn deinit(self: *Tree) void {
@@ -107,35 +116,132 @@ pub const Tree = struct {
     }
 };
 
+/// Operators that appear in expression payloads, stored compactly (u8)
+/// instead of as byte spans. Values are named after the corresponding
+/// `Token.Tag` members; `fromTag` maps between them, and `lexeme` returns
+/// the operator's source text.
+pub const Operator = enum(u8) {
+    @"!",
+    @"%",
+    @"&",
+    @"*",
+    @"+",
+    @"-",
+    @"/",
+    @"<",
+    @"=",
+    @">",
+    @"^",
+    @"|",
+    @"~",
+    @"!=",
+    @"%=",
+    @"&&",
+    @"&=",
+    @"**",
+    @"*=",
+    @"++",
+    @"+=",
+    @"--",
+    @"-=",
+    @"/=",
+    @"<<",
+    @"<=",
+    @"==",
+    @">=",
+    @">>",
+    @"??",
+    @"^=",
+    @"|=",
+    @"||",
+    @"!==",
+    @"&&=",
+    @"**=",
+    @"<<=",
+    @"===",
+    @">>=",
+    @">>>",
+    @"??=",
+    @"||=",
+    @">>>=",
+    kw_await,
+    kw_in,
+    kw_void,
+    kw_delete,
+    kw_typeof,
+    kw_instanceof,
+
+    pub fn fromTag(tag: Token.Tag) Operator {
+        return switch (tag) {
+            .@"!" => .@"!",
+            .@"%" => .@"%",
+            .@"&" => .@"&",
+            .@"*" => .@"*",
+            .@"+" => .@"+",
+            .@"-" => .@"-",
+            .@"/" => .@"/",
+            .@"<" => .@"<",
+            .@"=" => .@"=",
+            .@">" => .@">",
+            .@"^" => .@"^",
+            .@"|" => .@"|",
+            .@"~" => .@"~",
+            .@"!=" => .@"!=",
+            .@"%=" => .@"%=",
+            .@"&&" => .@"&&",
+            .@"&=" => .@"&=",
+            .@"**" => .@"**",
+            .@"*=" => .@"*=",
+            .@"++" => .@"++",
+            .@"+=" => .@"+=",
+            .@"--" => .@"--",
+            .@"-=" => .@"-=",
+            .@"/=" => .@"/=",
+            .@"<<" => .@"<<",
+            .@"<=" => .@"<=",
+            .@"==" => .@"==",
+            .@">=" => .@">=",
+            .@">>" => .@">>",
+            .@"??" => .@"??",
+            .@"^=" => .@"^=",
+            .@"|=" => .@"|=",
+            .@"||" => .@"||",
+            .@"!==" => .@"!==",
+            .@"&&=" => .@"&&=",
+            .@"**=" => .@"**=",
+            .@"<<=" => .@"<<=",
+            .@"===" => .@"===",
+            .@">>=" => .@">>=",
+            .@">>>" => .@">>>",
+            .@"??=" => .@"??=",
+            .@"||=" => .@"||=",
+            .@">>>=" => .@">>>=",
+            .kw_await => .kw_await,
+            .kw_in => .kw_in,
+            .kw_void => .kw_void,
+            .kw_delete => .kw_delete,
+            .kw_typeof => .kw_typeof,
+            .kw_instanceof => .kw_instanceof,
+            else => unreachable, // not an operator tag
+        };
+    }
+
+    /// The operator's source text, e.g. "+" or "typeof".
+    pub fn lexeme(self: Operator) []const u8 {
+        const name = @tagName(self);
+        return if (std.mem.startsWith(u8, name, "kw_")) name[3..] else name;
+    }
+};
+
 pub const BinaryPayload = struct {
     lhs: Node.Index,
     rhs: Node.Index,
-    operator: Token.Index,
-
-    /// Return the operator token
-    pub fn getOperator(self: *const BinaryPayload, t: *const Tree) *const Token {
-        return t.getToken(self.operator);
-    }
-
-    /// Return the type tag of the operator token
-    pub fn getOperatorKind(self: *const BinaryPayload, t: *const Tree) Token.Tag {
-        return t.getTokenKind(self.operator);
-    }
+    operator: Operator,
 };
 
 pub const UnaryPayload = struct {
     operand: Node.Index,
-    operator: Token.Index,
-
-    /// Return the operator token
-    pub fn getOperator(self: *const UnaryPayload, t: *const Tree) *const Token {
-        return t.getToken(self.operator);
-    }
-
-    /// Return the type tag of the operator token
-    pub fn getOperatorKind(self: *const UnaryPayload, t: *const Tree) Token.Tag {
-        return t.getTokenKind(self.operator);
-    }
+    operator: Operator,
 };
 
 // TODO: make `computed` a flag in the `PropertyAccess` struct
@@ -169,13 +275,13 @@ pub const YieldPayload = struct {
 
 pub const CallExpr = struct {
     callee: Node.Index,
-    // TODO: store the arguments inline
-    arguments: Node.Index,
+    arguments: ?SubRange,
 };
 
 pub const NewExpr = struct {
     callee: Node.Index,
-    arguments: ?Node.Index,
+    /// null for 'new X' without parentheses
+    arguments: ?SubRange,
 };
 
 pub const JumpLabel = struct {
@@ -220,24 +326,8 @@ pub const Function = struct {
     pub fn getNameSlice(self: *const Function, tree: *const Tree) ?[]const u8 {
         if (self.getName(tree)) |name_id| {
             assert(name_id.tag(tree) == .binding_identifier);
-            return tree.getTokenSlice(name_id.get(tree).binding_identifier);
+            return name_id.get(tree).binding_identifier.slice(tree.source);
         }
-        return null;
-    }
-
-    /// Get the token ID for the name of this function
-    pub fn getNameTokenId(self: *const Function, tree: *const Tree) ?Token.Index {
-        if (self.getName(tree)) |name| {
-            assert(name.tag(tree) == .binding_identifier);
-            return name.get(tree).binding_identifier;
-        }
-        return null;
-    }
-
-    /// Get the token for the name of this function
-    pub fn getNameToken(self: *const Function, tree: *const Tree) ?*const Token {
-        if (self.getNameTokenId(tree)) |id|
-            return tree.getToken(id);
         return null;
     }
 
@@ -459,23 +549,20 @@ pub const Class = struct {
     meta: Node.Index,
     body: SubRange,
 
-    /// Return a slice representing the name of the class.
-    pub fn className(self: *const Class, t: *const Tree) ?[]const u8 {
-        if (self.nameTokenId(t)) |name_id| {
-            return t.getTokenSlice(name_id);
-        }
-
-        return null;
-    }
-
-    /// Get the token ID for the name of this class
-    pub fn nameTokenId(self: *const Class, t: *const Tree) ?Token.Index {
+    /// Return the byte span of the name of this class.
+    pub fn nameSpan(self: *const Class, t: *const Tree) ?Span {
         const class_meta_id = self.meta.get(t);
         assert(meta.activeTag(class_meta_id.*) == .class_meta);
 
         const name_id = class_meta_id.class_meta.name;
         if (name_id == .empty) return null;
         return name_id.get(t).binding_identifier;
+    }
+
+    /// Return a slice representing the name of the class.
+    pub fn className(self: *const Class, t: *const Tree) ?[]const u8 {
+        if (self.nameSpan(t)) |span| return span.slice(t.source);
+        return null;
     }
 };
 
@@ -581,7 +668,7 @@ pub const ExportedDeclaration = struct {
 
 pub const Number = struct {
     value_id: ExtraData.Index,
-    token: Token.Index,
+    token: Span,
 
     /// Get the value of this numeric literal as an f64
     pub fn value(self: Number, t: *const Tree) f64 {
@@ -592,7 +679,7 @@ pub const Number = struct {
 
 pub const Boolean = struct {
     value: bool,
-    token: Token.Index,
+    token: Span,
 };
 
 /// JSX children wrapped inside '<> </>'.
@@ -658,8 +745,8 @@ pub const JsxMemberExpression = struct {
     /// This is guaranteed to always be a 'jsx_identifier_reference'
     property: Node.Index,
 
-    /// Get the field name of the member expression
-    pub fn getProperty(self: *const JsxMemberExpression, t: *const Tree) Token.Index {
+    /// Get the byte span of the field name of the member expression
+    pub fn getProperty(self: *const JsxMemberExpression, t: *const Tree) Span {
         const property = self.property.get(t);
         assert(meta.activeTag(property.*) == .jsx_identifier);
         return property.jsx_identifier;
@@ -675,8 +762,8 @@ pub const JsxNamespacedName = struct {
     /// This is guaranteed to always be a 'jsx_identifier_reference'
     name: Node.Index,
 
-    /// Get the field name of the member expression
-    pub fn getProperty(self: *const JsxNamespacedName, t: *const Tree) Token.Index {
+    /// Get the byte span of the field name of the namespaced name
+    pub fn getProperty(self: *const JsxNamespacedName, t: *const Tree) Span {
         const property = self.name.get(t);
         assert(meta.activeTag(property.*) == .jsx_identifier);
         return property.jsx_identifier;
@@ -692,11 +779,10 @@ pub const NodeData = union(enum(u8)) {
     computed_member_expr: ComputedPropertyAccess,
     tagged_template_expr: TaggedTemplateExpression,
     meta_property: MetaProperty,
-    arguments: ?SubRange,
     new_expr: NewExpr,
     call_expr: CallExpr,
     super_call_expr: ?SubRange,
-    super: Token.Index,
+    super: Span,
     // points to  call_expr, member_expr, or computed_member_expr
     optional_expr: Node.Index,
     function_expr: Function,
@@ -710,29 +796,29 @@ pub const NodeData = union(enum(u8)) {
     /// An identifier that is neither a reference, nor a binding.
     /// E.g: property node in a member expression, a label in a labeled statement,
     /// or a key in an object literal.
-    identifier: Token.Index,
+    identifier: Span,
     /// An identifier that references some value in the program.
     /// ```js
     /// let x = 1; // "x" is a `binding_identifier`
     /// x = 2; // "x" is an `identifier_reference`
     /// ```
-    identifier_reference: Token.Index,
+    identifier_reference: Span,
     /// An identifier occurring on the LHS of a declaration.
     /// E.g: In a variable binding, destructuring, or function parameter.
     /// ```js
     /// let x = 1; // "x" is a `binding_identifier`
     /// x = 2; // "x" is an `identifier_reference`
     /// ```
-    binding_identifier: Token.Index,
+    binding_identifier: Span,
 
     // Literals:
-    string_literal: Token.Index,
+    string_literal: Span,
     number_literal: Number,
     boolean_literal: Boolean,
-    null_literal: Token.Index,
-    regex_literal: Token.Index,
+    null_literal: Span,
+    regex_literal: Span,
 
-    this: Token.Index,
+    this: Span,
     /// Represents a "missing" item in an array literal: `[,]`
     empty_array_item,
     array_literal: ?SubRange,
@@ -764,7 +850,7 @@ pub const NodeData = union(enum(u8)) {
     /// So `Hello ${"world"}` becomes: `template_element, string_literal, template_element`
     template_literal: SubRange,
     /// TODO: store raw and cooked values?
-    template_element: Token.Index,
+    template_element: Span,
     assignment_pattern: BinaryPayload,
     object_pattern: ?SubRange,
 
@@ -836,13 +922,13 @@ pub const NodeData = union(enum(u8)) {
     jsx_self_closing_element: JsxOpeningElement,
     jsx_attribute: JsxAttribute,
     /// Non-javascript text inside a JSX element.
-    jsx_text: Token.Index,
+    jsx_text: Span,
     /// A JSX element wrapped within {}s
     jsx_expression: Node.Index,
     /// An attribute name, like a prop key.
-    jsx_identifier: Token.Index,
+    jsx_identifier: Span,
     /// A JSX Element name
-    jsx_identifier_reference: Token.Index,
+    jsx_identifier_reference: Span,
     jsx_member_expression: JsxMemberExpression,
     jsx_namespaced_name: JsxNamespacedName,
     /// A JSX spread element wrapped within '{}'s
@@ -865,48 +951,75 @@ pub const NodeData = union(enum(u8)) {
 
 /// The tokens in '<>' and '</>' that open and close a JSX fragment.
 pub const JsxFragmentTags = struct {
-    /// The '<' token that opens the jsx fragment.
-    opening_lt_token: Token.Index,
-    /// The '<' token that closes the jsx fragment.
-    closing_lt_token: Token.Index,
+    /// The byte span of the '<' that opens the jsx fragment.
+    opening_lt: Span,
+    /// The byte span of the '<' that closes the jsx fragment.
+    closing_lt: Span,
 
     /// The opening "<>"
     pub const Opening = struct {
-        lt: Token.Index,
-        gt: Token.Index,
+        lt: Span,
+        gt: Span,
     };
 
     /// The "</>" tokens
     pub const Closing = struct {
-        lt: Token.Index,
-        gt: Token.Index,
-        slash: Token.Index,
+        lt: Span,
+        gt: Span,
+        slash: Span,
     };
 
-    /// Get the "<" and ">" tokens that open the JSX fragment.
-    pub fn getOpening(self: JsxFragmentTags, t: *const Tree) Opening {
-        // skip any comments or whitespace tokens between the '<' and closing '>'
-        var opening_gt_token: u32 = self.opening_lt_token.asU32() + 1;
-        while (t.getTokenKind(@fromBackingInt(@intCast(opening_gt_token))) != .@">") : (opening_gt_token += 1) {}
+    /// Scan the source for the next byte that is not whitespace or part of
+    /// a comment, starting at [index]. Returns the index of that byte.
+    fn skipTrivia(source: []const u8, start_index: usize) usize {
+        var i = start_index;
+        while (i < source.len) {
+            switch (source[i]) {
+                ' ', '\t', '\r', '\n' => i += 1,
+                '/' => {
+                    if (i + 1 < source.len and source[i + 1] == '/') {
+                        i += 2;
+                        while (i < source.len and source[i] != '\n') i += 1;
+                    } else if (i + 1 < source.len and source[i + 1] == '*') {
+                        i += 2;
+                        while (i + 1 < source.len and !(source[i] == '*' and source[i + 1] == '/')) i += 1;
+                        i = @min(i + 2, source.len);
+                    } else {
+                        return i;
+                    }
+                },
+                else => return i,
+            }
+        }
+        return i;
+    }
 
-        return Opening{
-            .lt = self.opening_lt_token,
-            .gt = @fromBackingInt(@intCast(opening_gt_token)),
+    /// Get the byte spans of the "<" and ">" that open the JSX fragment.
+    pub fn getOpening(self: JsxFragmentTags, t: *const Tree) Opening {
+        const source = t.source;
+        // from after the opening '<', find the closing '>'
+        var i = skipTrivia(source, self.opening_lt.end);
+        while (i < source.len and source[i] != '>') i += 1;
+
+        return .{
+            .lt = self.opening_lt,
+            .gt = .{ .start = @intCast(i), .end = @intCast(i + 1) },
         };
     }
 
-    /// Get the "<", "/" and ">" tokens that close the JSX fragment
+    /// Get the byte spans of the "<", "/" and ">" that close the JSX fragment.
     pub fn getClosing(self: JsxFragmentTags, t: *const Tree) Closing {
-        var slash_token: u32 = self.closing_lt_token.asU32() + 1;
-        while (t.getTokenKind(@fromBackingInt(@intCast(slash_token))) != .@"/") : (slash_token += 1) {}
+        const source = t.source;
+        var i = skipTrivia(source, self.closing_lt.end);
+        while (i < source.len and source[i] != '/') i += 1;
+        const slash = i;
+        i = skipTrivia(source, slash + 1);
+        while (i < source.len and source[i] != '>') i += 1;
 
-        var closing_gt_token: u32 = slash_token + 1;
-        while (t.getTokenKind(@fromBackingInt(@intCast(closing_gt_token))) != .@">") : (closing_gt_token += 1) {}
-
-        return Closing{
-            .lt = self.closing_lt_token,
-            .gt = @fromBackingInt(@intCast(closing_gt_token)),
-            .slash = @fromBackingInt(@intCast(slash_token)),
+        return .{
+            .lt = self.closing_lt,
+            .gt = .{ .start = @intCast(i), .end = @intCast(i + 1) },
+            .slash = .{ .start = @intCast(slash), .end = @intCast(slash + 1) },
         };
     }
 };
@@ -936,20 +1049,20 @@ pub const Node = struct {
             return tree.tag(self);
         }
 
-        pub fn startTokenId(self: Index, tree: *const Tree) Token.Index {
-            return tree.getStartTokenId(self);
+        pub fn startByte(self: Index, tree: *const Tree) u32 {
+            return tree.nodes.items(.start)[@backingInt(self)];
         }
 
-        pub fn endTokenId(self: Index, tree: *const Tree) Token.Index {
-            return tree.getEndTokenId(self);
+        pub fn endByte(self: Index, tree: *const Tree) u32 {
+            return tree.nodes.items(.end)[@backingInt(self)];
         }
     };
     /// The actual data stored by this node.
     data: NodeData,
-    /// The start token for this node.
-    start: Token.Index,
-    /// The end token for this node.
-    end: Token.Index,
+    /// Byte offset where this node starts (inclusive).
+    start: u32,
+    /// Byte offset where this node ends (exclusive).
+    end: u32,
 
     /// Check if this node is a literal
     pub fn isLiteral(self: *const Node) bool {

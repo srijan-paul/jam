@@ -84,7 +84,7 @@ pub fn main(init: std.process.Init) !void {
     }
     const parse_end = std.Io.Clock.awake.now(io);
 
-    const tok_ms = nsToMs(tok_end.toNanoseconds() - tok_start.toNanoseconds());
+    const phase1_ms = nsToMs(tok_end.toNanoseconds() - tok_start.toNanoseconds());
     const parse_ms = nsToMs(parse_end.toNanoseconds() - parse_start.toNanoseconds());
     const out = try al.print(
         \\tokens/run:      {d} (skipped {d} bytes)
@@ -92,7 +92,7 @@ pub fn main(init: std.process.Init) !void {
         \\full parse:      {d:.2} ms
         \\parser overhead: {d:.2} ms ({d:.0}% of parse)
         \\
-    , .{ total_tokens / parse_runs, skipped_bytes / parse_runs, tok_ms, parse_ms, parse_ms - tok_ms, (parse_ms - tok_ms) / parse_ms * 100 });
+    , .{ total_tokens / parse_runs, skipped_bytes / parse_runs, phase1_ms, parse_ms, parse_ms - phase1_ms, (parse_ms - phase1_ms) / parse_ms * 100 });
     _ = try std.Io.File.stdout().writeStreamingAll(io, out);
 }
 

@@ -35,15 +35,18 @@ pub fn deinit(self: *Self) void {
     self.allocator.free(self.buf);
 }
 
-/// Parse a token as a string, by resolving all escape codes.
-pub fn stringValue(self: *Self, token: *const Token) error{ OutOfMemory, Overflow }!String {
-    std.debug.assert(token.tag.isIdentifier() or token.tag.isKeyword());
-    const str = token.toByteSlice(self.source);
-
+/// Parse a source slice as a string, by resolving all escape codes.
+pub fn stringValue(self: *Self, str: []const u8) error{ OutOfMemory, Overflow }!String {
     // If the string is entirely ASCII and has no escape codes,
     // we can just return the slice after interning it as is.
-    // Non-ASCII identifiers are tagged with ".non_ascii_identifier"
-    if (token.tag == .identifier or token.tag.isKeyword()) {
+    var is_plain_ascii = true;
+    for (str) |b| {
+        if (b == '\\' or b >= 0x80) {
+            is_plain_ascii = false;
+            break;
+        }
+    }
+    if (is_plain_ascii) {
         @branchHint(.likely);
         return try self.string_pool.getOrInsert(str);
     }
@@ -96,7 +99,7 @@ fn testStringValue(id_str: []const u8, expected: []const u8) !void {
     var strings = try Self.init(t.allocator, id_str, &string_pool);
     defer strings.deinit();
 
-    const id_string = try strings.stringValue(&id_token);
+    const id_string = try strings.stringValue(id_token.toByteSlice(id_str));
     try t.expectEqualStrings(expected, strings.toByteSlice(id_string));
 }
 

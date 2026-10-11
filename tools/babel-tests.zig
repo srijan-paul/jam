@@ -141,12 +141,18 @@ fn runTest(io: std.Io, al: Allocator, d: std.Io.Dir, key: []const u8, filename: 
     // Parse the file
     const source = try d.readFileAlloc(io, filename, al, std.Io.Limit.limited(std.math.maxInt(u32)));
 
-    var parser = Parser.init(al, source, parser_config) catch
-        return if (should_error) .pass else .fail_with_error;
+    var parser = Parser.init(al, source, parser_config) catch {
+        const test_result: ParseResult = if (should_error) .pass else .fail_with_error;
+        try out.put(al, key, json.Value{ .string = @tagName(test_result) });
+        return test_result;
+    };
     defer parser.deinit();
 
-    var result = parser.parse() catch
-        return if (should_error) .pass else .fail_with_error;
+    var result = parser.parse() catch {
+        const test_result: ParseResult = if (should_error) .pass else .fail_with_error;
+        try out.put(al, key, json.Value{ .string = @tagName(test_result) });
+        return test_result;
+    };
     defer result.deinit();
 
     // An error was expected, but the parser just succeeded
