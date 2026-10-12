@@ -391,7 +391,7 @@ pub fn compareTestResults(
                 old_malformed_pass_rate,
                 new_malformed_pass_rate,
             });
-        } else {
+        } else if (old_malformed_pass_rate > new_malformed_pass_rate) {
             std.log.err("Malformed files passing test score went up from {d}% to {d}%!", .{
                 old_malformed_pass_rate,
                 new_malformed_pass_rate,
